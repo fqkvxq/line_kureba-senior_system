@@ -47,12 +47,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             <tr><td>DBパス</td><td><code>{$dbPath}</code></td></tr>
             <tr><td>データベース状態</td><td><strong>{$dbStatus}</strong></td></tr>
         </table>
-        <h3>📋 最近のログ (webhook_debug.log)</h3>
+        <h3>📋 最近のログ (最新35件)</h3>
         <div class="log-box">
 HTML;
     $logFile = __DIR__ . '/webhook_debug.log';
     if (file_exists($logFile)) {
-        $lines = array_slice(file($logFile), -20);
+        $lines = array_slice(file($logFile), -35);
         echo htmlspecialchars(implode('', $lines));
     } else {
         echo "ログはまだありません。LINEでメッセージを送信すると記録されます。";
