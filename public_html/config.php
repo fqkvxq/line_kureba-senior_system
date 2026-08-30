@@ -17,7 +17,7 @@ define('ENABLE_NEW_CAR_BROADCAST', true); // 新着検知時にLINE公式アカ�
 define('ENABLE_NEW_CAR_DISCORD', true);   // 新着検知時にDiscordへ通知するか
 
 // --- 店舗管理画面設定 ---
-define('ADMIN_PASSWORD', 'upfarm2026'); // 店舗用管理画面（/admin/）のログインパスワード
+define('ADMIN_PASSWORD', '1020143'); // 店舗用管理画面（/admin/）のログインパスワード
 
 // --- Discord 通知設定 ---
 define('DISCORD_WEBHOOK_URL', 'https://discord.com/api/webhooks/1543636005582667776/8hnE-kLsB545xgS923mTvgIUaBuTz8TQQLrJXFvqB-A0oh92LmqC8Zn-1jaOIhW20YEZ');
