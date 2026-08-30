@@ -367,10 +367,15 @@ window.openDetailModal = function(carId) {
     elements.detailTitle.textContent = car.title;
     elements.detailYear.textContent = car.year || '-';
     elements.detailDistance.textContent = car.distance || '-';
-    elements.detailRepair.textContent = car.repair_history || 'なし';
     elements.detailShaken.textContent = car.shaken || '-';
     elements.detailDisplacement.textContent = car.displacement || '-';
-    elements.detailGooLink.href = `../redirect.php?id=${encodeURIComponent(car.id)}&src=${encodeURIComponent('LIFFミニアプリ')}`;
+    
+    let userParam = '';
+    if (state.userProfile) {
+        if (state.userProfile.userId) userParam += `&uid=${encodeURIComponent(state.userProfile.userId)}`;
+        if (state.userProfile.displayName) userParam += `&uname=${encodeURIComponent(state.userProfile.displayName)}`;
+    }
+    elements.detailGooLink.href = `../redirect.php?id=${encodeURIComponent(car.id)}&src=${encodeURIComponent('LIFFミニアプリ')}${userParam}`;
 
     elements.detailModal.classList.add('active');
 };

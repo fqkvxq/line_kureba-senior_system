@@ -1,12 +1,14 @@
 <?php
 /**
  * 車両詳細クリック トラッキング & Discord通知中継リダイレクター
- * LINE Flex Message や LIFF画面からのWeb遷移を検知し、Discordに通知した上でグーネットへ転送します。
+ * LINE Flex Message や LIFF画面からのWeb遷移を検知し、ユーザー情報を添えてDiscordに通知した上でグーネットへ転送します。
  */
 
 require_once __DIR__ . '/config.php';
 
 $carId = trim($_GET['id'] ?? '');
+$userId = trim($_GET['uid'] ?? '');
+$userNameFromParam = trim($_GET['uname'] ?? '');
 $source = trim($_GET['src'] ?? 'LINE Flex Message');
 $fallbackUrl = SHOP_GOO_URL;
 
@@ -24,13 +26,23 @@ try {
     if ($car) {
         $targetUrl = !empty($car['detail_url']) ? $car['detail_url'] : $fallbackUrl;
         
-        // Discord に通知送信
-        sendDiscordNotification($car, $source);
+        // ユーザープロフィールの取得
+        $userProfile = null;
+        if (!empty($userId)) {
+            $userProfile = getLineUserProfile($userId);
+        }
+        if (empty($userProfile) && !empty($userNameFromParam)) {
+            $userProfile = ['displayName' => $userNameFromParam];
+        }
+
+        // Discord に通知送信 (ユーザー情報付き)
+        sendDiscordNotification($car, $source, $userProfile, $userId);
         
         // ログ記録
         writeDebugLog("車両詳細リンククリック検知 -> Discord通知送信", [
             'id' => $carId,
             'title' => $car['title'],
+            'user' => $userProfile['displayName'] ?? $userId ?? '不明',
             'source' => $source
         ]);
 

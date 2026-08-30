@@ -77,9 +77,37 @@ function getBaseUrl(): string {
 }
 
 /**
- * Discord Webhook へのリッチ埋め込み通知送信
+ * LINEユーザーのプロフィール情報（表示名・アイコン）を取得
  */
-function sendDiscordNotification(array $car, string $source = 'LINE Flex Message') {
+function getLineUserProfile(string $userId): ?array {
+    if (empty($userId) || LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+        return null;
+    }
+
+    $url = "https://api.line.me/v2/bot/profile/" . urlencode($userId);
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 3,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+        ]
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode === 200 && !empty($res)) {
+        return json_decode($res, true);
+    }
+
+    return null;
+}
+
+/**
+ * Discord Webhook へのリッチ埋め込み通知送信 (ユーザー情報付き)
+ */
+function sendDiscordNotification(array $car, string $source = 'LINE Flex Message', ?array $userProfile = null, ?string $rawUserId = null) {
     if (empty(DISCORD_WEBHOOK_URL) || DISCORD_WEBHOOK_URL === 'YOUR_DISCORD_WEBHOOK_URL_HERE') {
         return;
     }
@@ -94,57 +122,83 @@ function sendDiscordNotification(array $car, string $source = 'LINE Flex Message
     $detailUrl = $car['detail_url'] ?? SHOP_GOO_URL;
     $imgUrl = !empty($car['image_url']) ? $car['image_url'] : 'https://img.goo-net.com/goo/usedcar/nophoto_big.jpg';
 
+    // ユーザー情報
+    $userName = 'LINEユーザー (匿名 / 不明)';
+    $userAvatar = null;
+    if (!empty($userProfile['displayName'])) {
+        $userName = $userProfile['displayName'] . ' 様';
+        if (!empty($userProfile['pictureUrl'])) {
+            $userAvatar = $userProfile['pictureUrl'];
+        }
+    } elseif (!empty($rawUserId)) {
+        $userName = "ユーザー (ID: " . substr($rawUserId, 0, 8) . "...)";
+    }
+
+    $fields = [
+        [
+            'name' => '👤 閲覧ユーザー',
+            'value' => "**{$userName}**",
+            'inline' => false
+        ],
+        [
+            'name' => '💰 支払総額',
+            'value' => "**{$totalPrice}** (本体: {$basePrice})",
+            'inline' => true
+        ],
+        [
+            'name' => '📅 年式',
+            'value' => $year,
+            'inline' => true
+        ],
+        [
+            'name' => '🚗 走行距離',
+            'value' => $distance,
+            'inline' => true
+        ],
+        [
+            'name' => '🛠 修復歴',
+            'value' => $repair,
+            'inline' => true
+        ],
+        [
+            'name' => '📋 車検',
+            'value' => $shaken,
+            'inline' => true
+        ],
+        [
+            'name' => '📱 流入元',
+            'value' => $source,
+            'inline' => true
+        ]
+    ];
+
+    $embed = [
+        'title' => '👀 車両詳細ページへのアクセスがありました！',
+        'description' => "**[{$title}]({$detailUrl})**",
+        'url' => $detailUrl,
+        'color' => 0x06C755, // LINE Green
+        'fields' => $fields,
+        'thumbnail' => [
+            'url' => $imgUrl
+        ],
+        'footer' => [
+            'text' => 'アップファーム LINE公式 在庫検索システム',
+            'icon_url' => 'https://img.goo-net.com/goo/usedcar/nophoto_big.jpg'
+        ],
+        'timestamp' => date('c')
+    ];
+
+    if ($userAvatar) {
+        $embed['author'] = [
+            'name' => $userName,
+            'icon_url' => $userAvatar
+        ];
+    }
+
     $payload = [
         'username' => 'LINE車両検索 Bot',
         'avatar_url' => 'https://img.goo-net.com/common_v2/img/idcars/icon_idlogo.png',
-        'embeds' => [
-            [
-                'title' => '👀 車両詳細ページへのアクセスがありました！',
-                'description' => "**[{$title}]({$detailUrl})**",
-                'url' => $detailUrl,
-                'color' => 0x06C755, // LINE Green
-                'fields' => [
-                    [
-                        'name' => '💰 支払総額',
-                        'value' => "**{$totalPrice}** (本体: {$basePrice})",
-                        'inline' => true
-                    ],
-                    [
-                        'name' => '📅 年式',
-                        'value' => $year,
-                        'inline' => true
-                    ],
-                    [
-                        'name' => '🚗 走行距離',
-                        'value' => $distance,
-                        'inline' => true
-                    ],
-                    [
-                        'name' => '🛠 修復歴',
-                        'value' => $repair,
-                        'inline' => true
-                    ],
-                    [
-                        'name' => '📋 車検',
-                        'value' => $shaken,
-                        'inline' => true
-                    ],
-                    [
-                        'name' => '📱 流入元',
-                        'value' => $source,
-                        'inline' => true
-                    ]
-                ],
-                'thumbnail' => [
-                    'url' => $imgUrl
-                ],
-                'footer' => [
-                    'text' => 'アップファーム LINE公式 在庫検索システム',
-                    'icon_url' => 'https://img.goo-net.com/goo/usedcar/nophoto_big.jpg'
-                ],
-                'timestamp' => date('c')
-            ]
-        ]
+        'embeds' => [$embed]
     ];
 
     $ch = curl_init(DISCORD_WEBHOOK_URL);

@@ -101,19 +101,20 @@ foreach ($data['events'] as $event) {
     $replyToken = $event['replyToken'] ?? null;
     if (!$replyToken) continue;
 
+    $userId = $event['source']['userId'] ?? '';
     $type = $event['type'];
-    writeDebugLog("イベント処理開始", ['type' => $type]);
+    writeDebugLog("イベント処理開始", ['type' => $type, 'userId' => $userId]);
 
     if ($type === 'message' && $event['message']['type'] === 'text') {
         $userText = trim($event['message']['text']);
-        writeDebugLog("テキスト受信", ['text' => $userText]);
-        handleTextMessage($db, $replyToken, $userText);
+        writeDebugLog("テキスト受信", ['text' => $userText, 'userId' => $userId]);
+        handleTextMessage($db, $replyToken, $userText, $userId);
     } elseif ($type === 'postback') {
         $postbackData = $event['postback']['data'] ?? '';
-        writeDebugLog("ポストバック受信", ['data' => $postbackData]);
-        handlePostback($db, $replyToken, $postbackData);
+        writeDebugLog("ポストバック受信", ['data' => $postbackData, 'userId' => $userId]);
+        handlePostback($db, $replyToken, $postbackData, $userId);
     } elseif ($type === 'follow') {
-        writeDebugLog("友だち追加イベント");
+        writeDebugLog("友だち追加イベント", ['userId' => $userId]);
         handleFollow($replyToken);
     }
 }
@@ -126,10 +127,10 @@ echo 'OK';
 /**
  * テキストメッセージの処理
  */
-function handleTextMessage(PDO $db, string $replyToken, string $text) {
+function handleTextMessage(PDO $db, string $replyToken, string $text, string $userId = '') {
     // 1. 特殊キーワードの判定
     if (in_array($text, ['在庫一覧', '車を探す', 'メニュー', '在庫', '車', '全台'])) {
-        searchCarsAndReply($db, $replyToken, [], '現在の在庫車両一覧');
+        searchCarsAndReply($db, $replyToken, [], '現在の在庫車両一覧', $userId);
         return;
     }
 
@@ -137,35 +138,35 @@ function handleTextMessage(PDO $db, string $replyToken, string $text) {
     if (preg_match('/([0-9\.]+)\s*(万|万円)?\s*(以下|未満)?/u', $text, $matches)) {
         $price = (float)$matches[1];
         if ($price > 0 && $price < 2000) {
-            searchCarsAndReply($db, $replyToken, ['max_price' => $price], "支払総額 {$price}万円以下の車両");
+            searchCarsAndReply($db, $replyToken, ['max_price' => $price], "支払総額 {$price}万円以下の車両", $userId);
             return;
         }
     }
 
     // 3. フリーワード検索 (車名など)
-    searchCarsAndReply($db, $replyToken, ['keyword' => $text], "「{$text}」の検索結果");
+    searchCarsAndReply($db, $replyToken, ['keyword' => $text], "「{$text}」の検索結果", $userId);
 }
 
 /**
  * ポストバックイベントの処理
  */
-function handlePostback(PDO $db, string $replyToken, string $dataStr) {
+function handlePostback(PDO $db, string $replyToken, string $dataStr, string $userId = '') {
     parse_str($dataStr, $params);
     $action = $params['action'] ?? '';
 
     switch ($action) {
         case 'search_price':
             $maxPrice = (float)($params['max_price'] ?? 0);
-            searchCarsAndReply($db, $replyToken, ['max_price' => $maxPrice], "支払総額 {$maxPrice}万円以下の車両");
+            searchCarsAndReply($db, $replyToken, ['max_price' => $maxPrice], "支払総額 {$maxPrice}万円以下の車両", $userId);
             break;
 
         case 'search_type':
             $keyword = $params['keyword'] ?? '';
-            searchCarsAndReply($db, $replyToken, ['keyword' => $keyword], "「{$keyword}」の車両一覧");
+            searchCarsAndReply($db, $replyToken, ['keyword' => $keyword], "「{$keyword}」の車両一覧", $userId);
             break;
 
         default:
-            searchCarsAndReply($db, $replyToken, [], '最新の在庫車両一覧');
+            searchCarsAndReply($db, $replyToken, [], '最新の在庫車両一覧', $userId);
             break;
     }
 }
@@ -187,7 +188,7 @@ function handleFollow(string $replyToken) {
 /**
  * 車両検索 & Flex Message返信
  */
-function searchCarsAndReply(PDO $db, string $replyToken, array $criteria, string $heading) {
+function searchCarsAndReply(PDO $db, string $replyToken, array $criteria, string $heading, string $userId = '') {
     try {
         $where = ["is_active = 1"];
         $params = [];
@@ -210,7 +211,7 @@ function searchCarsAndReply(PDO $db, string $replyToken, array $criteria, string
         $stmt->execute($params);
         $cars = $stmt->fetchAll();
 
-        writeDebugLog("検索実行完了", ['heading' => $heading, 'hitCount' => count($cars)]);
+        writeDebugLog("検索実行完了", ['heading' => $heading, 'hitCount' => count($cars), 'userId' => $userId]);
 
         if (empty($cars)) {
             $messages = [
@@ -227,7 +228,7 @@ function searchCarsAndReply(PDO $db, string $replyToken, array $criteria, string
         // カルーセルバブルを構築
         $bubbles = [];
         foreach ($cars as $car) {
-            $bubble = buildCarFlexBubble($car);
+            $bubble = buildCarFlexBubble($car, $userId);
             if ($bubble) {
                 $bubbles[] = $bubble;
             }
@@ -278,7 +279,7 @@ function searchCarsAndReply(PDO $db, string $replyToken, array $criteria, string
 /**
  * 車両1台分のFlex Messageバブルを構築
  */
-function buildCarFlexBubble(array $car): array {
+function buildCarFlexBubble(array $car, string $userId = ''): array {
     $rawTitle = trim($car['title'] ?? '');
     if (empty($rawTitle)) {
         $rawTitle = '車両情報';
@@ -295,7 +296,7 @@ function buildCarFlexBubble(array $car): array {
     $distance = !empty(trim($car['distance'] ?? '')) ? trim($car['distance']) : '-';
     $repair = !empty(trim($car['repair_history'] ?? '')) ? trim($car['repair_history']) : '-';
     $detailUrl = !empty($car['detail_url']) ? $car['detail_url'] : SHOP_GOO_URL;
-    $trackingUrl = getBaseUrl() . '/redirect.php?id=' . urlencode($car['id']) . '&src=' . urlencode('LINE Flex Message');
+    $trackingUrl = getBaseUrl() . '/redirect.php?id=' . urlencode($car['id']) . '&uid=' . urlencode($userId) . '&src=' . urlencode('LINE Flex Message');
 
     // 問い合わせ文面
     $inquiryText = "【車両問い合わせ】\n車名: {$rawTitle}\n支払総額: {$totalPrice}\n詳細: {$detailUrl}\n\nこちらの車両について詳しく知りたいです。";
