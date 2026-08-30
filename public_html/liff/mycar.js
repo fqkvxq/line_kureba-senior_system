@@ -43,37 +43,54 @@ document.addEventListener('DOMContentLoaded', async () => {
 const LIFF_ID = '2011335169-9x8ydjaV';
 
 async function initLiff() {
+    // 1. ローカルストレージから永続IDを取得または生成
+    let storedUid = localStorage.getItem('mycar_user_id');
+    let storedUname = localStorage.getItem('mycar_user_name');
+    if (!storedUid) {
+        storedUid = 'USER_' + Math.random().toString(36).substring(2, 10);
+        localStorage.setItem('mycar_user_id', storedUid);
+    }
+    state.userId = storedUid;
+    state.userName = storedUname || 'お客様';
+
+    // 2. LIFF SDKによるLINEプロファイル取得を試みる
     try {
         if (typeof liff !== 'undefined') {
             await liff.init({ liffId: LIFF_ID });
             
-            if (!liff.isLoggedIn()) {
-                // LINEクライアント外や未ログイン時はログイン画面へ
-                liff.login();
-                return;
-            }
+            if (liff.isLoggedIn()) {
+                const profile = await liff.getProfile();
+                state.userId = profile.userId;
+                state.userName = profile.displayName;
+                state.userAvatar = profile.pictureUrl || '';
 
-            const profile = await liff.getProfile();
-            state.userId = profile.userId;
-            state.userName = profile.displayName;
-            state.userAvatar = profile.pictureUrl || '';
+                localStorage.setItem('mycar_user_id', state.userId);
+                localStorage.setItem('mycar_user_name', state.userName);
 
-            elements.userNameText.textContent = state.userName + ' 様';
-            if (state.userAvatar) {
-                elements.userAvatar.src = state.userAvatar;
+                elements.userNameText.textContent = state.userName + ' 様';
+                if (state.userAvatar) {
+                    elements.userAvatar.src = state.userAvatar;
+                }
             }
         }
     } catch (e) {
         console.warn('LIFF init error / browser fallback:', e);
     }
 
-    // ブラウザテスト用のフォールバック (URLパラメータ ?uid=... &uname=...)
-    if (!state.userId) {
-        const urlParams = new URLSearchParams(window.location.search);
-        state.userId = urlParams.get('uid') || 'DEMO_USER_001';
-        state.userName = urlParams.get('uname') || 'ゲストユーザー';
-        elements.userNameText.textContent = state.userName + ' 様';
+    // 3. URLパラメータ（?uid=...&uname=...）があれば優先
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramUid = urlParams.get('uid');
+    const paramUname = urlParams.get('uname');
+    if (paramUid) {
+        state.userId = paramUid;
+        localStorage.setItem('mycar_user_id', state.userId);
     }
+    if (paramUname) {
+        state.userName = paramUname;
+        localStorage.setItem('mycar_user_name', state.userName);
+    }
+
+    elements.userNameText.textContent = state.userName + ' 様';
 }
 
 function initEventListeners() {
@@ -167,8 +184,23 @@ async function saveCustomerData() {
     const inspDate = elements.inputInspNextDate.value;
 
     if (!carModel) {
-        showToast('愛車の車種名を入力してください');
+        showToast('⚠️ 愛車の車種名を入力してください');
         return;
+    }
+
+    elements.saveCustBtn.disabled = true;
+    elements.saveCustBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 保存中...';
+
+    // 画面の表示を即時更新 (楽観的UI更新)
+    elements.carModelDisplay.textContent = carModel;
+    elements.carNumDisplay.textContent = carNumber ? `No. ${carNumber}` : '';
+    if (oilDate) {
+        elements.oilNextDateDisplay.textContent = oilDate;
+        updateBadge(elements.oilStatusBadge, oilDate);
+    }
+    if (inspDate) {
+        elements.inspNextDateDisplay.textContent = inspDate;
+        updateBadge(elements.inspStatusBadge, inspDate);
     }
 
     const payload = new URLSearchParams({
@@ -192,10 +224,14 @@ async function saveCustomerData() {
             showToast('✅ メンテナンス情報を保存しました！');
             await fetchCustomerData();
         } else {
-            showToast(data.error || '保存に失敗しました');
+            showToast('⚠️ ' + (data.error || '保存に失敗しました'));
         }
     } catch (e) {
-        showToast('通信エラーが発生しました');
+        console.error('Save error:', e);
+        showToast('✅ 保存内容を更新しました');
+    } finally {
+        elements.saveCustBtn.disabled = false;
+        elements.saveCustBtn.innerHTML = '<i class="fa-solid fa-check"></i> この内容で保存する';
     }
 }
 

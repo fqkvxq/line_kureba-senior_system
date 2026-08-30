@@ -1,12 +1,14 @@
 <?php
 /**
- * LIFF検索画面向け REST API
- * JSON形式で車両一覧・詳細・フィルター用メタデータを返却します。
+ * REST API エンドポイント (JSON返却)
+ * 車両一覧、絞り込み、メタ情報取得、顧客メンテナンス管理をサポート
  */
 
-require_once __DIR__ . '/config.php';
+// タイムゾーンとエラー設定
+date_default_timezone_set('Asia/Tokyo');
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
 
-// CORS & JSONヘッダー
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
@@ -17,76 +19,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-$action = $_GET['action'] ?? 'list';
+// 共通設定・DB接続
+require_once __DIR__ . '/config.php';
 
 try {
     $db = getDbConnection();
+    $action = $_GET['action'] ?? ($_POST['action'] ?? 'list');
 
     switch ($action) {
-        // --- 1. 車両一覧取得 (検索・フィルター・ソート) ---
+        // --- 1. 車両一覧取得 (検索・フィルター・ページネーション) ---
         case 'list':
-            $keyword = trim($_GET['keyword'] ?? '');
-            $minPrice = isset($_GET['min_price']) && is_numeric($_GET['min_price']) ? (float)$_GET['min_price'] : null;
-            $maxPrice = isset($_GET['max_price']) && is_numeric($_GET['max_price']) ? (float)$_GET['max_price'] : null;
-            $maxDistance = isset($_GET['max_distance']) && is_numeric($_GET['max_distance']) ? (float)$_GET['max_distance'] : null;
-            $sort = $_GET['sort'] ?? 'price_asc'; // price_asc, price_desc, distance_asc, year_desc, updated_desc
-            $limit = isset($_GET['limit']) ? min((int)$_GET['limit'], 100) : 50;
-            $offset = isset($_GET['offset']) ? max((int)$_GET['offset'], 0) : 0;
+            $page = max(1, (int)($_GET['page'] ?? 1));
+            $limit = min(100, max(1, (int)($_GET['limit'] ?? 50)));
+            $offset = ($page - 1) * $limit;
 
             $where = ["is_active = 1"];
             $params = [];
 
-            // キーワード検索 (車名・スペック)
-            if ($keyword !== '') {
-                // 空白で区切ってAND検索
-                $keywords = preg_split('/\s+/u', $keyword);
-                foreach ($keywords as $idx => $kw) {
-                    if ($kw !== '') {
-                        $paramKey = ":kw_{$idx}";
-                        $where[] = "(title LIKE {$paramKey} OR displacement LIKE {$paramKey} OR year LIKE {$paramKey})";
-                        $params[$paramKey] = "%{$kw}%";
-                    }
-                }
+            // キーワード検索 (車名, 排気量, 年式)
+            if (!empty($_GET['keyword'])) {
+                $kw = trim($_GET['keyword']);
+                $where[] = "(title LIKE :kw OR displacement LIKE :kw OR year LIKE :kw)";
+                $params[':kw'] = "%{$kw}%";
             }
 
-            // 価格フィルター
-            if ($minPrice !== null) {
-                $where[] = "total_price_num >= :min_price";
-                $params[':min_price'] = $minPrice;
-            }
-            if ($maxPrice !== null) {
+            // 支払総額 (上限)
+            if (isset($_GET['max_price']) && is_numeric($_GET['max_price'])) {
                 $where[] = "total_price_num <= :max_price";
-                $params[':max_price'] = $maxPrice;
+                $params[':max_price'] = (float)$_GET['max_price'];
             }
 
-            // 走行距離フィルター (万km単位)
-            if ($maxDistance !== null) {
-                $where[] = "(distance_num IS NULL OR distance_num <= :max_distance)";
-                $params[':max_distance'] = $maxDistance;
+            // 走行距離 (上限)
+            if (isset($_GET['max_distance']) && is_numeric($_GET['max_distance'])) {
+                $where[] = "distance_num <= :max_distance";
+                $params[':max_distance'] = (float)$_GET['max_distance'];
+            }
+
+            // 修復歴 (0: なし, 1: あり)
+            if (isset($_GET['repair'])) {
+                if ($_GET['repair'] === 'none') {
+                    $where[] = "(repair_history = 'なし' OR repair_history = '-' OR repair_history IS NULL)";
+                }
             }
 
             $whereSql = implode(' AND ', $where);
 
-            // ソート条件 (全SQLiteバージョン互換)
+            // ソート
+            $sort = $_GET['sort'] ?? 'price_asc';
             $orderSql = match ($sort) {
                 'price_desc' => '(total_price_num IS NULL), total_price_num DESC',
-                'price_asc' => '(total_price_num IS NULL), total_price_num ASC',
                 'distance_asc' => '(distance_num IS NULL), distance_num ASC',
                 'year_desc' => 'year DESC',
-                'updated_desc' => 'updated_at DESC',
-                default => '(total_price_num IS NULL), total_price_num ASC'
+                default => '(total_price_num IS NULL), total_price_num ASC', // price_asc
             };
 
-            // 件数カウント
+            // 総件数カウント
             $countStmt = $db->prepare("SELECT COUNT(*) as total FROM cars WHERE {$whereSql}");
             $countStmt->execute($params);
             $totalCount = (int)$countStmt->fetch()['total'];
 
-            // データ取得
-            $sql = "SELECT * FROM cars WHERE {$whereSql} ORDER BY {$orderSql} LIMIT :limit OFFSET :offset";
-            $stmt = $db->prepare($sql);
-            foreach ($params as $k => $v) {
-                $stmt->bindValue($k, $v);
+            // 車両一覧取得
+            $stmt = $db->prepare("
+                SELECT * FROM cars 
+                WHERE {$whereSql} 
+                ORDER BY {$orderSql} 
+                LIMIT :limit OFFSET :offset
+            ");
+            foreach ($params as $key => $val) {
+                $stmt->bindValue($key, $val);
             }
             $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
@@ -96,24 +96,23 @@ try {
             echo json_encode([
                 'success' => true,
                 'total' => $totalCount,
-                'count' => count($cars),
+                'page' => $page,
                 'limit' => $limit,
-                'offset' => $offset,
                 'cars' => $cars
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
-        // --- 2. 車両詳細取得 ---
+        // --- 2. 車両単体詳細取得 ---
         case 'detail':
-            $id = $_GET['id'] ?? '';
-            if (empty($id)) {
+            $carId = $_GET['id'] ?? '';
+            if (empty($carId)) {
                 http_response_code(400);
                 echo json_encode(['success' => false, 'error' => '車両IDが指定されていません。']);
                 exit;
             }
 
             $stmt = $db->prepare("SELECT * FROM cars WHERE id = :id LIMIT 1");
-            $stmt->execute([':id' => $id]);
+            $stmt->execute([':id' => $carId]);
             $car = $stmt->fetch();
 
             if (!$car) {
@@ -217,36 +216,57 @@ try {
 
         // --- 6. ユーザー用: 自身の愛車・オイル交換日保存 ---
         case 'save_customer':
-            $userId = $_POST['uid'] ?? '';
-            $userName = $_POST['uname'] ?? '';
-            $carModel = $_POST['car_model'] ?? '';
-            $carNumber = $_POST['car_number'] ?? '';
-            $oilLastDate = $_POST['oil_last_date'] ?? null;
-            $oilNextDate = $_POST['oil_next_date'] ?? null;
-            $inspectionNextDate = $_POST['inspection_next_date'] ?? null;
+            $userId = trim($_POST['uid'] ?? '');
+            $userName = trim($_POST['uname'] ?? '');
+            $carModel = trim($_POST['car_model'] ?? '');
+            $carNumber = trim($_POST['car_number'] ?? '');
+            $oilLastDate = !empty($_POST['oil_last_date']) ? $_POST['oil_last_date'] : null;
+            $oilNextDate = !empty($_POST['oil_next_date']) ? $_POST['oil_next_date'] : null;
+            $inspectionNextDate = !empty($_POST['inspection_next_date']) ? $_POST['inspection_next_date'] : null;
 
             if (empty($userId)) {
-                http_response_code(400);
-                echo json_encode(['success' => false, 'error' => 'ユーザーIDが必要です']);
-                exit;
+                $userId = 'USER_' . uniqid();
             }
 
-            // 日付が空文字ならNULLに
-            $oilLastDate = !empty($oilLastDate) ? $oilLastDate : null;
-            $oilNextDate = !empty($oilNextDate) ? $oilNextDate : null;
-            $inspectionNextDate = !empty($inspectionNextDate) ? $inspectionNextDate : null;
+            writeDebugLog("顧客メンテナンス保存受付", [
+                'uid' => $userId,
+                'name' => $userName,
+                'car' => $carModel,
+                'oil' => $oilNextDate,
+                'insp' => $inspectionNextDate
+            ]);
 
-            $stmt = $db->prepare("
-                INSERT OR REPLACE INTO customers (
-                    user_id, user_name, car_model, car_number,
-                    oil_last_date, oil_next_date, inspection_next_date,
-                    updated_at
-                ) VALUES (
-                    :uid, :uname, :car_model, :car_number,
-                    :oil_last_date, :oil_next_date, :inspection_next_date,
-                    CURRENT_TIMESTAMP
-                )
-            ");
+            // 既存レコード確認
+            $checkStmt = $db->prepare("SELECT * FROM customers WHERE user_id = :uid LIMIT 1");
+            $checkStmt->execute([':uid' => $userId]);
+            $existing = $checkStmt->fetch();
+
+            if ($existing) {
+                $stmt = $db->prepare("
+                    UPDATE customers SET
+                        user_name = :uname,
+                        car_model = :car_model,
+                        car_number = :car_number,
+                        oil_last_date = :oil_last_date,
+                        oil_next_date = :oil_next_date,
+                        inspection_next_date = :inspection_next_date,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE user_id = :uid
+                ");
+            } else {
+                $stmt = $db->prepare("
+                    INSERT INTO customers (
+                        user_id, user_name, car_model, car_number,
+                        oil_last_date, oil_next_date, inspection_next_date,
+                        created_at, updated_at
+                    ) VALUES (
+                        :uid, :uname, :car_model, :car_number,
+                        :oil_last_date, :oil_next_date, :inspection_next_date,
+                        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                    )
+                ");
+            }
+
             $stmt->execute([
                 ':uid' => $userId,
                 ':uname' => $userName,
@@ -259,7 +279,15 @@ try {
 
             echo json_encode([
                 'success' => true,
-                'message' => 'メンテナンス情報を保存しました！'
+                'message' => 'メンテナンス情報を保存しました！',
+                'customer' => [
+                    'user_id' => $userId,
+                    'user_name' => $userName,
+                    'car_model' => $carModel,
+                    'car_number' => $carNumber,
+                    'oil_next_date' => $oilNextDate,
+                    'inspection_next_date' => $inspectionNextDate
+                ]
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
@@ -325,21 +353,40 @@ try {
             $staffMemo = trim($_POST['staff_memo'] ?? '');
 
             if (empty($userId)) {
-                // 新規手動登録などでuserIdがない場合は生成
                 $userId = 'MANUAL_' . uniqid();
             }
 
-            $stmt = $db->prepare("
-                INSERT OR REPLACE INTO customers (
-                    user_id, user_name, car_model, car_number,
-                    oil_last_date, oil_next_date, inspection_next_date,
-                    staff_memo, updated_at
-                ) VALUES (
-                    :uid, :uname, :car_model, :car_number,
-                    :oil_last_date, :oil_next_date, :inspection_next_date,
-                    :staff_memo, CURRENT_TIMESTAMP
-                )
-            ");
+            $checkStmt = $db->prepare("SELECT * FROM customers WHERE user_id = :uid LIMIT 1");
+            $checkStmt->execute([':uid' => $userId]);
+            $existing = $checkStmt->fetch();
+
+            if ($existing) {
+                $stmt = $db->prepare("
+                    UPDATE customers SET
+                        user_name = :uname,
+                        car_model = :car_model,
+                        car_number = :car_number,
+                        oil_last_date = :oil_last_date,
+                        oil_next_date = :oil_next_date,
+                        inspection_next_date = :inspection_next_date,
+                        staff_memo = :staff_memo,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE user_id = :uid
+                ");
+            } else {
+                $stmt = $db->prepare("
+                    INSERT INTO customers (
+                        user_id, user_name, car_model, car_number,
+                        oil_last_date, oil_next_date, inspection_next_date,
+                        staff_memo, created_at, updated_at
+                    ) VALUES (
+                        :uid, :uname, :car_model, :car_number,
+                        :oil_last_date, :oil_next_date, :inspection_next_date,
+                        :staff_memo, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                    )
+                ");
+            }
+
             $stmt->execute([
                 ':uid' => $userId,
                 ':uname' => $userName,
