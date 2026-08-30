@@ -279,6 +279,37 @@ try {
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
+        // --- 5-3. LIFFトリガー用: サイレントPostback送信実行 ---
+        case 'trigger_postback':
+            $userId = trim($_POST['uid'] ?? ($_GET['uid'] ?? ''));
+            $dataStr = $_POST['data'] ?? ($_GET['data'] ?? '');
+
+            // クエリパラメータから直接組み立てるフォールバック
+            if (empty($dataStr)) {
+                $postbackParams = $_POST ?: $_GET;
+                unset($postbackParams['action']); // 'trigger_postback' 自体を除外
+                if (isset($postbackParams['pb_action'])) {
+                    $postbackParams['action'] = $postbackParams['pb_action'];
+                    unset($postbackParams['pb_action']);
+                }
+                $dataStr = http_build_query($postbackParams);
+            }
+
+            if (empty($userId)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'ユーザーIDが必要です']);
+                exit;
+            }
+
+            require_once __DIR__ . '/webhook.php';
+            $success = executeSilentPostbackPush($db, $userId, $dataStr);
+
+            echo json_encode([
+                'success' => $success,
+                'message' => $success ? 'サイレントPostbackを実行しました' : '送信に失敗しました'
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
         // --- 6. ユーザー用: 愛車の登録・更新 ---
         case 'save_customer':
             $carId = !empty($_POST['car_id']) ? (int)$_POST['car_id'] : null;

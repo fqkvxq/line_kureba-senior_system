@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>読み込み中...</title>
+    <!-- LIFF SDK -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #64748b;
+        }
+        .spinner {
+            width: 28px;
+            height: 28px;
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #06C755;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div style="text-align: center;">
+        <div class="spinner" style="margin: 0 auto 12px;"></div>
+        <div style="font-size: 12px; font-weight: bold; color: #475569;">お車情報を準備中...</div>
+    </div>
+
+    <script>
+        const LIFF_ID = '2011335169-9x8ydjaV';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                if (typeof liff === 'undefined') {
+                    window.close();
+                    return;
+                }
+
+                await liff.init({ liffId: LIFF_ID });
+
+                let userId = '';
+                if (liff.isLoggedIn()) {
+                    const profile = await liff.getProfile();
+                    userId = profile.userId;
+                } else {
+                    userId = localStorage.getItem('mycar_user_id') || '';
+                }
+
+                // URLのクエリパラメータを取得
+                const urlParams = new URLSearchParams(window.location.search);
+                const queryStr = urlParams.toString();
+
+                if (userId) {
+                    const payload = new URLSearchParams({
+                        action: 'trigger_postback',
+                        uid: userId,
+                        data: queryStr
+                    });
+
+                    await fetch('../api.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: payload.toString()
+                    });
+                }
+            } catch (e) {
+                console.error('Trigger error:', e);
+            } finally {
+                // 即座にウィンドウを閉じてトーク画面に戻る
+                setTimeout(() => {
+                    if (typeof liff !== 'undefined' && liff.isInClient()) {
+                        liff.closeWindow();
+                    } else {
+                        window.close();
+                    }
+                }, 100);
+            }
+        });
+    </script>
+</body>
+</html>

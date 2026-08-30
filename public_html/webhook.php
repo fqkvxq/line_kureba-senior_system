@@ -289,6 +289,70 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
 }
 
 /**
+ * LIFF Trigger からのPush送信用サイレントPostback実行関数
+ */
+function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bool {
+    parse_str($dataStr, $params);
+    $action = $params['action'] ?? '';
+
+    writeDebugLog("LIFF Silent Postback Push実行", ['uid' => $userId, 'action' => $action, 'data' => $dataStr]);
+
+    if (!str_starts_with($userId, 'U')) {
+        writeDebugLog("Push送信スキップ: 有効なLINEユーザーIDではありません ({$userId})");
+        return false;
+    }
+
+    $messages = [];
+
+    switch ($action) {
+        case 'show_price_menu':
+            $messages = generatePriceMenuMessages();
+            break;
+
+        case 'show_type_menu':
+            $messages = generateTypeMenuMessages();
+            break;
+
+        case 'search_price':
+            $maxPrice = (float)($params['max_price'] ?? 0);
+            $minPrice = (float)($params['min_price'] ?? 0);
+            $criteria = [];
+            $title = "支払総額 {$maxPrice}万円以下の車両";
+            if ($maxPrice > 0) $criteria['max_price'] = $maxPrice;
+            if ($minPrice > 0) {
+                $criteria['min_price'] = $minPrice;
+                $title = "支払総額 {$minPrice}万〜{$maxPrice}万円の車両";
+            }
+            $messages = generateCarSearchMessages($db, $criteria, $title, $userId);
+            break;
+
+        case 'search_type':
+        case 'search_keyword':
+            $keyword = trim($params['keyword'] ?? '');
+            $title = !empty($keyword) ? "「{$keyword}」の車両一覧" : "最新の在庫車両一覧";
+            $messages = generateCarSearchMessages($db, ['keyword' => $keyword], $title, $userId);
+            break;
+
+        case 'search_all':
+        default:
+            $messages = generateCarSearchMessages($db, [], '現在の在庫車両一覧', $userId);
+            break;
+    }
+
+    if (!empty($messages)) {
+        try {
+            sendLinePushMessage($userId, $messages);
+            return true;
+        } catch (Exception $e) {
+            writeDebugLog("Silent Postback Push送信例外: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    return false;
+}
+
+/**
  * 友だち追加時のあいさつメッセージ
  */
 function handleFollow(string $replyToken) {
@@ -306,6 +370,14 @@ function handleFollow(string $replyToken) {
  * 車両検索 & Flex Message返信
  */
 function searchCarsAndReply(PDO $db, string $replyToken, array $criteria, string $heading, string $userId = '') {
+    $messages = generateCarSearchMessages($db, $criteria, $heading, $userId);
+    sendReplyMessage($replyToken, $messages);
+}
+
+/**
+ * 車両検索メッセージ配列を生成 (Reply / Push 共通)
+ */
+function generateCarSearchMessages(PDO $db, array $criteria, string $heading, string $userId = ''): array {
     try {
         $where = ["is_active = 1"];
         $params = [];
@@ -336,15 +408,13 @@ function searchCarsAndReply(PDO $db, string $replyToken, array $criteria, string
         writeDebugLog("検索実行完了", ['heading' => $heading, 'hitCount' => count($cars), 'userId' => $userId]);
 
         if (empty($cars)) {
-            $messages = [
+            return [
                 [
                     'type' => 'text',
                     'text' => "申し訳ありません。ご指定の条件に一致する車両が見つかりませんでした。\n\n別のキーワードや価格帯でお試しください！",
                     'quickReply' => getQuickReplyItems()
                 ]
             ];
-            sendReplyMessage($replyToken, $messages);
-            return;
         }
 
         // カルーセルバブルを構築
@@ -383,18 +453,16 @@ function searchCarsAndReply(PDO $db, string $replyToken, array $criteria, string
             ];
         }
 
-        sendReplyMessage($replyToken, $messages);
+        return $messages;
     } catch (Exception $e) {
-        writeDebugLog("検索・返信例外エラー: " . $e->getMessage());
-        // フォールバック返信
-        $fallbackMessages = [
+        writeDebugLog("検索生成例外エラー: " . $e->getMessage());
+        return [
             [
                 'type' => 'text',
                 'text' => "申し訳ありません。検索中にエラーが発生しました。\nしばらくしてからもう一度お試しください。",
                 'quickReply' => getQuickReplyItems()
             ]
         ];
-        sendReplyMessage($replyToken, $fallbackMessages);
     }
 }
 
@@ -909,9 +977,17 @@ function handleSubmitMaintenanceBooking(string $replyToken, string $bookingType,
 }
 
 /**
- * 価格帯選択メニュー（サイレントボタン式Flex Message）
+ * 価格帯選択メニュー送信
  */
 function sendPriceMenuMessage(string $replyToken) {
+    $messages = generatePriceMenuMessages();
+    sendReplyMessage($replyToken, $messages);
+}
+
+/**
+ * 価格帯選択メニュー（サイレントボタン式Flex Message）生成
+ */
+function generatePriceMenuMessages(): array {
     $priceBubble = [
         'type' => 'bubble',
         'size' => 'kilo',
@@ -1049,7 +1125,7 @@ function sendPriceMenuMessage(string $replyToken) {
         ]
     ];
 
-    $messages = [
+    return [
         [
             'type' => 'flex',
             'altText' => '💰 ご予算・支払総額から探す',
@@ -1057,13 +1133,20 @@ function sendPriceMenuMessage(string $replyToken) {
             'quickReply' => getQuickReplyItems()
         ]
     ];
+}
+
+/**
+ * 車種・ボディタイプ選択メニュー送信
+ */
+function sendTypeMenuMessage(string $replyToken) {
+    $messages = generateTypeMenuMessages();
     sendReplyMessage($replyToken, $messages);
 }
 
 /**
- * 車種・ボディタイプ選択メニュー（サイレントボタン式Flex Message）
+ * 車種・ボディタイプ選択メニュー（サイレントボタン式Flex Message）生成
  */
-function sendTypeMenuMessage(string $replyToken) {
+function generateTypeMenuMessages(): array {
     $typeBubble = [
         'type' => 'bubble',
         'size' => 'kilo',
@@ -1229,7 +1312,7 @@ function sendTypeMenuMessage(string $replyToken) {
         ]
     ];
 
-    $messages = [
+    return [
         [
             'type' => 'flex',
             'altText' => '🚙 車種・ボディタイプから探す',
@@ -1237,7 +1320,6 @@ function sendTypeMenuMessage(string $replyToken) {
             'quickReply' => getQuickReplyItems()
         ]
     ];
-    sendReplyMessage($replyToken, $messages);
 }
 
 /**
