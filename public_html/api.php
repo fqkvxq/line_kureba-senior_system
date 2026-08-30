@@ -588,10 +588,18 @@ try {
                                                 ['type' => 'text', 'text' => '次回点検日', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
                                                 ['type' => 'text', 'text' => $inspDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#e02424', 'flex' => 6]
                                             ]
+                                        ],
+                                        [
+                                            'type' => 'box',
+                                            'layout' => 'baseline',
+                                            'contents' => [
+                                                ['type' => 'text', 'text' => '点検の目安', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
+                                                ['type' => 'text', 'text' => "1年に1回 (前回の車検/点検から1年)", 'size' => 'xs', 'color' => '#475569', 'flex' => 6]
+                                            ]
                                         ]
                                     ]
                                 ],
-                                ['type' => 'text', 'text' => "愛車のコンディション維持や故障の早期発見のため、年1回の定期点検をおすすめしております。\nご予約・日程相談は下のボタンよりお気軽にどうぞ！", 'size' => 'xxs', 'color' => '#64748b', 'margin' => 'md', 'wrap' => true]
+                                ['type' => 'text', 'text' => "※目安：1年に1回受ける法律で定められた点検です。愛車のコンディション維持や故障の早期発見のため受検をおすすめしております。\nご予約・日程相談は下のボタンよりお気軽にどうぞ！", 'size' => 'xxs', 'color' => '#64748b', 'margin' => 'md', 'wrap' => true]
                             ]
                         ],
                         'footer' => [
