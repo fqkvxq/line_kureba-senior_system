@@ -316,6 +316,102 @@ function sendDiscordNewCarsNotification(array $newCars) {
 }
 
 /**
+ * ユーザーからの正式な車両問い合わせ時の Discord 通知
+ */
+function sendDiscordInquiryNotification(array $car, string $inquiryType, ?array $userProfile = null, ?string $rawUserId = null) {
+    if (empty(DISCORD_WEBHOOK_URL) || DISCORD_WEBHOOK_URL === 'YOUR_DISCORD_WEBHOOK_URL_HERE') {
+        return;
+    }
+
+    $title = $car['title'] ?? '車両問い合わせ';
+    $totalPrice = $car['total_price_text'] ?? '要問合せ';
+    $basePrice = $car['base_price_text'] ?? '-';
+    $year = $car['year'] ?? '-';
+    $distance = $car['distance'] ?? '-';
+    $detailUrl = $car['detail_url'] ?? SHOP_GOO_URL;
+    $imgUrl = !empty($car['image_url']) ? $car['image_url'] : 'https://img.goo-net.com/goo/usedcar/nophoto_big.jpg';
+
+    // ユーザー情報
+    $userName = 'LINEユーザー (匿名 / 不明)';
+    $userAvatar = null;
+    if (!empty($userProfile['displayName'])) {
+        $userName = $userProfile['displayName'] . ' 様';
+        if (!empty($userProfile['pictureUrl'])) {
+            $userAvatar = $userProfile['pictureUrl'];
+        }
+    } elseif (!empty($rawUserId)) {
+        $userName = "ユーザー (ID: " . substr($rawUserId, 0, 8) . "...)";
+    }
+
+    $embed = [
+        'title' => "📩 【お問い合わせ】{$inquiryType}の依頼が届きました！",
+        'description' => "**[{$title}]({$detailUrl})**\n\nお客様から正式なお問い合わせがありました。LINE公式アカウントのチャット等でご確認ください。",
+        'url' => $detailUrl,
+        'color' => 0xFF0055, // Magenta/Red for high priority
+        'fields' => [
+            [
+                'name' => '👤 お問い合わせ者',
+                'value' => "**{$userName}**",
+                'inline' => false
+            ],
+            [
+                'name' => '📝 ご希望内容',
+                'value' => "🎯 **{$inquiryType}**",
+                'inline' => true
+            ],
+            [
+                'name' => '💰 支払総額',
+                'value' => "**{$totalPrice}**",
+                'inline' => true
+            ],
+            [
+                'name' => '📅 年式 / 走行',
+                'value' => "{$year} / {$distance}",
+                'inline' => true
+            ],
+            [
+                'name' => '🔗 車両詳細',
+                'value' => "[グーネットで見る]({$detailUrl})",
+                'inline' => true
+            ]
+        ],
+        'thumbnail' => [
+            'url' => $imgUrl
+        ],
+        'footer' => [
+            'text' => 'アップファーム LINE公式 問い合わせ通知',
+            'icon_url' => 'https://img.goo-net.com/goo/usedcar/nophoto_big.jpg'
+        ],
+        'timestamp' => date('c')
+    ];
+
+    if ($userAvatar) {
+        $embed['author'] = [
+            'name' => $userName,
+            'icon_url' => $userAvatar
+        ];
+    }
+
+    $payload = [
+        'username' => 'LINE公式 問い合わせ通知',
+        'avatar_url' => 'https://img.goo-net.com/common_v2/img/idcars/icon_idlogo.png',
+        'content' => "🚨 **【真剣度高】車両のお問い合わせが届きました！**",
+        'embeds' => [$embed]
+    ];
+
+    $ch = curl_init(DISCORD_WEBHOOK_URL);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 4,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json; charset=utf-8'],
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE)
+    ]);
+    curl_exec($ch);
+    curl_close($ch);
+}
+
+/**
  * デバッグログの出力
  */
 function writeDebugLog(string $message, array $context = []) {

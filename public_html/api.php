@@ -154,6 +154,48 @@ try {
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
+        // --- 4. LIFFからの正式問い合わせ受付 & Discord通知 ---
+        case 'inquiry':
+            $carId = $_POST['id'] ?? ($_GET['id'] ?? '');
+            $inquiryType = $_POST['type'] ?? ($_GET['type'] ?? '在庫確認');
+            $userId = $_POST['uid'] ?? ($_GET['uid'] ?? '');
+            $userName = $_POST['uname'] ?? ($_GET['uname'] ?? '');
+
+            if (empty($carId)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => '車両IDが必要です']);
+                exit;
+            }
+
+            $stmt = $db->prepare("SELECT * FROM cars WHERE id = :id LIMIT 1");
+            $stmt->execute([':id' => $carId]);
+            $car = $stmt->fetch();
+
+            if (!$car) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'error' => '車両が見つかりませんでした']);
+                exit;
+            }
+
+            $userProfile = null;
+            if (!empty($userId)) {
+                $userProfile = getLineUserProfile($userId);
+            }
+            if (empty($userProfile) && !empty($userName)) {
+                $userProfile = ['displayName' => $userName];
+            }
+
+            // Discord 通知送信
+            if (function_exists('sendDiscordInquiryNotification')) {
+                sendDiscordInquiryNotification($car, $inquiryType, $userProfile, $userId);
+            }
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'お問い合わせを受付いたしました。'
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
         default:
             http_response_code(400);
             echo json_encode(['success' => false, 'error' => '無効なアクションです。']);

@@ -203,13 +203,65 @@
                 <div class="detail-action-group">
                     <button class="btn-inquiry-line" id="detailLineInquiryBtn">
                         <i class="fa-brands fa-line"></i>
-                        <span>LINEでこの車両を問い合わせる</span>
+                        <span>LINEでお問い合わせ・相談する</span>
                     </button>
                     <a id="detailGooLink" href="#" target="_blank" class="btn-goo-detail">
                         <i class="fa-solid fa-arrow-up-right-from-square"></i>
                         <span>グーネットで詳細・全写真を見る</span>
                     </a>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- お問い合わせ内容確認モーダル (誤タップ防止) -->
+    <div class="modal-overlay" id="inquiryModal">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-paper-plane"></i> お問い合わせ内容の確認</h3>
+                <button class="modal-close" id="closeInquiryModalBtn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="inquiry-target-car">
+                    <img id="inquiryCarImg" src="" alt="車両">
+                    <div class="inquiry-target-info">
+                        <h4 id="inquiryCarTitle">--</h4>
+                        <div class="inquiry-target-price" id="inquiryCarPrice">--</div>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">ご希望のお問い合わせ内容を選択してください</label>
+                    <div class="inquiry-type-options">
+                        <label class="inquiry-radio-label active">
+                            <input type="radio" name="inquiryType" value="在庫・状態確認" checked>
+                            <div class="radio-content">
+                                <span class="radio-title">📦 在庫・状態の確認</span>
+                                <span class="radio-desc">現在の在庫有無や状態を詳しく知りたい</span>
+                            </div>
+                        </label>
+                        <label class="inquiry-radio-label">
+                            <input type="radio" name="inquiryType" value="総額見積もり依頼">
+                            <div class="radio-content">
+                                <span class="radio-title">📑 支払総額の見積もり依頼</span>
+                                <span class="radio-desc">諸費用を含めたお見積もりが欲しい</span>
+                            </div>
+                        </label>
+                        <label class="inquiry-radio-label">
+                            <input type="radio" name="inquiryType" value="実車見学・試乗予約">
+                            <div class="radio-content">
+                                <span class="radio-title">🚗 実車見学・試乗を希望</span>
+                                <span class="radio-desc">店舗で実際の車両を見学・試乗したい</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-clear" id="cancelInquiryBtn">キャンセル</button>
+                <button class="btn-apply btn-send-inquiry" id="confirmInquirySendBtn">
+                    <i class="fa-brands fa-line"></i> 送信する
+                </button>
             </div>
         </div>
     </div>

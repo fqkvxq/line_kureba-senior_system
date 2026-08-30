@@ -481,9 +481,10 @@ function buildNewCarsBroadcastMessages(array $newCars, string $shopName): array 
                         'color' => '#06C755',
                         'height' => 'sm',
                         'action' => [
-                            'type' => 'message',
-                            'label' => '💬 この車を問い合わせ',
-                            'text' => $inquiryText
+                            'type' => 'postback',
+                            'label' => '💬 お問い合わせ・相談',
+                            'data' => 'action=ask_inquiry&id=' . urlencode($car['id']),
+                            'displayText' => "【{$shortTitle}】について問い合わせたい"
                         ]
                     ],
                     [

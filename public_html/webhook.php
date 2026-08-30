@@ -155,6 +155,31 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
     $action = $params['action'] ?? '';
 
     switch ($action) {
+        // --- 1. 車両問い合わせ確認ステップ (誤タップ防止) ---
+        case 'ask_inquiry':
+            $carId = $params['id'] ?? '';
+            sendInquiryConfirmMessage($db, $replyToken, $carId, $userId);
+            break;
+
+        // --- 2. 正式問い合わせ送信実行 (真剣度高) ---
+        case 'submit_inquiry':
+            $carId = $params['id'] ?? '';
+            $inquiryType = $params['type'] ?? '在庫確認';
+            handleSubmitInquiry($db, $replyToken, $carId, $inquiryType, $userId);
+            break;
+
+        // --- 3. キャンセル ---
+        case 'cancel_inquiry':
+            $messages = [
+                [
+                    'type' => 'text',
+                    'text' => "お問い合わせをキャンセルしました。\n他の車両もぜひご覧ください🚗",
+                    'quickReply' => getQuickReplyItems()
+                ]
+            ];
+            sendReplyMessage($replyToken, $messages);
+            break;
+
         case 'search_price':
             $maxPrice = (float)($params['max_price'] ?? 0);
             searchCarsAndReply($db, $replyToken, ['max_price' => $maxPrice], "支払総額 {$maxPrice}万円以下の車両", $userId);
@@ -405,9 +430,10 @@ function buildCarFlexBubble(array $car, string $userId = ''): array {
                     'color' => '#06C755',
                     'height' => 'sm',
                     'action' => [
-                        'type' => 'message',
-                        'label' => '💬 この車を問い合わせ',
-                        'text' => $inquiryText
+                        'type' => 'postback',
+                        'label' => '💬 お問い合わせ・相談',
+                        'data' => 'action=ask_inquiry&id=' . urlencode($car['id']),
+                        'displayText' => "【{$shortTitle}】について問い合わせたい"
                     ]
                 ],
                 [
@@ -423,6 +449,185 @@ function buildCarFlexBubble(array $car, string $userId = ''): array {
             ]
         ]
     ];
+}
+
+/**
+ * 問い合わせ確認カード（誤タップ防止 & 要望選択）を送信
+ */
+function sendInquiryConfirmMessage(PDO $db, string $replyToken, string $carId, string $userId = '') {
+    $stmt = $db->prepare("SELECT * FROM cars WHERE id = :id LIMIT 1");
+    $stmt->execute([':id' => $carId]);
+    $car = $stmt->fetch();
+
+    if (!$car) {
+        $messages = [['type' => 'text', 'text' => '該当の車両情報が見つかりませんでした。', 'quickReply' => getQuickReplyItems()]];
+        sendReplyMessage($replyToken, $messages);
+        return;
+    }
+
+    $rawTitle = trim($car['title'] ?? '車両');
+    $shortTitle = mb_substr($rawTitle, 0, 30) . (mb_strlen($rawTitle) > 30 ? '...' : '');
+    $totalPrice = !empty($car['total_price_text']) ? $car['total_price_text'] : '要問合せ';
+    $imgUrl = !empty($car['image_url']) ? $car['image_url'] : 'https://img.goo-net.com/goo/usedcar/nophoto_big.jpg';
+
+    $confirmBubble = [
+        'type' => 'bubble',
+        'size' => 'mega',
+        'hero' => [
+            'type' => 'image',
+            'url' => $imgUrl,
+            'size' => 'full',
+            'aspectRatio' => '16:9',
+            'aspectMode' => 'cover'
+        ],
+        'body' => [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'paddingAll' => '16px',
+            'contents' => [
+                [
+                    'type' => 'text',
+                    'text' => '📋 お問い合わせ内容の確認',
+                    'weight' => 'bold',
+                    'size' => 'md',
+                    'color' => '#1e293b'
+                ],
+                [
+                    'type' => 'text',
+                    'text' => $shortTitle,
+                    'weight' => 'bold',
+                    'size' => 'sm',
+                    'color' => '#475569',
+                    'margin' => 'sm',
+                    'wrap' => true
+                ],
+                [
+                    'type' => 'text',
+                    'text' => "支払総額: {$totalPrice}",
+                    'weight' => 'bold',
+                    'size' => 'md',
+                    'color' => '#E02424',
+                    'margin' => 'xs'
+                ],
+                [
+                    'type' => 'separator',
+                    'margin' => 'md'
+                ],
+                [
+                    'type' => 'text',
+                    'text' => "ご希望のお問い合わせ項目をタップしてください。\n（スタッフが確認の上、本トークにてご案内します）",
+                    'size' => 'xs',
+                    'color' => '#64748b',
+                    'margin' => 'md',
+                    'wrap' => true
+                ]
+            ]
+        ],
+        'footer' => [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'spacing' => 'sm',
+            'paddingAll' => '14px',
+            'contents' => [
+                [
+                    'type' => 'button',
+                    'style' => 'primary',
+                    'color' => '#06C755',
+                    'height' => 'sm',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '📦 在庫・状態を確認したい',
+                        'data' => 'action=submit_inquiry&id=' . urlencode($carId) . '&type=' . urlencode('在庫・状態確認'),
+                        'displayText' => "【在庫・状態確認】をお願いします"
+                    ]
+                ],
+                [
+                    'type' => 'button',
+                    'style' => 'primary',
+                    'color' => '#3b82f6',
+                    'height' => 'sm',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '📑 支払総額の見積もりが欲しい',
+                        'data' => 'action=submit_inquiry&id=' . urlencode($carId) . '&type=' . urlencode('総額見積もり依頼'),
+                        'displayText' => "【支払総額の見積もり】をお願いします"
+                    ]
+                ],
+                [
+                    'type' => 'button',
+                    'style' => 'primary',
+                    'color' => '#f59e0b',
+                    'height' => 'sm',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '🚗 実車見学・試乗を希望',
+                        'data' => 'action=submit_inquiry&id=' . urlencode($carId) . '&type=' . urlencode('実車見学・試乗予約'),
+                        'displayText' => "【実車見学・試乗】を希望します"
+                    ]
+                ],
+                [
+                    'type' => 'button',
+                    'style' => 'secondary',
+                    'height' => 'sm',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '❌ キャンセル',
+                        'data' => 'action=cancel_inquiry',
+                        'displayText' => "キャンセルします"
+                    ]
+                ]
+            ]
+        ]
+    ];
+
+    $messages = [
+        [
+            'type' => 'flex',
+            'altText' => "【お問い合わせ確認】{$shortTitle}",
+            'contents' => $confirmBubble
+        ]
+    ];
+
+    sendReplyMessage($replyToken, $messages);
+}
+
+/**
+ * 正式問い合わせ実行（Discord通知 ＆ 受付完了メッセージ）
+ */
+function handleSubmitInquiry(PDO $db, string $replyToken, string $carId, string $inquiryType, string $userId = '') {
+    $stmt = $db->prepare("SELECT * FROM cars WHERE id = :id LIMIT 1");
+    $stmt->execute([':id' => $carId]);
+    $car = $stmt->fetch();
+
+    if (!$car) {
+        $messages = [['type' => 'text', 'text' => '車両情報が見つかりませんでした。', 'quickReply' => getQuickReplyItems()]];
+        sendReplyMessage($replyToken, $messages);
+        return;
+    }
+
+    $rawTitle = trim($car['title'] ?? '車両');
+    $totalPrice = !empty($car['total_price_text']) ? $car['total_price_text'] : '要問合せ';
+
+    // ユーザー情報取得
+    $userProfile = !empty($userId) ? getLineUserProfile($userId) : null;
+    $userName = $userProfile['displayName'] ?? 'お客様';
+
+    // 1. Discord へ正式問い合わせ通知を送信！
+    if (function_exists('sendDiscordInquiryNotification')) {
+        sendDiscordInquiryNotification($car, $inquiryType, $userProfile, $userId);
+        writeDebugLog("正式問い合わせ通知送信完了", ['carId' => $carId, 'type' => $inquiryType, 'user' => $userName]);
+    }
+
+    // 2. ユーザーへ受付完了メッセージを返信
+    $messages = [
+        [
+            'type' => 'text',
+            'text' => "{$userName} 様\n\n【{$inquiryType}】のご依頼を承りました！🚗✨\n\n対象車両: {$rawTitle}\n支払総額: {$totalPrice}\n\n担当スタッフが内容を確認し、本トークにて折り返しご連絡・ご案内させていただきます。今しばらくお待ちくださいませ！",
+            'quickReply' => getQuickReplyItems()
+        ]
+    ];
+
+    sendReplyMessage($replyToken, $messages);
 }
 
 /**

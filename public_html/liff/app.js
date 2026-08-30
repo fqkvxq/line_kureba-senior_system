@@ -1,5 +1,5 @@
 /**
- * アップファーレン 在庫車両検索 LIFFフロントエンドロジック
+ * アップファーム 在庫車両検索 LIFFフロントエンドロジック
  */
 
 // アプリ状態管理
@@ -13,7 +13,8 @@ const state = {
         sort: 'price_asc'
     },
     selectedCar: null,
-    isLiffLoggedIn: false
+    isLiffLoggedIn: false,
+    userProfile: null
 };
 
 // DOM要素
@@ -57,12 +58,22 @@ const elements = {
     detailLineInquiryBtn: document.getElementById('detailLineInquiryBtn'),
     detailGooLink: document.getElementById('detailGooLink'),
     
+    // お問い合わせ確認モーダル (誤タップ防止)
+    inquiryModal: document.getElementById('inquiryModal'),
+    closeInquiryModalBtn: document.getElementById('closeInquiryModalBtn'),
+    cancelInquiryBtn: document.getElementById('cancelInquiryBtn'),
+    confirmInquirySendBtn: document.getElementById('confirmInquirySendBtn'),
+    inquiryCarImg: document.getElementById('inquiryCarImg'),
+    inquiryCarTitle: document.getElementById('inquiryCarTitle'),
+    inquiryCarPrice: document.getElementById('inquiryCarPrice'),
+    inquiryRadioLabels: document.querySelectorAll('.inquiry-radio-label'),
+
     toast: document.getElementById('appToast')
 };
 
 // 初期化
 document.addEventListener('DOMContentLoaded', async () => {
-    initLiff();
+    await initLiff();
     initEventListeners();
     await fetchCarData();
 });
@@ -73,10 +84,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function initLiff() {
     try {
         if (typeof liff !== 'undefined') {
-            // ※本番環境でLIFF IDを設定した場合はこちらで初期化
-            // await liff.init({ liffId: 'YOUR_LIFF_ID' });
+            // LIFF IDが設定されている場合は初期化
+            // await liff.init({ liffId: '2011335169-9x8ydjaV' });
             if (liff.isLoggedIn()) {
                 state.isLiffLoggedIn = true;
+                state.userProfile = await liff.getProfile();
             }
         }
     } catch (err) {
@@ -197,9 +209,35 @@ function initEventListeners() {
         }
     });
 
-    // LINE問い合わせボタンクリック
+    // 詳細モーダル内の問い合わせボタン ➡ 確認モーダルを開く (誤タップ防止)
     elements.detailLineInquiryBtn.addEventListener('click', () => {
-        handleLineInquiry(state.selectedCar);
+        openInquiryConfirmModal(state.selectedCar);
+    });
+
+    // 問い合わせ確認モーダルのラジオ選択UI
+    elements.inquiryRadioLabels.forEach(label => {
+        label.addEventListener('click', () => {
+            elements.inquiryRadioLabels.forEach(l => l.classList.remove('active'));
+            label.classList.add('active');
+        });
+    });
+
+    // 問い合わせ確認モーダルの閉じる・キャンセル
+    elements.closeInquiryModalBtn.addEventListener('click', () => {
+        elements.inquiryModal.classList.remove('active');
+    });
+    elements.cancelInquiryBtn.addEventListener('click', () => {
+        elements.inquiryModal.classList.remove('active');
+    });
+    elements.inquiryModal.addEventListener('click', (e) => {
+        if (e.target === elements.inquiryModal) {
+            elements.inquiryModal.classList.remove('active');
+        }
+    });
+
+    // 問い合わせ確認モーダルでの「送信する」確定ボタン実行 (真剣度高)
+    elements.confirmInquirySendBtn.addEventListener('click', () => {
+        submitConfirmedInquiry();
     });
 }
 
@@ -219,7 +257,6 @@ async function fetchCarData() {
         }
     } catch (err) {
         console.warn('API connection failed, loading fallback local data:', err);
-        // ローカルフォールバックデータ (初期13台)
         state.allCars = getFallbackCars();
     }
 
@@ -339,8 +376,8 @@ function renderCarGrid() {
                     </div>
 
                     <div class="card-footer-btns">
-                        <button class="btn-card-inquiry" onclick="handleLineInquiryById('${car.id}')">
-                            <i class="fa-brands fa-line"></i> LINEで問い合わせ
+                        <button class="btn-card-inquiry" onclick="openInquiryConfirmModalById('${car.id}')">
+                            <i class="fa-brands fa-line"></i> お問い合わせ
                         </button>
                         <button class="btn-card-detail" onclick="openDetailModal('${car.id}')" title="詳細を見る">
                             <i class="fa-solid fa-chevron-right"></i>
@@ -367,6 +404,7 @@ window.openDetailModal = function(carId) {
     elements.detailTitle.textContent = car.title;
     elements.detailYear.textContent = car.year || '-';
     elements.detailDistance.textContent = car.distance || '-';
+    elements.detailRepair.textContent = car.repair_history || 'なし';
     elements.detailShaken.textContent = car.shaken || '-';
     elements.detailDisplacement.textContent = car.displacement || '-';
     
@@ -438,17 +476,57 @@ function updateFilterDot() {
 }
 
 /**
- * LINE問い合わせ処理
+ * 誤タップ防止：お問い合わせ確認モーダルを開く
  */
-window.handleLineInquiryById = function(carId) {
+window.openInquiryConfirmModalById = function(carId) {
     const car = state.allCars.find(c => c.id === carId);
-    if (car) handleLineInquiry(car);
+    if (car) openInquiryConfirmModal(car);
 };
 
-function handleLineInquiry(car) {
+function openInquiryConfirmModal(car) {
+    if (!car) return;
+    state.selectedCar = car;
+
+    elements.inquiryCarImg.src = car.image_url || 'https://img.goo-net.com/goo/usedcar/nophoto_big.jpg';
+    elements.inquiryCarTitle.textContent = car.title;
+    elements.inquiryCarPrice.textContent = `支払総額: ${car.total_price_text || '要問合せ'}`;
+
+    elements.inquiryModal.classList.add('active');
+}
+
+/**
+ * 正式問い合わせの確定送信処理
+ */
+async function submitConfirmedInquiry() {
+    const car = state.selectedCar;
     if (!car) return;
 
-    const messageText = `【車両問い合わせ】\n車種: ${car.title}\n支払総額: ${car.total_price_text || ''}\n詳細URL: ${car.detail_url}\n\nこちらの車両について、在庫状況や詳細を教えていただけますでしょうか？`;
+    // 選択された問い合わせ種別を取得
+    const selectedRadio = document.querySelector('input[name="inquiryType"]:checked');
+    const inquiryType = selectedRadio ? selectedRadio.value : '在庫・状態確認';
+
+    // 1. API経由で Discord へ正式問い合わせを送信！
+    try {
+        const payload = new URLSearchParams({
+            action: 'inquiry',
+            id: car.id,
+            type: inquiryType,
+            uid: state.userProfile?.userId || '',
+            uname: state.userProfile?.displayName || ''
+        });
+        fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        }).catch(err => console.warn('API inquiry error:', err));
+    } catch (e) {
+        console.warn('Inquiry API dispatch failed:', e);
+    }
+
+    elements.inquiryModal.classList.remove('active');
+    if (elements.detailModal) elements.detailModal.classList.remove('active');
+
+    const messageText = `【${inquiryType}の依頼】\n車種: ${car.title}\n支払総額: ${car.total_price_text || ''}\n詳細URL: ${car.detail_url}\n\nこちらの車両について、${inquiryType}をお願いできますでしょうか？`;
 
     // LIFF内かつメッセージ送信権限がある場合
     if (typeof liff !== 'undefined' && liff.isInClient()) {
@@ -458,7 +536,10 @@ function handleLineInquiry(car) {
                 text: messageText
             }
         ]).then(() => {
-            liff.closeWindow();
+            showToast('✅ お問い合わせを送信しました！');
+            setTimeout(() => {
+                liff.closeWindow();
+            }, 1000);
         }).catch(err => {
             console.warn('liff.sendMessages failed, fallback:', err);
             copyToClipboard(messageText);
@@ -474,7 +555,7 @@ function handleLineInquiry(car) {
  */
 function copyToClipboard(text) {
     navigator.clipboard.writeText(text).then(() => {
-        showToast('📋 問い合わせ文面をコピーしました！LINEトークに貼り付けて送信してください。');
+        showToast('📋 問い合わせ文面を作成しました！LINEトークに貼り付けて送信してください。');
     }).catch(() => {
         showToast('問い合わせ文面を作成しました。');
     });
