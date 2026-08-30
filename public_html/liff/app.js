@@ -370,7 +370,7 @@ window.openDetailModal = function(carId) {
     elements.detailRepair.textContent = car.repair_history || 'なし';
     elements.detailShaken.textContent = car.shaken || '-';
     elements.detailDisplacement.textContent = car.displacement || '-';
-    elements.detailGooLink.href = car.detail_url || `https://www.goo-net.com/usedcar/spread/goo/15/${car.id}.html`;
+    elements.detailGooLink.href = `../redirect.php?id=${encodeURIComponent(car.id)}&src=${encodeURIComponent('LIFFミニアプリ')}`;
 
     elements.detailModal.classList.add('active');
 };

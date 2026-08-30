@@ -295,6 +295,7 @@ function buildCarFlexBubble(array $car): array {
     $distance = !empty(trim($car['distance'] ?? '')) ? trim($car['distance']) : '-';
     $repair = !empty(trim($car['repair_history'] ?? '')) ? trim($car['repair_history']) : '-';
     $detailUrl = !empty($car['detail_url']) ? $car['detail_url'] : SHOP_GOO_URL;
+    $trackingUrl = getBaseUrl() . '/redirect.php?id=' . urlencode($car['id']) . '&src=' . urlencode('LINE Flex Message');
 
     // 問い合わせ文面
     $inquiryText = "【車両問い合わせ】\n車名: {$rawTitle}\n支払総額: {$totalPrice}\n詳細: {$detailUrl}\n\nこちらの車両について詳しく知りたいです。";
@@ -314,7 +315,7 @@ function buildCarFlexBubble(array $car): array {
             'action' => [
                 'type' => 'uri',
                 'label' => '詳細を見る',
-                'uri' => $detailUrl
+                'uri' => $trackingUrl
             ]
         ],
         'body' => [
@@ -411,7 +412,7 @@ function buildCarFlexBubble(array $car): array {
                     'action' => [
                         'type' => 'uri',
                         'label' => 'グーネットで詳細を見る',
-                        'uri' => $detailUrl
+                        'uri' => $trackingUrl
                     ]
                 ]
             ]
