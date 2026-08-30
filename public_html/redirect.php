@@ -35,11 +35,10 @@ try {
             $userProfile = ['displayName' => $userNameFromParam];
         }
 
-        // Discord に通知送信 (ユーザー情報付き)
-        sendDiscordNotification($car, $source, $userProfile, $userId);
+        // Discord 通知は送信せず、ログ記録のみ実行 (通知過多防止)
+        // sendDiscordNotification($car, $source, $userProfile, $userId);
         
-        // ログ記録
-        writeDebugLog("車両詳細リンククリック検知 -> Discord通知送信", [
+        writeDebugLog("車両詳細リンククリック検知 (グーネット転送)", [
             'id' => $carId,
             'title' => $car['title'],
             'user' => $userProfile['displayName'] ?? $userId ?? '不明',

@@ -262,6 +262,11 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             sendTypeMenuMessage($replyToken);
             break;
 
+        // --- 7-2. サイレント検索: 装備・仕様メニュー表示 ---
+        case 'show_equipment_menu':
+            sendEquipmentMenuMessage($replyToken);
+            break;
+
         // --- 8. サイレント検索: 価格帯絞り込み実行 ---
         case 'search_price':
             $maxPrice = (float)($params['max_price'] ?? 0);
@@ -276,12 +281,37 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             searchCarsAndReply($db, $replyToken, $criteria, $title, $userId);
             break;
 
-        // --- 9. サイレント検索: 車種・キーワード絞り込み実行 ---
+        // --- 9. サイレント検索: 軽自動車専用絞り込み ---
+        case 'search_kei':
+            searchCarsAndReply($db, $replyToken, ['is_kei' => true], "軽自動車の一覧", $userId);
+            break;
+
+        // --- 9-2. サイレント検索: 装備・仕様絞り込み ---
+        case 'search_equip':
+            $keyword = trim($params['keyword'] ?? '');
+            searchCarsAndReply($db, $replyToken, ['equip' => $keyword], "「{$keyword}」装備の車両一覧", $userId);
+            break;
+
+        // --- 9-3. サイレント検索: 修復歴なし ---
+        case 'search_repair_none':
+            searchCarsAndReply($db, $replyToken, ['repair' => 'none'], "修復歴なし（無事故車）の一覧", $userId);
+            break;
+
+        // --- 9-4. サイレント検索: 届出済未使用車 / 低走行 ---
+        case 'search_low_mileage':
+            searchCarsAndReply($db, $replyToken, ['low_mileage' => true], "届出済未使用車・低走行車の一覧", $userId);
+            break;
+
+        // --- 9-5. サイレント検索: 車種・キーワード絞り込み実行 ---
         case 'search_type':
         case 'search_keyword':
             $keyword = trim($params['keyword'] ?? '');
-            $title = !empty($keyword) ? "「{$keyword}」の車両一覧" : "最新の在庫車両一覧";
-            searchCarsAndReply($db, $replyToken, ['keyword' => $keyword], $title, $userId);
+            if ($keyword === '軽' || $keyword === '軽自動車') {
+                searchCarsAndReply($db, $replyToken, ['is_kei' => true], "軽自動車の一覧", $userId);
+            } else {
+                $title = !empty($keyword) ? "「{$keyword}」の車両一覧" : "最新の在庫車両一覧";
+                searchCarsAndReply($db, $replyToken, ['keyword' => $keyword], $title, $userId);
+            }
             break;
 
         // --- 10. サイレント検索: 在庫全台一覧 ---
@@ -317,6 +347,10 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bo
             $messages = generateTypeMenuMessages();
             break;
 
+        case 'show_equipment_menu':
+            $messages = generateEquipmentMenuMessages();
+            break;
+
         case 'search_price':
             $maxPrice = (float)($params['max_price'] ?? 0);
             $minPrice = (float)($params['min_price'] ?? 0);
@@ -330,11 +364,32 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bo
             $messages = generateCarSearchMessages($db, $criteria, $title, $userId);
             break;
 
+        case 'search_kei':
+            $messages = generateCarSearchMessages($db, ['is_kei' => true], "軽自動車の一覧", $userId);
+            break;
+
+        case 'search_equip':
+            $keyword = trim($params['keyword'] ?? '');
+            $messages = generateCarSearchMessages($db, ['equip' => $keyword], "「{$keyword}」装備の車両一覧", $userId);
+            break;
+
+        case 'search_repair_none':
+            $messages = generateCarSearchMessages($db, ['repair' => 'none'], "修復歴なし（無事故車）の一覧", $userId);
+            break;
+
+        case 'search_low_mileage':
+            $messages = generateCarSearchMessages($db, ['low_mileage' => true], "届出済未使用車・低走行車の一覧", $userId);
+            break;
+
         case 'search_type':
         case 'search_keyword':
             $keyword = trim($params['keyword'] ?? '');
-            $title = !empty($keyword) ? "「{$keyword}」の車両一覧" : "最新の在庫車両一覧";
-            $messages = generateCarSearchMessages($db, ['keyword' => $keyword], $title, $userId);
+            if ($keyword === '軽' || $keyword === '軽自動車') {
+                $messages = generateCarSearchMessages($db, ['is_kei' => true], "軽自動車の一覧", $userId);
+            } else {
+                $title = !empty($keyword) ? "「{$keyword}」の車両一覧" : "最新の在庫車両一覧";
+                $messages = generateCarSearchMessages($db, ['keyword' => $keyword], $title, $userId);
+            }
             break;
 
         case 'search_all':
@@ -400,6 +455,38 @@ function generateCarSearchMessages(PDO $db, array $criteria, string $heading, st
             $kw = $criteria['keyword'];
             $where[] = "(title LIKE :kw OR displacement LIKE :kw OR year LIKE :kw)";
             $params[':kw'] = "%{$kw}%";
+        }
+
+        if (!empty($criteria['is_kei'])) {
+            $where[] = "(displacement = '660cc' OR displacement LIKE '66%' OR title LIKE '%軽自動車%')";
+        }
+
+        if (!empty($criteria['equip'])) {
+            $eq = $criteria['equip'];
+            if ($eq === 'ナビ') {
+                $where[] = "(title LIKE '%ナビ%' OR title LIKE '%地デジ%' OR title LIKE '%TV%' OR title LIKE '%オーディオ%')";
+            } elseif ($eq === 'バックカメラ') {
+                $where[] = "(title LIKE '%バックカメラ%' OR title LIKE '%全方位%' OR title LIKE '%アラウンドビュー%')";
+            } elseif ($eq === 'ETC') {
+                $where[] = "(title LIKE '%ETC%' OR title LIKE '%ＥＴＣ%')";
+            } elseif ($eq === 'スライド') {
+                $where[] = "(title LIKE '%スライド%' OR title LIKE '%パワースライド%')";
+            } elseif ($eq === '軽減' || $eq === '安全') {
+                $where[] = "(title LIKE '%軽減%' OR title LIKE '%ブレーキ%' OR title LIKE '%センシング%' OR title LIKE '%スマートアシスト%' OR title LIKE '%セーフティ%')";
+            } elseif ($eq === '4WD') {
+                $where[] = "(title LIKE '%4WD%' OR title LIKE '%４ＷＤ%' OR title LIKE '%四駆%')";
+            } else {
+                $where[] = "(title LIKE :eq)";
+                $params[':eq'] = "%{$eq}%";
+            }
+        }
+
+        if (isset($criteria['repair']) && $criteria['repair'] === 'none') {
+            $where[] = "(repair_history = 'なし' OR repair_history = '-' OR repair_history IS NULL)";
+        }
+
+        if (!empty($criteria['low_mileage'])) {
+            $where[] = "(title LIKE '%未使用%' OR distance LIKE '%10km%' OR distance LIKE '%123km%' OR (distance_num IS NOT NULL AND distance_num <= 3.0))";
         }
 
         if (!empty($criteria['min_price'])) {
@@ -1163,7 +1250,7 @@ function sendTypeMenuMessage(string $replyToken) {
 function generateTypeMenuMessages(): array {
     $typeBubble = [
         'type' => 'bubble',
-        'size' => 'kilo',
+        'size' => 'mega',
         'body' => [
             'type' => 'box',
             'layout' => 'vertical',
@@ -1206,7 +1293,7 @@ function generateTypeMenuMessages(): array {
                                     'action' => [
                                         'type' => 'postback',
                                         'label' => '🚘 軽自動車',
-                                        'data' => 'action=search_type&keyword=' . urlencode('軽')
+                                        'data' => 'action=search_kei'
                                     ]
                                 ],
                                 [
@@ -1234,7 +1321,7 @@ function generateTypeMenuMessages(): array {
                                     'flex' => 1,
                                     'action' => [
                                         'type' => 'postback',
-                                        'label' => '🚙 ミニバン・ワゴン',
+                                        'label' => '🚙 ミニバン',
                                         'data' => 'action=search_type&keyword=' . urlencode('ワゴン')
                                     ]
                                 ],
@@ -1337,6 +1424,186 @@ function generateTypeMenuMessages(): array {
 }
 
 /**
+ * 装備・仕様選択メニュー送信
+ */
+function sendEquipmentMenuMessage(string $replyToken) {
+    $messages = generateEquipmentMenuMessages();
+    sendReplyMessage($replyToken, $messages);
+}
+
+/**
+ * 装備・仕様選択メニュー（サイレントボタン式Flex Message）生成
+ */
+function generateEquipmentMenuMessages(): array {
+    $equipBubble = [
+        'type' => 'bubble',
+        'size' => 'mega',
+        'body' => [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'paddingAll' => '16px',
+            'contents' => [
+                [
+                    'type' => 'text',
+                    'text' => '⚙️ 基本仕様・人気装備から探す',
+                    'weight' => 'bold',
+                    'size' => 'md',
+                    'color' => '#1e293b'
+                ],
+                [
+                    'type' => 'text',
+                    'text' => 'お求めの装備や条件をタップしてください。',
+                    'size' => 'xs',
+                    'color' => '#64748b',
+                    'margin' => 'xs'
+                ],
+                [
+                    'type' => 'separator',
+                    'margin' => 'md'
+                ],
+                [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'margin' => 'md',
+                    'spacing' => 'sm',
+                    'contents' => [
+                        [
+                            'type' => 'box',
+                            'layout' => 'horizontal',
+                            'spacing' => 'sm',
+                            'contents' => [
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => '📺 ナビ・TV付',
+                                        'data' => 'action=search_equip&keyword=' . urlencode('ナビ')
+                                    ]
+                                ],
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => '📷 バックカメラ',
+                                        'data' => 'action=search_equip&keyword=' . urlencode('バックカメラ')
+                                    ]
+                                ]
+                            ]
+                        ],
+                        [
+                            'type' => 'box',
+                            'layout' => 'horizontal',
+                            'spacing' => 'sm',
+                            'contents' => [
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => '💳 ETC車載器',
+                                        'data' => 'action=search_equip&keyword=' . urlencode('ETC')
+                                    ]
+                                ],
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => '🚪 両側パワスラ',
+                                        'data' => 'action=search_equip&keyword=' . urlencode('スライド')
+                                    ]
+                                ]
+                            ]
+                        ],
+                        [
+                            'type' => 'box',
+                            'layout' => 'horizontal',
+                            'spacing' => 'sm',
+                            'contents' => [
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => '⚡ 衝突被害軽減',
+                                        'data' => 'action=search_equip&keyword=' . urlencode('軽減')
+                                    ]
+                                ],
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => '🏔️ 4WD / 四駆',
+                                        'data' => 'action=search_equip&keyword=' . urlencode('4WD')
+                                    ]
+                                ]
+                            ]
+                        ],
+                        [
+                            'type' => 'separator',
+                            'margin' => 'xs'
+                        ],
+                        [
+                            'type' => 'box',
+                            'layout' => 'horizontal',
+                            'spacing' => 'sm',
+                            'contents' => [
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => '✨ 修復歴なし',
+                                        'data' => 'action=search_repair_none'
+                                    ]
+                                ],
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => '🚗 届出済未使用車',
+                                        'data' => 'action=search_low_mileage'
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
+    ];
+
+    return [
+        [
+            'type' => 'flex',
+            'altText' => '⚙️ 基本仕様・人気装備から探す',
+            'contents' => $equipBubble,
+            'quickReply' => getQuickReplyItems()
+        ]
+    ];
+}
+
+/**
  * クイックリプライボタン一覧（完全サイレントPostback方式）
  */
 function getQuickReplyItems(): array {
@@ -1370,16 +1637,8 @@ function getQuickReplyItems(): array {
                 'type' => 'action',
                 'action' => [
                     'type' => 'postback',
-                    'label' => '💰 50万以下',
-                    'data' => 'action=search_price&max_price=50'
-                ]
-            ],
-            [
-                'type' => 'action',
-                'action' => [
-                    'type' => 'postback',
-                    'label' => '💎 70万以下',
-                    'data' => 'action=search_price&max_price=70'
+                    'label' => '⚙️ 装備で探す',
+                    'data' => 'action=show_equipment_menu'
                 ]
             ],
             [
@@ -1387,7 +1646,15 @@ function getQuickReplyItems(): array {
                 'action' => [
                     'type' => 'postback',
                     'label' => '🚘 軽自動車',
-                    'data' => 'action=search_type&keyword=' . urlencode('軽')
+                    'data' => 'action=search_kei'
+                ]
+            ],
+            [
+                'type' => 'action',
+                'action' => [
+                    'type' => 'postback',
+                    'label' => '💎 50万以下',
+                    'data' => 'action=search_price&max_price=50'
                 ]
             ]
         ]
