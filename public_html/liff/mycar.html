@@ -280,6 +280,9 @@
                 <span class="maint-date-label">次回予定日:</span>
                 <span class="maint-date-val" id="oilNextDateDisplay">未設定</span>
             </div>
+            <p style="font-size: 11px; color: #94a3b8; margin: 0 0 10px; line-height: 1.3;">
+                📢 予定日の<strong>7日前</strong>と<strong>当日朝</strong>にLINEリマインドをお届けします。
+            </p>
             <button class="maint-action-btn btn-oil" id="bookOilBtn">
                 <i class="fa-brands fa-line"></i>
                 <span>LINEでオイル交換の来店予約・相談</span>
@@ -299,6 +302,9 @@
                 <span class="maint-date-label">車検満了日:</span>
                 <span class="maint-date-val" id="inspNextDateDisplay">未設定</span>
             </div>
+            <p style="font-size: 11px; color: #94a3b8; margin: 0 0 10px; line-height: 1.3;">
+                📢 満了日の<strong>30日前</strong>と<strong>14日前</strong>にLINEリマインドをお届けします。
+            </p>
             <button class="maint-action-btn btn-insp" id="bookInspBtn">
                 <i class="fa-brands fa-line"></i>
                 <span>LINEで車検・点検のお見積もり相談</span>
@@ -324,11 +330,17 @@
             <div class="form-group">
                 <label class="form-label">次回オイル交換 予定日</label>
                 <input type="date" id="inputOilNextDate" class="form-input">
+                <p style="font-size: 11px; color: #64748b; margin: 6px 0 0; line-height: 1.4;">
+                    💡 <strong>オイル交換の目安:</strong> 走行距離 5,000km〜10,000km、または 半年〜1年（前回の交換からどちらか早い方）
+                </p>
             </div>
 
             <div class="form-group">
                 <label class="form-label">次回 車検満了日</label>
                 <input type="date" id="inputInspNextDate" class="form-input">
+                <p style="font-size: 11px; color: #64748b; margin: 6px 0 0; line-height: 1.4;">
+                    💡 <strong>車検の目安:</strong> 車検満了日の約1ヶ月前より受検が可能です。
+                </p>
             </div>
 
             <button class="btn-save-cust" id="saveCustBtn">

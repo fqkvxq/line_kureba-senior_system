@@ -500,10 +500,18 @@ try {
                                                 ['type' => 'text', 'text' => '次回予定日', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
                                                 ['type' => 'text', 'text' => $oilDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#e02424', 'flex' => 6]
                                             ]
+                                        ],
+                                        [
+                                            'type' => 'box',
+                                            'layout' => 'baseline',
+                                            'contents' => [
+                                                ['type' => 'text', 'text' => '交換の目安', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
+                                                ['type' => 'text', 'text' => "5,000〜10,000km / 半年〜1年", 'size' => 'xs', 'color' => '#475569', 'flex' => 6]
+                                            ]
                                         ]
                                     ]
                                 ],
-                                ['type' => 'text', 'text' => "定期的なオイル交換をおすすめいたします。\nご予約・日程のご相談はお気軽に下のボタンよりお申し付けください！", 'size' => 'xxs', 'color' => '#64748b', 'margin' => 'md', 'wrap' => true]
+                                ['type' => 'text', 'text' => "※目安：走行5,000km〜10,000km、または半年〜1年のどちらか早い方での交換を推奨しております。\nご予約・空き状況のご相談は下のボタンよりお気軽にどうぞ！", 'size' => 'xxs', 'color' => '#64748b', 'margin' => 'md', 'wrap' => true]
                             ]
                         ],
                         'footer' => [
