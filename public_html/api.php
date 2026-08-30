@@ -281,6 +281,130 @@ try {
                 ':inspection_next_date' => $inspectionNextDate,
             ]);
 
+            // LINEユーザーIDの場合、LINEトークへ登録完了メッセージを送信
+            if (str_starts_with($userId, 'U')) {
+                $displayName = $userName ?: 'お客様';
+                $carDisplay = $carModel . ($carNumber ? " ({$carNumber})" : "");
+                $oilDisplay = $oilNextDate ?: '未設定';
+                $periodicDisplay = $periodicInspNextDate ?: '未設定';
+                $inspDisplay = $inspectionNextDate ?: '未設定';
+
+                $confirmFlex = [
+                    'type' => 'flex',
+                    'altText' => "【設定保存完了】愛車のメンテナンス予定日を登録・更新しました",
+                    'contents' => [
+                        'type' => 'bubble',
+                        'size' => 'mega',
+                        'body' => [
+                            'type' => 'box',
+                            'layout' => 'vertical',
+                            'paddingAll' => '20px',
+                            'contents' => [
+                                [
+                                    'type' => 'box',
+                                    'layout' => 'baseline',
+                                    'contents' => [
+                                        ['type' => 'text', 'text' => '✅ 愛車・点検情報の保存完了', 'weight' => 'bold', 'size' => 'sm', 'color' => '#06C755']
+                                    ]
+                                ],
+                                [
+                                    'type' => 'text',
+                                    'text' => "{$displayName} 様",
+                                    'weight' => 'bold',
+                                    'size' => 'xl',
+                                    'margin' => 'sm',
+                                    'color' => '#1e293b'
+                                ],
+                                [
+                                    'type' => 'text',
+                                    'text' => "愛車のメンテナンス予定日を保存・更新しました！\n予定日が近づきましたら、LINEにてリマインドをお届けします。",
+                                    'size' => 'xs',
+                                    'color' => '#475569',
+                                    'margin' => 'sm',
+                                    'wrap' => true
+                                ],
+                                [
+                                    'type' => 'separator',
+                                    'margin' => 'md'
+                                ],
+                                [
+                                    'type' => 'box',
+                                    'layout' => 'vertical',
+                                    'margin' => 'md',
+                                    'spacing' => 'sm',
+                                    'backgroundColor' => '#f8fafc',
+                                    'paddingAll' => '12px',
+                                    'cornerRadius' => 'md',
+                                    'contents' => [
+                                        [
+                                            'type' => 'box',
+                                            'layout' => 'baseline',
+                                            'contents' => [
+                                                ['type' => 'text', 'text' => '愛車', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 4],
+                                                ['type' => 'text', 'text' => $carDisplay, 'size' => 'xs', 'weight' => 'bold', 'color' => '#1e293b', 'flex' => 6]
+                                            ]
+                                        ],
+                                        [
+                                            'type' => 'box',
+                                            'layout' => 'baseline',
+                                            'contents' => [
+                                                ['type' => 'text', 'text' => '🛢 オイル交換', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 4],
+                                                ['type' => 'text', 'text' => $oilDisplay, 'size' => 'xs', 'weight' => 'bold', 'color' => '#f59e0b', 'flex' => 6]
+                                            ]
+                                        ],
+                                        [
+                                            'type' => 'box',
+                                            'layout' => 'baseline',
+                                            'contents' => [
+                                                ['type' => 'text', 'text' => '📋 12ヶ月点検', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 4],
+                                                ['type' => 'text', 'text' => $periodicDisplay, 'size' => 'xs', 'weight' => 'bold', 'color' => '#10b981', 'flex' => 6]
+                                            ]
+                                        ],
+                                        [
+                                            'type' => 'box',
+                                            'layout' => 'baseline',
+                                            'contents' => [
+                                                ['type' => 'text', 'text' => '🚗 車検満了日', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 4],
+                                                ['type' => 'text', 'text' => $inspDisplay, 'size' => 'xs', 'weight' => 'bold', 'color' => '#3b82f6', 'flex' => 6]
+                                            ]
+                                        ]
+                                    ]
+                                ],
+                                [
+                                    'type' => 'text',
+                                    'text' => "※予定日の変更は、メニューの「愛車点検パスポート」よりいつでも行えます。",
+                                    'size' => 'xxs',
+                                    'color' => '#64748b',
+                                    'margin' => 'md',
+                                    'wrap' => true
+                                ]
+                            ]
+                        ],
+                        'footer' => [
+                            'type' => 'box',
+                            'layout' => 'vertical',
+                            'spacing' => 'sm',
+                            'paddingAll' => '14px',
+                            'contents' => [
+                                [
+                                    'type' => 'button',
+                                    'style' => 'primary',
+                                    'color' => '#06C755',
+                                    'height' => 'sm',
+                                    'action' => [
+                                        'type' => 'uri',
+                                        'label' => '📱 愛車点検手帳を確認・変更',
+                                        'uri' => 'https://liff.line.me/2011335169-9x8ydjaV'
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ];
+
+                sendLinePushMessage($userId, [$confirmFlex]);
+            }
+
             echo json_encode([
                 'success' => true,
                 'message' => 'メンテナンス情報を保存しました！',

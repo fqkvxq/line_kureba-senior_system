@@ -283,7 +283,7 @@ async function saveCustomerData() {
         });
         const data = await res.json();
         if (data.success) {
-            showToast('✅ メンテナンス情報を保存しました！');
+            showToast('✅ 情報を保存し、LINEへ確認メッセージをお送りしました！');
             await fetchCustomerData();
         } else {
             showToast('⚠️ ' + (data.error || '保存に失敗しました'));
