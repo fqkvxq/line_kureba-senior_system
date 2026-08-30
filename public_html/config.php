@@ -59,14 +59,26 @@ function getDbConnection(): PDO {
     $dbFile = DB_PATH;
     $dir = dirname($dbFile);
     if (!is_dir($dir)) {
-        @mkdir($dir, 0755, true);
+        @mkdir($dir, 0777, true);
+    }
+    @chmod($dir, 0777);
+    if (file_exists($dbFile)) {
+        @chmod($dbFile, 0666);
     }
 
-    $pdo = new PDO("sqlite:{$dbFile}");
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    $pdo = new PDO("sqlite:{$dbFile}", null, null, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_TIMEOUT => 15
+    ]);
 
-    // 顧客メンテナンス管理テーブルの自動マイグレーション
+    // WALモードで同時読み書きロックを防止
+    try {
+        $pdo->exec("PRAGMA journal_mode = WAL");
+        $pdo->exec("PRAGMA busy_timeout = 5000");
+    } catch (Exception $e) {}
+
+    // 顧客メンテナンス管理テーブルの確実な初期化
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS customers (
             user_id TEXT PRIMARY KEY,
@@ -83,18 +95,45 @@ function getDbConnection(): PDO {
             inspection_reminded_at DATETIME,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        );
-        CREATE INDEX IF NOT EXISTS idx_customers_oil_next ON customers(oil_next_date);
-        CREATE INDEX IF NOT EXISTS idx_customers_periodic_next ON customers(periodic_insp_next_date);
-        CREATE INDEX IF NOT EXISTS idx_customers_inspection_next ON customers(inspection_next_date);
+        )
     ");
 
-    // 既存テーブルへのカラム安全追加 (ALTER TABLE)
+    // インデックス作成
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_customers_oil_next ON customers(oil_next_date)"); } catch (Exception $e) {}
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_customers_periodic_next ON customers(periodic_insp_next_date)"); } catch (Exception $e) {}
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_customers_inspection_next ON customers(inspection_next_date)"); } catch (Exception $e) {}
+
+    // 既存テーブルの既存カラムを取得して不足カラムを確実に追加
     try {
-        $pdo->exec("ALTER TABLE customers ADD COLUMN periodic_insp_next_date DATE");
-    } catch (Exception $e) {}
-    try {
-        $pdo->exec("ALTER TABLE customers ADD COLUMN periodic_reminded_at DATETIME");
+        $colsStmt = $pdo->query("PRAGMA table_info(customers)");
+        $existingCols = [];
+        while ($col = $colsStmt->fetch()) {
+            $existingCols[] = $col['name'];
+        }
+
+        $requiredCols = [
+            'user_name' => 'TEXT',
+            'car_model' => 'TEXT',
+            'car_number' => 'TEXT',
+            'oil_last_date' => 'DATE',
+            'oil_next_date' => 'DATE',
+            'periodic_insp_next_date' => 'DATE',
+            'inspection_next_date' => 'DATE',
+            'staff_memo' => 'TEXT',
+            'oil_reminded_at' => 'DATETIME',
+            'periodic_reminded_at' => 'DATETIME',
+            'inspection_reminded_at' => 'DATETIME',
+            'created_at' => 'DATETIME DEFAULT CURRENT_TIMESTAMP',
+            'updated_at' => 'DATETIME DEFAULT CURRENT_TIMESTAMP'
+        ];
+
+        foreach ($requiredCols as $colName => $colDef) {
+            if (!in_array($colName, $existingCols, true)) {
+                try {
+                    $pdo->exec("ALTER TABLE customers ADD COLUMN {$colName} {$colDef}");
+                } catch (Exception $ex) {}
+            }
+        }
     } catch (Exception $e) {}
 
     return $pdo;

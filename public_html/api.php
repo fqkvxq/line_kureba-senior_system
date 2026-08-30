@@ -402,7 +402,11 @@ try {
                     ]
                 ];
 
-                sendLinePushMessage($userId, [$confirmFlex]);
+                try {
+                    sendLinePushMessage($userId, [$confirmFlex]);
+                } catch (Exception $pushErr) {
+                    writeDebugLog("LINE Push送信エラー (保存自体は成功)", ['error' => $pushErr->getMessage()]);
+                }
             }
 
             echo json_encode([
