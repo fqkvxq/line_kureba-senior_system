@@ -37,14 +37,17 @@
 </head>
 <body>
     <div style="text-align: center;">
-        <div class="spinner" style="margin: 0 auto 12px;"></div>
-        <div style="font-size: 12px; font-weight: bold; color: #475569;">お車情報を準備中...</div>
+        <div class="spinner" id="spinner" style="margin: 0 auto 12px;"></div>
+        <div id="statusText" style="font-size: 13px; font-weight: bold; color: #475569;">お車情報を準備中...</div>
     </div>
 
     <script>
         const LIFF_ID = '2011335169-9x8ydjaV';
 
         document.addEventListener('DOMContentLoaded', async () => {
+            const statusEl = document.getElementById('statusText');
+            const spinnerEl = document.getElementById('spinner');
+
             try {
                 if (typeof liff === 'undefined') {
                     window.close();
@@ -53,16 +56,21 @@
 
                 await liff.init({ liffId: LIFF_ID });
 
+                if (!liff.isLoggedIn()) {
+                    liff.login({ redirectUri: window.location.href });
+                    return;
+                }
+
                 let userId = '';
                 
-                // 1. LIFF Contextから最速取得
+                // 1. LIFF Contextから取得
                 try {
                     const ctx = liff.getContext();
                     if (ctx && ctx.userId) userId = ctx.userId;
                 } catch(e) {}
 
                 // 2. ログインプロファイルから取得
-                if (!userId && liff.isLoggedIn()) {
+                if (!userId) {
                     try {
                         const profile = await liff.getProfile();
                         if (profile && profile.userId) userId = profile.userId;
@@ -70,22 +78,17 @@
                 }
 
                 // 3. IDトークンから取得
-                if (!userId && liff.isLoggedIn()) {
+                if (!userId) {
                     try {
                         const idToken = liff.getDecodedIDToken();
                         if (idToken && idToken.sub) userId = idToken.sub;
                     } catch(e) {}
                 }
 
-                if (!userId) {
-                    userId = localStorage.getItem('mycar_user_id') || '';
-                }
-
                 // URLパラメータ（通常クエリ & liff.state）の解析
                 const urlParams = new URLSearchParams(window.location.search);
                 let queryStr = '';
 
-                // liff.state が存在する場合はデコード
                 const liffState = urlParams.get('liff.state');
                 if (liffState) {
                     const cleanState = liffState.startsWith('?') ? liffState.substring(1) : liffState;
@@ -94,36 +97,40 @@
                 }
 
                 if (!queryStr) {
-                    // 通常のクエリパラメータ
                     queryStr = urlParams.toString();
                 }
 
-                console.log('Triggering silent postback:', { userId, queryStr });
+                console.log('Executing silent trigger:', { userId, queryStr });
 
-                if (userId && queryStr) {
+                if (userId) {
                     const payload = new URLSearchParams({
                         action: 'trigger_postback',
                         uid: userId,
                         data: queryStr
                     });
 
-                    await fetch('../api.php', {
+                    const res = await fetch('../api.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                         body: payload.toString()
                     });
+
+                    const json = await res.json();
+                    console.log('Trigger API response:', json);
+
+                    if (statusEl) statusEl.textContent = 'お届けしました！';
+                    if (spinnerEl) spinnerEl.style.display = 'none';
                 }
             } catch (e) {
                 console.error('Trigger error:', e);
             } finally {
-                // ウィンドウを閉じてトーク画面に戻る
                 setTimeout(() => {
                     if (typeof liff !== 'undefined' && liff.isInClient()) {
                         liff.closeWindow();
                     } else {
                         window.close();
                     }
-                }, 200);
+                }, 150);
             }
         });
     </script>

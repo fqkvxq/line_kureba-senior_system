@@ -342,8 +342,18 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bo
 
     if (!empty($messages)) {
         try {
-            sendLinePushMessage($userId, $messages);
-            return true;
+            if (count($messages) > 5) {
+                $chunks = array_chunk($messages, 5);
+                foreach ($chunks as $chunk) {
+                    $res = sendLinePushMessage($userId, $chunk);
+                    writeDebugLog("Push分割送信結果", ['userId' => $userId, 'success' => $res['success'] ?? false, 'response' => $res['response'] ?? '']);
+                }
+                return true;
+            } else {
+                $res = sendLinePushMessage($userId, $messages);
+                writeDebugLog("Push送信結果", ['userId' => $userId, 'success' => $res['success'] ?? false, 'response' => $res['response'] ?? '']);
+                return !empty($res['success']);
+            }
         } catch (Exception $e) {
             writeDebugLog("Silent Postback Push送信例外: " . $e->getMessage());
             return false;
