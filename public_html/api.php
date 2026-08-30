@@ -67,14 +67,14 @@ try {
 
             $whereSql = implode(' AND ', $where);
 
-            // ソート条件
+            // ソート条件 (全SQLiteバージョン互換)
             $orderSql = match ($sort) {
-                'price_desc' => 'total_price_num DESC NULLS LAST',
-                'price_asc' => 'total_price_num ASC NULLS LAST',
-                'distance_asc' => 'distance_num ASC NULLS LAST',
+                'price_desc' => '(total_price_num IS NULL), total_price_num DESC',
+                'price_asc' => '(total_price_num IS NULL), total_price_num ASC',
+                'distance_asc' => '(distance_num IS NULL), distance_num ASC',
                 'year_desc' => 'year DESC',
                 'updated_desc' => 'updated_at DESC',
-                default => 'total_price_num ASC NULLS LAST'
+                default => '(total_price_num IS NULL), total_price_num ASC'
             };
 
             // 件数カウント

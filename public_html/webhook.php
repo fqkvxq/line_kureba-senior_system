@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     .card{background:#fff;padding:24px;border-radius:12px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);max-width:600px;margin:0 auto}
     h2{margin-top:0;color:#06C755}table{width:100%;border-collapse:collapse;margin:16px 0}
     td,th{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:14px}
-    .log-box{background:#0f172a;color:#a5f3fc;padding:12px;border-radius:8px;font-family:monospace;font-size:12px;max-height:200px;overflow-y:auto;white-space:pre-wrap}
+    .log-box{background:#0f172a;color:#a5f3fc;padding:12px;border-radius:8px;font-family:monospace;font-size:12px;max-height:260px;overflow-y:auto;white-space:pre-wrap}
     </style></head>
     <body>
     <div class="card">
@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 HTML;
     $logFile = __DIR__ . '/webhook_debug.log';
     if (file_exists($logFile)) {
-        $lines = array_slice(file($logFile), -15);
+        $lines = array_slice(file($logFile), -20);
         echo htmlspecialchars(implode('', $lines));
     } else {
         echo "ログはまだありません。LINEでメッセージを送信すると記録されます。";
@@ -188,81 +188,114 @@ function handleFollow(string $replyToken) {
  * 車両検索 & Flex Message返信
  */
 function searchCarsAndReply(PDO $db, string $replyToken, array $criteria, string $heading) {
-    $where = ["is_active = 1"];
-    $params = [];
+    try {
+        $where = ["is_active = 1"];
+        $params = [];
 
-    if (!empty($criteria['keyword'])) {
-        $kw = $criteria['keyword'];
-        $where[] = "(title LIKE :kw OR displacement LIKE :kw OR year LIKE :kw)";
-        $params[':kw'] = "%{$kw}%";
-    }
+        if (!empty($criteria['keyword'])) {
+            $kw = $criteria['keyword'];
+            $where[] = "(title LIKE :kw OR displacement LIKE :kw OR year LIKE :kw)";
+            $params[':kw'] = "%{$kw}%";
+        }
 
-    if (!empty($criteria['max_price'])) {
-        $where[] = "total_price_num <= :max_price";
-        $params[':max_price'] = $criteria['max_price'];
-    }
+        if (!empty($criteria['max_price'])) {
+            $where[] = "total_price_num <= :max_price";
+            $params[':max_price'] = $criteria['max_price'];
+        }
 
-    $whereSql = implode(' AND ', $where);
-    $stmt = $db->prepare("SELECT * FROM cars WHERE {$whereSql} ORDER BY total_price_num ASC NULLS LAST LIMIT 10");
-    $stmt->execute($params);
-    $cars = $stmt->fetchAll();
+        $whereSql = implode(' AND ', $where);
+        
+        // 全SQLiteバージョン互換のORDER BY構文 (NULLS LASTを使わない)
+        $stmt = $db->prepare("SELECT * FROM cars WHERE {$whereSql} ORDER BY (total_price_num IS NULL), total_price_num ASC LIMIT 10");
+        $stmt->execute($params);
+        $cars = $stmt->fetchAll();
 
-    writeDebugLog("検索実行完了", ['heading' => $heading, 'hitCount' => count($cars)]);
+        writeDebugLog("検索実行完了", ['heading' => $heading, 'hitCount' => count($cars)]);
 
-    if (empty($cars)) {
+        if (empty($cars)) {
+            $messages = [
+                [
+                    'type' => 'text',
+                    'text' => "申し訳ありません。ご指定の条件に一致する車両が見つかりませんでした。\n\n別のキーワードや価格帯でお試しください！",
+                    'quickReply' => getQuickReplyItems()
+                ]
+            ];
+            sendReplyMessage($replyToken, $messages);
+            return;
+        }
+
+        // カルーセルバブルを構築
+        $bubbles = [];
+        foreach ($cars as $car) {
+            $bubble = buildCarFlexBubble($car);
+            if ($bubble) {
+                $bubbles[] = $bubble;
+            }
+        }
+
+        if (empty($bubbles)) {
+            throw new Exception("バブル生成に失敗しました");
+        }
+
+        $flexMessage = [
+            'type' => 'flex',
+            'altText' => "{$heading} (" . count($bubbles) . "件)",
+            'contents' => [
+                'type' => 'carousel',
+                'contents' => $bubbles
+            ],
+            'quickReply' => getQuickReplyItems()
+        ];
+
         $messages = [
             [
                 'type' => 'text',
-                'text' => "申し訳ありません。ご指定の条件に一致する車両が見つかりませんでした。\n\n別のキーワードや価格帯でお試しください！",
+                'text' => "🔍 {$heading} をお送りします（" . count($bubbles) . "件）"
+            ],
+            $flexMessage
+        ];
+
+        sendReplyMessage($replyToken, $messages);
+    } catch (Exception $e) {
+        writeDebugLog("検索・返信例外エラー: " . $e->getMessage());
+        // フォールバック返信
+        $fallbackMessages = [
+            [
+                'type' => 'text',
+                'text' => "申し訳ありません。検索中にエラーが発生しました。\nしばらくしてからもう一度お試しください。",
                 'quickReply' => getQuickReplyItems()
             ]
         ];
-        sendReplyMessage($replyToken, $messages);
-        return;
+        sendReplyMessage($replyToken, $fallbackMessages);
     }
-
-    // カルーセルバブルを構築
-    $bubbles = [];
-    foreach ($cars as $car) {
-        $bubbles[] = buildCarFlexBubble($car);
-    }
-
-    $flexMessage = [
-        'type' => 'flex',
-        'altText' => "{$heading} (" . count($cars) . "件)",
-        'contents' => [
-            'type' => 'carousel',
-            'contents' => $bubbles
-        ],
-        'quickReply' => getQuickReplyItems()
-    ];
-
-    $messages = [
-        [
-            'type' => 'text',
-            'text' => "🔍 {$heading} をお送りします（" . count($cars) . "件）"
-        ],
-        $flexMessage
-    ];
-
-    sendReplyMessage($replyToken, $messages);
 }
 
 /**
  * 車両1台分のFlex Messageバブルを構築
  */
 function buildCarFlexBubble(array $car): array {
-    $title = $car['title'];
-    $shortTitle = mb_substr($title, 0, 35) . (mb_strlen($title) > 35 ? '...' : '');
+    $rawTitle = trim($car['title'] ?? '');
+    if (empty($rawTitle)) {
+        $rawTitle = '車両情報';
+    }
+    $shortTitle = mb_substr($rawTitle, 0, 32) . (mb_strlen($rawTitle) > 32 ? '...' : '');
+
     $imgUrl = !empty($car['image_url']) ? $car['image_url'] : 'https://img.goo-net.com/goo/usedcar/nophoto_big.jpg';
+    if (!str_starts_with($imgUrl, 'https://')) {
+        $imgUrl = 'https://img.goo-net.com/goo/usedcar/nophoto_big.jpg';
+    }
+
     $totalPrice = !empty($car['total_price_text']) ? $car['total_price_text'] : '要問合せ';
-    $year = !empty($car['year']) ? $car['year'] : '-';
-    $distance = !empty($car['distance']) ? $car['distance'] : '-';
-    $repair = !empty($car['repair_history']) ? $car['repair_history'] : '-';
-    $detailUrl = $car['detail_url'];
+    $year = !empty(trim($car['year'] ?? '')) ? trim($car['year']) : '-';
+    $distance = !empty(trim($car['distance'] ?? '')) ? trim($car['distance']) : '-';
+    $repair = !empty(trim($car['repair_history'] ?? '')) ? trim($car['repair_history']) : '-';
+    $detailUrl = !empty($car['detail_url']) ? $car['detail_url'] : SHOP_GOO_URL;
 
     // 問い合わせ文面
-    $inquiryText = "【車両問い合わせ】\n車名: {$title}\n車両ID: {$car['id']}\n支払総額: {$totalPrice}\n詳細: {$detailUrl}\n\nこちらの車両について詳しく知りたいです。";
+    $inquiryText = "【車両問い合わせ】\n車名: {$rawTitle}\n支払総額: {$totalPrice}\n詳細: {$detailUrl}\n\nこちらの車両について詳しく知りたいです。";
+    if (mb_strlen($inquiryText) > 290) {
+        $inquiryText = mb_substr($inquiryText, 0, 290) . '...';
+    }
 
     return [
         'type' => 'bubble',
@@ -275,6 +308,7 @@ function buildCarFlexBubble(array $car): array {
             'aspectMode' => 'cover',
             'action' => [
                 'type' => 'uri',
+                'label' => '詳細を見る',
                 'uri' => $detailUrl
             ]
         ],
@@ -449,6 +483,7 @@ function sendReplyMessage(string $replyToken, array $messages) {
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
         CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 5,
         CURLOPT_HTTPHEADER => [
             'Content-Type: application/json; charset=utf-8',
             'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
