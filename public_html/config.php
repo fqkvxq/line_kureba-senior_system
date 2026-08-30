@@ -1,3 +1,4 @@
+K (No events)
 <?php
 /**
  * システム共通設定ファイル
@@ -11,7 +12,7 @@ date_default_timezone_set('Asia/Tokyo');
 // LINE Developersコンソールで取得した情報を入力してください
 define('LINE_CHANNEL_ACCESS_TOKEN', '7NAJ7hIbVKu7Zr+JsK+ddFBqPM9EBCkWhqUy3kTuHO1nepA3As1ZWYAB5GuAmx8dQZ1+dqR0Ws57gz+jyTSJk0OUodDA2ci9d6f0xPCtNOT5t0edC9mZGq2GlmuXkJeVx5y6e4ggHd4/DuHr07cAgAdB04t89/1O/w1cDnyilFU='); // チャネルアクセストークン (長期)
 define('LINE_CHANNEL_SECRET', '72b453597e968c1605852c809ee733e7');             // チャネルシークレット
-define('LINE_LIFF_ID', 'YOUR_LIFF_ID_HERE');                           // LIFF ID (例: 1234567890-AbcdEfgh)
+define('LINE_LIFF_ID', '2011335169-9x8ydjaV');                           // LIFF ID (例: 1234567890-AbcdEfgh)
 
 // --- 店舗・システム設定 ---
 define('SHOP_CODE', '0601492');
