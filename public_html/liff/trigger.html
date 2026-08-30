@@ -36,9 +36,11 @@
     </style>
 </head>
 <body>
-    <div style="text-align: center;">
-        <div class="spinner" id="spinner" style="margin: 0 auto 12px;"></div>
-        <div id="statusText" style="font-size: 13px; font-weight: bold; color: #475569;">お車情報を準備中...</div>
+    <div style="text-align: center; max-width: 90%; margin: 0 auto;">
+        <div class="spinner" id="spinner" style="margin: 0 auto 14px;"></div>
+        <div id="statusText" style="font-size: 14px; font-weight: bold; color: #1e293b; margin-bottom: 6px;">お車情報を準備中...</div>
+        <div id="subText" style="font-size: 11px; color: #94a3b8;">LINEトークへお届けしています</div>
+        <div id="debugLog" style="display: none; margin-top: 14px; padding: 10px; background: #f1f5f9; border-radius: 8px; font-size: 11px; color: #ef4444; text-align: left; word-break: break-all;"></div>
     </div>
 
     <script>
@@ -46,11 +48,22 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             const statusEl = document.getElementById('statusText');
+            const subEl = document.getElementById('subText');
             const spinnerEl = document.getElementById('spinner');
+            const debugEl = document.getElementById('debugLog');
+
+            function showDebug(msg) {
+                if (debugEl) {
+                    debugEl.style.display = 'block';
+                    debugEl.textContent = msg;
+                }
+            }
+
+            let shouldClose = true;
 
             try {
                 if (typeof liff === 'undefined') {
-                    window.close();
+                    showDebug('LIFF SDKが読み込めませんでした');
                     return;
                 }
 
@@ -102,35 +115,55 @@
 
                 console.log('Executing silent trigger:', { userId, queryStr });
 
-                if (userId) {
-                    const payload = new URLSearchParams({
-                        action: 'trigger_postback',
-                        uid: userId,
-                        data: queryStr
-                    });
+                if (!userId) {
+                    shouldClose = false;
+                    statusEl.textContent = 'LINEユーザーIDを取得できませんでした';
+                    statusEl.style.color = '#ef4444';
+                    showDebug('userId is empty. Please open inside LINE app.');
+                    return;
+                }
 
-                    const res = await fetch('../api.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: payload.toString()
-                    });
+                const payload = new URLSearchParams({
+                    action: 'trigger_postback',
+                    uid: userId,
+                    data: queryStr
+                });
 
-                    const json = await res.json();
-                    console.log('Trigger API response:', json);
+                const res = await fetch('../api.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: payload.toString()
+                });
 
-                    if (statusEl) statusEl.textContent = 'お届けしました！';
+                const json = await res.json();
+                console.log('Trigger API response:', json);
+
+                if (json.success) {
+                    if (statusEl) statusEl.textContent = '✅ トークルームにお届けしました！';
+                    if (subEl) subEl.textContent = 'トーク画面をご確認ください';
                     if (spinnerEl) spinnerEl.style.display = 'none';
+                } else {
+                    shouldClose = false;
+                    statusEl.textContent = '⚠️ 送信エラーが発生しました';
+                    statusEl.style.color = '#ef4444';
+                    showDebug('APIエラー: ' + (json.error || json.message || JSON.stringify(json)));
                 }
             } catch (e) {
+                shouldClose = false;
                 console.error('Trigger error:', e);
+                statusEl.textContent = '⚠️ 処理中にエラーが発生しました';
+                statusEl.style.color = '#ef4444';
+                showDebug('Exception: ' + e.message);
             } finally {
-                setTimeout(() => {
-                    if (typeof liff !== 'undefined' && liff.isInClient()) {
-                        liff.closeWindow();
-                    } else {
-                        window.close();
-                    }
-                }, 150);
+                if (shouldClose) {
+                    setTimeout(() => {
+                        if (typeof liff !== 'undefined' && liff.isInClient()) {
+                            liff.closeWindow();
+                        } else {
+                            window.close();
+                        }
+                    }, 500);
+                }
             }
         });
     </script>

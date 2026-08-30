@@ -295,19 +295,38 @@ try {
                 $dataStr = http_build_query($postbackParams);
             }
 
+            writeDebugLog("api.php trigger_postback 受付", [
+                'uid' => $userId,
+                'dataStr' => $dataStr,
+                'method' => $_SERVER['REQUEST_METHOD']
+            ]);
+
             if (empty($userId)) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'error' => 'ユーザーIDが必要です']);
+                echo json_encode(['success' => false, 'error' => 'ユーザーIDが必要です (uid missing)']);
                 exit;
             }
 
-            require_once __DIR__ . '/webhook.php';
-            $success = executeSilentPostbackPush($db, $userId, $dataStr);
+            try {
+                require_once __DIR__ . '/webhook.php';
+                if (!function_exists('executeSilentPostbackPush')) {
+                    throw new Exception("executeSilentPostbackPush 関数が見つかりません");
+                }
+                $success = executeSilentPostbackPush($db, $userId, $dataStr);
 
-            echo json_encode([
-                'success' => $success,
-                'message' => $success ? 'サイレントPostbackを実行しました' : '送信に失敗しました'
-            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+                echo json_encode([
+                    'success' => $success,
+                    'message' => $success ? 'サイレントPostbackを実行しました' : 'Push送信に失敗しました (詳細はwebhook_debug.logを確認)',
+                    'uid' => $userId,
+                    'data' => $dataStr
+                ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            } catch (Throwable $t) {
+                writeDebugLog("trigger_postback 例外エラー", ['error' => $t->getMessage(), 'trace' => $t->getTraceAsString()]);
+                echo json_encode([
+                    'success' => false,
+                    'error' => $t->getMessage()
+                ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            }
             break;
 
         // --- 6. ユーザー用: 愛車の登録・更新 ---
