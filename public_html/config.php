@@ -470,7 +470,13 @@ function sendDiscordMaintenanceBookingNotification(string $bookingType, string $
         $userName = "ユーザー (ID: " . substr($rawUserId, 0, 8) . "...)";
     }
 
-    $color = ($bookingType === 'オイル交換') ? 0xF59E0B : 0x3B82F6;
+    if ($bookingType === 'オイル交換') {
+        $color = 0xF59E0B;
+    } elseif (str_contains($bookingType, '点検') || str_contains($bookingType, '定期')) {
+        $color = 0x10B981;
+    } else {
+        $color = 0x3B82F6;
+    }
 
     $embed = [
         'title' => "🛠️ 【来店予約】{$bookingType}の予約申し込みが届きました！",

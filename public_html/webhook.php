@@ -128,11 +128,29 @@ echo 'OK';
  * テキストメッセージの処理
  */
 function handleTextMessage(PDO $db, string $replyToken, string $text, string $userId = '') {
-    // 1. オイル交換・車検・メンテナンス関連のキーワード判定 (在庫検索の誤爆防止)
-    if (preg_match('/(オイル|車検|点検|メンテ|予約|相談|パスポート)/u', $text)) {
+    // 1. LIFFマイカー画面からの予約確定メッセージを受信した場合（例: 【12ヶ月定期点検の来店予約】など）
+    if (preg_match('/【(.*?)の来店予約】/u', $text, $m)) {
+        $bookingType = $m[1]; // オイル交換, 12ヶ月定期点検, 車検 など
+        
+        $carModel = '愛車';
+        if (preg_match('/愛車:\s*(.+)/u', $text, $carM)) {
+            $carModel = trim($carM[1]);
+        }
+        $prefTime = '希望日時指定あり';
+        if (preg_match('/希望日時:\s*(.+)/u', $text, $prefM)) {
+            $prefTime = trim($prefM[1]);
+        }
+
+        handleSubmitMaintenanceBooking($replyToken, $bookingType, $carModel, $prefTime, $userId);
+        return;
+    }
+
+    // 2. オイル交換・定期点検・車検・メンテナンス関連のキーワード判定 (在庫検索の誤爆防止)
+    if (preg_match('/(オイル|車検|点検|12ヶ月|法定|メンテ|予約|相談|パスポート)/u', $text)) {
         // 顧客の登録愛車を取得
         $carModel = '愛車';
         $oilDate = '近日中';
+        $periodicDate = '近日中';
         $inspDate = '未定';
         if (!empty($userId)) {
             $stmt = $db->prepare("SELECT * FROM customers WHERE user_id = :uid LIMIT 1");
@@ -141,13 +159,21 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
             if ($cust) {
                 if (!empty($cust['car_model'])) $carModel = $cust['car_model'];
                 if (!empty($cust['oil_next_date'])) $oilDate = $cust['oil_next_date'];
+                if (!empty($cust['periodic_insp_next_date'])) $periodicDate = $cust['periodic_insp_next_date'];
                 if (!empty($cust['inspection_next_date'])) $inspDate = $cust['inspection_next_date'];
             }
         }
 
-        $isOil = preg_match('/(オイル)/u', $text);
-        $type = $isOil ? 'oil' : 'inspection';
-        $targetDate = $isOil ? $oilDate : $inspDate;
+        if (preg_match('/(点検|12ヶ月|法定)/u', $text)) {
+            $type = 'periodic';
+            $targetDate = $periodicDate;
+        } elseif (preg_match('/(オイル)/u', $text)) {
+            $type = 'oil';
+            $targetDate = $oilDate;
+        } else {
+            $type = 'inspection';
+            $targetDate = $inspDate;
+        }
         
         sendMaintenanceBookingConfirmMessage($replyToken, $type, $carModel, $targetDate, $userId);
         return;
