@@ -267,6 +267,11 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             sendEquipmentMenuMessage($db, $replyToken);
             break;
 
+        // --- 7-3. サイレント検索: 走行距離メニュー表示 ---
+        case 'show_distance_menu':
+            sendDistanceMenuMessage($db, $replyToken);
+            break;
+
         // --- 8. サイレント検索: 価格帯絞り込み実行 ---
         case 'search_price':
             $maxPrice = (float)($params['max_price'] ?? 0);
@@ -277,6 +282,23 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             if ($minPrice > 0) {
                 $criteria['min_price'] = $minPrice;
                 $title = "支払総額 {$minPrice}万〜{$maxPrice}万円の車両";
+            }
+            searchCarsAndReply($db, $replyToken, $criteria, $title, $userId);
+            break;
+
+        // --- 8-2. サイレント検索: 走行距離絞り込み実行 ---
+        case 'search_distance':
+            $maxD = isset($params['max_distance']) ? (float)$params['max_distance'] : null;
+            $minD = isset($params['min_distance']) ? (float)$params['min_distance'] : null;
+            $criteria = [];
+            $title = "走行距離で絞り込み";
+            if ($maxD !== null) {
+                $criteria['max_distance'] = $maxD;
+                $title = "走行距離 {$maxD}万km以下の車両";
+            }
+            if ($minD !== null) {
+                $criteria['min_distance'] = $minD;
+                $title = "走行距離 {$minD}万km以上の車両";
             }
             searchCarsAndReply($db, $replyToken, $criteria, $title, $userId);
             break;
@@ -351,6 +373,10 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bo
             $messages = generateEquipmentMenuMessages($db);
             break;
 
+        case 'show_distance_menu':
+            $messages = generateDistanceMenuMessages($db);
+            break;
+
         case 'search_price':
             $maxPrice = (float)($params['max_price'] ?? 0);
             $minPrice = (float)($params['min_price'] ?? 0);
@@ -360,6 +386,22 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bo
             if ($minPrice > 0) {
                 $criteria['min_price'] = $minPrice;
                 $title = "支払総額 {$minPrice}万〜{$maxPrice}万円の車両";
+            }
+            $messages = generateCarSearchMessages($db, $criteria, $title, $userId);
+            break;
+
+        case 'search_distance':
+            $maxD = isset($params['max_distance']) ? (float)$params['max_distance'] : null;
+            $minD = isset($params['min_distance']) ? (float)$params['min_distance'] : null;
+            $criteria = [];
+            $title = "走行距離で絞り込み";
+            if ($maxD !== null) {
+                $criteria['max_distance'] = $maxD;
+                $title = "走行距離 {$maxD}万km以下の車両";
+            }
+            if ($minD !== null) {
+                $criteria['min_distance'] = $minD;
+                $title = "走行距離 {$minD}万km以上の車両";
             }
             $messages = generateCarSearchMessages($db, $criteria, $title, $userId);
             break;
@@ -551,6 +593,16 @@ function generateCarSearchMessages(PDO $db, array $criteria, string $heading, st
         if (!empty($criteria['max_price'])) {
             $where[] = "total_price_num <= :max_price";
             $params[':max_price'] = $criteria['max_price'];
+        }
+
+        if (isset($criteria['max_distance']) && is_numeric($criteria['max_distance'])) {
+            $where[] = "(distance_num IS NOT NULL AND distance_num <= :max_dist)";
+            $params[':max_dist'] = $criteria['max_distance'];
+        }
+
+        if (isset($criteria['min_distance']) && is_numeric($criteria['min_distance'])) {
+            $where[] = "(distance_num IS NOT NULL AND distance_num >= :min_dist)";
+            $params[':min_dist'] = $criteria['min_distance'];
         }
 
         $whereSql = implode(' AND ', $where);
@@ -1291,6 +1343,175 @@ function generatePriceMenuMessages(): array {
 }
 
 /**
+ * 走行距離メニューを送信
+ */
+function sendDistanceMenuMessage(PDO $db, string $replyToken) {
+    $messages = generateDistanceMenuMessages($db);
+    sendReplyMessage($replyToken, $messages);
+}
+
+/**
+ * 走行距離メニューを生成 (Reply / Push 共通) - 動的在庫集計型
+ */
+function generateDistanceMenuMessages(PDO $db): array {
+    $cars = [];
+    try {
+        $stmt = $db->query("SELECT id, title, distance, distance_num FROM cars WHERE is_active = 1");
+        $cars = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {}
+
+    // 走行距離帯のマスター定義
+    $distanceDefs = [
+        [
+            'name' => '届出済未使用車',
+            'action' => 'search_low_mileage',
+            'param' => '',
+            'check' => function($car) {
+                return (str_contains($car['title'] ?? '', '未使用') || (!empty($car['distance_num']) && $car['distance_num'] <= 0.05));
+            }
+        ],
+        [
+            'name' => '〜1万km',
+            'action' => 'search_distance',
+            'param' => 'max_distance=1.0',
+            'check' => function($car) {
+                return (isset($car['distance_num']) && $car['distance_num'] !== null && (float)$car['distance_num'] <= 1.0);
+            }
+        ],
+        [
+            'name' => '〜3万km',
+            'action' => 'search_distance',
+            'param' => 'max_distance=3.0',
+            'check' => function($car) {
+                return (isset($car['distance_num']) && $car['distance_num'] !== null && (float)$car['distance_num'] <= 3.0);
+            }
+        ],
+        [
+            'name' => '〜5万km',
+            'action' => 'search_distance',
+            'param' => 'max_distance=5.0',
+            'check' => function($car) {
+                return (isset($car['distance_num']) && $car['distance_num'] !== null && (float)$car['distance_num'] <= 5.0);
+            }
+        ],
+        [
+            'name' => '〜7万km',
+            'action' => 'search_distance',
+            'param' => 'max_distance=7.0',
+            'check' => function($car) {
+                return (isset($car['distance_num']) && $car['distance_num'] !== null && (float)$car['distance_num'] <= 7.0);
+            }
+        ],
+        [
+            'name' => '〜10万km',
+            'action' => 'search_distance',
+            'param' => 'max_distance=10.0',
+            'check' => function($car) {
+                return (isset($car['distance_num']) && $car['distance_num'] !== null && (float)$car['distance_num'] <= 10.0);
+            }
+        ],
+        [
+            'name' => '10万km超',
+            'action' => 'search_distance',
+            'param' => 'min_distance=10.0',
+            'check' => function($car) {
+                return (isset($car['distance_num']) && $car['distance_num'] !== null && (float)$car['distance_num'] > 10.0);
+            }
+        ]
+    ];
+
+    $buttons = [];
+    foreach ($distanceDefs as $dDef) {
+        $count = 0;
+        foreach ($cars as $car) {
+            if ($dDef['check']($car)) {
+                $count++;
+            }
+        }
+        if ($count > 0) {
+            $btnLabel = "{$dDef['name']} ({$count}台)";
+            $postbackData = "action={$dDef['action']}" . (!empty($dDef['param']) ? "&{$dDef['param']}" : "");
+            $buttons[] = [
+                'type' => 'button',
+                'style' => 'secondary',
+                'height' => 'sm',
+                'action' => [
+                    'type' => 'postback',
+                    'label' => $btnLabel,
+                    'data' => $postbackData
+                ]
+            ];
+        }
+    }
+
+    $activeBubbles = [];
+    if (!empty($buttons)) {
+        $btnChunks = array_chunk($buttons, 4);
+        foreach ($btnChunks as $idx => $chunk) {
+            $titleSuffix = count($btnChunks) > 1 ? " (" . ($idx + 1) . ")" : "";
+            $activeBubbles[] = [
+                'type' => 'bubble',
+                'size' => 'kilo',
+                'body' => [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'paddingAll' => '14px',
+                    'contents' => [
+                        [
+                            'type' => 'text',
+                            'text' => '走行距離で探す' . $titleSuffix,
+                            'weight' => 'bold',
+                            'size' => 'md',
+                            'color' => '#1e293b'
+                        ],
+                        [
+                            'type' => 'text',
+                            'text' => '在庫に実在する走行距離帯から選べます',
+                            'size' => 'xs',
+                            'color' => '#64748b',
+                            'margin' => 'xs'
+                        ],
+                        [
+                            'type' => 'separator',
+                            'margin' => 'sm'
+                        ],
+                        [
+                            'type' => 'box',
+                            'layout' => 'vertical',
+                            'margin' => 'md',
+                            'spacing' => 'sm',
+                            'contents' => $chunk
+                        ]
+                    ]
+                ]
+            ];
+        }
+    }
+
+    if (empty($activeBubbles)) {
+        return [
+            [
+                'type' => 'text',
+                'text' => "現在、該当する走行距離条件の在庫を更新中です。",
+                'quickReply' => getQuickReplyItems()
+            ]
+        ];
+    }
+
+    return [
+        [
+            'type' => 'flex',
+            'altText' => '走行距離から探す',
+            'contents' => [
+                'type' => 'carousel',
+                'contents' => $activeBubbles
+            ],
+            'quickReply' => getQuickReplyItems()
+        ]
+    ];
+}
+
+/**
  * 車種・ボディタイプ選択メニュー送信
  */
 function sendTypeMenuMessage(PDO $db, string $replyToken) {
@@ -1787,6 +2008,14 @@ function getQuickReplyItems(): array {
                     'type' => 'postback',
                     'label' => '⚙️ 装備で探す',
                     'data' => 'action=show_equipment_menu'
+                ]
+            ],
+            [
+                'type' => 'action',
+                'action' => [
+                    'type' => 'postback',
+                    'label' => '🛣️ 距離で探す',
+                    'data' => 'action=show_distance_menu'
                 ]
             ],
             [
