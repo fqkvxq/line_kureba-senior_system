@@ -18,7 +18,7 @@ define('DISCORD_WEBHOOK_URL', 'https://discord.com/api/webhooks/1543636005582667
 
 // --- 店舗・システム設定 ---
 define('SHOP_CODE', '0601492');
-define('SHOP_NAME', 'アップファーム');
+define('SHOP_NAME', 'アップファーレン');
 define('SHOP_GOO_URL', 'https://www.goo-net.com/usedcar_shop/0601492/stock.html');
 
 /**
@@ -187,7 +187,7 @@ function sendDiscordNotification(array $car, string $source = 'LINE Flex Message
             'url' => $imgUrl
         ],
         'footer' => [
-            'text' => 'アップファーム LINE公式 在庫検索システム',
+            'text' => 'アップファーレン LINE公式 在庫検索システム',
             'icon_url' => 'https://img.goo-net.com/goo/usedcar/nophoto_big.jpg'
         ],
         'timestamp' => date('c')

@@ -15,7 +15,7 @@ define('LINE_LIFF_ID', 'YOUR_LIFF_ID_HERE');                           // LIFF I
 
 // --- 店舗・システム設定 ---
 define('SHOP_CODE', '0601492');
-define('SHOP_NAME', 'アップファーム');
+define('SHOP_NAME', 'アップファーレン');
 define('SHOP_GOO_URL', 'https://www.goo-net.com/usedcar_shop/0601492/stock.html');
 
 // データベースファイルへのパス

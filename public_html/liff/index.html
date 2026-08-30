@@ -1,19 +1,23 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>アップファーム 在庫車両検索</title>
+    <title>アップファーレン 在庫車両検索</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap"
+        rel="stylesheet">
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <!-- ヘッダー -->
     <header class="app-header">
@@ -22,7 +26,7 @@
                 <div class="brand-icon"><i class="fa-solid fa-car-side"></i></div>
                 <div class="brand-text">
                     <span class="brand-sub">公式LINE在庫検索</span>
-                    <h1 class="brand-title">アップファーム</h1>
+                    <h1 class="brand-title">アップファーレン</h1>
                 </div>
             </div>
             <div class="stock-badge" id="totalStockBadge">
@@ -36,7 +40,8 @@
             <div class="search-input-box">
                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
                 <input type="text" id="searchInput" placeholder="車種名・キーワードで検索 (例: ワゴンR, N-BOX)" autocomplete="off">
-                <button id="clearSearchBtn" class="clear-btn" style="display: none;"><i class="fa-solid fa-xmark"></i></button>
+                <button id="clearSearchBtn" class="clear-btn" style="display: none;"><i
+                        class="fa-solid fa-xmark"></i></button>
             </div>
             <button id="filterToggleBtn" class="filter-btn">
                 <i class="fa-solid fa-sliders"></i>
@@ -214,4 +219,5 @@
 
     <script src="app.js"></script>
 </body>
+
 </html>
