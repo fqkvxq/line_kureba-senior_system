@@ -1232,7 +1232,7 @@ function generatePriceMenuMessages(): array {
                             'margin' => 'sm',
                             'action' => [
                                 'type' => 'postback',
-                                'label' => '🚗 すべての在庫を見る',
+                                'label' => 'すべての在庫を見る',
                                 'data' => 'action=search_all'
                             ]
                         ]
@@ -1245,7 +1245,7 @@ function generatePriceMenuMessages(): array {
     return [
         [
             'type' => 'flex',
-            'altText' => '💰 ご予算・支払総額から探す',
+            'altText' => 'ご予算・支払総額から探す',
             'contents' => $priceBubble,
             'quickReply' => getQuickReplyItems()
         ]
@@ -1262,7 +1262,7 @@ function sendTypeMenuMessage(string $replyToken) {
 
 /**
  * 車種・ボディタイプ選択メニュー（サイレントボタン式Flex カルーセル）生成
- * 文字切れを完全防止するため、簡潔な表現と半角文字を活用
+ * 文字切れを完全防止するため、ボタンに絵文字を使用せず簡潔な半角テキストを採用
  */
 function generateTypeMenuMessages(): array {
     // バブル1: ボディタイプ
@@ -1276,7 +1276,7 @@ function generateTypeMenuMessages(): array {
             'contents' => [
                 [
                     'type' => 'text',
-                    'text' => '🚙 ﾎﾞﾃﾞｨﾀｲﾌﾟで探す',
+                    'text' => 'ﾎﾞﾃﾞｨﾀｲﾌﾟで探す',
                     'weight' => 'bold',
                     'size' => 'md',
                     'color' => '#1e293b'
@@ -1304,7 +1304,7 @@ function generateTypeMenuMessages(): array {
                             'height' => 'sm',
                             'action' => [
                                 'type' => 'postback',
-                                'label' => '🚘 軽自動車',
+                                'label' => '軽自動車',
                                 'data' => 'action=search_kei'
                             ]
                         ],
@@ -1314,7 +1314,7 @@ function generateTypeMenuMessages(): array {
                             'height' => 'sm',
                             'action' => [
                                 'type' => 'postback',
-                                'label' => '🚗 ｺﾝﾊﾟｸﾄｶｰ',
+                                'label' => 'ｺﾝﾊﾟｸﾄｶｰ',
                                 'data' => 'action=search_type&keyword=' . urlencode('コンパクト')
                             ]
                         ],
@@ -1324,7 +1324,7 @@ function generateTypeMenuMessages(): array {
                             'height' => 'sm',
                             'action' => [
                                 'type' => 'postback',
-                                'label' => '🚐 ﾐﾆﾊﾞﾝ･ﾜｺﾞﾝ',
+                                'label' => 'ﾐﾆﾊﾞﾝ･ﾜｺﾞﾝ',
                                 'data' => 'action=search_type&keyword=' . urlencode('ワゴン')
                             ]
                         ],
@@ -1334,7 +1334,7 @@ function generateTypeMenuMessages(): array {
                             'height' => 'sm',
                             'action' => [
                                 'type' => 'postback',
-                                'label' => '🚙 SUV･4WD',
+                                'label' => 'SUV･4WD',
                                 'data' => 'action=search_type&keyword=' . urlencode('4WD')
                             ]
                         ]
@@ -1355,7 +1355,7 @@ function generateTypeMenuMessages(): array {
             'contents' => [
                 [
                     'type' => 'text',
-                    'text' => '✨ 人気車種で探す',
+                    'text' => '人気車種で探す',
                     'weight' => 'bold',
                     'size' => 'md',
                     'color' => '#1e293b'
@@ -1383,7 +1383,7 @@ function generateTypeMenuMessages(): array {
                             'height' => 'sm',
                             'action' => [
                                 'type' => 'postback',
-                                'label' => '⭐ N-BOX',
+                                'label' => 'N-BOX',
                                 'data' => 'action=search_type&keyword=' . urlencode('N-BOX')
                             ]
                         ],
@@ -1393,7 +1393,7 @@ function generateTypeMenuMessages(): array {
                             'height' => 'sm',
                             'action' => [
                                 'type' => 'postback',
-                                'label' => '⭐ ﾀﾝﾄ',
+                                'label' => 'ﾀﾝﾄ',
                                 'data' => 'action=search_type&keyword=' . urlencode('タント')
                             ]
                         ],
@@ -1403,7 +1403,7 @@ function generateTypeMenuMessages(): array {
                             'height' => 'sm',
                             'action' => [
                                 'type' => 'postback',
-                                'label' => '⭐ ｽﾍﾟｰｼｱ',
+                                'label' => 'ｽﾍﾟｰｼｱ',
                                 'data' => 'action=search_type&keyword=' . urlencode('スペーシア')
                             ]
                         ],
@@ -1413,7 +1413,7 @@ function generateTypeMenuMessages(): array {
                             'height' => 'sm',
                             'action' => [
                                 'type' => 'postback',
-                                'label' => '⭐ ﾜｺﾞﾝR',
+                                'label' => 'ﾜｺﾞﾝR',
                                 'data' => 'action=search_type&keyword=' . urlencode('ワゴンR')
                             ]
                         ]
@@ -1426,7 +1426,7 @@ function generateTypeMenuMessages(): array {
     return [
         [
             'type' => 'flex',
-            'altText' => '🚙 車種・ボディタイプから探す',
+            'altText' => '車種・ボディタイプから探す',
             'contents' => [
                 'type' => 'carousel',
                 'contents' => [$bubble1, $bubble2]
@@ -1447,7 +1447,7 @@ function sendEquipmentMenuMessage(PDO $db, string $replyToken) {
 /**
  * 装備・仕様選択メニュー（サイレントボタン式Flex カルーセル）生成
  * 現在の有効在庫（carsテーブル）からチェックがある装備だけを自動集計し、
- * 「該当台数（例: (10台)）」バッジ付きでカルーセル化（0件の装備は自動非表示）
+ * 「該当台数（例: (10台)）」バッジ付きでカルーセル化（絵文字なしでスッキリ表示）
  */
 function generateEquipmentMenuMessages(PDO $db): array {
     // 1. 有効在庫の全データを取得
@@ -1465,41 +1465,38 @@ function generateEquipmentMenuMessages(PDO $db): array {
         ];
     }
 
-    // 2. 装備マスター定義 (文字切れ防止の短縮ラベル)
+    // 2. 装備マスター定義 (絵文字なし・短縮テキスト)
     $categoryDefs = [
         'navi_camera' => [
-            'icon' => '📺',
-            'title' => 'ﾅﾋﾞ･ｶﾒﾗ･快適',
+            'title' => 'ﾅﾋﾞ･ｶﾒﾗ･快適装備',
             'items' => [
-                ['name' => 'ｶｰﾅﾋﾞ/SDﾅﾋﾞ', 'emoji' => '📺', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('ナビ'), 'match' => ['ナビ', 'メモリーナビ', 'ＳＤナビ', 'ディスプレイオーディオ']],
-                ['name' => '地ﾃﾞｼﾞTV', 'emoji' => '📺', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('TV'), 'match' => ['地デジ', 'フルセグ', 'ワンセグ', 'ＴＶ', 'TV', 'テレビ']],
-                ['name' => 'ﾊﾞｯｸｶﾒﾗ', 'emoji' => '📷', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('バックカメラ'), 'match' => ['バックカメラ', 'アラウンドビュー', '全方位カメラ', 'カメラ']],
-                ['name' => 'Bluetooth', 'emoji' => '🎵', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('Bluetooth'), 'match' => ['Bluetooth', 'Ｂｌｕｅｔｏｏｔｈ', 'ブルートゥース', 'カープレイ', 'carplay']],
-                ['name' => 'ETC車載器', 'emoji' => '💳', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('ETC'), 'match' => ['ETC', 'ＥＴＣ', 'ETC2.0']],
-                ['name' => 'ﾄﾞﾗﾚｺ', 'emoji' => '🎥', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('ドラレコ'), 'match' => ['ドラレコ', 'ドライブレコーダー']],
+                ['name' => 'ｶｰﾅﾋﾞ/SDﾅﾋﾞ', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('ナビ'), 'match' => ['ナビ', 'メモリーナビ', 'ＳＤナビ', 'ディスプレイオーディオ']],
+                ['name' => '地ﾃﾞｼﾞTV', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('TV'), 'match' => ['地デジ', 'フルセグ', 'ワンセグ', 'ＴＶ', 'TV', 'テレビ']],
+                ['name' => 'ﾊﾞｯｸｶﾒﾗ', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('バックカメラ'), 'match' => ['バックカメラ', 'アラウンドビュー', '全方位カメラ', 'カメラ']],
+                ['name' => 'Bluetooth', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('Bluetooth'), 'match' => ['Bluetooth', 'Ｂｌｕｅｔｏｏｔｈ', 'ブルートゥース', 'カープレイ', 'carplay']],
+                ['name' => 'ETC車載器', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('ETC'), 'match' => ['ETC', 'ＥＴＣ', 'ETC2.0']],
+                ['name' => 'ﾄﾞﾗﾚｺ', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('ドラレコ'), 'match' => ['ドラレコ', 'ドライブレコーダー']],
             ]
         ],
         'comfort_exterior' => [
-            'icon' => '🚪',
             'title' => 'ﾄﾞｱ･ｼｰﾄ･外装',
             'items' => [
-                ['name' => 'ﾊﾟﾜｰｽﾗｲﾄﾞ', 'emoji' => '🚪', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('スライド'), 'match' => ['スライド', '両側電動', 'パワースライド']],
-                ['name' => 'ｽﾏｰﾄｷｰ', 'emoji' => '🔑', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('スマートキー'), 'match' => ['スマートキー', 'インテリジェントキー', 'プッシュスタート', 'キーレス']],
-                ['name' => 'ｼｰﾄﾋｰﾀｰ', 'emoji' => '♨️', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('シートヒーター'), 'match' => ['シートヒーター', '前席ヒーター']],
-                ['name' => 'LEDﾗｲﾄ', 'emoji' => '💡', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('LED'), 'match' => ['LED', 'ＬＥＤ', 'HID', 'ＨＩＤ', 'オートライト']],
-                ['name' => 'ｱﾙﾐﾎｲｰﾙ', 'emoji' => '🛞', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('アルミ'), 'match' => ['アルミ', 'アルミホイール', '１５インチアルミ', '１４インチアルミ']],
-                ['name' => 'ﾚｻﾞｰｼｰﾄ', 'emoji' => '💺', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('レザー'), 'match' => ['本革', 'レザー', 'ハーフレザー', '革調']],
+                ['name' => 'ﾊﾟﾜｰｽﾗｲﾄﾞ', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('スライド'), 'match' => ['スライド', '両側電動', 'パワースライド']],
+                ['name' => 'ｽﾏｰﾄｷｰ', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('スマートキー'), 'match' => ['スマートキー', 'インテリジェントキー', 'プッシュスタート', 'キーレス']],
+                ['name' => 'ｼｰﾄﾋｰﾀｰ', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('シートヒーター'), 'match' => ['シートヒーター', '前席ヒーター']],
+                ['name' => 'LEDﾗｲﾄ', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('LED'), 'match' => ['LED', 'ＬＥＤ', 'HID', 'ＨＩＤ', 'オートライト']],
+                ['name' => 'ｱﾙﾐﾎｲｰﾙ', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('アルミ'), 'match' => ['アルミ', 'アルミホイール', '１５インチアルミ', '１４インチアルミ']],
+                ['name' => 'ﾚｻﾞｰｼｰﾄ', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('レザー'), 'match' => ['本革', 'レザー', 'ハーフレザー', '革調']],
             ]
         ],
         'safety_drive' => [
-            'icon' => '⚡',
             'title' => '安全･駆動･状態',
             'items' => [
-                ['name' => '自動ﾌﾞﾚｰｷ', 'emoji' => '⚡', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('軽減'), 'match' => ['軽減', '安全', 'ブレーキ', 'センシング', 'スマートアシスト', 'セーフティ', 'プロパイロット']],
-                ['name' => '4WD/四駆', 'emoji' => '🏔️', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('4WD'), 'match' => ['4WD', '４ＷＤ', '四駆', '4wd']],
-                ['name' => '修復歴なし', 'emoji' => '✨', 'action' => 'search_repair_none', 'param' => '', 'match' => ['_repair_none_']],
-                ['name' => '未使用･低走行', 'emoji' => '🚗', 'action' => 'search_low_mileage', 'param' => '', 'match' => ['_low_mileage_']],
-                ['name' => 'ﾀｰﾎﾞ車', 'emoji' => '🚀', 'action' => 'search_type', 'param' => 'keyword=' . urlencode('ターボ'), 'match' => ['ターボ', 'TB', 'turbo']],
+                ['name' => '自動ﾌﾞﾚｰｷ', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('軽減'), 'match' => ['軽減', '安全', 'ブレーキ', 'センシング', 'スマートアシスト', 'セーフティ', 'プロパイロット']],
+                ['name' => '4WD/四駆', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('4WD'), 'match' => ['4WD', '４ＷＤ', '四駆', '4wd']],
+                ['name' => '修復歴なし', 'action' => 'search_repair_none', 'param' => '', 'match' => ['_repair_none_']],
+                ['name' => '未使用･低走行', 'action' => 'search_low_mileage', 'param' => '', 'match' => ['_low_mileage_']],
+                ['name' => 'ﾀｰﾎﾞ車', 'action' => 'search_type', 'param' => 'keyword=' . urlencode('ターボ'), 'match' => ['ターボ', 'TB', 'turbo']],
             ]
         ]
     ];
@@ -1541,7 +1538,7 @@ function generateEquipmentMenuMessages(PDO $db): array {
 
             // 1台以上ある場合のみボタンを生成！
             if ($count > 0) {
-                $btnLabel = "{$item['emoji']} {$item['name']} ({$count}台)";
+                $btnLabel = "{$item['name']} ({$count}台)";
                 $postbackData = "action={$item['action']}" . (!empty($item['param']) ? "&{$item['param']}" : "");
 
                 $buttons[] = [
@@ -1573,7 +1570,7 @@ function generateEquipmentMenuMessages(PDO $db): array {
                         'contents' => [
                             [
                                 'type' => 'text',
-                                'text' => "{$cat['icon']} {$cardTitle}",
+                                'text' => $cardTitle,
                                 'weight' => 'bold',
                                 'size' => 'md',
                                 'color' => '#1e293b'
@@ -1616,7 +1613,7 @@ function generateEquipmentMenuMessages(PDO $db): array {
     return [
         [
             'type' => 'flex',
-            'altText' => '⚙️ 基本仕様・実在装備から探す',
+            'altText' => '基本仕様・実在装備から探す',
             'contents' => [
                 'type' => 'carousel',
                 'contents' => array_slice($activeBubbles, 0, 10) // LINE上限最大10枚
