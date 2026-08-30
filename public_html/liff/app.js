@@ -2,6 +2,12 @@
  * アップファーレン 在庫車両検索 LIFFフロントエンドロジック
  */
 
+// URLパラメータでマイカー点検パスポートが指定されている場合は即時リダイレクト
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('page') === 'mycar' || urlParams.get('page') === 'passport' || urlParams.get('tab') === 'mycar') {
+    window.location.replace('mycar.html' + window.location.search);
+}
+
 // アプリ状態管理
 const state = {
     allCars: [],
