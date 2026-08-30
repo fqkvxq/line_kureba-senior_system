@@ -54,18 +54,53 @@
                 await liff.init({ liffId: LIFF_ID });
 
                 let userId = '';
-                if (liff.isLoggedIn()) {
-                    const profile = await liff.getProfile();
-                    userId = profile.userId;
-                } else {
+                
+                // 1. LIFF Contextから最速取得
+                try {
+                    const ctx = liff.getContext();
+                    if (ctx && ctx.userId) userId = ctx.userId;
+                } catch(e) {}
+
+                // 2. ログインプロファイルから取得
+                if (!userId && liff.isLoggedIn()) {
+                    try {
+                        const profile = await liff.getProfile();
+                        if (profile && profile.userId) userId = profile.userId;
+                    } catch(e) {}
+                }
+
+                // 3. IDトークンから取得
+                if (!userId && liff.isLoggedIn()) {
+                    try {
+                        const idToken = liff.getDecodedIDToken();
+                        if (idToken && idToken.sub) userId = idToken.sub;
+                    } catch(e) {}
+                }
+
+                if (!userId) {
                     userId = localStorage.getItem('mycar_user_id') || '';
                 }
 
-                // URLのクエリパラメータを取得
+                // URLパラメータ（通常クエリ & liff.state）の解析
                 const urlParams = new URLSearchParams(window.location.search);
-                const queryStr = urlParams.toString();
+                let queryStr = '';
 
-                if (userId) {
+                // liff.state が存在する場合はデコード
+                const liffState = urlParams.get('liff.state');
+                if (liffState) {
+                    const cleanState = liffState.startsWith('?') ? liffState.substring(1) : liffState;
+                    const stateParams = new URLSearchParams(cleanState);
+                    queryStr = stateParams.toString();
+                }
+
+                if (!queryStr) {
+                    // 通常のクエリパラメータ
+                    queryStr = urlParams.toString();
+                }
+
+                console.log('Triggering silent postback:', { userId, queryStr });
+
+                if (userId && queryStr) {
                     const payload = new URLSearchParams({
                         action: 'trigger_postback',
                         uid: userId,
@@ -81,14 +116,14 @@
             } catch (e) {
                 console.error('Trigger error:', e);
             } finally {
-                // 即座にウィンドウを閉じてトーク画面に戻る
+                // ウィンドウを閉じてトーク画面に戻る
                 setTimeout(() => {
                     if (typeof liff !== 'undefined' && liff.isInClient()) {
                         liff.closeWindow();
                     } else {
                         window.close();
                     }
-                }, 100);
+                }, 200);
             }
         });
     </script>

@@ -62,65 +62,66 @@ HTML;
     </div>
     </body></html>
 HTML;
-    exit;
-}
+// --- Webhookリクエスト受信時のエントリポイント実行 ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?? '') === 'webhook.php' || basename($_SERVER['PHP_SELF'] ?? '') === 'webhook.php')) {
+    // 生のリクエストボディを取得
+    $rawInput = file_get_contents('php://input');
+    writeDebugLog("Webhook受信", ['bytes' => strlen($rawInput)]);
 
-// 生のリクエストボディを取得
-$rawInput = file_get_contents('php://input');
-writeDebugLog("Webhook受信", ['bytes' => strlen($rawInput)]);
+    // 署名検証 (Channel Secretが設定されている場合)
+    if (LINE_CHANNEL_SECRET !== 'YOUR_CHANNEL_SECRET_HERE' && !empty($_SERVER['HTTP_X_LINE_SIGNATURE'])) {
+        $signature = $_SERVER['HTTP_X_LINE_SIGNATURE'];
+        $hash = base64_encode(hash_hmac('sha256', $rawInput, LINE_CHANNEL_SECRET, true));
+        if (!hash_equals($hash, $signature)) {
+            writeDebugLog("署名検証エラー (Signature mismatch)");
+            http_response_code(403);
+            echo 'Invalid signature';
+            exit;
+        }
+    }
 
-// 署名検証 (Channel Secretが設定されている場合)
-if (LINE_CHANNEL_SECRET !== 'YOUR_CHANNEL_SECRET_HERE' && !empty($_SERVER['HTTP_X_LINE_SIGNATURE'])) {
-    $signature = $_SERVER['HTTP_X_LINE_SIGNATURE'];
-    $hash = base64_encode(hash_hmac('sha256', $rawInput, LINE_CHANNEL_SECRET, true));
-    if (!hash_equals($hash, $signature)) {
-        writeDebugLog("署名検証エラー (Signature mismatch)");
-        http_response_code(403);
-        echo 'Invalid signature';
+    $data = json_decode($rawInput, true);
+    if (empty($data['events'])) {
+        writeDebugLog("イベントなし (検証Pingなど)");
+        http_response_code(200);
+        echo 'OK (No events)';
         exit;
     }
-}
 
-$data = json_decode($rawInput, true);
-if (empty($data['events'])) {
-    writeDebugLog("イベントなし (検証Pingなど)");
-    http_response_code(200);
-    echo 'OK (No events)';
-    exit;
-}
-
-try {
-    $db = getDbConnection();
-} catch (Exception $e) {
-    writeDebugLog("DB接続例外: " . $e->getMessage());
-    http_response_code(500);
-    exit;
-}
-
-foreach ($data['events'] as $event) {
-    $replyToken = $event['replyToken'] ?? null;
-    if (!$replyToken) continue;
-
-    $userId = $event['source']['userId'] ?? '';
-    $type = $event['type'];
-    writeDebugLog("イベント処理開始", ['type' => $type, 'userId' => $userId]);
-
-    if ($type === 'message' && $event['message']['type'] === 'text') {
-        $userText = trim($event['message']['text']);
-        writeDebugLog("テキスト受信", ['text' => $userText, 'userId' => $userId]);
-        handleTextMessage($db, $replyToken, $userText, $userId);
-    } elseif ($type === 'postback') {
-        $postbackData = $event['postback']['data'] ?? '';
-        writeDebugLog("ポストバック受信", ['data' => $postbackData, 'userId' => $userId]);
-        handlePostback($db, $replyToken, $postbackData, $userId);
-    } elseif ($type === 'follow') {
-        writeDebugLog("友だち追加イベント", ['userId' => $userId]);
-        handleFollow($replyToken);
+    try {
+        $db = getDbConnection();
+    } catch (Exception $e) {
+        writeDebugLog("DB接続例外: " . $e->getMessage());
+        http_response_code(500);
+        exit;
     }
-}
 
-http_response_code(200);
-echo 'OK';
+    foreach ($data['events'] as $event) {
+        $replyToken = $event['replyToken'] ?? null;
+        if (!$replyToken) continue;
+
+        $userId = $event['source']['userId'] ?? '';
+        $type = $event['type'];
+        writeDebugLog("イベント処理開始", ['type' => $type, 'userId' => $userId]);
+
+        if ($type === 'message' && $event['message']['type'] === 'text') {
+            $userText = trim($event['message']['text']);
+            writeDebugLog("テキスト受信", ['text' => $userText, 'userId' => $userId]);
+            handleTextMessage($db, $replyToken, $userText, $userId);
+        } elseif ($type === 'postback') {
+            $postbackData = $event['postback']['data'] ?? '';
+            writeDebugLog("ポストバック受信", ['data' => $postbackData, 'userId' => $userId]);
+            handlePostback($db, $replyToken, $postbackData, $userId);
+        } elseif ($type === 'follow') {
+            writeDebugLog("友だち追加イベント", ['userId' => $userId]);
+            handleFollow($replyToken);
+        }
+    }
+
+    http_response_code(200);
+    echo 'OK';
+    exit;
+}
 
 // --- イベント処理関数群 ---
 
