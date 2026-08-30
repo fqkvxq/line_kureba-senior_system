@@ -1245,12 +1245,14 @@ function sendTypeMenuMessage(string $replyToken) {
 }
 
 /**
- * 車種・ボディタイプ選択メニュー（サイレントボタン式Flex Message）生成
+ * 車種・ボディタイプ選択メニュー（サイレントボタン式Flex カルーセル）生成
+ * 文字切れを完全防止するため、カルーセル（複数バブル）× 1行1ボタンのフルワイドレイアウトを採用
  */
 function generateTypeMenuMessages(): array {
-    $typeBubble = [
+    // バブル1: ボディタイプ
+    $bubble1 = [
         'type' => 'bubble',
-        'size' => 'mega',
+        'size' => 'kilo',
         'body' => [
             'type' => 'box',
             'layout' => 'vertical',
@@ -1258,14 +1260,14 @@ function generateTypeMenuMessages(): array {
             'contents' => [
                 [
                     'type' => 'text',
-                    'text' => '🚙 車種・ボディタイプから探す',
+                    'text' => '🚙 ボディタイプから探す',
                     'weight' => 'bold',
                     'size' => 'md',
                     'color' => '#1e293b'
                 ],
                 [
                     'type' => 'text',
-                    'text' => 'ご希望のタイプ・人気車種をタップしてください。',
+                    'text' => 'お好みのタイプをお選びください',
                     'size' => 'xs',
                     'color' => '#64748b',
                     'margin' => 'xs'
@@ -1281,130 +1283,122 @@ function generateTypeMenuMessages(): array {
                     'spacing' => 'sm',
                     'contents' => [
                         [
-                            'type' => 'box',
-                            'layout' => 'horizontal',
-                            'spacing' => 'sm',
-                            'contents' => [
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => '🚘 軽自動車',
-                                        'data' => 'action=search_kei'
-                                    ]
-                                ],
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => '🚗 コンパクト',
-                                        'data' => 'action=search_type&keyword=' . urlencode('コンパクト')
-                                    ]
-                                ]
+                            'type' => 'button',
+                            'style' => 'secondary',
+                            'height' => 'sm',
+                            'action' => [
+                                'type' => 'postback',
+                                'label' => '🚘 軽自動車（660cc）',
+                                'data' => 'action=search_kei'
                             ]
                         ],
                         [
-                            'type' => 'box',
-                            'layout' => 'horizontal',
-                            'spacing' => 'sm',
-                            'contents' => [
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => '🚙 ミニバン',
-                                        'data' => 'action=search_type&keyword=' . urlencode('ワゴン')
-                                    ]
-                                ],
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => '🚙 SUV・4WD',
-                                        'data' => 'action=search_type&keyword=' . urlencode('4WD')
-                                    ]
-                                ]
+                            'type' => 'button',
+                            'style' => 'secondary',
+                            'height' => 'sm',
+                            'action' => [
+                                'type' => 'postback',
+                                'label' => '🚗 コンパクトカー',
+                                'data' => 'action=search_type&keyword=' . urlencode('コンパクト')
                             ]
                         ],
                         [
-                            'type' => 'separator',
-                            'margin' => 'xs'
-                        ],
-                        [
-                            'type' => 'text',
-                            'text' => '✨ 人気車種から選ぶ',
-                            'size' => 'xxs',
-                            'color' => '#94a3b8',
-                            'margin' => 'xs'
-                        ],
-                        [
-                            'type' => 'box',
-                            'layout' => 'horizontal',
-                            'spacing' => 'sm',
-                            'contents' => [
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => 'ワゴンR',
-                                        'data' => 'action=search_type&keyword=' . urlencode('ワゴンR')
-                                    ]
-                                ],
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => 'N-BOX',
-                                        'data' => 'action=search_type&keyword=' . urlencode('N-BOX')
-                                    ]
-                                ]
+                            'type' => 'button',
+                            'style' => 'secondary',
+                            'height' => 'sm',
+                            'action' => [
+                                'type' => 'postback',
+                                'label' => '🚐 ミニバン・ワゴン',
+                                'data' => 'action=search_type&keyword=' . urlencode('ワゴン')
                             ]
                         ],
                         [
-                            'type' => 'box',
-                            'layout' => 'horizontal',
-                            'spacing' => 'sm',
-                            'contents' => [
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => 'タント',
-                                        'data' => 'action=search_type&keyword=' . urlencode('タント')
-                                    ]
-                                ],
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => 'スペーシア',
-                                        'data' => 'action=search_type&keyword=' . urlencode('スペーシア')
-                                    ]
-                                ]
+                            'type' => 'button',
+                            'style' => 'secondary',
+                            'height' => 'sm',
+                            'action' => [
+                                'type' => 'postback',
+                                'label' => '🚙 SUV・4WD（四駆）',
+                                'data' => 'action=search_type&keyword=' . urlencode('4WD')
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
+    ];
+
+    // バブル2: 人気車種・モデル
+    $bubble2 = [
+        'type' => 'bubble',
+        'size' => 'kilo',
+        'body' => [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'paddingAll' => '16px',
+            'contents' => [
+                [
+                    'type' => 'text',
+                    'text' => '✨ 人気モデルから探す',
+                    'weight' => 'bold',
+                    'size' => 'md',
+                    'color' => '#1e293b'
+                ],
+                [
+                    'type' => 'text',
+                    'text' => '定番の人気車種をお選びいただけます',
+                    'size' => 'xs',
+                    'color' => '#64748b',
+                    'margin' => 'xs'
+                ],
+                [
+                    'type' => 'separator',
+                    'margin' => 'md'
+                ],
+                [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'margin' => 'md',
+                    'spacing' => 'sm',
+                    'contents' => [
+                        [
+                            'type' => 'button',
+                            'style' => 'secondary',
+                            'height' => 'sm',
+                            'action' => [
+                                'type' => 'postback',
+                                'label' => '⭐ ホンダ N-BOX',
+                                'data' => 'action=search_type&keyword=' . urlencode('N-BOX')
+                            ]
+                        ],
+                        [
+                            'type' => 'button',
+                            'style' => 'secondary',
+                            'height' => 'sm',
+                            'action' => [
+                                'type' => 'postback',
+                                'label' => '⭐ ダイハツ タント',
+                                'data' => 'action=search_type&keyword=' . urlencode('タント')
+                            ]
+                        ],
+                        [
+                            'type' => 'button',
+                            'style' => 'secondary',
+                            'height' => 'sm',
+                            'action' => [
+                                'type' => 'postback',
+                                'label' => '⭐ スズキ スペーシア',
+                                'data' => 'action=search_type&keyword=' . urlencode('スペーシア')
+                            ]
+                        ],
+                        [
+                            'type' => 'button',
+                            'style' => 'secondary',
+                            'height' => 'sm',
+                            'action' => [
+                                'type' => 'postback',
+                                'label' => '⭐ スズキ ワゴンR',
+                                'data' => 'action=search_type&keyword=' . urlencode('ワゴンR')
                             ]
                         ]
                     ]
@@ -1417,7 +1411,10 @@ function generateTypeMenuMessages(): array {
         [
             'type' => 'flex',
             'altText' => '🚙 車種・ボディタイプから探す',
-            'contents' => $typeBubble,
+            'contents' => [
+                'type' => 'carousel',
+                'contents' => [$bubble1, $bubble2]
+            ],
             'quickReply' => getQuickReplyItems()
         ]
     ];
@@ -1432,12 +1429,14 @@ function sendEquipmentMenuMessage(string $replyToken) {
 }
 
 /**
- * 装備・仕様選択メニュー（サイレントボタン式Flex Message）生成
+ * 装備・仕様選択メニュー（サイレントボタン式Flex カルーセル）生成
+ * 文字切れを完全防止するため、カルーセル（複数バブル）× 1行1ボタンのフルワイドレイアウトを採用
  */
 function generateEquipmentMenuMessages(): array {
-    $equipBubble = [
+    // バブル1: ナビ・カメラ・快適装備
+    $bubble1 = [
         'type' => 'bubble',
-        'size' => 'mega',
+        'size' => 'kilo',
         'body' => [
             'type' => 'box',
             'layout' => 'vertical',
@@ -1445,14 +1444,14 @@ function generateEquipmentMenuMessages(): array {
             'contents' => [
                 [
                     'type' => 'text',
-                    'text' => '⚙️ 基本仕様・人気装備から探す',
+                    'text' => '📺 ナビ・カメラ・快適装備',
                     'weight' => 'bold',
                     'size' => 'md',
                     'color' => '#1e293b'
                 ],
                 [
                     'type' => 'text',
-                    'text' => 'お求めの装備や条件をタップしてください。',
+                    'text' => 'お求めの装備をタップしてください',
                     'size' => 'xs',
                     'color' => '#64748b',
                     'margin' => 'xs'
@@ -1468,123 +1467,122 @@ function generateEquipmentMenuMessages(): array {
                     'spacing' => 'sm',
                     'contents' => [
                         [
-                            'type' => 'box',
-                            'layout' => 'horizontal',
-                            'spacing' => 'sm',
-                            'contents' => [
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => '📺 ナビ・TV付',
-                                        'data' => 'action=search_equip&keyword=' . urlencode('ナビ')
-                                    ]
-                                ],
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => '📷 バックカメラ',
-                                        'data' => 'action=search_equip&keyword=' . urlencode('バックカメラ')
-                                    ]
-                                ]
+                            'type' => 'button',
+                            'style' => 'secondary',
+                            'height' => 'sm',
+                            'action' => [
+                                'type' => 'postback',
+                                'label' => '📺 ナビ・地デジTV付き',
+                                'data' => 'action=search_equip&keyword=' . urlencode('ナビ')
                             ]
                         ],
                         [
-                            'type' => 'box',
-                            'layout' => 'horizontal',
-                            'spacing' => 'sm',
-                            'contents' => [
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => '💳 ETC車載器',
-                                        'data' => 'action=search_equip&keyword=' . urlencode('ETC')
-                                    ]
-                                ],
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => '🚪 両側パワスラ',
-                                        'data' => 'action=search_equip&keyword=' . urlencode('スライド')
-                                    ]
-                                ]
+                            'type' => 'button',
+                            'style' => 'secondary',
+                            'height' => 'sm',
+                            'action' => [
+                                'type' => 'postback',
+                                'label' => '📷 バックカメラ・モニター',
+                                'data' => 'action=search_equip&keyword=' . urlencode('バックカメラ')
                             ]
                         ],
                         [
-                            'type' => 'box',
-                            'layout' => 'horizontal',
-                            'spacing' => 'sm',
-                            'contents' => [
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => '⚡ 衝突被害軽減',
-                                        'data' => 'action=search_equip&keyword=' . urlencode('軽減')
-                                    ]
-                                ],
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => '🏔️ 4WD / 四駆',
-                                        'data' => 'action=search_equip&keyword=' . urlencode('4WD')
-                                    ]
-                                ]
+                            'type' => 'button',
+                            'style' => 'secondary',
+                            'height' => 'sm',
+                            'action' => [
+                                'type' => 'postback',
+                                'label' => '💳 ETC車載器付き',
+                                'data' => 'action=search_equip&keyword=' . urlencode('ETC')
                             ]
                         ],
                         [
-                            'type' => 'separator',
-                            'margin' => 'xs'
+                            'type' => 'button',
+                            'style' => 'secondary',
+                            'height' => 'sm',
+                            'action' => [
+                                'type' => 'postback',
+                                'label' => '🚪 両側パワースライドドア',
+                                'data' => 'action=search_equip&keyword=' . urlencode('スライド')
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
+    ];
+
+    // バブル2: 安全性能・駆動・状態
+    $bubble2 = [
+        'type' => 'bubble',
+        'size' => 'kilo',
+        'body' => [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'paddingAll' => '16px',
+            'contents' => [
+                [
+                    'type' => 'text',
+                    'text' => '⚡ 安全性能・駆動・状態',
+                    'weight' => 'bold',
+                    'size' => 'md',
+                    'color' => '#1e293b'
+                ],
+                [
+                    'type' => 'text',
+                    'text' => '条件に合わせて絞り込みます',
+                    'size' => 'xs',
+                    'color' => '#64748b',
+                    'margin' => 'xs'
+                ],
+                [
+                    'type' => 'separator',
+                    'margin' => 'md'
+                ],
+                [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'margin' => 'md',
+                    'spacing' => 'sm',
+                    'contents' => [
+                        [
+                            'type' => 'button',
+                            'style' => 'secondary',
+                            'height' => 'sm',
+                            'action' => [
+                                'type' => 'postback',
+                                'label' => '⚡ 衝突被害軽減（自動ブレーキ）',
+                                'data' => 'action=search_equip&keyword=' . urlencode('軽減')
+                            ]
                         ],
                         [
-                            'type' => 'box',
-                            'layout' => 'horizontal',
-                            'spacing' => 'sm',
-                            'contents' => [
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => '✨ 修復歴なし',
-                                        'data' => 'action=search_repair_none'
-                                    ]
-                                ],
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => '🚗 届出済未使用車',
-                                        'data' => 'action=search_low_mileage'
-                                    ]
-                                ]
+                            'type' => 'button',
+                            'style' => 'secondary',
+                            'height' => 'sm',
+                            'action' => [
+                                'type' => 'postback',
+                                'label' => '🏔️ 4WD / 四輪駆動車',
+                                'data' => 'action=search_equip&keyword=' . urlencode('4WD')
+                            ]
+                        ],
+                        [
+                            'type' => 'button',
+                            'style' => 'secondary',
+                            'height' => 'sm',
+                            'action' => [
+                                'type' => 'postback',
+                                'label' => '✨ 修復歴なし（無事故車）',
+                                'data' => 'action=search_repair_none'
+                            ]
+                        ],
+                        [
+                            'type' => 'button',
+                            'style' => 'secondary',
+                            'height' => 'sm',
+                            'action' => [
+                                'type' => 'postback',
+                                'label' => '🚗 届出済未使用車・低走行',
+                                'data' => 'action=search_low_mileage'
                             ]
                         ]
                     ]
@@ -1597,7 +1595,10 @@ function generateEquipmentMenuMessages(): array {
         [
             'type' => 'flex',
             'altText' => '⚙️ 基本仕様・人気装備から探す',
-            'contents' => $equipBubble,
+            'contents' => [
+                'type' => 'carousel',
+                'contents' => [$bubble1, $bubble2]
+            ],
             'quickReply' => getQuickReplyItems()
         ]
     ];
