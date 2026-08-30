@@ -387,30 +387,11 @@ try {
                                 ],
                                 [
                                     'type' => 'text',
-                                    'text' => "※予定日の変更・2台目以降の登録は、メニューの「愛車点検パスポート」よりいつでも行えます。",
+                                    'text' => "※予定日の変更・2台目以降の登録は、リッチメニューの「愛車点検パスポート」よりいつでも行えます。",
                                     'size' => 'xxs',
                                     'color' => '#64748b',
                                     'margin' => 'md',
                                     'wrap' => true
-                                ]
-                            ]
-                        ],
-                        'footer' => [
-                            'type' => 'box',
-                            'layout' => 'vertical',
-                            'spacing' => 'sm',
-                            'paddingAll' => '14px',
-                            'contents' => [
-                                [
-                                    'type' => 'button',
-                                    'style' => 'primary',
-                                    'color' => '#06C755',
-                                    'height' => 'sm',
-                                    'action' => [
-                                        'type' => 'uri',
-                                        'label' => '📱 愛車点検手帳を確認・変更',
-                                        'uri' => 'https://liff.line.me/2011335169-9x8ydjaV'
-                                    ]
                                 ]
                             ]
                         ]
