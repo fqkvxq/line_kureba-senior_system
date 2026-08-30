@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メンテナンス顧客管理ダッシュボード | アップファーム</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <!-- ログインモーダル (初期表示) -->
+    <div class="login-overlay" id="loginModal">
+        <div class="login-card">
+            <div class="login-icon"><i class="fa-solid fa-shield-halved"></i></div>
+            <h2>店舗管理ログイン</h2>
+            <p>アップファーム メンテナンス管理システム</p>
+            <div class="login-form">
+                <input type="password" id="adminPasswordInput" placeholder="管理者パスワードを入力" autofocus>
+                <button id="loginBtn">ログイン</button>
+            </div>
+            <div class="login-error" id="loginErrorMsg"></div>
+        </div>
+    </div>
+
+    <!-- メイン管理画面 -->
+    <div class="admin-wrapper" id="adminApp" style="display: none;">
+        <!-- サイドバー/ヘッダー -->
+        <header class="admin-header">
+            <div class="admin-brand">
+                <div class="brand-badge"><i class="fa-solid fa-car"></i></div>
+                <div>
+                    <h1>アップファーム 顧客管理</h1>
+                    <span>オイル交換・定期点検 リマインドダッシュボード</span>
+                </div>
+            </div>
+            <div class="admin-header-actions">
+                <button class="btn-primary" id="openAddCustomerModalBtn">
+                    <i class="fa-solid fa-user-plus"></i> 新規顧客登録
+                </button>
+                <button class="btn-logout" id="logoutBtn" title="ログアウト">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- メインコンテナ -->
+        <main class="admin-content">
+            <!-- 統計カード -->
+            <div class="stats-grid">
+                <div class="stat-card" data-filter="all">
+                    <div class="stat-icon icon-users"><i class="fa-solid fa-users"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">登録顧客数</span>
+                        <span class="stat-value" id="statTotalUsers">0</span>
+                    </div>
+                </div>
+                <div class="stat-card" data-filter="oil_soon">
+                    <div class="stat-icon icon-oil"><i class="fa-solid fa-oil-can"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">オイル期日近し (30日以内)</span>
+                        <span class="stat-value" id="statOilSoon">0</span>
+                    </div>
+                </div>
+                <div class="stat-card" data-filter="inspection_soon">
+                    <div class="stat-icon icon-insp"><i class="fa-solid fa-clipboard-check"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">車検満了近し (30日以内)</span>
+                        <span class="stat-value" id="statInspSoon">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 検索 & フィルターバー -->
+            <div class="toolbar-card">
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="adminSearchInput" placeholder="顧客名、車種、ナンバー、メモで検索...">
+                </div>
+                <div class="filter-tabs">
+                    <button class="tab-btn active" data-filter="all">全顧客 (<span id="tabCountAll">0</span>)</button>
+                    <button class="tab-btn" data-filter="oil_soon">🛢 オイル期日 (<span id="tabCountOil">0</span>)</button>
+                    <button class="tab-btn" data-filter="inspection_soon">📋 車検期日 (<span id="tabCountInsp">0</span>)</button>
+                </div>
+            </div>
+
+            <!-- 顧客データテーブル -->
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>お名前</th>
+                            <th>愛車・ナンバー</th>
+                            <th>次回オイル予定日</th>
+                            <th>次回車検満了日</th>
+                            <th>店舗メモ</th>
+                            <th>最終更新</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customerTableBody">
+                        <!-- JSで動的生成 -->
+                    </tbody>
+                </table>
+                <div class="empty-placeholder" id="emptyTablePlaceholder" style="display: none;">
+                    <i class="fa-solid fa-inbox"></i>
+                    <p>該当する顧客データが見つかりませんでした。</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 顧客登録・編集モーダル -->
+    <div class="modal-overlay" id="customerEditModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modalTitle">顧客メンテナンス情報の編集</h3>
+                <button class="modal-close" id="closeEditModalBtn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editUserId">
+
+                <div class="form-row">
+                    <div class="form-col">
+                        <label>お名前 (LINE表示名)</label>
+                        <input type="text" id="editUserName" placeholder="例: 山田 太郎" required>
+                    </div>
+                    <div class="form-col">
+                        <label>LINE ユーザーID (任意 / 空欄で自動)</label>
+                        <input type="text" id="editUserUid" placeholder="Uから始まるID または空欄">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-col">
+                        <label>愛車の車種名</label>
+                        <input type="text" id="editCarModel" placeholder="例: ワゴンR スティングレー" required>
+                    </div>
+                    <div class="form-col">
+                        <label>ナンバープレート</label>
+                        <input type="text" id="editCarNumber" placeholder="例: 静岡580 あ 12-34">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-col">
+                        <label>前回 オイル交換日</label>
+                        <input type="date" id="editOilLastDate">
+                    </div>
+                    <div class="form-col">
+                        <label>次回 オイル交換予定日</label>
+                        <input type="date" id="editOilNextDate">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-col">
+                        <label>次回 車検満了日</label>
+                        <input type="date" id="editInspectionNextDate">
+                    </div>
+                </div>
+
+                <div class="form-row full">
+                    <label>店舗用スタッフメモ (エレメント推奨、走行距離など)</label>
+                    <textarea id="editStaffMemo" rows="3" placeholder="例: 次回エレメント同時交換推奨。走行距離: 5.2万km"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="cancelEditBtn">キャンセル</button>
+                <button class="btn-save" id="saveCustomerBtn">
+                    <i class="fa-solid fa-check"></i> 保存する
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- トースト -->
+    <div class="toast" id="adminToast"></div>
+
+    <script src="admin.js"></script>
+</body>
+</html>

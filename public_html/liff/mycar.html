@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>マイカー点検パスポート | アップファーム</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- LIFF SDK -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .passport-header {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #fff;
+            padding: 24px 20px 20px;
+            border-bottom-left-radius: 24px;
+            border-bottom-right-radius: 24px;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.2);
+        }
+        .user-profile-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .user-avatar-img {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            border: 2px solid #06C755;
+            object-fit: cover;
+            background: #334155;
+        }
+        .user-info h2 {
+            font-size: 16px;
+            font-weight: 800;
+            margin: 0;
+            color: #fff;
+        }
+        .user-info p {
+            font-size: 11px;
+            color: #94a3b8;
+            margin: 2px 0 0;
+        }
+        .car-summary-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .car-summary-title {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+        .car-summary-name {
+            font-size: 16px;
+            font-weight: 800;
+            color: #f8fafc;
+            margin-top: 2px;
+        }
+        .car-summary-num {
+            font-size: 12px;
+            color: #cbd5e1;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+        }
+        
+        .section-container {
+            padding: 18px 16px 80px;
+        }
+        
+        /* メンテステータスカード */
+        .maint-card {
+            background: #fff;
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+            position: relative;
+            overflow: hidden;
+        }
+        .maint-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+        }
+        .maint-card.oil::before { background: #f59e0b; }
+        .maint-card.insp::before { background: #3b82f6; }
+
+        .maint-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .maint-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 800;
+            color: #1e293b;
+        }
+        .maint-badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        .badge-safe { background: #ecfdf5; color: #059669; }
+        .badge-warning { background: #fffbeb; color: #d97706; }
+        .badge-danger { background: #fef2f2; color: #dc2626; }
+
+        .maint-date-row {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            margin: 10px 0;
+        }
+        .maint-date-label {
+            font-size: 11px;
+            color: #64748b;
+        }
+        .maint-date-val {
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            font-weight: 900;
+            color: #0f172a;
+        }
+        
+        .maint-action-btn {
+            width: 100%;
+            height: 42px;
+            border-radius: 10px;
+            border: none;
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            margin-top: 14px;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .btn-oil { background: #fef3c7; color: #92400e; }
+        .btn-oil:active { background: #fde68a; }
+        .btn-insp { background: #dbeafe; color: #1e40af; }
+        .btn-insp:active { background: #bfdbfe; }
+
+        /* 編集フォーム */
+        .edit-section {
+            background: #fff;
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+        }
+        .form-group {
+            margin-bottom: 14px;
+        }
+        .form-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 6px;
+            display: block;
+        }
+        .form-input {
+            width: 100%;
+            height: 42px;
+            padding: 0 12px;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+            font-size: 13px;
+            background: #f8fafc;
+            box-sizing: border-box;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #06C755;
+            background: #fff;
+        }
+        .btn-save-cust {
+            width: 100%;
+            height: 46px;
+            background: #06C755;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(6, 199, 85, 0.25);
+        }
+        .btn-save-cust:active {
+            background: #05a847;
+        }
+        .nav-back-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            margin-top: 20px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- ヘッダー -->
+    <div class="passport-header">
+        <div class="user-profile-row">
+            <img id="userAvatar" class="user-avatar-img" src="https://img.goo-net.com/goo/usedcar/nophoto_big.jpg" alt="ユーザー">
+            <div class="user-info">
+                <h2 id="userNameText">お客様</h2>
+                <p>アップファーム メンテナンスパスポート</p>
+            </div>
+        </div>
+
+        <div class="car-summary-card">
+            <div>
+                <div class="car-summary-title">ご登録愛車</div>
+                <div class="car-summary-name" id="carModelDisplay">未設定（下部より登録）</div>
+            </div>
+            <div class="car-summary-num" id="carNumDisplay">--</div>
+        </div>
+    </div>
+
+    <!-- コンテンツ -->
+    <div class="section-container">
+        <!-- オイル交換カード -->
+        <div class="maint-card oil">
+            <div class="maint-card-header">
+                <div class="maint-title">
+                    <i class="fa-solid fa-oil-can" style="color: #f59e0b;"></i>
+                    <span>オイル交換</span>
+                </div>
+                <span class="maint-badge badge-safe" id="oilStatusBadge">予定あり</span>
+            </div>
+            <div class="maint-date-row">
+                <span class="maint-date-label">次回予定日:</span>
+                <span class="maint-date-val" id="oilNextDateDisplay">未設定</span>
+            </div>
+            <button class="maint-action-btn btn-oil" id="bookOilBtn">
+                <i class="fa-brands fa-line"></i>
+                <span>LINEでオイル交換の来店予約・相談</span>
+            </button>
+        </div>
+
+        <!-- 車検・定期点検カード -->
+        <div class="maint-card insp">
+            <div class="maint-card-header">
+                <div class="maint-title">
+                    <i class="fa-solid fa-clipboard-check" style="color: #3b82f6;"></i>
+                    <span>車検・定期点検</span>
+                </div>
+                <span class="maint-badge badge-safe" id="inspStatusBadge">予定あり</span>
+            </div>
+            <div class="maint-date-row">
+                <span class="maint-date-label">車検満了日:</span>
+                <span class="maint-date-val" id="inspNextDateDisplay">未設定</span>
+            </div>
+            <button class="maint-action-btn btn-insp" id="bookInspBtn">
+                <i class="fa-brands fa-line"></i>
+                <span>LINEで車検・点検のお見積もり相談</span>
+            </button>
+        </div>
+
+        <!-- 愛車・メンテナンス情報の編集フォーム -->
+        <div class="edit-section">
+            <h3 style="font-size: 14px; font-weight: 800; color: #1e293b; margin: 0 0 14px;">
+                <i class="fa-solid fa-pen-to-square" style="color: #06C755;"></i> 愛車・点検日の変更・登録
+            </h3>
+            
+            <div class="form-group">
+                <label class="form-label">愛車の車種名</label>
+                <input type="text" id="inputCarModel" class="form-input" placeholder="例: ワゴンR スティングレー">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">ナンバープレート（下4桁など）</label>
+                <input type="text" id="inputCarNumber" class="form-input" placeholder="例: 12-34">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">次回オイル交換 予定日</label>
+                <input type="date" id="inputOilNextDate" class="form-input">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">次回 車検満了日</label>
+                <input type="date" id="inputInspNextDate" class="form-input">
+            </div>
+
+            <button class="btn-save-cust" id="saveCustBtn">
+                <i class="fa-solid fa-check"></i> この内容で保存する
+            </button>
+        </div>
+
+        <!-- 在庫検索へ戻るリンク -->
+        <a href="index.html" class="nav-back-link">
+            <i class="fa-solid fa-arrow-left"></i> 在庫車両検索に戻る
+        </a>
+    </div>
+
+    <!-- トースト通知 -->
+    <div class="toast" id="appToast"></div>
+
+    <script src="mycar.js"></script>
+</body>
+</html>

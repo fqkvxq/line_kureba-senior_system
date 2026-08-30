@@ -196,6 +196,185 @@ try {
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
+        // --- 5. ユーザー用: 自身のメンテナンス情報取得 ---
+        case 'get_customer':
+            $userId = $_GET['uid'] ?? ($_POST['uid'] ?? '');
+            if (empty($userId)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'ユーザーIDが必要です']);
+                exit;
+            }
+
+            $stmt = $db->prepare("SELECT * FROM customers WHERE user_id = :uid LIMIT 1");
+            $stmt->execute([':uid' => $userId]);
+            $customer = $stmt->fetch();
+
+            echo json_encode([
+                'success' => true,
+                'customer' => $customer ?: null
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
+        // --- 6. ユーザー用: 自身の愛車・オイル交換日保存 ---
+        case 'save_customer':
+            $userId = $_POST['uid'] ?? '';
+            $userName = $_POST['uname'] ?? '';
+            $carModel = $_POST['car_model'] ?? '';
+            $carNumber = $_POST['car_number'] ?? '';
+            $oilLastDate = $_POST['oil_last_date'] ?? null;
+            $oilNextDate = $_POST['oil_next_date'] ?? null;
+            $inspectionNextDate = $_POST['inspection_next_date'] ?? null;
+
+            if (empty($userId)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'ユーザーIDが必要です']);
+                exit;
+            }
+
+            // 日付が空文字ならNULLに
+            $oilLastDate = !empty($oilLastDate) ? $oilLastDate : null;
+            $oilNextDate = !empty($oilNextDate) ? $oilNextDate : null;
+            $inspectionNextDate = !empty($inspectionNextDate) ? $inspectionNextDate : null;
+
+            $stmt = $db->prepare("
+                INSERT OR REPLACE INTO customers (
+                    user_id, user_name, car_model, car_number,
+                    oil_last_date, oil_next_date, inspection_next_date,
+                    updated_at
+                ) VALUES (
+                    :uid, :uname, :car_model, :car_number,
+                    :oil_last_date, :oil_next_date, :inspection_next_date,
+                    CURRENT_TIMESTAMP
+                )
+            ");
+            $stmt->execute([
+                ':uid' => $userId,
+                ':uname' => $userName,
+                ':car_model' => $carModel,
+                ':car_number' => $carNumber,
+                ':oil_last_date' => $oilLastDate,
+                ':oil_next_date' => $oilNextDate,
+                ':inspection_next_date' => $inspectionNextDate,
+            ]);
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'メンテナンス情報を保存しました！'
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
+        // --- 7. 店舗管理者用: 顧客一覧取得 ---
+        case 'admin_list_customers':
+            $authPass = $_POST['password'] ?? ($_GET['password'] ?? '');
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => 'パスワードが違います']);
+                exit;
+            }
+
+            $search = trim($_GET['search'] ?? '');
+            $filter = $_GET['filter'] ?? 'all'; // all, oil_soon, inspection_soon
+
+            $where = ["1 = 1"];
+            $params = [];
+
+            if (!empty($search)) {
+                $where[] = "(user_name LIKE :s OR car_model LIKE :s OR car_number LIKE :s OR staff_memo LIKE :s)";
+                $params[':s'] = "%{$search}%";
+            }
+
+            $today = date('Y-m-d');
+            $in30days = date('Y-m-d', strtotime('+30 days'));
+
+            if ($filter === 'oil_soon') {
+                $where[] = "oil_next_date IS NOT NULL AND oil_next_date <= :in30";
+                $params[':in30'] = $in30days;
+            } elseif ($filter === 'inspection_soon') {
+                $where[] = "inspection_next_date IS NOT NULL AND inspection_next_date <= :in30";
+                $params[':in30'] = $in30days;
+            }
+
+            $whereSql = implode(' AND ', $where);
+            $stmt = $db->prepare("SELECT * FROM customers WHERE {$whereSql} ORDER BY updated_at DESC");
+            $stmt->execute($params);
+            $customers = $stmt->fetchAll();
+
+            echo json_encode([
+                'success' => true,
+                'customers' => $customers,
+                'total' => count($customers)
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
+        // --- 8. 店舗管理者用: 顧客情報の登録・編集 ---
+        case 'admin_save_customer':
+            $authPass = $_POST['password'] ?? '';
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗']);
+                exit;
+            }
+
+            $userId = trim($_POST['uid'] ?? '');
+            $userName = trim($_POST['uname'] ?? '');
+            $carModel = trim($_POST['car_model'] ?? '');
+            $carNumber = trim($_POST['car_number'] ?? '');
+            $oilLastDate = !empty($_POST['oil_last_date']) ? $_POST['oil_last_date'] : null;
+            $oilNextDate = !empty($_POST['oil_next_date']) ? $_POST['oil_next_date'] : null;
+            $inspectionNextDate = !empty($_POST['inspection_next_date']) ? $_POST['inspection_next_date'] : null;
+            $staffMemo = trim($_POST['staff_memo'] ?? '');
+
+            if (empty($userId)) {
+                // 新規手動登録などでuserIdがない場合は生成
+                $userId = 'MANUAL_' . uniqid();
+            }
+
+            $stmt = $db->prepare("
+                INSERT OR REPLACE INTO customers (
+                    user_id, user_name, car_model, car_number,
+                    oil_last_date, oil_next_date, inspection_next_date,
+                    staff_memo, updated_at
+                ) VALUES (
+                    :uid, :uname, :car_model, :car_number,
+                    :oil_last_date, :oil_next_date, :inspection_next_date,
+                    :staff_memo, CURRENT_TIMESTAMP
+                )
+            ");
+            $stmt->execute([
+                ':uid' => $userId,
+                ':uname' => $userName,
+                ':car_model' => $carModel,
+                ':car_number' => $carNumber,
+                ':oil_last_date' => $oilLastDate,
+                ':oil_next_date' => $oilNextDate,
+                ':inspection_next_date' => $inspectionNextDate,
+                ':staff_memo' => $staffMemo
+            ]);
+
+            echo json_encode([
+                'success' => true,
+                'message' => '顧客メンテナンス情報を保存しました！'
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
+        // --- 9. 店舗管理者用: 顧客削除 ---
+        case 'admin_delete_customer':
+            $authPass = $_POST['password'] ?? '';
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗']);
+                exit;
+            }
+
+            $userId = $_POST['uid'] ?? '';
+            if (!empty($userId)) {
+                $stmt = $db->prepare("DELETE FROM customers WHERE user_id = :uid");
+                $stmt->execute([':uid' => $userId]);
+            }
+
+            echo json_encode(['success' => true, 'message' => '削除しました'], JSON_UNESCAPED_UNICODE);
+            break;
+
         default:
             http_response_code(400);
             echo json_encode(['success' => false, 'error' => '無効なアクションです。']);
@@ -205,6 +384,6 @@ try {
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'error' => 'サーバーエラーが発生しました: ' . $e->getMessage()
-    ], JSON_UNESCAPED_UNICODE);
+        'error' => 'サーバー内部エラーが発生しました: ' . $e->getMessage()
+    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
 }
