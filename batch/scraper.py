@@ -205,28 +205,12 @@ def main():
     # UPSERT
     for car in all_cars.values():
         cursor.execute("""
-            INSERT INTO cars (
+            INSERT OR REPLACE INTO cars (
                 id, shop_code, title, total_price_text, total_price_num,
                 base_price_text, base_price_num, year, distance, distance_num,
                 displacement, repair_history, shaken, image_url, detail_url,
                 is_active, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
-            ON CONFLICT(id) DO UPDATE SET
-                title = excluded.title,
-                total_price_text = excluded.total_price_text,
-                total_price_num = excluded.total_price_num,
-                base_price_text = excluded.base_price_text,
-                base_price_num = excluded.base_price_num,
-                year = excluded.year,
-                distance = excluded.distance,
-                distance_num = excluded.distance_num,
-                displacement = excluded.displacement,
-                repair_history = excluded.repair_history,
-                shaken = excluded.shaken,
-                image_url = excluded.image_url,
-                detail_url = excluded.detail_url,
-                is_active = 1,
-                updated_at = CURRENT_TIMESTAMP
         """, (
             car["id"], car["shop_code"], car["title"],
             car["total_price_text"], car["total_price_num"],
