@@ -2,6 +2,7 @@
 /**
  * グーネット特定店舗 車両情報スクレイピング & SQLite同期スクリプト (PHP版)
  * XserverのCronで定期実行 (例: 0 6,12,18 * * *) して使用します。
+ * 新着車両が検知された場合、LINE公式アカウントの友だち全員へFlex Message自動一斉配信＆Discord通知を行います。
  */
 
 // タイムゾーンとエラー設定
@@ -9,10 +10,25 @@ date_default_timezone_set('Asia/Tokyo');
 ini_set('display_errors', '1');
 error_reporting(E_ALL);
 
+// 共通設定の読み込み
+$configPaths = [
+    __DIR__ . '/../public_html/config.php',
+    __DIR__ . '/../config.php',
+    __DIR__ . '/config.php',
+    dirname(__DIR__) . '/public_html/config.php'
+];
+foreach ($configPaths as $cp) {
+    if (file_exists($cp)) {
+        require_once $cp;
+        break;
+    }
+}
+
 // 設定
-$shopCode = '0601492'; // 店舗コード
+$shopCode = defined('SHOP_CODE') ? SHOP_CODE : '0601492';
+$shopName = defined('SHOP_NAME') ? SHOP_NAME : 'アップファーム';
 $baseUrl = "https://www.goo-net.com/usedcar_shop/{$shopCode}/";
-$dbFile = __DIR__ . '/cars.db';
+$dbFile = defined('DB_PATH') ? DB_PATH : (__DIR__ . '/cars.db');
 
 echo "[" . date('Y-m-d H:i:s') . "] === グーネット車両データ同期処理を開始します ===\n";
 echo "対象店舗コード: {$shopCode}\n";
@@ -22,6 +38,7 @@ echo "データベースファイル: {$dbFile}\n";
 try {
     $db = new PDO("sqlite:{$dbFile}");
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
     
     // テーブル作成
     $db->exec("
@@ -53,9 +70,24 @@ try {
     die("DB接続エラー: " . $e->getMessage() . "\n");
 }
 
+// 同期前の既存アクティブ車両ID一覧を取得 (新着検知用)
+$existingCarIds = [];
+$initialDbCarCount = 0;
+try {
+    $stmt = $db->query("SELECT id FROM cars WHERE is_active = 1 AND shop_code = '{$shopCode}'");
+    while ($row = $stmt->fetch()) {
+        $existingCarIds[$row['id']] = true;
+    }
+    $initialDbCarCount = count($existingCarIds);
+    echo "同期前の既存在庫台数: {$initialDbCarCount} 台\n";
+} catch (Exception $e) {
+    echo "既存ID取得警告: " . $e->getMessage() . "\n";
+}
+
 // スクレイピング実行
 $page = 1;
 $allCars = [];
+$newCars = [];
 $userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 while (true) {
@@ -147,14 +179,12 @@ while (true) {
         if (preg_match('/<table>.*?<tr>(.*?)<\/tr>.*?<\/table>/s', $block, $tableMatch)) {
             preg_match_all('/<td[^>]*>(.*?)<\/td>/s', $tableMatch[1], $tds);
             if (!empty($tds[1]) && count($tds[1]) >= 6) {
-                // td[0] は価格枠、td[1]からスペック
                 $year = trim(preg_replace('/\s+/', ' ', strip_tags($tds[1][1])));
                 $distance = trim(preg_replace('/\s+/', ' ', strip_tags($tds[1][2])));
                 $displacement = trim(preg_replace('/\s+/', ' ', strip_tags($tds[1][3])));
                 $repairHistory = trim(preg_replace('/\s+/', ' ', strip_tags($tds[1][4])));
                 $shaken = trim(preg_replace('/\s+/', ' ', strip_tags($tds[1][5])));
 
-                // 走行距離の数値化 (例: "4.2万km" -> 4.2)
                 if (preg_match('/([0-9\.]+)\s*万km/', $distance, $dMatch)) {
                     $distanceNum = (float)$dMatch[1];
                 } elseif (preg_match('/([0-9,]+)\s*km/', $distance, $dMatch)) {
@@ -163,7 +193,7 @@ while (true) {
             }
         }
 
-        $allCars[$carId] = [
+        $carData = [
             'id' => $carId,
             'shop_code' => $shopCode,
             'title' => $title,
@@ -180,17 +210,25 @@ while (true) {
             'image_url' => $imageUrl,
             'detail_url' => $detailUrl,
         ];
+
+        $allCars[$carId] = $carData;
+
+        // 新着車両判定 (初回起動時は除外、2回目以降で既存DBに存在しないIDを新着とする)
+        if ($initialDbCarCount > 0 && !isset($existingCarIds[$carId])) {
+            $newCars[$carId] = $carData;
+            echo "  [NEW!] 新着車両を検知しました: {$title} ({$totalPriceText})\n";
+        }
+
         $pageCarCount++;
     }
 
     echo "  -> {$pageCarCount} 台の車両データを抽出しました。\n";
 
-    // 1ページあたりの件数が少ない場合は次ページなしと判定
     if ($pageCarCount < 20) {
         break;
     }
     $page++;
-    usleep(500000); // サーバー負荷軽減のため0.5秒ウェイト
+    usleep(500000);
 }
 
 $totalFetched = count($allCars);
@@ -253,4 +291,224 @@ try {
 } catch (Exception $e) {
     $db->rollBack();
     echo "DB更新エラー: " . $e->getMessage() . "\n";
+    exit;
+}
+
+// --- 新着車両の通知処理 (LINE一斉配信 ＆ Discord通知) ---
+$newCarCount = count($newCars);
+if ($newCarCount > 0) {
+    echo "\n=== 🆕 新着車両 {$newCarCount} 台の自動通知処理を開始します ===\n";
+
+    // 1. Discord 通知
+    if (function_exists('sendDiscordNewCarsNotification') && defined('ENABLE_NEW_CAR_DISCORD') && ENABLE_NEW_CAR_DISCORD) {
+        echo "Discord へ新着通知を送信中...\n";
+        sendDiscordNewCarsNotification($newCars);
+        echo "  -> Discord通知送信完了\n";
+    }
+
+    // 2. LINE 公式アカウント友だちへの自動一斉配信 (Broadcast)
+    if (function_exists('sendLineBroadcastMessage') && defined('ENABLE_NEW_CAR_BROADCAST') && ENABLE_NEW_CAR_BROADCAST) {
+        echo "LINE 公式アカウントの友だちへ新着Flex Message一斉配信を送信中...\n";
+        
+        $broadcastMessages = buildNewCarsBroadcastMessages($newCars, $shopName);
+        if (!empty($broadcastMessages)) {
+            $res = sendLineBroadcastMessage($broadcastMessages);
+            if (!empty($res['success'])) {
+                echo "  -> 🚀 LINE一斉配信が正常に完了しました！ (HTTP: {$res['httpCode']})\n";
+            } else {
+                echo "  -> ⚠️ LINE一斉配信失敗 (HTTP: " . ($res['httpCode'] ?? 'N/A') . "): " . ($res['response'] ?? $res['error'] ?? '') . "\n";
+            }
+        }
+    } else {
+        echo "LINE一斉配信設定は無効(ENABLE_NEW_CAR_BROADCAST: false)のためスキップしました。\n";
+    }
+} else {
+    echo "新着車両はありませんでした。\n";
+}
+
+/**
+ * 新着車両用のLINE一斉配信メッセージを組み立てる
+ */
+function buildNewCarsBroadcastMessages(array $newCars, string $shopName): array {
+    $count = count($newCars);
+    $baseUrl = function_exists('getBaseUrl') ? getBaseUrl() : 'https://kureba.co.jp/line-car-search';
+    if (!str_starts_with($baseUrl, 'https://')) {
+        $baseUrl = 'https://' . ltrim($baseUrl, 'http://');
+    }
+
+    // メッセージ1: あいさつテキスト
+    $textMsg = [
+        'type' => 'text',
+        'text' => "🚗✨ 【{$shopName}】新着車両が入荷しました！（{$count}台）\n\n新しく掲載された車両をお知らせします！気になる車両はお早めにチェックしてみてください👇"
+    ];
+
+    // メッセージ2: カルーセル (最大10台)
+    $displayCars = array_slice($newCars, 0, 10);
+    $bubbles = [];
+
+    foreach ($displayCars as $car) {
+        $rawTitle = trim($car['title'] ?? '新着車両');
+        $shortTitle = mb_substr($rawTitle, 0, 32) . (mb_strlen($rawTitle) > 32 ? '...' : '');
+        $imgUrl = !empty($car['image_url']) ? $car['image_url'] : 'https://img.goo-net.com/goo/usedcar/nophoto_big.jpg';
+        if (!str_starts_with($imgUrl, 'https://')) {
+            $imgUrl = 'https://img.goo-net.com/goo/usedcar/nophoto_big.jpg';
+        }
+
+        $totalPrice = !empty($car['total_price_text']) ? $car['total_price_text'] : '要問合せ';
+        $year = !empty(trim($car['year'] ?? '')) ? trim($car['year']) : '-';
+        $distance = !empty(trim($car['distance'] ?? '')) ? trim($car['distance']) : '-';
+        $repair = !empty(trim($car['repair_history'] ?? '')) ? trim($car['repair_history']) : '-';
+        $detailUrl = !empty($car['detail_url']) ? $car['detail_url'] : $baseUrl;
+        $trackingUrl = "{$baseUrl}/redirect.php?id=" . urlencode($car['id']) . "&src=" . urlencode('LINE 新着入荷配信');
+
+        $inquiryText = "【新着車両問い合わせ】\n車名: {$rawTitle}\n支払総額: {$totalPrice}\n詳細: {$detailUrl}\n\nこちらの新着車両について詳しく知りたいです。";
+        if (mb_strlen($inquiryText) > 290) {
+            $inquiryText = mb_substr($inquiryText, 0, 290) . '...';
+        }
+
+        $bubbles[] = [
+            'type' => 'bubble',
+            'size' => 'kilo',
+            'hero' => [
+                'type' => 'image',
+                'url' => $imgUrl,
+                'size' => 'full',
+                'aspectRatio' => '4:3',
+                'aspectMode' => 'cover',
+                'action' => [
+                    'type' => 'uri',
+                    'label' => '詳細を見る',
+                    'uri' => $trackingUrl
+                ]
+            ],
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'paddingAll' => '12px',
+                'contents' => [
+                    // 新着バッジ
+                    [
+                        'type' => 'box',
+                        'layout' => 'baseline',
+                        'contents' => [
+                            [
+                                'type' => 'text',
+                                'text' => '🆕 新着入荷',
+                                'weight' => 'bold',
+                                'size' => 'xs',
+                                'color' => '#FF8800'
+                            ]
+                        ]
+                    ],
+                    // 車名
+                    [
+                        'type' => 'text',
+                        'text' => $shortTitle,
+                        'weight' => 'bold',
+                        'size' => 'sm',
+                        'wrap' => true,
+                        'maxLines' => 2,
+                        'margin' => 'xs'
+                    ],
+                    // 価格
+                    [
+                        'type' => 'box',
+                        'layout' => 'baseline',
+                        'margin' => 'sm',
+                        'contents' => [
+                            [
+                                'type' => 'text',
+                                'text' => '支払総額',
+                                'size' => 'xs',
+                                'color' => '#888888',
+                                'flex' => 0
+                            ],
+                            [
+                                'type' => 'text',
+                                'text' => $totalPrice,
+                                'weight' => 'bold',
+                                'size' => 'lg',
+                                'color' => '#E02424',
+                                'margin' => 'sm',
+                                'flex' => 0
+                            ]
+                        ]
+                    ],
+                    // スペック
+                    [
+                        'type' => 'box',
+                        'layout' => 'vertical',
+                        'margin' => 'md',
+                        'spacing' => 'xs',
+                        'contents' => [
+                            [
+                                'type' => 'box',
+                                'layout' => 'baseline',
+                                'contents' => [
+                                    ['type' => 'text', 'text' => '年式', 'color' => '#999999', 'size' => 'xxs', 'flex' => 2],
+                                    ['type' => 'text', 'text' => $year, 'size' => 'xxs', 'color' => '#333333', 'flex' => 5]
+                                ]
+                            ],
+                            [
+                                'type' => 'box',
+                                'layout' => 'baseline',
+                                'contents' => [
+                                    ['type' => 'text', 'text' => '走行距離', 'color' => '#999999', 'size' => 'xxs', 'flex' => 2],
+                                    ['type' => 'text', 'text' => $distance, 'size' => 'xxs', 'color' => '#333333', 'flex' => 5]
+                                ]
+                            ],
+                            [
+                                'type' => 'box',
+                                'layout' => 'baseline',
+                                'contents' => [
+                                    ['type' => 'text', 'text' => '修復歴', 'color' => '#999999', 'size' => 'xxs', 'flex' => 2],
+                                    ['type' => 'text', 'text' => $repair, 'size' => 'xxs', 'color' => '#333333', 'flex' => 5]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ],
+            'footer' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'spacing' => 'sm',
+                'paddingAll' => '10px',
+                'contents' => [
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => '#06C755',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'message',
+                            'label' => '💬 この車を問い合わせ',
+                            'text' => $inquiryText
+                        ]
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'secondary',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'uri',
+                            'label' => 'グーネットで詳細を見る',
+                            'uri' => $trackingUrl
+                        ]
+                    ]
+                ]
+            ]
+        ];
+    }
+
+    $flexMsg = [
+        'type' => 'flex',
+        'altText' => "【新着入荷】新しい車両が掲載されました！（{$count}台）",
+        'contents' => [
+            'type' => 'carousel',
+            'contents' => $bubbles
+        ]
+    ];
+
+    return [$textMsg, $flexMsg];
 }
