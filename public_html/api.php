@@ -422,6 +422,211 @@ try {
             echo json_encode(['success' => true, 'message' => '削除しました'], JSON_UNESCAPED_UNICODE);
             break;
 
+        // --- 10. 店舗管理者用: 個別手動リマインドLINE送信 ---
+        case 'admin_send_reminder':
+            $authPass = $_POST['password'] ?? '';
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗']);
+                exit;
+            }
+
+            $userId = $_POST['uid'] ?? '';
+            $type = $_POST['type'] ?? 'oil'; // oil or inspection
+
+            if (empty($userId)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'ユーザーIDが必要です']);
+                exit;
+            }
+
+            if (!str_starts_with($userId, 'U')) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'この顧客は手動登録（LINE未連携）のため、LINE送信できません']);
+                exit;
+            }
+
+            $stmt = $db->prepare("SELECT * FROM customers WHERE user_id = :uid LIMIT 1");
+            $stmt->execute([':uid' => $userId]);
+            $cust = $stmt->fetch();
+
+            if (!$cust) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'error' => '顧客情報が見つかりませんでした']);
+                exit;
+            }
+
+            $userName = $cust['user_name'] ?: 'お客様';
+            $carModel = $cust['car_model'] ?: '愛車';
+
+            if ($type === 'oil') {
+                $oilDate = $cust['oil_next_date'] ?: '近日中';
+                $flexMessage = [
+                    'type' => 'flex',
+                    'altText' => "【オイル交換のお知らせ】{$carModel}の交換時期が近づいています",
+                    'contents' => [
+                        'type' => 'bubble',
+                        'size' => 'mega',
+                        'hero' => [
+                            'type' => 'image',
+                            'url' => 'https://img.goo-net.com/common_v2/img/idcars/icon_idlogo.png',
+                            'size' => 'full',
+                            'aspectRatio' => '20:9',
+                            'aspectMode' => 'cover',
+                            'backgroundColor' => '#0f172a'
+                        ],
+                        'body' => [
+                            'type' => 'box',
+                            'layout' => 'vertical',
+                            'paddingAll' => '16px',
+                            'contents' => [
+                                ['type' => 'text', 'text' => '🛢 オイル交換のお知らせ', 'weight' => 'bold', 'size' => 'xs', 'color' => '#f59e0b'],
+                                ['type' => 'text', 'text' => "{$userName} 様", 'weight' => 'bold', 'size' => 'lg', 'margin' => 'xs', 'color' => '#1e293b'],
+                                ['type' => 'text', 'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n愛車の次回オイル交換予定日をお知らせいたします。", 'size' => 'xs', 'color' => '#475569', 'margin' => 'sm', 'wrap' => true],
+                                ['type' => 'separator', 'margin' => 'md'],
+                                [
+                                    'type' => 'box',
+                                    'layout' => 'vertical',
+                                    'margin' => 'md',
+                                    'spacing' => 'xs',
+                                    'backgroundColor' => '#f8fafc',
+                                    'paddingAll' => '10px',
+                                    'cornerRadius' => 'md',
+                                    'contents' => [
+                                        [
+                                            'type' => 'box',
+                                            'layout' => 'baseline',
+                                            'contents' => [
+                                                ['type' => 'text', 'text' => '対象車両', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
+                                                ['type' => 'text', 'text' => $carModel, 'size' => 'xs', 'weight' => 'bold', 'color' => '#1e293b', 'flex' => 6]
+                                            ]
+                                        ],
+                                        [
+                                            'type' => 'box',
+                                            'layout' => 'baseline',
+                                            'contents' => [
+                                                ['type' => 'text', 'text' => '次回予定日', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
+                                                ['type' => 'text', 'text' => $oilDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#e02424', 'flex' => 6]
+                                            ]
+                                        ]
+                                    ]
+                                ],
+                                ['type' => 'text', 'text' => "定期的なオイル交換をおすすめいたします。\nご予約・日程のご相談はお気軽に下のボタンよりお申し付けください！", 'size' => 'xxs', 'color' => '#64748b', 'margin' => 'md', 'wrap' => true]
+                            ]
+                        ],
+                        'footer' => [
+                            'type' => 'box',
+                            'layout' => 'vertical',
+                            'spacing' => 'sm',
+                            'paddingAll' => '12px',
+                            'contents' => [
+                                [
+                                    'type' => 'button',
+                                    'style' => 'primary',
+                                    'color' => '#06C755',
+                                    'height' => 'sm',
+                                    'action' => [
+                                        'type' => 'message',
+                                        'label' => '📅 オイル交換の予約・相談',
+                                        'text' => "【オイル交換の予約相談】\n愛車: {$carModel}\n希望日時や空き状況について相談したいです。"
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ];
+            } else {
+                $inspDate = $cust['inspection_next_date'] ?: '未定';
+                $flexMessage = [
+                    'type' => 'flex',
+                    'altText' => "【車検・定期点検のお知らせ】{$carModel}の満了日が近づいています",
+                    'contents' => [
+                        'type' => 'bubble',
+                        'size' => 'mega',
+                        'hero' => [
+                            'type' => 'image',
+                            'url' => 'https://img.goo-net.com/common_v2/img/idcars/icon_idlogo.png',
+                            'size' => 'full',
+                            'aspectRatio' => '20:9',
+                            'aspectMode' => 'cover',
+                            'backgroundColor' => '#1e293b'
+                        ],
+                        'body' => [
+                            'type' => 'box',
+                            'layout' => 'vertical',
+                            'paddingAll' => '16px',
+                            'contents' => [
+                                ['type' => 'text', 'text' => '📋 車検・定期点検のご案内', 'weight' => 'bold', 'size' => 'xs', 'color' => '#3b82f6'],
+                                ['type' => 'text', 'text' => "{$userName} 様", 'weight' => 'bold', 'size' => 'lg', 'margin' => 'xs', 'color' => '#1e293b'],
+                                ['type' => 'text', 'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n愛車【{$carModel}】の車検・点検満了日が近づいております。", 'size' => 'xs', 'color' => '#475569', 'margin' => 'sm', 'wrap' => true],
+                                ['type' => 'separator', 'margin' => 'md'],
+                                [
+                                    'type' => 'box',
+                                    'layout' => 'vertical',
+                                    'margin' => 'md',
+                                    'spacing' => 'xs',
+                                    'backgroundColor' => '#f8fafc',
+                                    'paddingAll' => '10px',
+                                    'cornerRadius' => 'md',
+                                    'contents' => [
+                                        [
+                                            'type' => 'box',
+                                            'layout' => 'baseline',
+                                            'contents' => [
+                                                ['type' => 'text', 'text' => '対象車両', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
+                                                ['type' => 'text', 'text' => $carModel, 'size' => 'xs', 'weight' => 'bold', 'color' => '#1e293b', 'flex' => 6]
+                                            ]
+                                        ],
+                                        [
+                                            'type' => 'box',
+                                            'layout' => 'baseline',
+                                            'contents' => [
+                                                ['type' => 'text', 'text' => '車検満了日', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
+                                                ['type' => 'text', 'text' => $inspDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#e02424', 'flex' => 6]
+                                            ]
+                                        ]
+                                    ]
+                                ],
+                                ['type' => 'text', 'text' => "車検満了日の約1ヶ月前より受検が可能です。\n代車の手配や事前お見積もりも承っておりますので、お気軽にご連絡ください！", 'size' => 'xxs', 'color' => '#64748b', 'margin' => 'md', 'wrap' => true]
+                            ]
+                        ],
+                        'footer' => [
+                            'type' => 'box',
+                            'layout' => 'vertical',
+                            'spacing' => 'sm',
+                            'paddingAll' => '12px',
+                            'contents' => [
+                                [
+                                    'type' => 'button',
+                                    'style' => 'primary',
+                                    'color' => '#3b82f6',
+                                    'height' => 'sm',
+                                    'action' => [
+                                        'type' => 'message',
+                                        'label' => '📅 車検・点検の予約・見積もり',
+                                        'text' => "【車検・点検の予約相談】\n愛車: {$carModel}\n車検満了日: {$inspDate}\n車検のお見積もり・日程について相談したいです。"
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ];
+            }
+
+            $res = sendLinePushMessage($userId, [$flexMessage]);
+            if (!empty($res['success'])) {
+                if ($type === 'oil') {
+                    $db->prepare("UPDATE customers SET oil_reminded_at = CURRENT_TIMESTAMP WHERE user_id = :uid")->execute([':uid' => $userId]);
+                } else {
+                    $db->prepare("UPDATE customers SET inspection_reminded_at = CURRENT_TIMESTAMP WHERE user_id = :uid")->execute([':uid' => $userId]);
+                }
+                echo json_encode(['success' => true, 'message' => "{$userName} 様へLINEリマインドを送信しました！"], JSON_UNESCAPED_UNICODE);
+            } else {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => "LINE送信失敗: " . ($res['error'] ?? 'APIエラー')], JSON_UNESCAPED_UNICODE);
+            }
+            break;
+
         default:
             http_response_code(400);
             echo json_encode(['success' => false, 'error' => '無効なアクションです。']);

@@ -170,9 +170,13 @@
             margin-bottom: 20px;
             border: 1px solid #e2e8f0;
             box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+            box-sizing: border-box;
+            overflow: hidden;
         }
         .form-group {
             margin-bottom: 14px;
+            box-sizing: border-box;
+            width: 100%;
         }
         .form-label {
             font-size: 12px;
@@ -183,13 +187,25 @@
         }
         .form-input {
             width: 100%;
-            height: 42px;
+            max-width: 100%;
+            height: 44px;
             padding: 0 12px;
             border-radius: 10px;
             border: 1px solid #cbd5e1;
-            font-size: 13px;
+            font-size: 14px;
             background: #f8fafc;
             box-sizing: border-box;
+            display: block;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            font-family: inherit;
+            color: #1e293b;
+        }
+        input[type="date"].form-input {
+            min-height: 44px;
+            padding: 8px 12px;
+            line-height: normal;
         }
         .form-input:focus {
             outline: none;

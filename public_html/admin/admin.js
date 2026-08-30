@@ -264,6 +264,12 @@ function renderTable() {
                 <td style="font-size: 11px; color: #64748b;">${updated}</td>
                 <td>
                     <div class="action-btns">
+                        <button class="btn-remind-oil" onclick="sendManualReminder('${c.user_id}', 'oil', '${escapeHtml(c.user_name)}', '${escapeHtml(c.car_model)}')" title="オイル交換リマインドをLINE送信">
+                            <i class="fa-solid fa-oil-can"></i> オイル送信
+                        </button>
+                        <button class="btn-remind-insp" onclick="sendManualReminder('${c.user_id}', 'inspection', '${escapeHtml(c.user_name)}', '${escapeHtml(c.car_model)}')" title="車検・点検リマインドをLINE送信">
+                            <i class="fa-solid fa-clipboard-check"></i> 車検送信
+                        </button>
                         <button class="btn-edit" onclick="editCustomerById('${c.user_id}')">
                             <i class="fa-solid fa-pen"></i> 編集
                         </button>
@@ -276,6 +282,42 @@ function renderTable() {
         `;
     }).join('');
 }
+
+window.sendManualReminder = async function(userId, type, userName, carModel) {
+    if (!userId.startsWith('U')) {
+        alert('この顧客は手動登録（LINE未連携）のため、LINEメッセージを送信できません。');
+        return;
+    }
+
+    const typeLabel = (type === 'oil') ? '🛢 オイル交換リマインド' : '📋 車検・点検リマインド';
+    if (!confirm(`【${userName} 様 (${carModel})】へ\n「${typeLabel}」のLINEメッセージを今すぐ送信しますか？`)) {
+        return;
+    }
+
+    try {
+        showToast('LINEメッセージを送信中...');
+        const payload = new URLSearchParams({
+            action: 'admin_send_reminder',
+            password: state.password,
+            uid: userId,
+            type: type
+        });
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(`✅ ${userName} 様へLINEリマインドを送信しました！`);
+            await fetchCustomers();
+        } else {
+            alert(data.error || '送信に失敗しました');
+        }
+    } catch (e) {
+        alert('通信エラーが発生しました');
+    }
+};
 
 function getBadgeHtml(dateStr) {
     if (!dateStr) return '<span style="color:#94a3b8; font-size:11px;">未設定</span>';

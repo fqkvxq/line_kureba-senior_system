@@ -392,6 +392,47 @@ body {
 .action-btns {
     display: flex;
     gap: 6px;
+    flex-wrap: nowrap;
+}
+
+.btn-remind-oil {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+}
+
+.btn-remind-oil:hover {
+    background: #fde68a;
+}
+
+.btn-remind-insp {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+}
+
+.btn-remind-insp:hover {
+    background: #bfdbfe;
 }
 
 .btn-edit {
@@ -403,6 +444,7 @@ body {
     font-size: 12px;
     font-weight: 700;
     cursor: pointer;
+    white-space: nowrap;
 }
 
 .btn-delete {
@@ -413,6 +455,7 @@ body {
     border-radius: 6px;
     font-size: 12px;
     cursor: pointer;
+    white-space: nowrap;
 }
 
 .empty-placeholder {
