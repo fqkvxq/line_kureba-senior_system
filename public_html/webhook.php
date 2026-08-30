@@ -259,7 +259,7 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
 
         // --- 7. サイレント検索: 車種・ボディタイプメニュー表示 ---
         case 'show_type_menu':
-            sendTypeMenuMessage($replyToken);
+            sendTypeMenuMessage($db, $replyToken);
             break;
 
         // --- 7-2. サイレント検索: 装備・仕様メニュー表示 ---
@@ -344,7 +344,7 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bo
             break;
 
         case 'show_type_menu':
-            $messages = generateTypeMenuMessages();
+            $messages = generateTypeMenuMessages($db);
             break;
 
         case 'show_equipment_menu':
@@ -1255,173 +1255,257 @@ function generatePriceMenuMessages(): array {
 /**
  * 車種・ボディタイプ選択メニュー送信
  */
-function sendTypeMenuMessage(string $replyToken) {
-    $messages = generateTypeMenuMessages();
+function sendTypeMenuMessage(PDO $db, string $replyToken) {
+    $messages = generateTypeMenuMessages($db);
     sendReplyMessage($replyToken, $messages);
 }
 
 /**
  * 車種・ボディタイプ選択メニュー（サイレントボタン式Flex カルーセル）生成
- * 文字切れを完全防止するため、ボタンに絵文字を使用せず簡潔な半角テキストを採用
+ * 現在の有効在庫（carsテーブル）から実在するボディタイプおよび人気車種を自動集計し、
+ * 「該当台数（例: (10台)）」バッジ付きでカルーセル化（0件の車種は自動非表示）
  */
-function generateTypeMenuMessages(): array {
-    // バブル1: ボディタイプ
-    $bubble1 = [
-        'type' => 'bubble',
-        'size' => 'kilo',
-        'body' => [
-            'type' => 'box',
-            'layout' => 'vertical',
-            'paddingAll' => '14px',
-            'contents' => [
-                [
-                    'type' => 'text',
-                    'text' => 'ﾎﾞﾃﾞｨﾀｲﾌﾟで探す',
-                    'weight' => 'bold',
-                    'size' => 'md',
-                    'color' => '#1e293b'
-                ],
-                [
-                    'type' => 'text',
-                    'text' => 'お好みのタイプをお選びください',
-                    'size' => 'xs',
-                    'color' => '#64748b',
-                    'margin' => 'xs'
-                ],
-                [
-                    'type' => 'separator',
-                    'margin' => 'sm'
-                ],
-                [
-                    'type' => 'box',
-                    'layout' => 'vertical',
-                    'margin' => 'md',
-                    'spacing' => 'sm',
-                    'contents' => [
-                        [
-                            'type' => 'button',
-                            'style' => 'secondary',
-                            'height' => 'sm',
-                            'action' => [
-                                'type' => 'postback',
-                                'label' => '軽自動車',
-                                'data' => 'action=search_kei'
-                            ]
-                        ],
-                        [
-                            'type' => 'button',
-                            'style' => 'secondary',
-                            'height' => 'sm',
-                            'action' => [
-                                'type' => 'postback',
-                                'label' => 'ｺﾝﾊﾟｸﾄｶｰ',
-                                'data' => 'action=search_type&keyword=' . urlencode('コンパクト')
-                            ]
-                        ],
-                        [
-                            'type' => 'button',
-                            'style' => 'secondary',
-                            'height' => 'sm',
-                            'action' => [
-                                'type' => 'postback',
-                                'label' => 'ﾐﾆﾊﾞﾝ･ﾜｺﾞﾝ',
-                                'data' => 'action=search_type&keyword=' . urlencode('ワゴン')
-                            ]
-                        ],
-                        [
-                            'type' => 'button',
-                            'style' => 'secondary',
-                            'height' => 'sm',
-                            'action' => [
-                                'type' => 'postback',
-                                'label' => 'SUV･4WD',
-                                'data' => 'action=search_type&keyword=' . urlencode('4WD')
-                            ]
-                        ]
-                    ]
-                ]
+function generateTypeMenuMessages(PDO $db): array {
+    // 1. 有効在庫の全データを取得
+    $stmt = $db->query("SELECT id, title, displacement, drive_type FROM cars WHERE is_active = 1");
+    $cars = $stmt->fetchAll();
+    $totalStock = count($cars);
+
+    if (empty($cars)) {
+        return [
+            [
+                'type' => 'text',
+                'text' => "現在、展示中の在庫車両を準備中です。\n最新の入庫状況はお気軽にお問い合わせください！",
+                'quickReply' => getQuickReplyItems()
             ]
+        ];
+    }
+
+    // 2. ボディタイプ定義
+    $bodyTypeDefs = [
+        [
+            'name' => '軽自動車',
+            'action' => 'search_kei',
+            'param' => '',
+            'check' => function($car) {
+                $disp = $car['displacement'] ?? '';
+                $title = $car['title'] ?? '';
+                return ($disp === '660cc' || str_starts_with($disp, '66') || str_contains($title, '軽自動車'));
+            }
+        ],
+        [
+            'name' => 'ｺﾝﾊﾟｸﾄｶｰ',
+            'action' => 'search_type',
+            'param' => 'keyword=' . urlencode('コンパクト'),
+            'check' => function($car) {
+                $disp = $car['displacement'] ?? '';
+                $title = $car['title'] ?? '';
+                if ($disp === '660cc' || str_starts_with($disp, '66')) return false;
+                $kws = ['コンパクト', 'フィット', 'アクア', 'ヤリス', 'ノート', 'パッソ', 'スイフト', 'ヴィッツ', 'デミオ', 'マーチ', 'ポロ', 'ゴルフ', 'ルーミー', 'ソリオ', 'タンク', 'FIT', 'AQUA', 'NOTE', 'SWIFT'];
+                foreach ($kws as $kw) {
+                    if (stripos($title, $kw) !== false) return true;
+                }
+                return false;
+            }
+        ],
+        [
+            'name' => 'ﾐﾆﾊﾞﾝ･ﾜｺﾞﾝ',
+            'action' => 'search_type',
+            'param' => 'keyword=' . urlencode('ワゴン'),
+            'check' => function($car) {
+                $title = $car['title'] ?? '';
+                $kws = ['ワゴン', 'セレナ', 'ヴォクシー', 'ノア', 'ステップワゴン', 'フリード', 'シエンタ', 'アルファード', 'ヴェルファイア', 'デリカ', 'エスティマ', 'オデッセイ', 'SERENA', 'VOXY', 'NOAH'];
+                foreach ($kws as $kw) {
+                    if (stripos($title, $kw) !== false) return true;
+                }
+                return false;
+            }
+        ],
+        [
+            'name' => 'SUV･4WD',
+            'action' => 'search_type',
+            'param' => 'keyword=' . urlencode('4WD'),
+            'check' => function($car) {
+                $drive = $car['drive_type'] ?? '';
+                $title = $car['title'] ?? '';
+                if (stripos($drive, '4WD') !== false || stripos($drive, '四駆') !== false || stripos($title, '4WD') !== false || stripos($title, '４ＷＤ') !== false || stripos($title, 'SUV') !== false) {
+                    return true;
+                }
+                $kws = ['ハスラー', 'ジムニー', 'ヴェゼル', 'ヤリスクロス', 'ライズ', 'ロッキー', 'エクストレイル', 'フォレスター', 'CX-', 'C-HR'];
+                foreach ($kws as $kw) {
+                    if (stripos($title, $kw) !== false) return true;
+                }
+                return false;
+            }
         ]
     ];
 
-    // バブル2: 人気車種・モデル
-    $bubble2 = [
-        'type' => 'bubble',
-        'size' => 'kilo',
-        'body' => [
-            'type' => 'box',
-            'layout' => 'vertical',
-            'paddingAll' => '14px',
-            'contents' => [
-                [
-                    'type' => 'text',
-                    'text' => '人気車種で探す',
-                    'weight' => 'bold',
-                    'size' => 'md',
-                    'color' => '#1e293b'
-                ],
-                [
-                    'type' => 'text',
-                    'text' => '定番の人気モデルからお選びください',
-                    'size' => 'xs',
-                    'color' => '#64748b',
-                    'margin' => 'xs'
-                ],
-                [
-                    'type' => 'separator',
-                    'margin' => 'sm'
-                ],
-                [
-                    'type' => 'box',
-                    'layout' => 'vertical',
-                    'margin' => 'md',
-                    'spacing' => 'sm',
-                    'contents' => [
-                        [
-                            'type' => 'button',
-                            'style' => 'secondary',
-                            'height' => 'sm',
-                            'action' => [
-                                'type' => 'postback',
-                                'label' => 'N-BOX',
-                                'data' => 'action=search_type&keyword=' . urlencode('N-BOX')
-                            ]
-                        ],
-                        [
-                            'type' => 'button',
-                            'style' => 'secondary',
-                            'height' => 'sm',
-                            'action' => [
-                                'type' => 'postback',
-                                'label' => 'ﾀﾝﾄ',
-                                'data' => 'action=search_type&keyword=' . urlencode('タント')
-                            ]
-                        ],
-                        [
-                            'type' => 'button',
-                            'style' => 'secondary',
-                            'height' => 'sm',
-                            'action' => [
-                                'type' => 'postback',
-                                'label' => 'ｽﾍﾟｰｼｱ',
-                                'data' => 'action=search_type&keyword=' . urlencode('スペーシア')
-                            ]
-                        ],
-                        [
-                            'type' => 'button',
-                            'style' => 'secondary',
-                            'height' => 'sm',
-                            'action' => [
-                                'type' => 'postback',
-                                'label' => 'ﾜｺﾞﾝR',
-                                'data' => 'action=search_type&keyword=' . urlencode('ワゴンR')
-                            ]
-                        ]
+    // 3. 人気車種モデルマスター定義
+    $modelDefs = [
+        ['name' => 'N-BOX', 'keyword' => 'N-BOX', 'match' => ['N-BOX', 'Ｎ－ＢＯＸ', 'NBOX', 'エヌボックス']],
+        ['name' => 'ﾀﾝﾄ', 'keyword' => 'タント', 'match' => ['タント', 'ﾀﾝﾄ', 'TANTO']],
+        ['name' => 'ｽﾍﾟｰｼｱ', 'keyword' => 'スペーシア', 'match' => ['スペーシア', 'ｽﾍﾟｰｼｱ', 'SPACIA']],
+        ['name' => 'ﾜｺﾞﾝR', 'keyword' => 'ワゴンR', 'match' => ['ワゴンR', 'ワゴンＲ', 'ﾜｺﾞﾝR', 'WAGON R', 'スティングレー']],
+        ['name' => 'ﾃﾞｲｽﾞ/ﾙｰｸｽ', 'keyword' => 'デイズ', 'match' => ['デイズ', 'ﾃﾞｲｽﾞ', 'ルークス', 'ﾙｰｸｽ', 'DAYZ', 'ROOX']],
+        ['name' => 'ﾊｽﾗｰ', 'keyword' => 'ハスラー', 'match' => ['ハスラー', 'ﾊｽﾗｰ', 'HUSTLER']],
+        ['name' => 'ﾑｰｳﾞ', 'keyword' => 'ムーヴ', 'match' => ['ムーヴ', 'ﾑｰｳﾞ', 'キャンバス', 'MOVE']],
+        ['name' => 'ｱﾙﾄ', 'keyword' => 'アルト', 'match' => ['アルト', 'ｱﾙﾄ', 'ALTO', 'ラパン']],
+        ['name' => 'ﾐﾗ/ｲｰｽ', 'keyword' => 'ミライース', 'match' => ['ミライース', 'ミラ', 'ﾐﾗ', 'MIRA']],
+        ['name' => 'C-HR', 'keyword' => 'C-HR', 'match' => ['C-HR', 'CHR']],
+        ['name' => 'ﾌﾟﾘｳｽ', 'keyword' => 'プリウス', 'match' => ['プリウス', 'ﾌﾟﾘｳｽ', 'PRIUS']],
+        ['name' => 'ｱｸｱ', 'keyword' => 'アクア', 'match' => ['アクア', 'ｱｸｱ', 'AQUA']],
+        ['name' => 'ﾉｰﾄ', 'keyword' => 'ノート', 'match' => ['ノート', 'ﾉｰﾄ', 'NOTE']],
+        ['name' => 'ﾌｨｯﾄ', 'keyword' => 'フィット', 'match' => ['フィット', 'ﾌｨｯﾄ', 'FIT']],
+        ['name' => '輸入車/欧州車', 'keyword' => '輸入車', 'match' => ['ベンツ', 'BMW', 'フォルクスワーゲン', 'アウディ', 'キャデラック', 'MINI', 'ボルボ', 'Bクラス', 'B180', 'CTS']]
+    ];
+
+    $activeBubbles = [];
+
+    // --- カード①: 実在するボディタイプ ---
+    $typeButtons = [];
+    foreach ($bodyTypeDefs as $bDef) {
+        $count = 0;
+        foreach ($cars as $car) {
+            if ($bDef['check']($car)) {
+                $count++;
+            }
+        }
+        if ($count > 0) {
+            $btnLabel = "{$bDef['name']} ({$count}台)";
+            $postbackData = "action={$bDef['action']}" . (!empty($bDef['param']) ? "&{$bDef['param']}" : "");
+            $typeButtons[] = [
+                'type' => 'button',
+                'style' => 'secondary',
+                'height' => 'sm',
+                'action' => [
+                    'type' => 'postback',
+                    'label' => $btnLabel,
+                    'data' => $postbackData
+                ]
+            ];
+        }
+    }
+
+    if (!empty($typeButtons)) {
+        $activeBubbles[] = [
+            'type' => 'bubble',
+            'size' => 'kilo',
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'paddingAll' => '14px',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => 'ﾎﾞﾃﾞｨﾀｲﾌﾟで探す',
+                        'weight' => 'bold',
+                        'size' => 'md',
+                        'color' => '#1e293b'
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => '在庫に実在するタイプから選べます',
+                        'size' => 'xs',
+                        'color' => '#64748b',
+                        'margin' => 'xs'
+                    ],
+                    [
+                        'type' => 'separator',
+                        'margin' => 'sm'
+                    ],
+                    [
+                        'type' => 'box',
+                        'layout' => 'vertical',
+                        'margin' => 'md',
+                        'spacing' => 'sm',
+                        'contents' => $typeButtons
                     ]
                 ]
             ]
-        ]
-    ];
+        ];
+    }
+
+    // --- カード②: 実在する人気車種モデル ---
+    $modelButtons = [];
+    foreach ($modelDefs as $mDef) {
+        $count = 0;
+        foreach ($cars as $car) {
+            $haystack = ($car['title'] ?? '') . ' ' . ($car['displacement'] ?? '');
+            foreach ($mDef['match'] as $kw) {
+                if (stripos($haystack, $kw) !== false) {
+                    $count++;
+                    break;
+                }
+            }
+        }
+        if ($count > 0) {
+            $btnLabel = "{$mDef['name']} ({$count}台)";
+            $postbackData = "action=search_type&keyword=" . urlencode($mDef['keyword']);
+            $modelButtons[] = [
+                'type' => 'button',
+                'style' => 'secondary',
+                'height' => 'sm',
+                'action' => [
+                    'type' => 'postback',
+                    'label' => $btnLabel,
+                    'data' => $postbackData
+                ]
+            ];
+        }
+    }
+
+    if (!empty($modelButtons)) {
+        $modelChunks = array_chunk($modelButtons, 4);
+        foreach ($modelChunks as $mIdx => $chunkBtns) {
+            $cardTitle = '人気車種で探す' . (count($modelChunks) > 1 ? " (" . ($mIdx + 1) . ")" : "");
+            $activeBubbles[] = [
+                'type' => 'bubble',
+                'size' => 'kilo',
+                'body' => [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'paddingAll' => '14px',
+                    'contents' => [
+                        [
+                            'type' => 'text',
+                            'text' => $cardTitle,
+                            'weight' => 'bold',
+                            'size' => 'md',
+                            'color' => '#1e293b'
+                        ],
+                        [
+                            'type' => 'text',
+                            'text' => '在庫に実在するモデルから選べます',
+                            'size' => 'xs',
+                            'color' => '#64748b',
+                            'margin' => 'xs'
+                        ],
+                        [
+                            'type' => 'separator',
+                            'margin' => 'sm'
+                        ],
+                        [
+                            'type' => 'box',
+                            'layout' => 'vertical',
+                            'margin' => 'md',
+                            'spacing' => 'sm',
+                            'contents' => $chunkBtns
+                        ]
+                    ]
+                ]
+            ];
+        }
+    }
+
+    if (empty($activeBubbles)) {
+        return [
+            [
+                'type' => 'text',
+                'text' => "現在、展示中の在庫車両を準備中です。",
+                'quickReply' => getQuickReplyItems()
+            ]
+        ];
+    }
 
     return [
         [
@@ -1429,7 +1513,7 @@ function generateTypeMenuMessages(): array {
             'altText' => '車種・ボディタイプから探す',
             'contents' => [
                 'type' => 'carousel',
-                'contents' => [$bubble1, $bubble2]
+                'contents' => array_slice($activeBubbles, 0, 10)
             ],
             'quickReply' => getQuickReplyItems()
         ]
