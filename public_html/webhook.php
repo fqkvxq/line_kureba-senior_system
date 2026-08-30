@@ -452,9 +452,37 @@ function generateCarSearchMessages(PDO $db, array $criteria, string $heading, st
         $params = [];
 
         if (!empty($criteria['keyword'])) {
-            $kw = $criteria['keyword'];
-            $where[] = "(title LIKE :kw OR displacement LIKE :kw OR year LIKE :kw)";
-            $params[':kw'] = "%{$kw}%";
+            $kw = trim($criteria['keyword']);
+            if ($kw === 'ミラ' || $kw === 'ミライース') {
+                $where[] = "(title LIKE '%ミラ%' OR title LIKE '%ミライース%' OR title LIKE '%MIRA%')";
+            } elseif ($kw === 'デイズ' || $kw === 'ルークス') {
+                $where[] = "(title LIKE '%デイズ%' OR title LIKE '%ルークス%' OR title LIKE '%DAYZ%' OR title LIKE '%ROOX%')";
+            } elseif ($kw === 'N-BOX' || $kw === 'エヌボックス') {
+                $where[] = "(title LIKE '%N-BOX%' OR title LIKE '%Ｎ－ＢＯＸ%' OR title LIKE '%NBOX%')";
+            } elseif ($kw === 'タント') {
+                $where[] = "(title LIKE '%タント%' OR title LIKE '%TANTO%')";
+            } elseif ($kw === 'スペーシア') {
+                $where[] = "(title LIKE '%スペーシア%' OR title LIKE '%SPACIA%')";
+            } elseif ($kw === 'ワゴンR') {
+                $where[] = "(title LIKE '%ワゴンR%' OR title LIKE '%ワゴンＲ%' OR title LIKE '%スティングレー%')";
+            } elseif ($kw === 'ムーヴ') {
+                $where[] = "(title LIKE '%ムーヴ%' OR title LIKE '%キャンバス%' OR title LIKE '%MOVE%')";
+            } elseif ($kw === 'アルト') {
+                $where[] = "(title LIKE '%アルト%' OR title LIKE '%ラパン%' OR title LIKE '%ALTO%')";
+            } elseif ($kw === 'ハスラー') {
+                $where[] = "(title LIKE '%ハスラー%' OR title LIKE '%HUSTLER%')";
+            } elseif ($kw === '輸入車' || $kw === '外車') {
+                $where[] = "(title LIKE '%ベンツ%' OR title LIKE '%BMW%' OR title LIKE '%フォルクスワーゲン%' OR title LIKE '%アウディ%' OR title LIKE '%キャデラック%' OR title LIKE '%MINI%' OR title LIKE '%ボルボ%' OR title LIKE '%Bクラス%' OR title LIKE '%B180%' OR title LIKE '%CTS%')";
+            } elseif ($kw === 'コンパクト') {
+                $where[] = "(displacement != '660cc' AND (title LIKE '%コンパクト%' OR title LIKE '%フィット%' OR title LIKE '%アクア%' OR title LIKE '%ヤリス%' OR title LIKE '%ノート%' OR title LIKE '%パッソ%' OR title LIKE '%スイフト%' OR title LIKE '%ヴィッツ%' OR title LIKE '%デミオ%' OR title LIKE '%マーチ%' OR title LIKE '%ポロ%' OR title LIKE '%ゴルフ%' OR title LIKE '%ルーミー%' OR title LIKE '%ソリオ%' OR title LIKE '%タンク%' OR title LIKE '%FIT%' OR title LIKE '%AQUA%' OR title LIKE '%NOTE%'))";
+            } elseif ($kw === 'ワゴン') {
+                $where[] = "(title LIKE '%ワゴン%' OR title LIKE '%セレナ%' OR title LIKE '%ヴォクシー%' OR title LIKE '%ノア%' OR title LIKE '%ステップワゴン%' OR title LIKE '%フリード%' OR title LIKE '%シエンタ%' OR title LIKE '%アルファード%' OR title LIKE '%ヴェルファイア%' OR title LIKE '%デリカ%' OR title LIKE '%エスティマ%' OR title LIKE '%オデッセイ%')";
+            } elseif ($kw === '4WD') {
+                $where[] = "(drive_type LIKE '%4WD%' OR drive_type LIKE '%四駆%' OR title LIKE '%4WD%' OR title LIKE '%４ＷＤ%' OR title LIKE '%SUV%' OR title LIKE '%ハスラー%' OR title LIKE '%ジムニー%' OR title LIKE '%ヴェゼル%' OR title LIKE '%ヤリスクロス%' OR title LIKE '%ライズ%' OR title LIKE '%ロッキー%' OR title LIKE '%エクストレイル%' OR title LIKE '%フォレスター%' OR title LIKE '%CX-%' OR title LIKE '%C-HR%')";
+            } else {
+                $where[] = "(title LIKE :kw OR displacement LIKE :kw OR year LIKE :kw)";
+                $params[':kw'] = "%{$kw}%";
+            }
         }
 
         if (!empty($criteria['is_kei'])) {
@@ -1350,7 +1378,7 @@ function generateTypeMenuMessages(PDO $db): array {
         ['name' => 'ﾊｽﾗｰ', 'keyword' => 'ハスラー', 'match' => ['ハスラー', 'ﾊｽﾗｰ', 'HUSTLER']],
         ['name' => 'ﾑｰｳﾞ', 'keyword' => 'ムーヴ', 'match' => ['ムーヴ', 'ﾑｰｳﾞ', 'キャンバス', 'MOVE']],
         ['name' => 'ｱﾙﾄ', 'keyword' => 'アルト', 'match' => ['アルト', 'ｱﾙﾄ', 'ALTO', 'ラパン']],
-        ['name' => 'ﾐﾗ/ｲｰｽ', 'keyword' => 'ミライース', 'match' => ['ミライース', 'ミラ', 'ﾐﾗ', 'MIRA']],
+        ['name' => 'ﾐﾗ/ｲｰｽ', 'keyword' => 'ミラ', 'match' => ['ミライース', 'ミラ', 'ﾐﾗ', 'MIRA']],
         ['name' => 'C-HR', 'keyword' => 'C-HR', 'match' => ['C-HR', 'CHR']],
         ['name' => 'ﾌﾟﾘｳｽ', 'keyword' => 'プリウス', 'match' => ['プリウス', 'ﾌﾟﾘｳｽ', 'PRIUS']],
         ['name' => 'ｱｸｱ', 'keyword' => 'アクア', 'match' => ['アクア', 'ｱｸｱ', 'AQUA']],
