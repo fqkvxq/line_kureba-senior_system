@@ -550,6 +550,178 @@ try {
             echo json_encode(['success' => true, 'message' => '車両を削除しました']);
             break;
 
+        // --- 6-3. ユーザー用: オイル・点検以外の来店希望・相談フォーム送信 ---
+        case 'submit_general_inquiry':
+            $userId = trim($_POST['uid'] ?? '');
+            $userName = trim($_POST['uname'] ?? 'お客様');
+            $carModel = trim($_POST['car_model'] ?? '愛車');
+            $inquiryType = trim($_POST['inquiry_type'] ?? 'ご来店・ご相談');
+            $preferredDate = trim($_POST['preferred_date'] ?? '未指定');
+            $preferredTime = trim($_POST['preferred_time'] ?? 'いつでも');
+            $details = trim($_POST['details'] ?? '');
+            $needLoanCar = trim($_POST['need_loan_car'] ?? '不要');
+            $phone = trim($_POST['phone'] ?? '');
+
+            writeDebugLog("一般来店相談フォーム受付", [
+                'uid' => $userId,
+                'name' => $userName,
+                'type' => $inquiryType,
+                'car' => $carModel,
+                'date' => $preferredDate,
+                'time' => $preferredTime,
+                'loan_car' => $needLoanCar,
+                'details' => $details
+            ]);
+
+            // 1. Discord Webhookへ通知
+            $webhookUrl = defined('DISCORD_WEBHOOK_URL') ? DISCORD_WEBHOOK_URL : '';
+            if (!empty($webhookUrl)) {
+                $discordPayload = [
+                    'username' => 'アップファーレン 来店予約受付',
+                    'avatar_url' => 'https://picture1.goo-net.com/shop/060/0601492/icon/0601492_icon_s.jpg',
+                    'embeds' => [
+                        [
+                            'title' => "🛠️ 【来店・一般ご相談受付】{$inquiryType}",
+                            'description' => "マイカー点検パスポートから新しいご来店予約・ご相談が届きました。",
+                            'color' => 0xF59E0B, // オレンジ
+                            'fields' => [
+                                ['name' => '👤 お客様名', 'value' => "{$userName} 様", 'inline' => true],
+                                ['name' => '🚗 愛車', 'value' => $carModel, 'inline' => true],
+                                ['name' => '🏷️ ご用件', 'value' => $inquiryType, 'inline' => true],
+                                ['name' => '📅 ご希望日時', 'value' => "{$preferredDate} ({$preferredTime})", 'inline' => true],
+                                ['name' => '🚙 代車希望', 'value' => $needLoanCar, 'inline' => true],
+                                ['name' => '📞 電話番号', 'value' => $phone ?: '未入力', 'inline' => true],
+                                ['name' => '📝 ご相談・症状詳細', 'value' => $details ? "```\n" . mb_substr($details, 0, 950) . "\n```" : '特に指定なし', 'inline' => false],
+                                ['name' => '🆔 LINE UserID', 'value' => "`{$userId}`", 'inline' => false],
+                            ],
+                            'footer' => ['text' => 'LINE Car Maintenance System'],
+                            'timestamp' => date('c')
+                        ]
+                    ]
+                ];
+
+                $ch = curl_init($webhookUrl);
+                curl_setopt_array($ch, [
+                    CURLOPT_POST => true,
+                    CURLOPT_POSTFIELDS => json_encode($discordPayload, JSON_UNESCAPED_UNICODE),
+                    CURLOPT_HTTPHEADER => ['Content-Type: application/json; charset=utf-8'],
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_TIMEOUT => 5,
+                    CURLOPT_SSL_VERIFYPEER => false
+                ]);
+                curl_exec($ch);
+                curl_close($ch);
+            }
+
+            // 2. LINE Push送信（LINEユーザーの場合）
+            if (str_starts_with($userId, 'U')) {
+                $confirmFlex = [
+                    'type' => 'flex',
+                    'altText' => "【受付完了】{$inquiryType}のご来店予約・相談を承りました",
+                    'contents' => [
+                        'type' => 'bubble',
+                        'size' => 'mega',
+                        'body' => [
+                            'type' => 'box',
+                            'layout' => 'vertical',
+                            'paddingAll' => '20px',
+                            'contents' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => '🛠️ ご来店予約・相談の受付完了',
+                                    'weight' => 'bold',
+                                    'size' => 'sm',
+                                    'color' => '#06C755'
+                                ],
+                                [
+                                    'type' => 'text',
+                                    'text' => "{$userName} 様",
+                                    'weight' => 'bold',
+                                    'size' => 'xl',
+                                    'margin' => 'sm',
+                                    'color' => '#1e293b'
+                                ],
+                                [
+                                    'type' => 'text',
+                                    'text' => "以下の内容でご来店予約・ご相談を承りました！\n店舗スタッフが内容を確認し、LINEトークにて折り返し日程等のご連絡を差し上げます。",
+                                    'size' => 'xs',
+                                    'color' => '#475569',
+                                    'margin' => 'sm',
+                                    'wrap' => true
+                                ],
+                                [
+                                    'type' => 'separator',
+                                    'margin' => 'md'
+                                ],
+                                [
+                                    'type' => 'box',
+                                    'layout' => 'vertical',
+                                    'margin' => 'md',
+                                    'spacing' => 'sm',
+                                    'backgroundColor' => '#f8fafc',
+                                    'paddingAll' => '12px',
+                                    'cornerRadius' => 'md',
+                                    'contents' => [
+                                        [
+                                            'type' => 'box',
+                                            'layout' => 'baseline',
+                                            'contents' => [
+                                                ['type' => 'text', 'text' => 'ご用件', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
+                                                ['type' => 'text', 'text' => $inquiryType, 'size' => 'xs', 'weight' => 'bold', 'color' => '#1e293b', 'flex' => 6]
+                                            ]
+                                        ],
+                                        [
+                                            'type' => 'box',
+                                            'layout' => 'baseline',
+                                            'contents' => [
+                                                ['type' => 'text', 'text' => '対象車両', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
+                                                ['type' => 'text', 'text' => $carModel, 'size' => 'xs', 'color' => '#1e293b', 'flex' => 6]
+                                            ]
+                                        ],
+                                        [
+                                            'type' => 'box',
+                                            'layout' => 'baseline',
+                                            'contents' => [
+                                                ['type' => 'text', 'text' => '希望日時', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
+                                                ['type' => 'text', 'text' => "{$preferredDate} ({$preferredTime})", 'size' => 'xs', 'color' => '#e02424', 'flex' => 6]
+                                            ]
+                                        ],
+                                        [
+                                            'type' => 'box',
+                                            'layout' => 'baseline',
+                                            'contents' => [
+                                                ['type' => 'text', 'text' => '代車希望', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
+                                                ['type' => 'text', 'text' => $needLoanCar, 'size' => 'xs', 'color' => '#1e293b', 'flex' => 6]
+                                            ]
+                                        ]
+                                    ]
+                                ],
+                                [
+                                    'type' => 'text',
+                                    'text' => $details ? "【相談内容】\n" . $details : "※何か追加のご要望やお急ぎの用件がございましたら、このままトークにメッセージをお送りください。",
+                                    'size' => 'xxs',
+                                    'color' => '#64748b',
+                                    'margin' => 'md',
+                                    'wrap' => true
+                                ]
+                            ]
+                        ]
+                    ]
+                ];
+
+                try {
+                    sendLinePushMessage($userId, [$confirmFlex]);
+                } catch (Exception $pushErr) {
+                    writeDebugLog("LINE Push送信エラー (相談受付自体は成功)", ['error' => $pushErr->getMessage()]);
+                }
+            }
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'ご来店予約・ご相談を承りました！スタッフより折り返しご連絡いたします。'
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
         // --- 7. 店舗管理者用: 顧客一覧取得 ---
         case 'admin_list_customers':
             $authPass = $_POST['password'] ?? ($_GET['password'] ?? '');

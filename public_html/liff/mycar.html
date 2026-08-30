@@ -425,6 +425,25 @@
             </button>
         </div>
 
+        <!-- その他・修理・カスタム・一般ご来店相談カード -->
+        <div class="maint-card general-inquiry" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 18px; padding: 18px; margin-bottom: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.05); position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; width: 6px; height: 100%; background: #8b5cf6;"></div>
+            <div class="maint-card-header" style="margin-bottom: 8px;">
+                <div class="maint-title" style="color: #1e293b; font-weight: 800; font-size: 14px;">
+                    <i class="fa-solid fa-screwdriver-wrench" style="color: #8b5cf6;"></i>
+                    <span>修理・点検・カスタム来店相談</span>
+                </div>
+                <span class="maint-badge" style="background: #f3e8ff; color: #7c3aed; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px;">いつでも受付</span>
+            </div>
+            <p style="font-size: 12px; color: #64748b; margin: 0 0 14px; line-height: 1.4;">
+                キズ・ヘコミの板金修理、タイヤ交換、ドラレコ・ETC取付、異音やエアコンの不具合点検など、お気軽にご来店・ご相談いただけます。
+            </p>
+            <button class="maint-action-btn" id="openGeneralInquiryBtn" style="background: #ede9fe; color: #5b21b6; width: 100%; height: 42px; border-radius: 10px; border: none; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
+                <i class="fa-solid fa-clipboard-list"></i>
+                <span>ご来店・ご相談フォームを開く</span>
+            </button>
+        </div>
+
         <!-- 愛車・メンテナンス情報の編集フォーム -->
         <div class="edit-section">
             <h3 style="font-size: 14px; font-weight: 800; color: #1e293b; margin: 0 0 14px;">
@@ -503,9 +522,87 @@
         </div>
     </div>
 
+    <!-- 一般来店・修理・カスタム相談モーダル -->
+    <div class="modal-backdrop" id="generalInquiryModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 9999; justify-content: center; align-items: flex-end; padding: 0; backdrop-filter: blur(4px);">
+        <div style="background: #fff; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; border-radius: 24px 24px 0 0; padding: 24px 20px 30px; box-sizing: border-box; animation: slideUp 0.25s ease-out; box-shadow: 0 -10px 25px rgba(0,0,0,0.15);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div>
+                    <h3 style="font-size: 17px; font-weight: 800; color: #1e293b; margin: 0;">🛠️ ご来店予約・ご相談フォーム</h3>
+                    <p style="font-size: 11px; color: #64748b; margin: 2px 0 0;">要件をご入力いただくと、店舗スタッフよりLINEにて折り返し日程等をご案内いたします。</p>
+                </div>
+                <button id="closeGeneralInquiryBtn" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+            </div>
+
+            <!-- ① ご用件 -->
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label class="form-label" style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px; display: block;">ご用件・相談内容 <span style="color: #ef4444;">*</span></label>
+                <select id="inquiryTypeSelect" class="form-input" style="font-weight: 700;">
+                    <option value="一般修理・異音や不具合の点検">🔧 一般修理・異音や不具合の点検</option>
+                    <option value="タイヤ交換・ホイールのご相談">🛞 タイヤ交換・ホイールのご相談</option>
+                    <option value="ドラレコ・ナビ等のパーツ取付">🚙 ドラレコ・ナビ等のパーツ取付</option>
+                    <option value="キズ・ヘコミの板金・塗装見積り">🎨 キズ・ヘコミの板金・塗装見積り</option>
+                    <option value="車検・構造変更等の事前見積り">📋 車検等の事前お見積もり</option>
+                    <option value="オイル交換の来店予約">🛢️ オイル交換の来店予約</option>
+                    <option value="12ヶ月定期点検の来店予約">📋 12ヶ月定期点検の来店予約</option>
+                    <option value="その他のお問い合わせ・カスタム相談">💡 その他のお問い合わせ・カスタム相談</option>
+                </select>
+            </div>
+
+            <!-- ② 対象愛車 -->
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label class="form-label" style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px; display: block;">対象のお車</label>
+                <input type="text" id="inquiryCarModelInput" class="form-input" placeholder="例: ワゴンR、N-BOX等">
+            </div>
+
+            <!-- ③ ご希望日時 -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px; display: block;">ご希望日</label>
+                    <input type="date" id="inquiryPreferredDate" class="form-input">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px; display: block;">ご希望の時間帯</label>
+                    <select id="inquiryPreferredTime" class="form-input">
+                        <option value="午前中 (10:00〜12:00)">午前中 (10:00〜12:00)</option>
+                        <option value="午後前半 (13:00〜15:00)">午後前半 (13:00〜15:00)</option>
+                        <option value="午後後半 (15:00〜18:00)">午後後半 (15:00〜18:00)</option>
+                        <option value="終日いつでも可">終日いつでも可</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- ④ 詳しい症状・ご相談内容 -->
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label class="form-label" style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px; display: block;">詳しい状況・ご要望 (任意)</label>
+                <textarea id="inquiryDetailsInput" class="form-input" rows="3" style="height: auto; padding: 10px 12px; resize: none;" placeholder="例: 走行中に左前の方からカタカタ異音がする、持ち込みの前後ドラレコを取り付けたい、等"></textarea>
+            </div>
+
+            <!-- ⑤ 代車のご希望 -->
+            <div class="form-group" style="margin-bottom: 18px;">
+                <label class="form-label" style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px; display: block;">代車のご希望</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <label class="loan-radio-label" style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; font-size: 12px; font-weight: 700; cursor: pointer;">
+                        <input type="radio" name="needLoanCar" value="代車希望（無料）" checked>
+                        <span>🚗 代車希望 (無料)</span>
+                    </label>
+                    <label class="loan-radio-label" style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; font-size: 12px; font-weight: 700; cursor: pointer;">
+                        <input type="radio" name="needLoanCar" value="代車不要">
+                        <span>☕ 代車不要</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 送信ボタン -->
+            <button id="submitGeneralInquiryBtn" class="btn-save-cust" style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);">
+                <i class="fa-solid fa-paper-plane"></i> この内容で来店予約・相談を送る
+            </button>
+            <button id="cancelGeneralInquiryBtn" style="width: 100%; height: 38px; border: none; background: transparent; color: #64748b; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 6px;">閉じる</button>
+        </div>
+    </div>
+
     <!-- トースト通知 -->
     <div class="toast" id="appToast"></div>
 
-    <script src="mycar.js?v=20260831_5"></script>
+    <script src="mycar.js?v=20260831_6"></script>
 </body>
 </html>

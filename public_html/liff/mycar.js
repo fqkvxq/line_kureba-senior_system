@@ -134,6 +134,46 @@ function initEventListeners() {
             await submitMaintenanceBooking(currentBookingType, pref);
         });
     });
+
+    // 一般来店・相談モーダル
+    const generalModal = getEl('generalInquiryModal');
+    const openGeneralBtn = getEl('openGeneralInquiryBtn');
+    const closeGeneralBtn = getEl('closeGeneralInquiryBtn');
+    const cancelGeneralBtn = getEl('cancelGeneralInquiryBtn');
+    const submitGeneralBtn = getEl('submitGeneralInquiryBtn');
+
+    function openGeneralModal() {
+        const currentCar = getCurrentActiveCar();
+        const carInput = getEl('inquiryCarModelInput');
+        if (carInput && currentCar) {
+            carInput.value = currentCar.car_model || '';
+        }
+        const dateInput = getEl('inquiryPreferredDate');
+        if (dateInput) {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            dateInput.min = new Date().toISOString().split('T')[0];
+            if (!dateInput.value) {
+                dateInput.value = tomorrow.toISOString().split('T')[0];
+            }
+        }
+        if (generalModal) generalModal.style.display = 'flex';
+    }
+
+    function closeGeneralModal() {
+        if (generalModal) generalModal.style.display = 'none';
+    }
+
+    openGeneralBtn?.addEventListener('click', openGeneralModal);
+    closeGeneralBtn?.addEventListener('click', closeGeneralModal);
+    cancelGeneralBtn?.addEventListener('click', closeGeneralModal);
+    generalModal?.addEventListener('click', (e) => {
+        if (e.target === generalModal) closeGeneralModal();
+    });
+
+    submitGeneralBtn?.addEventListener('click', async () => {
+        await submitGeneralInquiry();
+    });
 }
 
 async function triggerInitialLink() {
@@ -187,6 +227,61 @@ async function submitMaintenanceBooking(bookingType, prefTime) {
 
     showToast('予約相談を送信中...');
     sendLineChatMessage(msg);
+}
+
+async function submitGeneralInquiry() {
+    const submitBtn = getEl('submitGeneralInquiryBtn');
+    const inquiryType = getEl('inquiryTypeSelect')?.value || 'ご来店・ご相談';
+    const carModel = getEl('inquiryCarModelInput')?.value.trim() || getCurrentActiveCar()?.car_model || '愛車';
+    const preferredDate = getEl('inquiryPreferredDate')?.value || '指定なし';
+    const preferredTime = getEl('inquiryPreferredTime')?.value || 'いつでも';
+    const details = getEl('inquiryDetailsInput')?.value.trim() || '';
+    const needLoanCar = document.querySelector('input[name="needLoanCar"]:checked')?.value || '不要';
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 送信中...';
+    }
+
+    try {
+        const payload = new URLSearchParams({
+            action: 'submit_general_inquiry',
+            uid: state.userId,
+            uname: state.userName,
+            car_model: carModel,
+            inquiry_type: inquiryType,
+            preferred_date: preferredDate,
+            preferred_time: preferredTime,
+            details: details,
+            need_loan_car: needLoanCar
+        });
+
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            getEl('generalInquiryModal').style.display = 'none';
+            showToast('✅ ご来店予約・相談を送信しました！店舗より折り返しご連絡いたします。');
+
+            // LINEトークへのチャット送信
+            const chatMsg = `【ご来店・ご相談の受付】\nご用件: ${inquiryType}\n愛車: ${carModel}\n希望日時: ${preferredDate} (${preferredTime})\n代車希望: ${needLoanCar}` + (details ? `\n\n【相談内容】\n${details}` : '');
+            sendLineChatMessage(chatMsg);
+        } else {
+            showToast('⚠️ ' + (data.error || '送信に失敗しました'));
+        }
+    } catch (e) {
+        console.error('Submit general inquiry error:', e);
+        showToast('⚠️ 通信エラーが発生しました');
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> この内容で来店予約・相談を送る';
+        }
+    }
 }
 
 function getCurrentActiveCar() {
