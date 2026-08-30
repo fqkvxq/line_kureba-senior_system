@@ -62,6 +62,9 @@ HTML;
     </div>
     </body></html>
 HTML;
+    exit;
+}
+
 // --- Webhookリクエスト受信時のエントリポイント実行 ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?? '') === 'webhook.php' || basename($_SERVER['PHP_SELF'] ?? '') === 'webhook.php')) {
     // 生のリクエストボディを取得
