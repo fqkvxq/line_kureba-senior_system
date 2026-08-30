@@ -1,0 +1,14 @@
+# Database files
+batch/cars.db
+*.db
+*.sqlite
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Temporary / Scratch files
+scratch/
+*.log

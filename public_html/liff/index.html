@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>アップファーム 在庫車両検索</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- LIFF SDK -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header class="app-header">
+        <div class="header-content">
+            <div class="brand">
+                <div class="brand-icon"><i class="fa-solid fa-car-side"></i></div>
+                <div class="brand-text">
+                    <span class="brand-sub">公式LINE在庫検索</span>
+                    <h1 class="brand-title">アップファーム</h1>
+                </div>
+            </div>
+            <div class="stock-badge" id="totalStockBadge">
+                <span class="pulse-dot"></span>
+                <span id="stockCountText">-- 台掲載中</span>
+            </div>
+        </div>
+
+        <!-- 検索バー -->
+        <div class="search-box-wrapper">
+            <div class="search-input-box">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="searchInput" placeholder="車種名・キーワードで検索 (例: ワゴンR, N-BOX)" autocomplete="off">
+                <button id="clearSearchBtn" class="clear-btn" style="display: none;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <button id="filterToggleBtn" class="filter-btn">
+                <i class="fa-solid fa-sliders"></i>
+                <span>絞り込み</span>
+                <span class="filter-active-dot" id="filterActiveDot" style="display: none;"></span>
+            </button>
+        </div>
+
+        <!-- クイックタグ -->
+        <div class="quick-tags">
+            <button class="tag-chip active" data-filter="all">すべて</button>
+            <button class="tag-chip" data-max-price="50">50万以下</button>
+            <button class="tag-chip" data-max-price="70">70万以下</button>
+            <button class="tag-chip" data-kw="ワゴンR">ワゴンR</button>
+            <button class="tag-chip" data-kw="N-BOX">N-BOX</button>
+            <button class="tag-chip" data-kw="デイズ">デイズ</button>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="app-main">
+        <!-- ソート & 件数バー -->
+        <div class="list-control-bar">
+            <div class="result-count">
+                <span id="resultCountNumber">0</span> 件の車両
+            </div>
+            <div class="sort-select-wrapper">
+                <select id="sortSelect">
+                    <option value="price_asc">総額が安い順</option>
+                    <option value="price_desc">総額が高い順</option>
+                    <option value="distance_asc">走行距離が少ない順</option>
+                    <option value="year_desc">年式が新しい順</option>
+                </select>
+                <i class="fa-solid fa-chevron-down select-arrow"></i>
+            </div>
+        </div>
+
+        <!-- 車両一覧リスト -->
+        <div class="car-grid" id="carGrid">
+            <!-- JavaScriptで動的生成 -->
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p>最新の在庫情報を読み込み中...</p>
+            </div>
+        </div>
+
+        <!-- 0件表示 -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <div class="empty-icon"><i class="fa-solid fa-car-tunnel"></i></div>
+            <h3>該当する車両が見つかりませんでした</h3>
+            <p>検索条件を変更するか、絞り込みを解除してお試しください。</p>
+            <button id="resetFilterBtn" class="btn-reset">すべての条件をクリア</button>
+        </div>
+    </main>
+
+    <!-- 絞り込みフィルターモーダル -->
+    <div class="modal-overlay" id="filterModal">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-sliders"></i> 絞り込み条件</h3>
+                <button class="modal-close" id="closeFilterBtn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <!-- 支払総額 -->
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <span>支払総額</span>
+                        <span class="range-val" id="priceRangeVal">上限なし</span>
+                    </label>
+                    <input type="range" id="priceRange" min="20" max="150" step="5" value="150" class="custom-range">
+                    <div class="range-scale">
+                        <span>20万円</span>
+                        <span>50万円</span>
+                        <span>100万円</span>
+                        <span>上限なし</span>
+                    </div>
+                </div>
+
+                <!-- 走行距離 -->
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <span>走行距離</span>
+                        <span class="range-val" id="distanceRangeVal">上限なし</span>
+                    </label>
+                    <input type="range" id="distanceRange" min="1" max="15" step="1" value="15" class="custom-range">
+                    <div class="range-scale">
+                        <span>1万km</span>
+                        <span>5万km</span>
+                        <span>10万km</span>
+                        <span>上限なし</span>
+                    </div>
+                </div>
+
+                <!-- キーワード -->
+                <div class="filter-group">
+                    <label class="filter-label">フリーワード</label>
+                    <input type="text" id="modalKeywordInput" placeholder="グレード、ナビ、装備など" class="modal-text-input">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-clear" id="modalClearBtn">リセット</button>
+                <button class="btn-apply" id="modalApplyBtn">この条件で検索する (<span id="modalMatchCount">0</span>件)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 車両詳細モーダル -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal-sheet detail-sheet">
+            <button class="modal-close floating-close" id="closeDetailBtn"><i class="fa-solid fa-xmark"></i></button>
+            <div class="detail-hero-img-box">
+                <img id="detailImg" src="" alt="車両写真">
+                <div class="detail-badge-group">
+                    <span class="badge-stock">在庫あり</span>
+                </div>
+            </div>
+            <div class="detail-body">
+                <div class="detail-price-box">
+                    <div class="detail-price-main">
+                        <span class="price-caption">支払総額（税込）</span>
+                        <span class="price-amount" id="detailTotalPrice">-- 万円</span>
+                    </div>
+                    <div class="detail-price-sub">
+                        <span>本体価格: <strong id="detailBasePrice">-- 万円</strong></span>
+                    </div>
+                </div>
+
+                <h2 class="detail-title" id="detailTitle">--</h2>
+
+                <!-- スペックグリッド -->
+                <div class="spec-grid">
+                    <div class="spec-item">
+                        <span class="spec-name"><i class="fa-regular fa-calendar"></i> 年式</span>
+                        <span class="spec-val" id="detailYear">--</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-name"><i class="fa-solid fa-gauge-high"></i> 走行距離</span>
+                        <span class="spec-val" id="detailDistance">--</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-name"><i class="fa-solid fa-car-burst"></i> 修復歴</span>
+                        <span class="spec-val" id="detailRepair">--</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-name"><i class="fa-solid fa-clipboard-check"></i> 車検</span>
+                        <span class="spec-val" id="detailShaken">--</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-name"><i class="fa-solid fa-gas-pump"></i> 排気量</span>
+                        <span class="spec-val" id="detailDisplacement">--</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-name"><i class="fa-solid fa-shield-halved"></i> 保証</span>
+                        <span class="spec-val">保証付</span>
+                    </div>
+                </div>
+
+                <!-- アクションボタン -->
+                <div class="detail-action-group">
+                    <button class="btn-inquiry-line" id="detailLineInquiryBtn">
+                        <i class="fa-brands fa-line"></i>
+                        <span>LINEでこの車両を問い合わせる</span>
+                    </button>
+                    <a id="detailGooLink" href="#" target="_blank" class="btn-goo-detail">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        <span>グーネットで詳細・全写真を見る</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- トースト通知 -->
+    <div class="toast" id="appToast"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
