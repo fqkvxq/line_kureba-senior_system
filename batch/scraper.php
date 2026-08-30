@@ -30,6 +30,102 @@ $shopName = defined('SHOP_NAME') ? SHOP_NAME : 'アップファーレン';
 $baseUrl = "https://www.goo-net.com/usedcar_shop/{$shopCode}/";
 $dbFile = defined('DB_PATH') ? DB_PATH : (__DIR__ . '/cars.db');
 
+/**
+ * スクレイピング時のエラーをDiscord Webhookへリッチ通知
+ */
+function sendDiscordScrapeErrorNotification(string $errorTitle, string $errorMessage, array $context = []): bool {
+    $webhookUrl = defined('DISCORD_WEBHOOK_URL') ? DISCORD_WEBHOOK_URL : '';
+    if (empty($webhookUrl)) {
+        return false;
+    }
+
+    $shopName = defined('SHOP_NAME') ? SHOP_NAME : 'アップファーレン';
+    $shopCode = defined('SHOP_CODE') ? SHOP_CODE : '0601492';
+
+    $fields = [
+        [
+            'name' => '🏢 店舗情報',
+            'value' => "{$shopName} (コード: {$shopCode})",
+            'inline' => true
+        ],
+        [
+            'name' => '⏰ 発生時刻',
+            'value' => date('Y-m-d H:i:s'),
+            'inline' => true
+        ],
+        [
+            'name' => '📝 エラー詳細',
+            'value' => "```\n" . mb_substr($errorMessage, 0, 950) . "\n```",
+            'inline' => false
+        ]
+    ];
+
+    if (!empty($context)) {
+        $contextStr = json_encode($context, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        if ($contextStr && $contextStr !== '{}') {
+            $fields[] = [
+                'name' => '🔍 状況詳細',
+                'value' => "```json\n" . mb_substr($contextStr, 0, 950) . "\n```",
+                'inline' => false
+            ];
+        }
+    }
+
+    $payload = [
+        'username' => 'LINE中古車システム (エラー監視)',
+        'avatar_url' => 'https://picture1.goo-net.com/shop/060/0601492/icon/0601492_icon_s.jpg',
+        'embeds' => [
+            [
+                'title' => "🚨 【Cronスクレイピング異常】{$errorTitle}",
+                'description' => "グーネットの車両データ同期処理中にエラーが発生しました。ログまたは設定をご確認ください。",
+                'color' => 0xE02424, // 赤色
+                'fields' => $fields,
+                'footer' => [
+                    'text' => 'LINE Car Search System - Scraper Monitor'
+                ],
+                'timestamp' => date('c')
+            ]
+        ]
+    ];
+
+    $ch = curl_init($webhookUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json; charset=utf-8'],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_SSL_VERIFYPEER => false
+    ]);
+    $resp = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    return ($code >= 200 && $code < 300);
+}
+
+// 未キャッチ例外のDiscord通知ハンドラー登録
+set_exception_handler(function (Throwable $e) {
+    echo "\n[FATAL ERROR] " . $e->getMessage() . "\n" . $e->getTraceAsString() . "\n";
+    sendDiscordScrapeErrorNotification(
+        "スクリプト実行時 致命的例外",
+        $e->getMessage() . "\n\nFile: " . $e->getFile() . " (Line: " . $e->getLine() . ")\n" . $e->getTraceAsString(),
+        ['exception_class' => get_class($e)]
+    );
+});
+
+// スクリプト終了時のFatal Error検知ハンドラー登録
+register_shutdown_function(function () {
+    $error = error_get_last();
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        sendDiscordScrapeErrorNotification(
+            "PHP致命的シャットダウンエラー",
+            $error['message'] . "\nFile: " . $error['file'] . " (Line: " . $error['line'] . ")",
+            ['error_type' => $error['type']]
+        );
+    }
+});
+
 echo "[" . date('Y-m-d H:i:s') . "] === グーネット車両データ同期処理を開始します ===\n";
 echo "対象店舗コード: {$shopCode}\n";
 echo "データベースファイル: {$dbFile}\n";
@@ -81,6 +177,7 @@ try {
         } catch (Exception $e) {}
     }
 } catch (Exception $e) {
+    sendDiscordScrapeErrorNotification("データベース接続・初期化失敗", $e->getMessage(), ['dbFile' => $dbFile]);
     die("DB接続エラー: " . $e->getMessage() . "\n");
 }
 
@@ -194,6 +291,13 @@ while (true) {
 
     if ($httpCode !== 200 || empty($rawHtml)) {
         echo "ページが存在しないか取得できませんでした (HTTP: {$httpCode})。巡回を終了します。\n";
+        if ($page === 1) {
+            sendDiscordScrapeErrorNotification(
+                "グーネット店舗ページへのアクセス失敗",
+                "1ページ目のアクセスでHTTPステータス {$httpCode} が返却されました。",
+                ['targetUrl' => $targetUrl, 'httpCode' => $httpCode]
+            );
+        }
         break;
     }
 
@@ -206,6 +310,13 @@ while (true) {
 
     if (empty($matches)) {
         echo "車両データが見つかりませんでした。巡回を終了します。\n";
+        if ($page === 1) {
+            sendDiscordScrapeErrorNotification(
+                "車両ブロック抽出失敗（HTML構造変化の可能性）",
+                "1ページ目のHTMLから車両要素（.box_item_detail）が見つかりませんでした。",
+                ['targetUrl' => $targetUrl]
+            );
+        }
         break;
     }
 
@@ -331,7 +442,9 @@ $totalFetched = count($allCars);
 echo "合計取得台数: {$totalFetched} 台\n";
 
 if ($totalFetched === 0) {
-    echo "車両データが取得できなかったため、DB更新をスキップします。\n";
+    $msg = "グーネットから車両データが1台も取得できませんでした。スクレイピングブロックまたはHTML構造変更の可能性があります。";
+    echo "{$msg}\n";
+    sendDiscordScrapeErrorNotification("車両データ0件取得（同期スキップ）", $msg, ['shopCode' => $shopCode, 'url' => $baseUrl . 'stock.html']);
     exit;
 }
 
@@ -395,6 +508,7 @@ try {
 } catch (Exception $e) {
     $db->rollBack();
     echo "DB更新エラー: " . $e->getMessage() . "\n";
+    sendDiscordScrapeErrorNotification("データベース更新・コミット失敗", $e->getMessage(), ['trace' => $e->getTraceAsString()]);
     exit;
 }
 
