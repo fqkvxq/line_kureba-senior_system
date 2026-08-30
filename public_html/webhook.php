@@ -454,7 +454,10 @@ function generateCarSearchMessages(PDO $db, array $criteria, string $heading, st
         if (!empty($criteria['keyword'])) {
             $kw = trim($criteria['keyword']);
             if ($kw === 'ミラ' || $kw === 'ミライース') {
-                $where[] = "(title LIKE '%ミラ%' OR title LIKE '%ミライース%' OR title LIKE '%MIRA%')";
+                $where[] = "(
+                    (title LIKE '%ミライース%' OR title LIKE '%ミラココア%' OR title LIKE '%ミラジーノ%' OR title LIKE '%ミラトコット%' OR title LIKE 'ダイハツ ミラ%' OR title LIKE '% ミラ %' OR title LIKE 'ミラ %' OR title LIKE '% ミラ')
+                    OR (title LIKE '%ミラ%' AND title NOT LIKE '%ミラー%')
+                )";
             } elseif ($kw === 'デイズ' || $kw === 'ルークス') {
                 $where[] = "(title LIKE '%デイズ%' OR title LIKE '%ルークス%' OR title LIKE '%DAYZ%' OR title LIKE '%ROOX%')";
             } elseif ($kw === 'N-BOX' || $kw === 'エヌボックス') {
@@ -1458,7 +1461,10 @@ function generateTypeMenuMessages(PDO $db): array {
     foreach ($modelDefs as $mDef) {
         $count = 0;
         foreach ($cars as $car) {
-            $haystack = ($car['title'] ?? '') . ' ' . ($car['displacement'] ?? '');
+            $rawHaystack = ($car['title'] ?? '') . ' ' . ($car['displacement'] ?? '');
+            // 「ミラー」「プレミアム」など部分一致誤爆を防ぐ
+            $haystack = str_replace(['ミラー', 'ミドル', 'プレミアム', 'ミラクル'], '', $rawHaystack);
+
             foreach ($mDef['match'] as $kw) {
                 if (stripos($haystack, $kw) !== false) {
                     $count++;
