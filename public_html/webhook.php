@@ -128,13 +128,38 @@ echo 'OK';
  * テキストメッセージの処理
  */
 function handleTextMessage(PDO $db, string $replyToken, string $text, string $userId = '') {
-    // 1. 特殊キーワードの判定
+    // 1. オイル交換・車検・メンテナンス関連のキーワード判定 (在庫検索の誤爆防止)
+    if (preg_match('/(オイル|車検|点検|メンテ|予約|相談|パスポート)/u', $text)) {
+        // 顧客の登録愛車を取得
+        $carModel = '愛車';
+        $oilDate = '近日中';
+        $inspDate = '未定';
+        if (!empty($userId)) {
+            $stmt = $db->prepare("SELECT * FROM customers WHERE user_id = :uid LIMIT 1");
+            $stmt->execute([':uid' => $userId]);
+            $cust = $stmt->fetch();
+            if ($cust) {
+                if (!empty($cust['car_model'])) $carModel = $cust['car_model'];
+                if (!empty($cust['oil_next_date'])) $oilDate = $cust['oil_next_date'];
+                if (!empty($cust['inspection_next_date'])) $inspDate = $cust['inspection_next_date'];
+            }
+        }
+
+        $isOil = preg_match('/(オイル)/u', $text);
+        $type = $isOil ? 'oil' : 'inspection';
+        $targetDate = $isOil ? $oilDate : $inspDate;
+        
+        sendMaintenanceBookingConfirmMessage($replyToken, $type, $carModel, $targetDate, $userId);
+        return;
+    }
+
+    // 2. 特殊キーワードの判定
     if (in_array($text, ['在庫一覧', '車を探す', 'メニュー', '在庫', '車', '全台'])) {
         searchCarsAndReply($db, $replyToken, [], '現在の在庫車両一覧', $userId);
         return;
     }
 
-    // 2. 価格帯キーワードの判定 (例: 50万以下, 100万円以下, 50万円)
+    // 3. 価格帯キーワードの判定 (例: 50万以下, 100万円以下, 50万円)
     if (preg_match('/([0-9\.]+)\s*(万|万円)?\s*(以下|未満)?/u', $text, $matches)) {
         $price = (float)$matches[1];
         if ($price > 0 && $price < 2000) {
@@ -143,7 +168,7 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
         }
     }
 
-    // 3. フリーワード検索 (車名など)
+    // 4. フリーワード検索 (車名など)
     searchCarsAndReply($db, $replyToken, ['keyword' => $text], "「{$text}」の検索結果", $userId);
 }
 
@@ -168,12 +193,29 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             handleSubmitInquiry($db, $replyToken, $carId, $inquiryType, $userId);
             break;
 
-        // --- 3. キャンセル ---
+        // --- 3. メンテナンス(オイル交換/車検)予約確認ステップ (誤タップ防止) ---
+        case 'ask_maintenance':
+            $maintType = $params['type'] ?? 'oil';
+            $carModel = $params['car'] ?? '愛車';
+            $date = $params['date'] ?? '近日中';
+            sendMaintenanceBookingConfirmMessage($replyToken, $maintType, $carModel, $date, $userId);
+            break;
+
+        // --- 4. メンテナンス(オイル交換/車検)予約確定送信 (真剣度高) ---
+        case 'submit_maintenance':
+            $maintType = $params['type'] ?? 'oil';
+            $carModel = $params['car'] ?? '愛車';
+            $prefTime = $params['pref'] ?? '近日中の希望';
+            handleSubmitMaintenanceBooking($replyToken, $maintType, $carModel, $prefTime, $userId);
+            break;
+
+        // --- 5. キャンセル ---
         case 'cancel_inquiry':
+        case 'cancel_maintenance':
             $messages = [
                 [
                     'type' => 'text',
-                    'text' => "お問い合わせをキャンセルしました。\n他の車両もぜひご覧ください🚗",
+                    'text' => "ご案内をキャンセルしました。\n気になることや在庫のご確認はお気軽にメッセージをお送りください🚗",
                     'quickReply' => getQuickReplyItems()
                 ]
             ];
@@ -623,6 +665,177 @@ function handleSubmitInquiry(PDO $db, string $replyToken, string $carId, string 
         [
             'type' => 'text',
             'text' => "{$userName} 様\n\n【{$inquiryType}】のご依頼を承りました！🚗✨\n\n対象車両: {$rawTitle}\n支払総額: {$totalPrice}\n\n担当スタッフが内容を確認し、本トークにて折り返しご連絡・ご案内させていただきます。今しばらくお待ちくださいませ！",
+            'quickReply' => getQuickReplyItems()
+        ]
+    ];
+
+    sendReplyMessage($replyToken, $messages);
+}
+
+/**
+ * メンテナンス（オイル交換/車検点検）予約確認メッセージ (誤タップ防止)
+ */
+function sendMaintenanceBookingConfirmMessage(string $replyToken, string $type, string $carModel, string $targetDate, string $userId = '') {
+    $isOil = ($type === 'oil');
+    $title = $isOil ? '🛢 オイル交換 来店予約のご確認' : '📋 車検・定期点検 ご予約のご確認';
+    $color = $isOil ? '#f59e0b' : '#3b82f6';
+    $labelDate = $isOil ? '次回オイル予定日' : '次回車検満了日';
+    $typeName = $isOil ? 'オイル交換' : '車検・定期点検';
+
+    $confirmBubble = [
+        'type' => 'bubble',
+        'size' => 'mega',
+        'body' => [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'paddingAll' => '20px',
+            'contents' => [
+                [
+                    'type' => 'text',
+                    'text' => $title,
+                    'weight' => 'bold',
+                    'size' => 'md',
+                    'color' => $color
+                ],
+                [
+                    'type' => 'text',
+                    'text' => "ご希望のご来店日時・時間帯をお選びください。\n担当スタッフが空き状況を確認し、本トークにて折り返しご案内いたします！",
+                    'size' => 'xs',
+                    'color' => '#475569',
+                    'margin' => 'sm',
+                    'wrap' => true
+                ],
+                [
+                    'type' => 'separator',
+                    'margin' => 'md'
+                ],
+                [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'margin' => 'md',
+                    'spacing' => 'xs',
+                    'backgroundColor' => '#f8fafc',
+                    'paddingAll' => '10px',
+                    'cornerRadius' => 'md',
+                    'contents' => [
+                        [
+                            'type' => 'box',
+                            'layout' => 'baseline',
+                            'contents' => [
+                                ['type' => 'text', 'text' => '対象愛車', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
+                                ['type' => 'text', 'text' => $carModel, 'size' => 'xs', 'weight' => 'bold', 'color' => '#1e293b', 'flex' => 6]
+                            ]
+                        ],
+                        [
+                            'type' => 'box',
+                            'layout' => 'baseline',
+                            'contents' => [
+                                ['type' => 'text', 'text' => $labelDate, 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
+                                ['type' => 'text', 'text' => $targetDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#e02424', 'flex' => 6]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ],
+        'footer' => [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'spacing' => 'sm',
+            'paddingAll' => '14px',
+            'contents' => [
+                [
+                    'type' => 'button',
+                    'style' => 'primary',
+                    'color' => '#06C755',
+                    'height' => 'sm',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '☀️ 平日（午前中）を希望',
+                        'data' => 'action=submit_maintenance&type=' . urlencode($typeName) . '&car=' . urlencode($carModel) . '&pref=' . urlencode('平日（午前中）'),
+                        'displayText' => "【{$typeName}】平日（午前中）に来店を希望します"
+                    ]
+                ],
+                [
+                    'type' => 'button',
+                    'style' => 'primary',
+                    'color' => '#06C755',
+                    'height' => 'sm',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '🌤️ 平日（午後）を希望',
+                        'data' => 'action=submit_maintenance&type=' . urlencode($typeName) . '&car=' . urlencode($carModel) . '&pref=' . urlencode('平日（午後）'),
+                        'displayText' => "【{$typeName}】平日（午後）に来店を希望します"
+                    ]
+                ],
+                [
+                    'type' => 'button',
+                    'style' => 'primary',
+                    'color' => '#3b82f6',
+                    'height' => 'sm',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '🎈 土日・祝日を希望',
+                        'data' => 'action=submit_maintenance&type=' . urlencode($typeName) . '&car=' . urlencode($carModel) . '&pref=' . urlencode('土日・祝日'),
+                        'displayText' => "【{$typeName}】土日・祝日に来店を希望します"
+                    ]
+                ],
+                [
+                    'type' => 'button',
+                    'style' => 'secondary',
+                    'height' => 'sm',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '💬 日程を個別にLINE相談',
+                        'data' => 'action=submit_maintenance&type=' . urlencode($typeName) . '&car=' . urlencode($carModel) . '&pref=' . urlencode('日程を個別に相談したい'),
+                        'displayText' => "【{$typeName}】日程について個別に相談したいです"
+                    ]
+                ],
+                [
+                    'type' => 'button',
+                    'style' => 'link',
+                    'height' => 'sm',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '❌ キャンセル',
+                        'data' => 'action=cancel_maintenance',
+                        'displayText' => "キャンセルします"
+                    ]
+                ]
+            ]
+        ]
+    ];
+
+    $messages = [
+        [
+            'type' => 'flex',
+            'altText' => "【ご予約確認】{$title}",
+            'contents' => $confirmBubble
+        ]
+    ];
+
+    sendReplyMessage($replyToken, $messages);
+}
+
+/**
+ * メンテナンス予約実行（Discord通知 ＆ 受付完了メッセージ）
+ */
+function handleSubmitMaintenanceBooking(string $replyToken, string $bookingType, string $carModel, string $prefTime, string $userId = '') {
+    // ユーザー情報取得
+    $userProfile = !empty($userId) ? getLineUserProfile($userId) : null;
+    $userName = $userProfile['displayName'] ?? 'お客様';
+
+    // 1. Discord へ予約申し込み通知を送信！
+    if (function_exists('sendDiscordMaintenanceBookingNotification')) {
+        sendDiscordMaintenanceBookingNotification($bookingType, $carModel, $prefTime, $userProfile, $userId);
+        writeDebugLog("メンテナンス予約Discord通知完了", ['type' => $bookingType, 'car' => $carModel, 'user' => $userName, 'pref' => $prefTime]);
+    }
+
+    // 2. ユーザーへ受付完了メッセージを返信
+    $messages = [
+        [
+            'type' => 'text',
+            'text' => "{$userName} 様\n\n【{$bookingType}】のご予約相談を承りました！🛠️✨\n\n対象愛車: {$carModel}\nご希望日時: {$prefTime}\n\n店舗スタッフがピットの空き状況を確認し、本トークにて確定日程・お見積もりのご案内をお送りいたします。どうぞよろしくお願いいたします！🚗",
             'quickReply' => getQuickReplyItems()
         ]
     ];

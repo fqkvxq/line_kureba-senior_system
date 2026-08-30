@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>マイカー点検パスポート | アップファーム</title>
+    <title>マイカー点検パスポート | アップファーレン</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -252,7 +252,7 @@
             <img id="userAvatar" class="user-avatar-img" src="https://img.goo-net.com/goo/usedcar/nophoto_big.jpg" alt="ユーザー">
             <div class="user-info">
                 <h2 id="userNameText">お客様</h2>
-                <p>アップファーム メンテナンスパスポート</p>
+                <p>アップファーレン メンテナンスパスポート</p>
             </div>
         </div>
 
@@ -340,6 +340,26 @@
         <a href="index.html" class="nav-back-link">
             <i class="fa-solid fa-arrow-left"></i> 在庫車両検索に戻る
         </a>
+    </div>
+
+    <!-- 予約相談 確認モーダル (誤タップ防止) -->
+    <div class="modal-backdrop" id="bookingModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: flex-end; padding: 0;">
+        <div style="background: #fff; width: 100%; max-width: 480px; border-radius: 20px 20px 0 0; padding: 24px; box-sizing: border-box; animation: slideUp 0.25s ease-out;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 id="modalBookingTitle" style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0;">来店予約・相談の確認</h3>
+                <button id="closeBookingModalBtn" style="background: none; border: none; font-size: 18px; color: #94a3b8; cursor: pointer;">✕</button>
+            </div>
+            <p style="font-size: 12px; color: #64748b; margin: 0 0 16px;">ご希望の日程・時間帯を選択してください。<br>店舗スタッフが確認の上、LINEトークにてご返信いたします。</p>
+
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+                <button class="maint-choice-btn" data-pref="平日（午前中）" style="width: 100%; height: 44px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; font-weight: 700; font-size: 13px; color: #1e293b; cursor: pointer; text-align: left; padding: 0 14px;">☀️ 平日（午前中）に来店希望</button>
+                <button class="maint-choice-btn" data-pref="平日（午後）" style="width: 100%; height: 44px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; font-weight: 700; font-size: 13px; color: #1e293b; cursor: pointer; text-align: left; padding: 0 14px;">🌤️ 平日（午後）に来店希望</button>
+                <button class="maint-choice-btn" data-pref="土日・祝日" style="width: 100%; height: 44px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; font-weight: 700; font-size: 13px; color: #1e293b; cursor: pointer; text-align: left; padding: 0 14px;">🎈 土日・祝日に来店希望</button>
+                <button class="maint-choice-btn" data-pref="日程を個別に相談したい" style="width: 100%; height: 44px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; font-weight: 700; font-size: 13px; color: #1e293b; cursor: pointer; text-align: left; padding: 0 14px;">💬 日程を個別にLINE相談</button>
+            </div>
+
+            <button id="cancelBookingModalBtn" style="width: 100%; height: 40px; border: none; background: transparent; color: #64748b; font-size: 13px; cursor: pointer;">キャンセル</button>
+        </div>
     </div>
 
     <!-- トースト通知 -->

@@ -24,7 +24,7 @@ define('DISCORD_WEBHOOK_URL', 'https://discord.com/api/webhooks/1543636005582667
 
 // --- 店舗・システム設定 ---
 define('SHOP_CODE', '0601492');
-define('SHOP_NAME', 'アップファーム');
+define('SHOP_NAME', 'アップファーレン');
 define('SHOP_GOO_URL', 'https://www.goo-net.com/usedcar_shop/0601492/stock.html');
 
 /**
@@ -301,7 +301,7 @@ function sendDiscordNotification(array $car, string $source = 'LINE Flex Message
             'url' => $imgUrl
         ],
         'footer' => [
-            'text' => 'アップファーム LINE公式 在庫検索システム',
+            'text' => 'アップファーレン LINE公式 在庫検索システム',
             'icon_url' => 'https://img.goo-net.com/goo/usedcar/nophoto_big.jpg'
         ],
         'timestamp' => date('c')
@@ -372,7 +372,7 @@ function sendDiscordInquiryNotification(array $car, string $inquiryType, ?array 
         ],
         'thumbnail' => ['url' => $imgUrl],
         'footer' => [
-            'text' => 'アップファーム LINE公式 問い合わせ通知',
+            'text' => 'アップファーレン LINE公式 問い合わせ通知',
             'icon_url' => 'https://img.goo-net.com/goo/usedcar/nophoto_big.jpg'
         ],
         'timestamp' => date('c')
@@ -402,10 +402,70 @@ function sendDiscordInquiryNotification(array $car, string $inquiryType, ?array 
 }
 
 /**
+ * ユーザーからのオイル交換・車検来店予約時の Discord 通知
+ */
+function sendDiscordMaintenanceBookingNotification(string $bookingType, string $carModel, string $prefTime, ?array $userProfile = null, ?string $rawUserId = null) {
+    if (empty(DISCORD_WEBHOOK_URL) || DISCORD_WEBHOOK_URL === 'YOUR_DISCORD_WEBHOOK_URL_HERE') {
+        return;
+    }
+
+    $userName = 'LINEユーザー (匿名 / 不明)';
+    $userAvatar = null;
+    if (!empty($userProfile['displayName'])) {
+        $userName = $userProfile['displayName'] . ' 様';
+        if (!empty($userProfile['pictureUrl'])) {
+            $userAvatar = $userProfile['pictureUrl'];
+        }
+    } elseif (!empty($rawUserId)) {
+        $userName = "ユーザー (ID: " . substr($rawUserId, 0, 8) . "...)";
+    }
+
+    $color = ($bookingType === 'オイル交換') ? 0xF59E0B : 0x3B82F6;
+
+    $embed = [
+        'title' => "🛠️ 【来店予約】{$bookingType}の予約申し込みが届きました！",
+        'description' => "**{$userName}** より愛車 **【{$carModel}】** の {$bookingType} 予約相談が届きました。\nLINE公式アカウントのチャット等で日程のご案内をお願いいたします。",
+        'color' => $color,
+        'fields' => [
+            ['name' => '👤 お客様名', 'value' => "**{$userName}**", 'inline' => true],
+            ['name' => '🚗 対象愛車', 'value' => "**{$carModel}**", 'inline' => true],
+            ['name' => '📅 ご希望日程・時間帯', 'value' => "🎯 **{$prefTime}**", 'inline' => false]
+        ],
+        'footer' => [
+            'text' => 'アップファーレン メンテナンス予約通知',
+            'icon_url' => 'https://img.goo-net.com/goo/usedcar/nophoto_big.jpg'
+        ],
+        'timestamp' => date('c')
+    ];
+
+    if ($userAvatar) {
+        $embed['author'] = ['name' => $userName, 'icon_url' => $userAvatar];
+    }
+
+    $payload = [
+        'username' => 'LINEメンテナンス 予約受付',
+        'avatar_url' => 'https://img.goo-net.com/common_v2/img/idcars/icon_idlogo.png',
+        'content' => "🚨 **【来店予約】{$bookingType}のお申し込みがありました！**",
+        'embeds' => [$embed]
+    ];
+
+    $ch = curl_init(DISCORD_WEBHOOK_URL);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 4,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json; charset=utf-8'],
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE)
+    ]);
+    curl_exec($ch);
+    curl_close($ch);
+}
+
+/**
  * 新着車両検知時の Discord 通知
  */
 function sendDiscordNewCarsNotification(array $newCars) {
-    if (empty(DISCORD_WEBHOOK_URL) || DISCORD_WEBHOOK_URL === 'YOUR_DISCORD_WEBHOOK_URL_HERE' || empty($newCars)) {
+    if (empty(DISCORD_WEBHOOK_URL) || DISCORD_WEBHOOK_URL === 'YOUR_DISCORD_WEBHOOK_URL_HERE') {
         return;
     }
 
@@ -468,12 +528,12 @@ function sendDiscordReminderReport(int $oilCount, int $inspectionCount, array $d
     $embed = [
         'title' => "⏰ 【定期配信】本日 {$total} 名様へメンテナンス通知を送信しました",
         'description' => implode("\n", array_slice($descLines, 0, 10)),
-        'color' => 0x3B82F6, // Blue
+        'color' => 0x3B82F6,
         'fields' => [
             ['name' => '🛢 オイル交換リマインド', 'value' => "{$oilCount} 件", 'inline' => true],
             ['name' => '📋 車検・定期点検リマインド', 'value' => "{$inspectionCount} 件", 'inline' => true]
         ],
-        'footer' => ['text' => 'アップファーム メンテナンス自動リマインドシステム'],
+        'footer' => ['text' => 'アップファーレン メンテナンス自動リマインドシステム'],
         'timestamp' => date('c')
     ];
 

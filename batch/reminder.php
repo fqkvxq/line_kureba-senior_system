@@ -59,7 +59,6 @@ echo "🛢 オイル交換リマインド対象: " . count($oilTargetCustomers) 
 
 foreach ($oilTargetCustomers as $cust) {
     $userId = $cust['user_id'];
-    // LINE userId形式 (Uから始まる33文字) のみ送信
     if (!str_starts_with($userId, 'U')) {
         echo "  [スキップ] 手動登録顧客のためLINE Pushスキップ: {$cust['user_name']}\n";
         continue;
@@ -71,7 +70,6 @@ foreach ($oilTargetCustomers as $cust) {
 
     $isToday = ($oilDate === $today);
     $isPast = ($oilDate < $today);
-
     $statusBadge = $isToday ? "本日が予定日です！" : ($isPast ? "予定日を過ぎています" : "まもなく予定日です（あと7日）");
 
     $flexMessage = [
@@ -80,18 +78,10 @@ foreach ($oilTargetCustomers as $cust) {
         'contents' => [
             'type' => 'bubble',
             'size' => 'mega',
-            'hero' => [
-                'type' => 'image',
-                'url' => 'https://img.goo-net.com/common_v2/img/idcars/icon_idlogo.png',
-                'size' => 'full',
-                'aspectRatio' => '20:9',
-                'aspectMode' => 'cover',
-                'backgroundColor' => '#0f172a'
-            ],
             'body' => [
                 'type' => 'box',
                 'layout' => 'vertical',
-                'paddingAll' => '16px',
+                'paddingAll' => '20px',
                 'contents' => [
                     [
                         'type' => 'box',
@@ -101,7 +91,7 @@ foreach ($oilTargetCustomers as $cust) {
                                 'type' => 'text',
                                 'text' => '🛢 オイル交換のお知らせ',
                                 'weight' => 'bold',
-                                'size' => 'xs',
+                                'size' => 'sm',
                                 'color' => '#f59e0b'
                             ]
                         ]
@@ -110,8 +100,8 @@ foreach ($oilTargetCustomers as $cust) {
                         'type' => 'text',
                         'text' => "{$userName} 様",
                         'weight' => 'bold',
-                        'size' => 'lg',
-                        'margin' => 'xs',
+                        'size' => 'xl',
+                        'margin' => 'sm',
                         'color' => '#1e293b'
                     ],
                     [
@@ -131,9 +121,9 @@ foreach ($oilTargetCustomers as $cust) {
                         'type' => 'box',
                         'layout' => 'vertical',
                         'margin' => 'md',
-                        'spacing' => 'xs',
+                        'spacing' => 'sm',
                         'backgroundColor' => '#f8fafc',
-                        'paddingAll' => '10px',
+                        'paddingAll' => '12px',
                         'cornerRadius' => 'md',
                         'contents' => [
                             [
@@ -168,7 +158,7 @@ foreach ($oilTargetCustomers as $cust) {
                 'type' => 'box',
                 'layout' => 'vertical',
                 'spacing' => 'sm',
-                'paddingAll' => '12px',
+                'paddingAll' => '14px',
                 'contents' => [
                     [
                         'type' => 'button',
@@ -176,9 +166,10 @@ foreach ($oilTargetCustomers as $cust) {
                         'color' => '#06C755',
                         'height' => 'sm',
                         'action' => [
-                            'type' => 'message',
+                            'type' => 'postback',
                             'label' => '📅 オイル交換の予約・相談',
-                            'text' => "【オイル交換の予約相談】\n愛車: {$carModel}\n希望日時や空き状況について相談したいです。"
+                            'data' => 'action=ask_maintenance&type=oil&car=' . urlencode($carModel) . '&date=' . urlencode($oilDate),
+                            'displayText' => "【{$carModel}】のオイル交換を予約・相談したい"
                         ]
                     ]
                 ]
@@ -233,18 +224,10 @@ foreach ($inspTargetCustomers as $cust) {
         'contents' => [
             'type' => 'bubble',
             'size' => 'mega',
-            'hero' => [
-                'type' => 'image',
-                'url' => 'https://img.goo-net.com/common_v2/img/idcars/icon_idlogo.png',
-                'size' => 'full',
-                'aspectRatio' => '20:9',
-                'aspectMode' => 'cover',
-                'backgroundColor' => '#1e293b'
-            ],
             'body' => [
                 'type' => 'box',
                 'layout' => 'vertical',
-                'paddingAll' => '16px',
+                'paddingAll' => '20px',
                 'contents' => [
                     [
                         'type' => 'box',
@@ -254,7 +237,7 @@ foreach ($inspTargetCustomers as $cust) {
                                 'type' => 'text',
                                 'text' => '📋 車検・定期点検のご案内',
                                 'weight' => 'bold',
-                                'size' => 'xs',
+                                'size' => 'sm',
                                 'color' => '#3b82f6'
                             ]
                         ]
@@ -263,8 +246,8 @@ foreach ($inspTargetCustomers as $cust) {
                         'type' => 'text',
                         'text' => "{$userName} 様",
                         'weight' => 'bold',
-                        'size' => 'lg',
-                        'margin' => 'xs',
+                        'size' => 'xl',
+                        'margin' => 'sm',
                         'color' => '#1e293b'
                     ],
                     [
@@ -283,9 +266,9 @@ foreach ($inspTargetCustomers as $cust) {
                         'type' => 'box',
                         'layout' => 'vertical',
                         'margin' => 'md',
-                        'spacing' => 'xs',
+                        'spacing' => 'sm',
                         'backgroundColor' => '#f8fafc',
-                        'paddingAll' => '10px',
+                        'paddingAll' => '12px',
                         'cornerRadius' => 'md',
                         'contents' => [
                             [
@@ -320,7 +303,7 @@ foreach ($inspTargetCustomers as $cust) {
                 'type' => 'box',
                 'layout' => 'vertical',
                 'spacing' => 'sm',
-                'paddingAll' => '12px',
+                'paddingAll' => '14px',
                 'contents' => [
                     [
                         'type' => 'button',
@@ -328,9 +311,10 @@ foreach ($inspTargetCustomers as $cust) {
                         'color' => '#3b82f6',
                         'height' => 'sm',
                         'action' => [
-                            'type' => 'message',
+                            'type' => 'postback',
                             'label' => '📅 車検・点検の予約・見積もり',
-                            'text' => "【車検・点検の予約相談】\n愛車: {$carModel}\n車検満了日: {$inspDate}\n車検のお見積もり・日程について相談したいです。"
+                            'data' => 'action=ask_maintenance&type=inspection&car=' . urlencode($carModel) . '&date=' . urlencode($inspDate),
+                            'displayText' => "【{$carModel}】の車検・点検を予約・相談したい"
                         ]
                     ]
                 ]

@@ -467,30 +467,22 @@ try {
                     'contents' => [
                         'type' => 'bubble',
                         'size' => 'mega',
-                        'hero' => [
-                            'type' => 'image',
-                            'url' => 'https://img.goo-net.com/common_v2/img/idcars/icon_idlogo.png',
-                            'size' => 'full',
-                            'aspectRatio' => '20:9',
-                            'aspectMode' => 'cover',
-                            'backgroundColor' => '#0f172a'
-                        ],
                         'body' => [
                             'type' => 'box',
                             'layout' => 'vertical',
-                            'paddingAll' => '16px',
+                            'paddingAll' => '20px',
                             'contents' => [
-                                ['type' => 'text', 'text' => '🛢 オイル交換のお知らせ', 'weight' => 'bold', 'size' => 'xs', 'color' => '#f59e0b'],
-                                ['type' => 'text', 'text' => "{$userName} 様", 'weight' => 'bold', 'size' => 'lg', 'margin' => 'xs', 'color' => '#1e293b'],
+                                ['type' => 'text', 'text' => '🛢 オイル交換のお知らせ', 'weight' => 'bold', 'size' => 'sm', 'color' => '#f59e0b'],
+                                ['type' => 'text', 'text' => "{$userName} 様", 'weight' => 'bold', 'size' => 'xl', 'margin' => 'sm', 'color' => '#1e293b'],
                                 ['type' => 'text', 'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n愛車の次回オイル交換予定日をお知らせいたします。", 'size' => 'xs', 'color' => '#475569', 'margin' => 'sm', 'wrap' => true],
                                 ['type' => 'separator', 'margin' => 'md'],
                                 [
                                     'type' => 'box',
                                     'layout' => 'vertical',
                                     'margin' => 'md',
-                                    'spacing' => 'xs',
+                                    'spacing' => 'sm',
                                     'backgroundColor' => '#f8fafc',
-                                    'paddingAll' => '10px',
+                                    'paddingAll' => '12px',
                                     'cornerRadius' => 'md',
                                     'contents' => [
                                         [
@@ -518,7 +510,7 @@ try {
                             'type' => 'box',
                             'layout' => 'vertical',
                             'spacing' => 'sm',
-                            'paddingAll' => '12px',
+                            'paddingAll' => '14px',
                             'contents' => [
                                 [
                                     'type' => 'button',
@@ -526,9 +518,10 @@ try {
                                     'color' => '#06C755',
                                     'height' => 'sm',
                                     'action' => [
-                                        'type' => 'message',
+                                        'type' => 'postback',
                                         'label' => '📅 オイル交換の予約・相談',
-                                        'text' => "【オイル交換の予約相談】\n愛車: {$carModel}\n希望日時や空き状況について相談したいです。"
+                                        'data' => 'action=ask_maintenance&type=oil&car=' . urlencode($carModel) . '&date=' . urlencode($oilDate),
+                                        'displayText' => "【{$carModel}】のオイル交換を予約・相談したい"
                                     ]
                                 ]
                             ]
@@ -543,30 +536,22 @@ try {
                     'contents' => [
                         'type' => 'bubble',
                         'size' => 'mega',
-                        'hero' => [
-                            'type' => 'image',
-                            'url' => 'https://img.goo-net.com/common_v2/img/idcars/icon_idlogo.png',
-                            'size' => 'full',
-                            'aspectRatio' => '20:9',
-                            'aspectMode' => 'cover',
-                            'backgroundColor' => '#1e293b'
-                        ],
                         'body' => [
                             'type' => 'box',
                             'layout' => 'vertical',
-                            'paddingAll' => '16px',
+                            'paddingAll' => '20px',
                             'contents' => [
-                                ['type' => 'text', 'text' => '📋 車検・定期点検のご案内', 'weight' => 'bold', 'size' => 'xs', 'color' => '#3b82f6'],
-                                ['type' => 'text', 'text' => "{$userName} 様", 'weight' => 'bold', 'size' => 'lg', 'margin' => 'xs', 'color' => '#1e293b'],
+                                ['type' => 'text', 'text' => '📋 車検・定期点検のご案内', 'weight' => 'bold', 'size' => 'sm', 'color' => '#3b82f6'],
+                                ['type' => 'text', 'text' => "{$userName} 様", 'weight' => 'bold', 'size' => 'xl', 'margin' => 'sm', 'color' => '#1e293b'],
                                 ['type' => 'text', 'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n愛車【{$carModel}】の車検・点検満了日が近づいております。", 'size' => 'xs', 'color' => '#475569', 'margin' => 'sm', 'wrap' => true],
                                 ['type' => 'separator', 'margin' => 'md'],
                                 [
                                     'type' => 'box',
                                     'layout' => 'vertical',
                                     'margin' => 'md',
-                                    'spacing' => 'xs',
+                                    'spacing' => 'sm',
                                     'backgroundColor' => '#f8fafc',
-                                    'paddingAll' => '10px',
+                                    'paddingAll' => '12px',
                                     'cornerRadius' => 'md',
                                     'contents' => [
                                         [
@@ -594,7 +579,7 @@ try {
                             'type' => 'box',
                             'layout' => 'vertical',
                             'spacing' => 'sm',
-                            'paddingAll' => '12px',
+                            'paddingAll' => '14px',
                             'contents' => [
                                 [
                                     'type' => 'button',
@@ -602,9 +587,10 @@ try {
                                     'color' => '#3b82f6',
                                     'height' => 'sm',
                                     'action' => [
-                                        'type' => 'message',
+                                        'type' => 'postback',
                                         'label' => '📅 車検・点検の予約・見積もり',
-                                        'text' => "【車検・点検の予約相談】\n愛車: {$carModel}\n車検満了日: {$inspDate}\n車検のお見積もり・日程について相談したいです。"
+                                        'data' => 'action=ask_maintenance&type=inspection&car=' . urlencode($carModel) . '&date=' . urlencode($inspDate),
+                                        'displayText' => "【{$carModel}】の車検・点検を予約・相談したい"
                                     ]
                                 ]
                             ]

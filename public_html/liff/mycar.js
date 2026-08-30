@@ -93,24 +93,56 @@ async function initLiff() {
     elements.userNameText.textContent = state.userName + ' 様';
 }
 
+let currentBookingType = 'オイル交換';
+
 function initEventListeners() {
     elements.saveCustBtn.addEventListener('click', async () => {
         await saveCustomerData();
     });
 
-    elements.bookOilBtn.addEventListener('click', () => {
-        const car = state.customerData?.car_model || elements.inputCarModel.value || '愛車';
-        const date = state.customerData?.oil_next_date || elements.inputOilNextDate.value || '近日中';
-        const msg = `【オイル交換の予約相談】\n愛車: ${car}\n次回予定日: ${date}\n\nオイル交換の来店予約・空き状況を相談したいです。`;
-        sendLineChatMessage(msg);
+    const bookingModal = document.getElementById('bookingModal');
+    const modalTitle = document.getElementById('modalBookingTitle');
+    const closeBtn = document.getElementById('closeBookingModalBtn');
+    const cancelBtn = document.getElementById('cancelBookingModalBtn');
+
+    function openModal(type) {
+        currentBookingType = type;
+        modalTitle.textContent = `【${type}】来店予約・相談の確認`;
+        bookingModal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        bookingModal.style.display = 'none';
+    }
+
+    elements.bookOilBtn.addEventListener('click', () => openModal('オイル交換'));
+    elements.bookInspBtn.addEventListener('click', () => openModal('車検・定期点検'));
+
+    closeBtn?.addEventListener('click', closeModal);
+    cancelBtn?.addEventListener('click', closeModal);
+    bookingModal?.addEventListener('click', (e) => {
+        if (e.target === bookingModal) closeModal();
     });
 
-    elements.bookInspBtn.addEventListener('click', () => {
-        const car = state.customerData?.car_model || elements.inputCarModel.value || '愛車';
-        const date = state.customerData?.inspection_next_date || elements.inputInspNextDate.value || '未定';
-        const msg = `【車検・定期点検の予約相談】\n愛車: ${car}\n車検満了日: ${date}\n\n車検のお見積もりや代車の手配について相談したいです。`;
-        sendLineChatMessage(msg);
+    document.querySelectorAll('.maint-choice-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const pref = btn.getAttribute('data-pref');
+            closeModal();
+            await submitMaintenanceBooking(currentBookingType, pref);
+        });
     });
+}
+
+async function submitMaintenanceBooking(bookingType, prefTime) {
+    const car = state.customerData?.car_model || elements.inputCarModel.value || '愛車';
+    const date = (bookingType === 'オイル交換') 
+        ? (state.customerData?.oil_next_date || elements.inputOilNextDate.value || '近日中')
+        : (state.customerData?.inspection_next_date || elements.inputInspNextDate.value || '未定');
+
+    const msg = `【${bookingType}の来店予約】\n愛車: ${car}\n予定・満了日: ${date}\n希望日時: ${prefTime}\n\n上記の日程で予約・相談をお願いいたします。`;
+
+    showToast('予約相談を送信中...');
+    sendLineChatMessage(msg);
 }
 
 async function fetchCustomerData() {

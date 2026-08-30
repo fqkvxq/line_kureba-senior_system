@@ -26,7 +26,7 @@ foreach ($configPaths as $cp) {
 
 // 設定
 $shopCode = defined('SHOP_CODE') ? SHOP_CODE : '0601492';
-$shopName = defined('SHOP_NAME') ? SHOP_NAME : 'アップファーム';
+$shopName = defined('SHOP_NAME') ? SHOP_NAME : 'アップファーレン';
 $baseUrl = "https://www.goo-net.com/usedcar_shop/{$shopCode}/";
 $dbFile = defined('DB_PATH') ? DB_PATH : (__DIR__ . '/cars.db');
 
