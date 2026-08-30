@@ -132,6 +132,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
  * テキストメッセージの処理
  */
 function handleTextMessage(PDO $db, string $replyToken, string $text, string $userId = '') {
+    // 0. LIFFからのご来店・ご相談受付メッセージを受信した場合（api.phpで処理済みのため二重返信を防止）
+    if (str_contains($text, '【ご来店・ご相談の受付】') || str_contains($text, '【修理・点検・カスタム相談】')) {
+        // すでにPush送信・Discord通知済みのため、追加返信は行わず正常終了
+        return;
+    }
+
     // 1. LIFFマイカー画面からの予約確定メッセージを受信した場合（例: 【12ヶ月定期点検の来店予約】など）
     if (preg_match('/【(.*?)の来店予約】/u', $text, $m)) {
         $bookingType = $m[1]; // オイル交換, 12ヶ月定期点検, 車検 など
@@ -150,14 +156,14 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
     }
 
     // 2. オイル交換・定期点検・車検・メンテナンス関連のキーワード判定 (在庫検索の誤爆防止)
-    if (preg_match('/(オイル|車検|点検|12ヶ月|法定|メンテ|予約|相談|パスポート)/u', $text)) {
+    if (preg_match('/^(オイル|オイル交換|車検|点検|12ヶ月|12ヶ月点検|法定点検|メンテナンス)$/u', trim($text))) {
         // 顧客の登録愛車を取得
         $carModel = '愛車';
         $oilDate = '近日中';
         $periodicDate = '近日中';
         $inspDate = '未定';
         if (!empty($userId)) {
-            $stmt = $db->prepare("SELECT * FROM customers WHERE user_id = :uid LIMIT 1");
+            $stmt = $db->prepare("SELECT * FROM customer_cars WHERE user_id = :uid ORDER BY updated_at DESC LIMIT 1");
             $stmt->execute([':uid' => $userId]);
             $cust = $stmt->fetch();
             if ($cust) {
