@@ -14,21 +14,29 @@ const elements = {
     userNameText: document.getElementById('userNameText'),
     carModelDisplay: document.getElementById('carModelDisplay'),
     carNumDisplay: document.getElementById('carNumDisplay'),
+    
+    // オイル交換
     oilNextDateDisplay: document.getElementById('oilNextDateDisplay'),
     oilStatusBadge: document.getElementById('oilStatusBadge'),
+    inputOilNextDate: document.getElementById('inputOilNextDate'),
+    bookOilBtn: document.getElementById('bookOilBtn'),
+
+    // 12ヶ月定期点検
+    periodicNextDateDisplay: document.getElementById('periodicNextDateDisplay'),
+    periodicStatusBadge: document.getElementById('periodicStatusBadge'),
+    inputPeriodicNextDate: document.getElementById('inputPeriodicNextDate'),
+    bookPeriodicBtn: document.getElementById('bookPeriodicBtn'),
+
+    // 車検満了
     inspNextDateDisplay: document.getElementById('inspNextDateDisplay'),
     inspStatusBadge: document.getElementById('inspStatusBadge'),
+    inputInspNextDate: document.getElementById('inputInspNextDate'),
+    bookInspBtn: document.getElementById('bookInspBtn'),
     
-    // 入力フォーム
+    // フォーム共通
     inputCarModel: document.getElementById('inputCarModel'),
     inputCarNumber: document.getElementById('inputCarNumber'),
-    inputOilNextDate: document.getElementById('inputOilNextDate'),
-    inputInspNextDate: document.getElementById('inputInspNextDate'),
     saveCustBtn: document.getElementById('saveCustBtn'),
-    
-    // 相談ボタン
-    bookOilBtn: document.getElementById('bookOilBtn'),
-    bookInspBtn: document.getElementById('bookInspBtn'),
     toast: document.getElementById('appToast')
 };
 
@@ -115,8 +123,9 @@ function initEventListeners() {
         bookingModal.style.display = 'none';
     }
 
-    elements.bookOilBtn.addEventListener('click', () => openModal('オイル交換'));
-    elements.bookInspBtn.addEventListener('click', () => openModal('車検・定期点検'));
+    elements.bookOilBtn?.addEventListener('click', () => openModal('オイル交換'));
+    elements.bookPeriodicBtn?.addEventListener('click', () => openModal('12ヶ月定期点検'));
+    elements.bookInspBtn?.addEventListener('click', () => openModal('車検'));
 
     closeBtn?.addEventListener('click', closeModal);
     cancelBtn?.addEventListener('click', closeModal);
@@ -135,9 +144,14 @@ function initEventListeners() {
 
 async function submitMaintenanceBooking(bookingType, prefTime) {
     const car = state.customerData?.car_model || elements.inputCarModel.value || '愛車';
-    const date = (bookingType === 'オイル交換') 
-        ? (state.customerData?.oil_next_date || elements.inputOilNextDate.value || '近日中')
-        : (state.customerData?.inspection_next_date || elements.inputInspNextDate.value || '未定');
+    let date = '未定';
+    if (bookingType === 'オイル交換') {
+        date = state.customerData?.oil_next_date || elements.inputOilNextDate.value || '近日中';
+    } else if (bookingType === '12ヶ月定期点検') {
+        date = state.customerData?.periodic_insp_next_date || elements.inputPeriodicNextDate.value || '近日中';
+    } else {
+        date = state.customerData?.inspection_next_date || elements.inputInspNextDate.value || '未定';
+    }
 
     const msg = `【${bookingType}の来店予約】\n愛車: ${car}\n予定・満了日: ${date}\n希望日時: ${prefTime}\n\n上記の日程で予約・相談をお願いいたします。`;
 
@@ -176,6 +190,15 @@ function renderCustomerInfo(cust) {
         elements.oilStatusBadge.className = 'maint-badge badge-warning';
     }
 
+    if (cust.periodic_insp_next_date) {
+        elements.periodicNextDateDisplay.textContent = cust.periodic_insp_next_date;
+        elements.inputPeriodicNextDate.value = cust.periodic_insp_next_date;
+        updateBadge(elements.periodicStatusBadge, cust.periodic_insp_next_date);
+    } else {
+        elements.periodicStatusBadge.textContent = '未設定';
+        elements.periodicStatusBadge.className = 'maint-badge badge-warning';
+    }
+
     if (cust.inspection_next_date) {
         elements.inspNextDateDisplay.textContent = cust.inspection_next_date;
         elements.inputInspNextDate.value = cust.inspection_next_date;
@@ -187,6 +210,7 @@ function renderCustomerInfo(cust) {
 }
 
 function updateBadge(badgeEl, targetDateStr) {
+    if (!badgeEl) return;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const target = new Date(targetDateStr);
@@ -213,6 +237,7 @@ async function saveCustomerData() {
     const carModel = elements.inputCarModel.value.trim();
     const carNumber = elements.inputCarNumber.value.trim();
     const oilDate = elements.inputOilNextDate.value;
+    const periodicDate = elements.inputPeriodicNextDate.value;
     const inspDate = elements.inputInspNextDate.value;
 
     if (!carModel) {
@@ -230,6 +255,10 @@ async function saveCustomerData() {
         elements.oilNextDateDisplay.textContent = oilDate;
         updateBadge(elements.oilStatusBadge, oilDate);
     }
+    if (periodicDate) {
+        elements.periodicNextDateDisplay.textContent = periodicDate;
+        updateBadge(elements.periodicStatusBadge, periodicDate);
+    }
     if (inspDate) {
         elements.inspNextDateDisplay.textContent = inspDate;
         updateBadge(elements.inspStatusBadge, inspDate);
@@ -242,6 +271,7 @@ async function saveCustomerData() {
         car_model: carModel,
         car_number: carNumber,
         oil_next_date: oilDate,
+        periodic_insp_next_date: periodicDate,
         inspection_next_date: inspDate
     });
 

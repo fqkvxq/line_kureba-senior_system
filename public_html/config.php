@@ -75,16 +75,27 @@ function getDbConnection(): PDO {
             car_number TEXT,
             oil_last_date DATE,
             oil_next_date DATE,
+            periodic_insp_next_date DATE,
             inspection_next_date DATE,
             staff_memo TEXT,
             oil_reminded_at DATETIME,
+            periodic_reminded_at DATETIME,
             inspection_reminded_at DATETIME,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
         CREATE INDEX IF NOT EXISTS idx_customers_oil_next ON customers(oil_next_date);
+        CREATE INDEX IF NOT EXISTS idx_customers_periodic_next ON customers(periodic_insp_next_date);
         CREATE INDEX IF NOT EXISTS idx_customers_inspection_next ON customers(inspection_next_date);
     ");
+
+    // 既存テーブルへのカラム安全追加 (ALTER TABLE)
+    try {
+        $pdo->exec("ALTER TABLE customers ADD COLUMN periodic_insp_next_date DATE");
+    } catch (Exception $e) {}
+    try {
+        $pdo->exec("ALTER TABLE customers ADD COLUMN periodic_reminded_at DATETIME");
+    } catch (Exception $e) {}
 
     return $pdo;
 }
@@ -512,12 +523,12 @@ function sendDiscordNewCarsNotification(array $newCars) {
 /**
  * リマインド定期配信実行結果の Discord レポート
  */
-function sendDiscordReminderReport(int $oilCount, int $inspectionCount, array $details = []) {
+function sendDiscordReminderReport(int $oilCount, int $periodicCount, int $shakenCount, array $details = []) {
     if (empty(DISCORD_WEBHOOK_URL) || DISCORD_WEBHOOK_URL === 'YOUR_DISCORD_WEBHOOK_URL_HERE') {
         return;
     }
 
-    $total = $oilCount + $inspectionCount;
+    $total = $oilCount + $periodicCount + $shakenCount;
     if ($total === 0) return;
 
     $descLines = [];
@@ -530,8 +541,9 @@ function sendDiscordReminderReport(int $oilCount, int $inspectionCount, array $d
         'description' => implode("\n", array_slice($descLines, 0, 10)),
         'color' => 0x3B82F6,
         'fields' => [
-            ['name' => '🛢 オイル交換リマインド', 'value' => "{$oilCount} 件", 'inline' => true],
-            ['name' => '📋 車検・定期点検リマインド', 'value' => "{$inspectionCount} 件", 'inline' => true]
+            ['name' => '🛢 オイル交換', 'value' => "{$oilCount} 件", 'inline' => true],
+            ['name' => '📋 12ヶ月定期点検', 'value' => "{$periodicCount} 件", 'inline' => true],
+            ['name' => '🚗 車検満了', 'value' => "{$shakenCount} 件", 'inline' => true]
         ],
         'footer' => ['text' => 'アップファーレン メンテナンス自動リマインドシステム'],
         'timestamp' => date('c')

@@ -676,11 +676,22 @@ function handleSubmitInquiry(PDO $db, string $replyToken, string $carId, string 
  * メンテナンス（オイル交換/車検点検）予約確認メッセージ (誤タップ防止)
  */
 function sendMaintenanceBookingConfirmMessage(string $replyToken, string $type, string $carModel, string $targetDate, string $userId = '') {
-    $isOil = ($type === 'oil');
-    $title = $isOil ? '🛢 オイル交換 来店予約のご確認' : '📋 車検・定期点検 ご予約のご確認';
-    $color = $isOil ? '#f59e0b' : '#3b82f6';
-    $labelDate = $isOil ? '次回オイル予定日' : '次回車検満了日';
-    $typeName = $isOil ? 'オイル交換' : '車検・定期点検';
+    if ($type === 'oil') {
+        $title = '🛢 オイル交換 来店予約のご確認';
+        $color = '#f59e0b';
+        $labelDate = '次回オイル予定日';
+        $typeName = 'オイル交換';
+    } elseif ($type === 'periodic') {
+        $title = '📋 12ヶ月定期点検 ご予約のご確認';
+        $color = '#10b981';
+        $labelDate = '次回点検予定日';
+        $typeName = '12ヶ月定期点検';
+    } else {
+        $title = '🚗 車検 来店予約のご確認';
+        $color = '#3b82f6';
+        $labelDate = '車検満了日';
+        $typeName = '車検';
+    }
 
     $confirmBubble = [
         'type' => 'bubble',

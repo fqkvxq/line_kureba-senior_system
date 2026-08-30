@@ -20,6 +20,7 @@ const elements = {
     // 統計
     statTotalUsers: document.getElementById('statTotalUsers'),
     statOilSoon: document.getElementById('statOilSoon'),
+    statPeriodicSoon: document.getElementById('statPeriodicSoon'),
     statInspSoon: document.getElementById('statInspSoon'),
 
     // ツールバー
@@ -27,6 +28,7 @@ const elements = {
     tabBtns: document.querySelectorAll('.tab-btn'),
     tabCountAll: document.getElementById('tabCountAll'),
     tabCountOil: document.getElementById('tabCountOil'),
+    tabCountPeriodic: document.getElementById('tabCountPeriodic'),
     tabCountInsp: document.getElementById('tabCountInsp'),
 
     // テーブル
@@ -49,6 +51,7 @@ const elements = {
     editCarNumber: document.getElementById('editCarNumber'),
     editOilLastDate: document.getElementById('editOilLastDate'),
     editOilNextDate: document.getElementById('editOilNextDate'),
+    editPeriodicNextDate: document.getElementById('editPeriodicNextDate'),
     editInspectionNextDate: document.getElementById('editInspectionNextDate'),
     editStaffMemo: document.getElementById('editStaffMemo'),
 
@@ -98,7 +101,7 @@ function initEventListeners() {
         btn.addEventListener('click', () => {
             elements.tabBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            state.currentFilter = btn.dataset.filter;
+            state.currentFilter = btn.getAttribute('data-filter');
             renderTable();
         });
     });
@@ -115,43 +118,49 @@ function initEventListeners() {
         });
     });
 
-    // 新規登録モーダル開く
-    elements.openAddCustomerModalBtn.addEventListener('click', () => {
-        openEditModal(null);
-    });
-
-    // モーダル閉じる
+    // モーダル開閉
+    elements.openAddCustomerModalBtn.addEventListener('click', () => openEditModal(null));
     elements.closeEditModalBtn.addEventListener('click', () => closeEditModal());
     elements.cancelEditBtn.addEventListener('click', () => closeEditModal());
-
-    // 顧客保存
     elements.saveCustomerBtn.addEventListener('click', () => saveCustomer());
 }
 
 async function attemptLogin() {
     const pass = elements.adminPasswordInput.value.trim();
-    if (!pass) return;
+    if (!pass) {
+        elements.loginErrorMsg.textContent = 'パスワードを入力してください';
+        return;
+    }
+
+    elements.loginBtn.disabled = true;
+    elements.loginBtn.textContent = '認証中...';
+    elements.loginErrorMsg.textContent = '';
 
     try {
         const res = await fetch(`../api.php?action=admin_list_customers&password=${encodeURIComponent(pass)}`);
         const data = await res.json();
+
         if (data.success) {
             state.password = pass;
             sessionStorage.setItem('admin_pass', pass);
             elements.loginModal.style.display = 'none';
-            elements.loginErrorMsg.style.display = 'none';
-            loadDashboard();
+            elements.adminApp.style.display = 'block';
+            state.allCustomers = data.customers || [];
+            updateStats();
+            renderTable();
         } else {
-            elements.loginErrorMsg.textContent = 'パスワードが違います';
-            elements.loginErrorMsg.style.display = 'block';
+            elements.loginErrorMsg.textContent = data.error || 'パスワードが違います';
         }
     } catch (e) {
-        elements.loginErrorMsg.textContent = '通信エラーが発生しました';
-        elements.loginErrorMsg.style.display = 'block';
+        elements.loginErrorMsg.textContent = 'サーバー通信エラーが発生しました';
+    } finally {
+        elements.loginBtn.disabled = false;
+        elements.loginBtn.textContent = 'ログイン';
     }
 }
 
 async function loadDashboard() {
+    elements.loginModal.style.display = 'none';
     elements.adminApp.style.display = 'block';
     await fetchCustomers();
 }
@@ -160,17 +169,17 @@ async function fetchCustomers() {
     try {
         const res = await fetch(`../api.php?action=admin_list_customers&password=${encodeURIComponent(state.password)}`);
         const data = await res.json();
-        if (data.success && Array.isArray(data.customers)) {
-            state.allCustomers = data.customers;
+        if (data.success) {
+            state.allCustomers = data.customers || [];
             updateStats();
             renderTable();
         } else if (res.status === 401) {
             sessionStorage.removeItem('admin_pass');
-            elements.adminApp.style.display = 'none';
             elements.loginModal.style.display = 'flex';
+            elements.adminApp.style.display = 'none';
         }
     } catch (e) {
-        showToast('顧客データの取得に失敗しました');
+        console.error('Fetch error:', e);
     }
 }
 
@@ -182,6 +191,7 @@ function updateStats() {
     in30Days.setDate(today.getDate() + 30);
 
     let oilSoonCount = 0;
+    let periodicSoonCount = 0;
     let inspSoonCount = 0;
 
     state.allCustomers.forEach(c => {
@@ -189,19 +199,25 @@ function updateStats() {
             const d = new Date(c.oil_next_date);
             if (d <= in30Days) oilSoonCount++;
         }
+        if (c.periodic_insp_next_date) {
+            const d = new Date(c.periodic_insp_next_date);
+            if (d <= in30Days) periodicSoonCount++;
+        }
         if (c.inspection_next_date) {
             const d = new Date(c.inspection_next_date);
             if (d <= in30Days) inspSoonCount++;
         }
     });
 
-    elements.statTotalUsers.textContent = state.allCustomers.length;
-    elements.statOilSoon.textContent = oilSoonCount;
-    elements.statInspSoon.textContent = inspSoonCount;
+    if (elements.statTotalUsers) elements.statTotalUsers.textContent = state.allCustomers.length;
+    if (elements.statOilSoon) elements.statOilSoon.textContent = oilSoonCount;
+    if (elements.statPeriodicSoon) elements.statPeriodicSoon.textContent = periodicSoonCount;
+    if (elements.statInspSoon) elements.statInspSoon.textContent = inspSoonCount;
 
-    elements.tabCountAll.textContent = state.allCustomers.length;
-    elements.tabCountOil.textContent = oilSoonCount;
-    elements.tabCountInsp.textContent = inspSoonCount;
+    if (elements.tabCountAll) elements.tabCountAll.textContent = state.allCustomers.length;
+    if (elements.tabCountOil) elements.tabCountOil.textContent = oilSoonCount;
+    if (elements.tabCountPeriodic) elements.tabCountPeriodic.textContent = periodicSoonCount;
+    if (elements.tabCountInsp) elements.tabCountInsp.textContent = inspSoonCount;
 }
 
 function renderTable() {
@@ -226,6 +242,10 @@ function renderTable() {
             if (!c.oil_next_date) return false;
             return new Date(c.oil_next_date) <= in30Days;
         }
+        if (state.currentFilter === 'periodic_soon') {
+            if (!c.periodic_insp_next_date) return false;
+            return new Date(c.periodic_insp_next_date) <= in30Days;
+        }
         if (state.currentFilter === 'inspection_soon') {
             if (!c.inspection_next_date) return false;
             return new Date(c.inspection_next_date) <= in30Days;
@@ -244,6 +264,7 @@ function renderTable() {
 
     elements.customerTableBody.innerHTML = filtered.map(c => {
         const oilBadge = getBadgeHtml(c.oil_next_date);
+        const periodicBadge = getBadgeHtml(c.periodic_insp_next_date);
         const inspBadge = getBadgeHtml(c.inspection_next_date);
         const memo = c.staff_memo ? escapeHtml(c.staff_memo) : '<span style="color:#cbd5e1">-</span>';
         const updated = (c.updated_at || '').substring(0, 10);
@@ -259,19 +280,23 @@ function renderTable() {
                     <div class="car-no">${escapeHtml(c.car_number || '')}</div>
                 </td>
                 <td>${oilBadge}</td>
+                <td>${periodicBadge}</td>
                 <td>${inspBadge}</td>
-                <td style="max-width: 200px; font-size: 11px;">${memo}</td>
+                <td style="max-width: 160px; font-size: 11px;">${memo}</td>
                 <td style="font-size: 11px; color: #64748b;">${updated}</td>
                 <td>
                     <div class="action-btns">
                         <button class="btn-remind-oil" onclick="sendManualReminder('${c.user_id}', 'oil', '${escapeHtml(c.user_name)}', '${escapeHtml(c.car_model)}')" title="オイル交換リマインドをLINE送信">
-                            <i class="fa-solid fa-oil-can"></i> オイル送信
+                            <i class="fa-solid fa-oil-can"></i> オイル
                         </button>
-                        <button class="btn-remind-insp" onclick="sendManualReminder('${c.user_id}', 'inspection', '${escapeHtml(c.user_name)}', '${escapeHtml(c.car_model)}')" title="車検・点検リマインドをLINE送信">
-                            <i class="fa-solid fa-clipboard-check"></i> 車検送信
+                        <button class="btn-remind-periodic" onclick="sendManualReminder('${c.user_id}', 'periodic', '${escapeHtml(c.user_name)}', '${escapeHtml(c.car_model)}')" title="12ヶ月点検リマインドをLINE送信">
+                            <i class="fa-solid fa-clipboard-check"></i> 点検
+                        </button>
+                        <button class="btn-remind-insp" onclick="sendManualReminder('${c.user_id}', 'inspection', '${escapeHtml(c.user_name)}', '${escapeHtml(c.car_model)}')" title="車検リマインドをLINE送信">
+                            <i class="fa-solid fa-shield-halved"></i> 車検
                         </button>
                         <button class="btn-edit" onclick="editCustomerById('${c.user_id}')">
-                            <i class="fa-solid fa-pen"></i> 編集
+                            <i class="fa-solid fa-pen"></i>
                         </button>
                         <button class="btn-delete" onclick="deleteCustomerById('${c.user_id}', '${escapeHtml(c.user_name)}')">
                             <i class="fa-solid fa-trash"></i>
@@ -289,7 +314,10 @@ window.sendManualReminder = async function(userId, type, userName, carModel) {
         return;
     }
 
-    const typeLabel = (type === 'oil') ? '🛢 オイル交換リマインド' : '📋 車検・点検リマインド';
+    let typeLabel = '🛢 オイル交換リマインド';
+    if (type === 'periodic') typeLabel = '📋 12ヶ月定期点検リマインド';
+    if (type === 'inspection') typeLabel = '🚗 車検満了リマインド';
+
     if (!confirm(`【${userName} 様 (${carModel})】へ\n「${typeLabel}」のLINEメッセージを今すぐ送信しますか？`)) {
         return;
     }
@@ -379,6 +407,7 @@ function openEditModal(cust) {
         elements.editCarNumber.value = cust.car_number || '';
         elements.editOilLastDate.value = cust.oil_last_date || '';
         elements.editOilNextDate.value = cust.oil_next_date || '';
+        elements.editPeriodicNextDate.value = cust.periodic_insp_next_date || '';
         elements.editInspectionNextDate.value = cust.inspection_next_date || '';
         elements.editStaffMemo.value = cust.staff_memo || '';
     } else {
@@ -390,6 +419,7 @@ function openEditModal(cust) {
         elements.editCarNumber.value = '';
         elements.editOilLastDate.value = '';
         elements.editOilNextDate.value = '';
+        elements.editPeriodicNextDate.value = '';
         elements.editInspectionNextDate.value = '';
         elements.editStaffMemo.value = '';
     }
@@ -419,6 +449,7 @@ async function saveCustomer() {
         car_number: elements.editCarNumber.value.trim(),
         oil_last_date: elements.editOilLastDate.value,
         oil_next_date: elements.editOilNextDate.value,
+        periodic_insp_next_date: elements.editPeriodicNextDate.value,
         inspection_next_date: elements.editInspectionNextDate.value,
         staff_memo: elements.editStaffMemo.value.trim()
     });

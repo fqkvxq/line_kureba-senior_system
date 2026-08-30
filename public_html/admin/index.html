@@ -66,8 +66,15 @@
                         <span class="stat-value" id="statOilSoon">0</span>
                     </div>
                 </div>
+                <div class="stat-card" data-filter="periodic_soon">
+                    <div class="stat-icon icon-periodic" style="background:#ecfdf5; color:#059669;"><i class="fa-solid fa-clipboard-check"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">12ヶ月点検近し (30日以内)</span>
+                        <span class="stat-value" id="statPeriodicSoon">0</span>
+                    </div>
+                </div>
                 <div class="stat-card" data-filter="inspection_soon">
-                    <div class="stat-icon icon-insp"><i class="fa-solid fa-clipboard-check"></i></div>
+                    <div class="stat-icon icon-insp"><i class="fa-solid fa-shield-halved"></i></div>
                     <div class="stat-info">
                         <span class="stat-label">車検満了近し (30日以内)</span>
                         <span class="stat-value" id="statInspSoon">0</span>
@@ -83,8 +90,9 @@
                 </div>
                 <div class="filter-tabs">
                     <button class="tab-btn active" data-filter="all">全顧客 (<span id="tabCountAll">0</span>)</button>
-                    <button class="tab-btn" data-filter="oil_soon">🛢 オイル期日 (<span id="tabCountOil">0</span>)</button>
-                    <button class="tab-btn" data-filter="inspection_soon">📋 車検期日 (<span id="tabCountInsp">0</span>)</button>
+                    <button class="tab-btn" data-filter="oil_soon">🛢 オイル (<span id="tabCountOil">0</span>)</button>
+                    <button class="tab-btn" data-filter="periodic_soon">📋 12ヶ月点検 (<span id="tabCountPeriodic">0</span>)</button>
+                    <button class="tab-btn" data-filter="inspection_soon">🚗 車検 (<span id="tabCountInsp">0</span>)</button>
                 </div>
             </div>
 
@@ -95,8 +103,9 @@
                         <tr>
                             <th>お名前</th>
                             <th>愛車・ナンバー</th>
-                            <th>次回オイル予定日</th>
-                            <th>次回車検満了日</th>
+                            <th>次回オイル</th>
+                            <th>12ヶ月点検</th>
+                            <th>車検満了</th>
                             <th>店舗メモ</th>
                             <th>最終更新</th>
                             <th>操作</th>
@@ -162,10 +171,17 @@
 
                 <div class="form-row">
                     <div class="form-col">
+                        <label>次回 12ヶ月定期点検 予定日</label>
+                        <input type="date" id="editPeriodicNextDate">
+                        <span style="font-size: 11px; color: #64748b; margin-top: 3px; display: block;">
+                            ※ 14日前・7日前・当日に自動LINE配信
+                        </span>
+                    </div>
+                    <div class="form-col">
                         <label>次回 車検満了日</label>
                         <input type="date" id="editInspectionNextDate">
                         <span style="font-size: 11px; color: #64748b; margin-top: 3px; display: block;">
-                            ※ 30日前・14日前に自動LINE配信
+                            ※ 30日前・14日前・当日に自動LINE配信
                         </span>
                     </div>
                 </div>

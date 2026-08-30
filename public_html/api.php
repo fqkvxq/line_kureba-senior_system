@@ -214,7 +214,7 @@ try {
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
-        // --- 6. ユーザー用: 自身の愛車・オイル交換日保存 ---
+        // --- 6. ユーザー用: 自身の愛車・オイル交換日・定期点検・車検日保存 ---
         case 'save_customer':
             $userId = trim($_POST['uid'] ?? '');
             $userName = trim($_POST['uname'] ?? '');
@@ -222,6 +222,7 @@ try {
             $carNumber = trim($_POST['car_number'] ?? '');
             $oilLastDate = !empty($_POST['oil_last_date']) ? $_POST['oil_last_date'] : null;
             $oilNextDate = !empty($_POST['oil_next_date']) ? $_POST['oil_next_date'] : null;
+            $periodicInspNextDate = !empty($_POST['periodic_insp_next_date']) ? $_POST['periodic_insp_next_date'] : null;
             $inspectionNextDate = !empty($_POST['inspection_next_date']) ? $_POST['inspection_next_date'] : null;
 
             if (empty($userId)) {
@@ -233,7 +234,8 @@ try {
                 'name' => $userName,
                 'car' => $carModel,
                 'oil' => $oilNextDate,
-                'insp' => $inspectionNextDate
+                'periodic' => $periodicInspNextDate,
+                'shaken' => $inspectionNextDate
             ]);
 
             // 既存レコード確認
@@ -249,6 +251,7 @@ try {
                         car_number = :car_number,
                         oil_last_date = :oil_last_date,
                         oil_next_date = :oil_next_date,
+                        periodic_insp_next_date = :periodic_next_date,
                         inspection_next_date = :inspection_next_date,
                         updated_at = CURRENT_TIMESTAMP
                     WHERE user_id = :uid
@@ -257,11 +260,11 @@ try {
                 $stmt = $db->prepare("
                     INSERT INTO customers (
                         user_id, user_name, car_model, car_number,
-                        oil_last_date, oil_next_date, inspection_next_date,
+                        oil_last_date, oil_next_date, periodic_insp_next_date, inspection_next_date,
                         created_at, updated_at
                     ) VALUES (
                         :uid, :uname, :car_model, :car_number,
-                        :oil_last_date, :oil_next_date, :inspection_next_date,
+                        :oil_last_date, :oil_next_date, :periodic_next_date, :inspection_next_date,
                         CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                     )
                 ");
@@ -274,6 +277,7 @@ try {
                 ':car_number' => $carNumber,
                 ':oil_last_date' => $oilLastDate,
                 ':oil_next_date' => $oilNextDate,
+                ':periodic_next_date' => $periodicInspNextDate,
                 ':inspection_next_date' => $inspectionNextDate,
             ]);
 
@@ -286,6 +290,7 @@ try {
                     'car_model' => $carModel,
                     'car_number' => $carNumber,
                     'oil_next_date' => $oilNextDate,
+                    'periodic_insp_next_date' => $periodicInspNextDate,
                     'inspection_next_date' => $inspectionNextDate
                 ]
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
@@ -301,7 +306,7 @@ try {
             }
 
             $search = trim($_GET['search'] ?? '');
-            $filter = $_GET['filter'] ?? 'all'; // all, oil_soon, inspection_soon
+            $filter = $_GET['filter'] ?? 'all'; // all, oil_soon, periodic_soon, inspection_soon
 
             $where = ["1 = 1"];
             $params = [];
@@ -316,6 +321,9 @@ try {
 
             if ($filter === 'oil_soon') {
                 $where[] = "oil_next_date IS NOT NULL AND oil_next_date <= :in30";
+                $params[':in30'] = $in30days;
+            } elseif ($filter === 'periodic_soon') {
+                $where[] = "periodic_insp_next_date IS NOT NULL AND periodic_insp_next_date <= :in30";
                 $params[':in30'] = $in30days;
             } elseif ($filter === 'inspection_soon') {
                 $where[] = "inspection_next_date IS NOT NULL AND inspection_next_date <= :in30";
@@ -349,6 +357,7 @@ try {
             $carNumber = trim($_POST['car_number'] ?? '');
             $oilLastDate = !empty($_POST['oil_last_date']) ? $_POST['oil_last_date'] : null;
             $oilNextDate = !empty($_POST['oil_next_date']) ? $_POST['oil_next_date'] : null;
+            $periodicInspNextDate = !empty($_POST['periodic_insp_next_date']) ? $_POST['periodic_insp_next_date'] : null;
             $inspectionNextDate = !empty($_POST['inspection_next_date']) ? $_POST['inspection_next_date'] : null;
             $staffMemo = trim($_POST['staff_memo'] ?? '');
 
@@ -368,6 +377,7 @@ try {
                         car_number = :car_number,
                         oil_last_date = :oil_last_date,
                         oil_next_date = :oil_next_date,
+                        periodic_insp_next_date = :periodic_next_date,
                         inspection_next_date = :inspection_next_date,
                         staff_memo = :staff_memo,
                         updated_at = CURRENT_TIMESTAMP
@@ -377,11 +387,11 @@ try {
                 $stmt = $db->prepare("
                     INSERT INTO customers (
                         user_id, user_name, car_model, car_number,
-                        oil_last_date, oil_next_date, inspection_next_date,
+                        oil_last_date, oil_next_date, periodic_insp_next_date, inspection_next_date,
                         staff_memo, created_at, updated_at
                     ) VALUES (
                         :uid, :uname, :car_model, :car_number,
-                        :oil_last_date, :oil_next_date, :inspection_next_date,
+                        :oil_last_date, :oil_next_date, :periodic_next_date, :inspection_next_date,
                         :staff_memo, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                     )
                 ");
@@ -394,6 +404,7 @@ try {
                 ':car_number' => $carNumber,
                 ':oil_last_date' => $oilLastDate,
                 ':oil_next_date' => $oilNextDate,
+                ':periodic_next_date' => $periodicInspNextDate,
                 ':inspection_next_date' => $inspectionNextDate,
                 ':staff_memo' => $staffMemo
             ]);
@@ -432,7 +443,7 @@ try {
             }
 
             $userId = $_POST['uid'] ?? '';
-            $type = $_POST['type'] ?? 'oil'; // oil or inspection
+            $type = $_POST['type'] ?? 'oil'; // oil, periodic, or inspection (shaken)
 
             if (empty($userId)) {
                 http_response_code(400);
@@ -536,11 +547,11 @@ try {
                         ]
                     ]
                 ];
-            } else {
-                $inspDate = $cust['inspection_next_date'] ?: '未定';
+            } elseif ($type === 'periodic') {
+                $inspDate = $cust['periodic_insp_next_date'] ?: '近日中';
                 $flexMessage = [
                     'type' => 'flex',
-                    'altText' => "【車検・定期点検のお知らせ】{$carModel}の満了日が近づいています",
+                    'altText' => "【12ヶ月定期点検のお知らせ】{$carModel}の点検時期が近づいています",
                     'contents' => [
                         'type' => 'bubble',
                         'size' => 'mega',
@@ -549,9 +560,78 @@ try {
                             'layout' => 'vertical',
                             'paddingAll' => '20px',
                             'contents' => [
-                                ['type' => 'text', 'text' => '📋 車検・定期点検のご案内', 'weight' => 'bold', 'size' => 'sm', 'color' => '#3b82f6'],
+                                ['type' => 'text', 'text' => '📋 12ヶ月定期点検のご案内', 'weight' => 'bold', 'size' => 'sm', 'color' => '#10b981'],
                                 ['type' => 'text', 'text' => "{$userName} 様", 'weight' => 'bold', 'size' => 'xl', 'margin' => 'sm', 'color' => '#1e293b'],
-                                ['type' => 'text', 'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n愛車【{$carModel}】の車検・点検満了日が近づいております。", 'size' => 'xs', 'color' => '#475569', 'margin' => 'sm', 'wrap' => true],
+                                ['type' => 'text', 'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n愛車【{$carModel}】の法定12ヶ月定期点検の時期をお知らせいたします。", 'size' => 'xs', 'color' => '#475569', 'margin' => 'sm', 'wrap' => true],
+                                ['type' => 'separator', 'margin' => 'md'],
+                                [
+                                    'type' => 'box',
+                                    'layout' => 'vertical',
+                                    'margin' => 'md',
+                                    'spacing' => 'sm',
+                                    'backgroundColor' => '#f8fafc',
+                                    'paddingAll' => '12px',
+                                    'cornerRadius' => 'md',
+                                    'contents' => [
+                                        [
+                                            'type' => 'box',
+                                            'layout' => 'baseline',
+                                            'contents' => [
+                                                ['type' => 'text', 'text' => '対象車両', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
+                                                ['type' => 'text', 'text' => $carModel, 'size' => 'xs', 'weight' => 'bold', 'color' => '#1e293b', 'flex' => 6]
+                                            ]
+                                        ],
+                                        [
+                                            'type' => 'box',
+                                            'layout' => 'baseline',
+                                            'contents' => [
+                                                ['type' => 'text', 'text' => '次回点検日', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
+                                                ['type' => 'text', 'text' => $inspDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#e02424', 'flex' => 6]
+                                            ]
+                                        ]
+                                    ]
+                                ],
+                                ['type' => 'text', 'text' => "愛車のコンディション維持や故障の早期発見のため、年1回の定期点検をおすすめしております。\nご予約・日程相談は下のボタンよりお気軽にどうぞ！", 'size' => 'xxs', 'color' => '#64748b', 'margin' => 'md', 'wrap' => true]
+                            ]
+                        ],
+                        'footer' => [
+                            'type' => 'box',
+                            'layout' => 'vertical',
+                            'spacing' => 'sm',
+                            'paddingAll' => '14px',
+                            'contents' => [
+                                [
+                                    'type' => 'button',
+                                    'style' => 'primary',
+                                    'color' => '#10b981',
+                                    'height' => 'sm',
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => '📅 12ヶ月点検の予約・相談',
+                                        'data' => 'action=ask_maintenance&type=periodic&car=' . urlencode($carModel) . '&date=' . urlencode($inspDate),
+                                        'displayText' => "【{$carModel}】の12ヶ月点検を予約・相談したい"
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ];
+            } else {
+                $inspDate = $cust['inspection_next_date'] ?: '未定';
+                $flexMessage = [
+                    'type' => 'flex',
+                    'altText' => "【車検満了のお知らせ】{$carModel}の満了日が近づいています",
+                    'contents' => [
+                        'type' => 'bubble',
+                        'size' => 'mega',
+                        'body' => [
+                            'type' => 'box',
+                            'layout' => 'vertical',
+                            'paddingAll' => '20px',
+                            'contents' => [
+                                ['type' => 'text', 'text' => '🚗 車検満了のご案内', 'weight' => 'bold', 'size' => 'sm', 'color' => '#3b82f6'],
+                                ['type' => 'text', 'text' => "{$userName} 様", 'weight' => 'bold', 'size' => 'xl', 'margin' => 'sm', 'color' => '#1e293b'],
+                                ['type' => 'text', 'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n愛車【{$carModel}】の車検満了日が近づいております。", 'size' => 'xs', 'color' => '#475569', 'margin' => 'sm', 'wrap' => true],
                                 ['type' => 'separator', 'margin' => 'md'],
                                 [
                                     'type' => 'box',
@@ -596,9 +676,9 @@ try {
                                     'height' => 'sm',
                                     'action' => [
                                         'type' => 'postback',
-                                        'label' => '📅 車検・点検の予約・見積もり',
+                                        'label' => '📅 車検の予約・見積もり',
                                         'data' => 'action=ask_maintenance&type=inspection&car=' . urlencode($carModel) . '&date=' . urlencode($inspDate),
-                                        'displayText' => "【{$carModel}】の車検・点検を予約・相談したい"
+                                        'displayText' => "【{$carModel}】の車検を予約・相談したい"
                                     ]
                                 ]
                             ]
@@ -611,6 +691,8 @@ try {
             if (!empty($res['success'])) {
                 if ($type === 'oil') {
                     $db->prepare("UPDATE customers SET oil_reminded_at = CURRENT_TIMESTAMP WHERE user_id = :uid")->execute([':uid' => $userId]);
+                } elseif ($type === 'periodic') {
+                    $db->prepare("UPDATE customers SET periodic_reminded_at = CURRENT_TIMESTAMP WHERE user_id = :uid")->execute([':uid' => $userId]);
                 } else {
                     $db->prepare("UPDATE customers SET inspection_reminded_at = CURRENT_TIMESTAMP WHERE user_id = :uid")->execute([':uid' => $userId]);
                 }

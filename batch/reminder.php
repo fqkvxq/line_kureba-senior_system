@@ -203,20 +203,21 @@ foreach ($oilTargetCustomers as $cust) {
 }
 
 // ==========================================
-// 2. 車検・定期点検リマインド判定 & 送信
+// 2. 12ヶ月定期点検リマインド判定 & 送信
 // ==========================================
 $stmt = $db->prepare("
     SELECT * FROM customers 
-    WHERE inspection_next_date IS NOT NULL 
-      AND (inspection_next_date = :today OR inspection_next_date = :in14days OR inspection_next_date = :in30days OR inspection_next_date < :today)
-      AND (inspection_reminded_at IS NULL OR date(inspection_reminded_at) != :today)
+    WHERE periodic_insp_next_date IS NOT NULL 
+      AND (periodic_insp_next_date = :today OR periodic_insp_next_date = :in7days OR periodic_insp_next_date = :in14days OR periodic_insp_next_date < :today)
+      AND (periodic_reminded_at IS NULL OR date(periodic_reminded_at) != :today)
 ");
-$stmt->execute([':today' => $today, ':in14days' => $in14days, ':in30days' => $in30days]);
-$inspTargetCustomers = $stmt->fetchAll();
+$stmt->execute([':today' => $today, ':in7days' => $in7days, ':in14days' => $in14days]);
+$periodicTargetCustomers = $stmt->fetchAll();
 
-echo "📋 車検・点検リマインド対象: " . count($inspTargetCustomers) . " 名\n";
+$periodicSentCount = 0;
+echo "📋 12ヶ月定期点検リマインド対象: " . count($periodicTargetCustomers) . " 名\n";
 
-foreach ($inspTargetCustomers as $cust) {
+foreach ($periodicTargetCustomers as $cust) {
     $userId = $cust['user_id'];
     if (!str_starts_with($userId, 'U')) {
         continue;
@@ -224,11 +225,11 @@ foreach ($inspTargetCustomers as $cust) {
 
     $userName = $cust['user_name'] ?: 'お客様';
     $carModel = $cust['car_model'] ?: '愛車';
-    $inspDate = $cust['inspection_next_date'];
+    $inspDate = $cust['periodic_insp_next_date'];
 
     $flexMessage = [
         'type' => 'flex',
-        'altText' => "【車検・定期点検のお知らせ】{$carModel}の満了日が近づいています",
+        'altText' => "【12ヶ月定期点検のお知らせ】{$carModel}の点検時期が近づいています",
         'contents' => [
             'type' => 'bubble',
             'size' => 'mega',
@@ -243,7 +244,153 @@ foreach ($inspTargetCustomers as $cust) {
                         'contents' => [
                             [
                                 'type' => 'text',
-                                'text' => '📋 車検・定期点検のご案内',
+                                'text' => '📋 12ヶ月定期点検のご案内',
+                                'weight' => 'bold',
+                                'size' => 'sm',
+                                'color' => '#10b981'
+                            ]
+                        ]
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => "{$userName} 様",
+                        'weight' => 'bold',
+                        'size' => 'xl',
+                        'margin' => 'sm',
+                        'color' => '#1e293b'
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n愛車【{$carModel}】の法定12ヶ月定期点検の時期をお知らせいたします。",
+                        'size' => 'xs',
+                        'color' => '#475569',
+                        'margin' => 'sm',
+                        'wrap' => true
+                    ],
+                    [
+                        'type' => 'separator',
+                        'margin' => 'md'
+                    ],
+                    [
+                        'type' => 'box',
+                        'layout' => 'vertical',
+                        'margin' => 'md',
+                        'spacing' => 'sm',
+                        'backgroundColor' => '#f8fafc',
+                        'paddingAll' => '12px',
+                        'cornerRadius' => 'md',
+                        'contents' => [
+                            [
+                                'type' => 'box',
+                                'layout' => 'baseline',
+                                'contents' => [
+                                    ['type' => 'text', 'text' => '対象車両', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
+                                    ['type' => 'text', 'text' => $carModel, 'size' => 'xs', 'weight' => 'bold', 'color' => '#1e293b', 'flex' => 6]
+                                ]
+                            ],
+                            [
+                                'type' => 'box',
+                                'layout' => 'baseline',
+                                'contents' => [
+                                    ['type' => 'text', 'text' => '次回点検日', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
+                                    ['type' => 'text', 'text' => $inspDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#e02424', 'flex' => 6]
+                                ]
+                            ]
+                        ]
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => "愛車のコンディション維持や故障の早期発見のため、年1回の定期点検をおすすめしております。\nご予約・日程相談は下のボタンよりお気軽にどうぞ！",
+                        'size' => 'xxs',
+                        'color' => '#64748b',
+                        'margin' => 'md',
+                        'wrap' => true
+                    ]
+                ]
+            ],
+            'footer' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'spacing' => 'sm',
+                'paddingAll' => '14px',
+                'contents' => [
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => '#10b981',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'postback',
+                            'label' => '📅 12ヶ月点検の予約・相談',
+                            'data' => 'action=ask_maintenance&type=periodic&car=' . urlencode($carModel) . '&date=' . urlencode($inspDate),
+                            'displayText' => "【{$carModel}】の12ヶ月点検を予約・相談したい"
+                        ]
+                    ]
+                ]
+            ]
+        ]
+    ];
+
+    $res = sendLinePushMessage($userId, [$flexMessage]);
+    if (!empty($res['success'])) {
+        $updateStmt = $db->prepare("UPDATE customers SET periodic_reminded_at = CURRENT_TIMESTAMP WHERE user_id = :uid");
+        $updateStmt->execute([':uid' => $userId]);
+        $periodicSentCount++;
+        $reportDetails[] = [
+            'name' => $userName,
+            'car' => $carModel,
+            'type' => '📋 12ヶ月定期点検',
+            'date' => $inspDate
+        ];
+        echo "  [送信成功] {$userName} 様 ({$carModel}) -> {$inspDate}\n";
+    } else {
+        echo "  [送信失敗] {$userName} 様: " . ($res['error'] ?? 'APIエラー') . "\n";
+    }
+}
+
+// ==========================================
+// 3. 車検満了リマインド判定 & 送信
+// ==========================================
+$stmt = $db->prepare("
+    SELECT * FROM customers 
+    WHERE inspection_next_date IS NOT NULL 
+      AND (inspection_next_date = :today OR inspection_next_date = :in14days OR inspection_next_date = :in30days OR inspection_next_date < :today)
+      AND (inspection_reminded_at IS NULL OR date(inspection_reminded_at) != :today)
+");
+$stmt->execute([':today' => $today, ':in14days' => $in14days, ':in30days' => $in30days]);
+$inspTargetCustomers = $stmt->fetchAll();
+
+$shakenSentCount = 0;
+echo "🚗 車検満了リマインド対象: " . count($inspTargetCustomers) . " 名\n";
+
+foreach ($inspTargetCustomers as $cust) {
+    $userId = $cust['user_id'];
+    if (!str_starts_with($userId, 'U')) {
+        continue;
+    }
+
+    $userName = $cust['user_name'] ?: 'お客様';
+    $carModel = $cust['car_model'] ?: '愛車';
+    $inspDate = $cust['inspection_next_date'];
+
+    $flexMessage = [
+        'type' => 'flex',
+        'altText' => "【車検満了のお知らせ】{$carModel}の満了日が近づいています",
+        'contents' => [
+            'type' => 'bubble',
+            'size' => 'mega',
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'paddingAll' => '20px',
+                'contents' => [
+                    [
+                        'type' => 'box',
+                        'layout' => 'baseline',
+                        'contents' => [
+                            [
+                                'type' => 'text',
+                                'text' => '🚗 車検満了のご案内',
                                 'weight' => 'bold',
                                 'size' => 'sm',
                                 'color' => '#3b82f6'
@@ -260,7 +407,7 @@ foreach ($inspTargetCustomers as $cust) {
                     ],
                     [
                         'type' => 'text',
-                        'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n愛車【{$carModel}】の車検・点検満了日が近づいております。",
+                        'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n愛車【{$carModel}】の車検満了日が近づいております。",
                         'size' => 'xs',
                         'color' => '#475569',
                         'margin' => 'sm',
@@ -320,9 +467,9 @@ foreach ($inspTargetCustomers as $cust) {
                         'height' => 'sm',
                         'action' => [
                             'type' => 'postback',
-                            'label' => '📅 車検・点検の予約・見積もり',
+                            'label' => '📅 車検の予約・見積もり',
                             'data' => 'action=ask_maintenance&type=inspection&car=' . urlencode($carModel) . '&date=' . urlencode($inspDate),
-                            'displayText' => "【{$carModel}】の車検・点検を予約・相談したい"
+                            'displayText' => "【{$carModel}】の車検を予約・相談したい"
                         ]
                     ]
                 ]
@@ -334,11 +481,11 @@ foreach ($inspTargetCustomers as $cust) {
     if (!empty($res['success'])) {
         $updateStmt = $db->prepare("UPDATE customers SET inspection_reminded_at = CURRENT_TIMESTAMP WHERE user_id = :uid");
         $updateStmt->execute([':uid' => $userId]);
-        $inspectionSentCount++;
+        $shakenSentCount++;
         $reportDetails[] = [
             'name' => $userName,
             'car' => $carModel,
-            'type' => '📋 車検・定期点検リマインド',
+            'type' => '🚗 車検満了リマインド',
             'date' => $inspDate
         ];
         echo "  [送信成功] {$userName} 様 ({$carModel}) -> {$inspDate}\n";
@@ -348,11 +495,11 @@ foreach ($inspTargetCustomers as $cust) {
 }
 
 // ==========================================
-// 3. Discord レポート通知
+// 4. Discord レポート通知
 // ==========================================
-if ($oilSentCount > 0 || $inspectionSentCount > 0) {
-    sendDiscordReminderReport($oilSentCount, $inspectionSentCount, $reportDetails);
-    echo "[" . date('Y-m-d H:i:s') . "] Discordへ配信レポートを送信しました (合計: " . ($oilSentCount + $inspectionSentCount) . " 件)\n";
+if ($oilSentCount > 0 || $periodicSentCount > 0 || $shakenSentCount > 0) {
+    sendDiscordReminderReport($oilSentCount, $periodicSentCount, $shakenSentCount, $reportDetails);
+    echo "[" . date('Y-m-d H:i:s') . "] Discordへ配信レポートを送信しました (合計: " . ($oilSentCount + $periodicSentCount + $shakenSentCount) . " 件)\n";
 } else {
     echo "[" . date('Y-m-d H:i:s') . "] 本日送信対象のリマインドはありませんでした。\n";
 }
