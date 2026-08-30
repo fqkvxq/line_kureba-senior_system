@@ -206,6 +206,12 @@ async function fetchCustomerData() {
             
             const linkCard = getEl('initLinkCard');
             if (state.cars.length === 0) {
+                // LINEユーザーIDの場合、開いた瞬間に自動で店舗連携（ゼロタップ認識）を実行
+                if (state.userId && state.userId.startsWith('U') && !state.hasAutoLinked) {
+                    state.hasAutoLinked = true;
+                    autoRegisterInitialLink();
+                }
+
                 if (linkCard) linkCard.style.display = 'block';
                 state.activeCarIndex = -1;
                 renderCarTabs();
@@ -221,6 +227,33 @@ async function fetchCustomerData() {
         }
     } catch (e) {
         console.warn('Fetch customer error:', e);
+    }
+}
+
+async function autoRegisterInitialLink() {
+    try {
+        const payload = new URLSearchParams({
+            action: 'init_customer_link',
+            uid: state.userId,
+            uname: state.userName
+        });
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await res.json();
+        if (data.success && data.cars && data.cars.length > 0) {
+            state.cars = data.cars;
+            state.activeCarIndex = 0;
+            const linkCard = getEl('initLinkCard');
+            if (linkCard) linkCard.style.display = 'none';
+            renderCarTabs();
+            renderCarInfo(state.cars[0]);
+            showToast('🤝 店舗との連携が完了しました！');
+        }
+    } catch (e) {
+        console.warn('Auto link error:', e);
     }
 }
 
