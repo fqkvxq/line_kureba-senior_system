@@ -481,7 +481,11 @@ function generateCarSearchMessages(PDO $db, array $criteria, string $heading, st
             } elseif ($kw === 'ワゴン') {
                 $where[] = "(title LIKE '%ワゴン%' OR title LIKE '%セレナ%' OR title LIKE '%ヴォクシー%' OR title LIKE '%ノア%' OR title LIKE '%ステップワゴン%' OR title LIKE '%フリード%' OR title LIKE '%シエンタ%' OR title LIKE '%アルファード%' OR title LIKE '%ヴェルファイア%' OR title LIKE '%デリカ%' OR title LIKE '%エスティマ%' OR title LIKE '%オデッセイ%')";
             } elseif ($kw === '4WD') {
-                $where[] = "(drive_type LIKE '%4WD%' OR drive_type LIKE '%四駆%' OR title LIKE '%4WD%' OR title LIKE '%４ＷＤ%' OR title LIKE '%SUV%' OR title LIKE '%ハスラー%' OR title LIKE '%ジムニー%' OR title LIKE '%ヴェゼル%' OR title LIKE '%ヤリスクロス%' OR title LIKE '%ライズ%' OR title LIKE '%ロッキー%' OR title LIKE '%エクストレイル%' OR title LIKE '%フォレスター%' OR title LIKE '%CX-%' OR title LIKE '%C-HR%')";
+                $where[] = "(
+                    drive_type LIKE '%4WD%' OR drive_type LIKE '%４ＷＤ%' OR drive_type LIKE '%四駆%' OR drive_type LIKE '%AWD%' OR drive_type LIKE '%ＡＷＤ%'
+                    OR title LIKE '%4WD%' OR title LIKE '%４ＷＤ%' OR title LIKE '%AWD%' OR title LIKE '%ＡＷＤ%' OR title LIKE '%SUV%' OR title LIKE '%クロスオーバー%' OR title LIKE '%キャデラック%' OR title LIKE '%XT5%'
+                    OR title LIKE '%ハスラー%' OR title LIKE '%ジムニー%' OR title LIKE '%ヴェゼル%' OR title LIKE '%ヤリスクロス%' OR title LIKE '%ライズ%' OR title LIKE '%ロッキー%' OR title LIKE '%エクストレイル%' OR title LIKE '%フォレスター%' OR title LIKE '%CX-%' OR title LIKE '%C-HR%'
+                )";
             } else {
                 $where[] = "(title LIKE :kw OR displacement LIKE :kw OR year LIKE :kw)";
                 $params[':kw'] = "%{$kw}%";
@@ -521,7 +525,10 @@ function generateCarSearchMessages(PDO $db, array $criteria, string $heading, st
             } elseif ($eq === '軽減' || $eq === '安全' || $eq === 'ブレーキ') {
                 $where[] = "(title LIKE '%軽減%' OR title LIKE '%ブレーキ%' OR title LIKE '%センシング%' OR title LIKE '%スマートアシスト%' OR title LIKE '%セーフティ%' OR title LIKE '%プロパイロット%' OR equipments LIKE '%安全%' OR equipments LIKE '%衝突%')";
             } elseif ($eq === '4WD' || $eq === '４ＷＤ' || $eq === '四駆') {
-                $where[] = "(title LIKE '%4WD%' OR title LIKE '%４ＷＤ%' OR title LIKE '%四駆%' OR drive_type LIKE '%4WD%' OR drive_type LIKE '%四駆%')";
+                $where[] = "(
+                    drive_type LIKE '%4WD%' OR drive_type LIKE '%４ＷＤ%' OR drive_type LIKE '%四駆%' OR drive_type LIKE '%AWD%' OR drive_type LIKE '%ＡＷＤ%'
+                    OR title LIKE '%4WD%' OR title LIKE '%４ＷＤ%' OR title LIKE '%AWD%' OR title LIKE '%四駆%' OR title LIKE '%クロスオーバー%' OR title LIKE '%キャデラック%' OR title LIKE '%XT5%'
+                )";
             } else {
                 $where[] = "(title LIKE :eq OR equipments LIKE :eq)";
                 $params[':eq'] = "%{$eq}%";
@@ -1359,7 +1366,10 @@ function generateTypeMenuMessages(PDO $db): array {
             'check' => function($car) {
                 $drive = $car['drive_type'] ?? '';
                 $title = $car['title'] ?? '';
-                if (stripos($drive, '4WD') !== false || stripos($drive, '四駆') !== false || stripos($title, '4WD') !== false || stripos($title, '４ＷＤ') !== false || stripos($title, 'SUV') !== false) {
+                if (stripos($drive, '4WD') !== false || stripos($drive, '４ＷＤ') !== false || stripos($drive, '四駆') !== false || stripos($drive, 'AWD') !== false || stripos($drive, 'ＡＷＤ') !== false) {
+                    return true;
+                }
+                if (stripos($title, '4WD') !== false || stripos($title, '４ＷＤ') !== false || stripos($title, 'AWD') !== false || stripos($title, 'SUV') !== false || stripos($title, 'クロスオーバー') !== false || stripos($title, 'キャデラック') !== false || stripos($title, 'XT5') !== false) {
                     return true;
                 }
                 $kws = ['ハスラー', 'ジムニー', 'ヴェゼル', 'ヤリスクロス', 'ライズ', 'ロッキー', 'エクストレイル', 'フォレスター', 'CX-', 'C-HR'];
