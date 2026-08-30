@@ -241,25 +241,49 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             $messages = [
                 [
                     'type' => 'text',
-                    'text' => "ご案内をキャンセルしました。\n気になることや在庫のご確認はお気軽にメッセージをお送りください🚗",
+                    'text' => "ご案内をキャンセルしました。\n気になるお車やメンテナンスのご相談はお気軽に下のボタンよりどうぞ🚗",
                     'quickReply' => getQuickReplyItems()
                 ]
             ];
             sendReplyMessage($replyToken, $messages);
             break;
 
+        // --- 6. サイレント検索: 価格帯メニュー表示 ---
+        case 'show_price_menu':
+            sendPriceMenuMessage($replyToken);
+            break;
+
+        // --- 7. サイレント検索: 車種・ボディタイプメニュー表示 ---
+        case 'show_type_menu':
+            sendTypeMenuMessage($replyToken);
+            break;
+
+        // --- 8. サイレント検索: 価格帯絞り込み実行 ---
         case 'search_price':
             $maxPrice = (float)($params['max_price'] ?? 0);
-            searchCarsAndReply($db, $replyToken, ['max_price' => $maxPrice], "支払総額 {$maxPrice}万円以下の車両", $userId);
+            $minPrice = (float)($params['min_price'] ?? 0);
+            $criteria = [];
+            $title = "支払総額 {$maxPrice}万円以下の車両";
+            if ($maxPrice > 0) $criteria['max_price'] = $maxPrice;
+            if ($minPrice > 0) {
+                $criteria['min_price'] = $minPrice;
+                $title = "支払総額 {$minPrice}万〜{$maxPrice}万円の車両";
+            }
+            searchCarsAndReply($db, $replyToken, $criteria, $title, $userId);
             break;
 
+        // --- 9. サイレント検索: 車種・キーワード絞り込み実行 ---
         case 'search_type':
-            $keyword = $params['keyword'] ?? '';
-            searchCarsAndReply($db, $replyToken, ['keyword' => $keyword], "「{$keyword}」の車両一覧", $userId);
+        case 'search_keyword':
+            $keyword = trim($params['keyword'] ?? '');
+            $title = !empty($keyword) ? "「{$keyword}」の車両一覧" : "最新の在庫車両一覧";
+            searchCarsAndReply($db, $replyToken, ['keyword' => $keyword], $title, $userId);
             break;
 
+        // --- 10. サイレント検索: 在庫全台一覧 ---
+        case 'search_all':
         default:
-            searchCarsAndReply($db, $replyToken, [], '最新の在庫車両一覧', $userId);
+            searchCarsAndReply($db, $replyToken, [], '現在の在庫車両一覧', $userId);
             break;
     }
 }
@@ -290,6 +314,11 @@ function searchCarsAndReply(PDO $db, string $replyToken, array $criteria, string
             $kw = $criteria['keyword'];
             $where[] = "(title LIKE :kw OR displacement LIKE :kw OR year LIKE :kw)";
             $params[':kw'] = "%{$kw}%";
+        }
+
+        if (!empty($criteria['min_price'])) {
+            $where[] = "total_price_num >= :min_price";
+            $params[':min_price'] = $criteria['min_price'];
         }
 
         if (!empty($criteria['max_price'])) {
@@ -500,8 +529,7 @@ function buildCarFlexBubble(array $car, string $userId = ''): array {
                     'action' => [
                         'type' => 'postback',
                         'label' => '💬 お問い合わせ・相談',
-                        'data' => 'action=ask_inquiry&id=' . urlencode($car['id']),
-                        'displayText' => "【{$shortTitle}】について問い合わせたい"
+                        'data' => 'action=ask_inquiry&id=' . urlencode($car['id'])
                     ]
                 ],
                 [
@@ -881,7 +909,339 @@ function handleSubmitMaintenanceBooking(string $replyToken, string $bookingType,
 }
 
 /**
- * クイックリプライボタン一覧
+ * 価格帯選択メニュー（サイレントボタン式Flex Message）
+ */
+function sendPriceMenuMessage(string $replyToken) {
+    $priceBubble = [
+        'type' => 'bubble',
+        'size' => 'kilo',
+        'body' => [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'paddingAll' => '16px',
+            'contents' => [
+                [
+                    'type' => 'text',
+                    'text' => '💰 ご予算・支払総額から探す',
+                    'weight' => 'bold',
+                    'size' => 'md',
+                    'color' => '#1e293b'
+                ],
+                [
+                    'type' => 'text',
+                    'text' => 'ご希望の価格帯をタップしてください。',
+                    'size' => 'xs',
+                    'color' => '#64748b',
+                    'margin' => 'xs'
+                ],
+                [
+                    'type' => 'separator',
+                    'margin' => 'md'
+                ],
+                [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'margin' => 'md',
+                    'spacing' => 'sm',
+                    'contents' => [
+                        [
+                            'type' => 'box',
+                            'layout' => 'horizontal',
+                            'spacing' => 'sm',
+                            'contents' => [
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => '〜30万円',
+                                        'data' => 'action=search_price&max_price=30'
+                                    ]
+                                ],
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => '〜50万円',
+                                        'data' => 'action=search_price&max_price=50'
+                                    ]
+                                ]
+                            ]
+                        ],
+                        [
+                            'type' => 'box',
+                            'layout' => 'horizontal',
+                            'spacing' => 'sm',
+                            'contents' => [
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => '〜70万円',
+                                        'data' => 'action=search_price&max_price=70'
+                                    ]
+                                ],
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => '〜100万円',
+                                        'data' => 'action=search_price&max_price=100'
+                                    ]
+                                ]
+                            ]
+                        ],
+                        [
+                            'type' => 'box',
+                            'layout' => 'horizontal',
+                            'spacing' => 'sm',
+                            'contents' => [
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => '〜150万円',
+                                        'data' => 'action=search_price&max_price=150'
+                                    ]
+                                ],
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => '〜200万円',
+                                        'data' => 'action=search_price&max_price=200'
+                                    ]
+                                ]
+                            ]
+                        ],
+                        [
+                            'type' => 'button',
+                            'style' => 'primary',
+                            'color' => '#06C755',
+                            'height' => 'sm',
+                            'margin' => 'sm',
+                            'action' => [
+                                'type' => 'postback',
+                                'label' => '🚗 すべての在庫を見る',
+                                'data' => 'action=search_all'
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
+    ];
+
+    $messages = [
+        [
+            'type' => 'flex',
+            'altText' => '💰 ご予算・支払総額から探す',
+            'contents' => $priceBubble,
+            'quickReply' => getQuickReplyItems()
+        ]
+    ];
+    sendReplyMessage($replyToken, $messages);
+}
+
+/**
+ * 車種・ボディタイプ選択メニュー（サイレントボタン式Flex Message）
+ */
+function sendTypeMenuMessage(string $replyToken) {
+    $typeBubble = [
+        'type' => 'bubble',
+        'size' => 'kilo',
+        'body' => [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'paddingAll' => '16px',
+            'contents' => [
+                [
+                    'type' => 'text',
+                    'text' => '🚙 車種・ボディタイプから探す',
+                    'weight' => 'bold',
+                    'size' => 'md',
+                    'color' => '#1e293b'
+                ],
+                [
+                    'type' => 'text',
+                    'text' => 'ご希望のタイプ・人気車種をタップしてください。',
+                    'size' => 'xs',
+                    'color' => '#64748b',
+                    'margin' => 'xs'
+                ],
+                [
+                    'type' => 'separator',
+                    'margin' => 'md'
+                ],
+                [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'margin' => 'md',
+                    'spacing' => 'sm',
+                    'contents' => [
+                        [
+                            'type' => 'box',
+                            'layout' => 'horizontal',
+                            'spacing' => 'sm',
+                            'contents' => [
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => '🚘 軽自動車',
+                                        'data' => 'action=search_type&keyword=' . urlencode('軽')
+                                    ]
+                                ],
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => '🚗 コンパクト',
+                                        'data' => 'action=search_type&keyword=' . urlencode('コンパクト')
+                                    ]
+                                ]
+                            ]
+                        ],
+                        [
+                            'type' => 'box',
+                            'layout' => 'horizontal',
+                            'spacing' => 'sm',
+                            'contents' => [
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => '🚙 ミニバン・ワゴン',
+                                        'data' => 'action=search_type&keyword=' . urlencode('ワゴン')
+                                    ]
+                                ],
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => '🚙 SUV・4WD',
+                                        'data' => 'action=search_type&keyword=' . urlencode('4WD')
+                                    ]
+                                ]
+                            ]
+                        ],
+                        [
+                            'type' => 'separator',
+                            'margin' => 'xs'
+                        ],
+                        [
+                            'type' => 'text',
+                            'text' => '✨ 人気車種から選ぶ',
+                            'size' => 'xxs',
+                            'color' => '#94a3b8',
+                            'margin' => 'xs'
+                        ],
+                        [
+                            'type' => 'box',
+                            'layout' => 'horizontal',
+                            'spacing' => 'sm',
+                            'contents' => [
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => 'ワゴンR',
+                                        'data' => 'action=search_type&keyword=' . urlencode('ワゴンR')
+                                    ]
+                                ],
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => 'N-BOX',
+                                        'data' => 'action=search_type&keyword=' . urlencode('N-BOX')
+                                    ]
+                                ]
+                            ]
+                        ],
+                        [
+                            'type' => 'box',
+                            'layout' => 'horizontal',
+                            'spacing' => 'sm',
+                            'contents' => [
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => 'タント',
+                                        'data' => 'action=search_type&keyword=' . urlencode('タント')
+                                    ]
+                                ],
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'height' => 'sm',
+                                    'flex' => 1,
+                                    'action' => [
+                                        'type' => 'postback',
+                                        'label' => 'スペーシア',
+                                        'data' => 'action=search_type&keyword=' . urlencode('スペーシア')
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
+    ];
+
+    $messages = [
+        [
+            'type' => 'flex',
+            'altText' => '🚙 車種・ボディタイプから探す',
+            'contents' => $typeBubble,
+            'quickReply' => getQuickReplyItems()
+        ]
+    ];
+    sendReplyMessage($replyToken, $messages);
+}
+
+/**
+ * クイックリプライボタン一覧（完全サイレントPostback方式）
  */
 function getQuickReplyItems(): array {
     return [
@@ -889,41 +1249,49 @@ function getQuickReplyItems(): array {
             [
                 'type' => 'action',
                 'action' => [
-                    'type' => 'message',
-                    'label' => '🚗 在庫一覧',
-                    'text' => '在庫一覧'
+                    'type' => 'postback',
+                    'label' => '🚗 在庫全台',
+                    'data' => 'action=search_all'
                 ]
             ],
             [
                 'type' => 'action',
                 'action' => [
-                    'type' => 'message',
-                    'label' => '💰 50万円以下',
-                    'text' => '50万円以下'
+                    'type' => 'postback',
+                    'label' => '💰 価格で探す',
+                    'data' => 'action=show_price_menu'
                 ]
             ],
             [
                 'type' => 'action',
                 'action' => [
-                    'type' => 'message',
-                    'label' => '💎 70万円以下',
-                    'text' => '70万円以下'
+                    'type' => 'postback',
+                    'label' => '🚙 車種で探す',
+                    'data' => 'action=show_type_menu'
                 ]
             ],
             [
                 'type' => 'action',
                 'action' => [
-                    'type' => 'message',
-                    'label' => '🚘 ワゴンR',
-                    'text' => 'ワゴンR'
+                    'type' => 'postback',
+                    'label' => '💰 50万以下',
+                    'data' => 'action=search_price&max_price=50'
                 ]
             ],
             [
                 'type' => 'action',
                 'action' => [
-                    'type' => 'message',
-                    'label' => '🚙 N-BOX',
-                    'text' => 'N-BOX'
+                    'type' => 'postback',
+                    'label' => '💎 70万以下',
+                    'data' => 'action=search_price&max_price=70'
+                ]
+            ],
+            [
+                'type' => 'action',
+                'action' => [
+                    'type' => 'postback',
+                    'label' => '🚘 軽自動車',
+                    'data' => 'action=search_type&keyword=' . urlencode('軽')
                 ]
             ]
         ]
