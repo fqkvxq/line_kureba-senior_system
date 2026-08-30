@@ -9,36 +9,9 @@ const state = {
     customerData: null
 };
 
-const elements = {
-    userAvatar: document.getElementById('userAvatar'),
-    userNameText: document.getElementById('userNameText'),
-    carModelDisplay: document.getElementById('carModelDisplay'),
-    carNumDisplay: document.getElementById('carNumDisplay'),
-    
-    // オイル交換
-    oilNextDateDisplay: document.getElementById('oilNextDateDisplay'),
-    oilStatusBadge: document.getElementById('oilStatusBadge'),
-    inputOilNextDate: document.getElementById('inputOilNextDate'),
-    bookOilBtn: document.getElementById('bookOilBtn'),
-
-    // 12ヶ月定期点検
-    periodicNextDateDisplay: document.getElementById('periodicNextDateDisplay'),
-    periodicStatusBadge: document.getElementById('periodicStatusBadge'),
-    inputPeriodicNextDate: document.getElementById('inputPeriodicNextDate'),
-    bookPeriodicBtn: document.getElementById('bookPeriodicBtn'),
-
-    // 車検満了
-    inspNextDateDisplay: document.getElementById('inspNextDateDisplay'),
-    inspStatusBadge: document.getElementById('inspStatusBadge'),
-    inputInspNextDate: document.getElementById('inputInspNextDate'),
-    bookInspBtn: document.getElementById('bookInspBtn'),
-    
-    // フォーム共通
-    inputCarModel: document.getElementById('inputCarModel'),
-    inputCarNumber: document.getElementById('inputCarNumber'),
-    saveCustBtn: document.getElementById('saveCustBtn'),
-    toast: document.getElementById('appToast')
-};
+function getEl(id) {
+    return document.getElementById(id);
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
     await initLiff();
@@ -75,9 +48,11 @@ async function initLiff() {
                 localStorage.setItem('mycar_user_id', state.userId);
                 localStorage.setItem('mycar_user_name', state.userName);
 
-                elements.userNameText.textContent = state.userName + ' 様';
-                if (state.userAvatar) {
-                    elements.userAvatar.src = state.userAvatar;
+                const uNameEl = getEl('userNameText');
+                if (uNameEl) uNameEl.textContent = state.userName + ' 様';
+                const uAvatarEl = getEl('userAvatar');
+                if (uAvatarEl && state.userAvatar) {
+                    uAvatarEl.src = state.userAvatar;
                 }
             }
         }
@@ -98,34 +73,38 @@ async function initLiff() {
         localStorage.setItem('mycar_user_name', state.userName);
     }
 
-    elements.userNameText.textContent = state.userName + ' 様';
+    const uNameEl = getEl('userNameText');
+    if (uNameEl) uNameEl.textContent = state.userName + ' 様';
 }
 
 let currentBookingType = 'オイル交換';
 
 function initEventListeners() {
-    elements.saveCustBtn.addEventListener('click', async () => {
-        await saveCustomerData();
-    });
+    const saveBtn = getEl('saveCustBtn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async () => {
+            await saveCustomerData();
+        });
+    }
 
-    const bookingModal = document.getElementById('bookingModal');
-    const modalTitle = document.getElementById('modalBookingTitle');
-    const closeBtn = document.getElementById('closeBookingModalBtn');
-    const cancelBtn = document.getElementById('cancelBookingModalBtn');
+    const bookingModal = getEl('bookingModal');
+    const modalTitle = getEl('modalBookingTitle');
+    const closeBtn = getEl('closeBookingModalBtn');
+    const cancelBtn = getEl('cancelBookingModalBtn');
 
     function openModal(type) {
         currentBookingType = type;
-        modalTitle.textContent = `【${type}】来店予約・相談の確認`;
-        bookingModal.style.display = 'flex';
+        if (modalTitle) modalTitle.textContent = `【${type}】来店予約・相談の確認`;
+        if (bookingModal) bookingModal.style.display = 'flex';
     }
 
     function closeModal() {
-        bookingModal.style.display = 'none';
+        if (bookingModal) bookingModal.style.display = 'none';
     }
 
-    elements.bookOilBtn?.addEventListener('click', () => openModal('オイル交換'));
-    elements.bookPeriodicBtn?.addEventListener('click', () => openModal('12ヶ月定期点検'));
-    elements.bookInspBtn?.addEventListener('click', () => openModal('車検'));
+    getEl('bookOilBtn')?.addEventListener('click', () => openModal('オイル交換'));
+    getEl('bookPeriodicBtn')?.addEventListener('click', () => openModal('12ヶ月定期点検'));
+    getEl('bookInspBtn')?.addEventListener('click', () => openModal('車検'));
 
     closeBtn?.addEventListener('click', closeModal);
     cancelBtn?.addEventListener('click', closeModal);
@@ -143,14 +122,14 @@ function initEventListeners() {
 }
 
 async function submitMaintenanceBooking(bookingType, prefTime) {
-    const car = state.customerData?.car_model || elements.inputCarModel.value || '愛車';
+    const car = state.customerData?.car_model || getEl('inputCarModel')?.value || '愛車';
     let date = '未定';
     if (bookingType === 'オイル交換') {
-        date = state.customerData?.oil_next_date || elements.inputOilNextDate.value || '近日中';
+        date = state.customerData?.oil_next_date || getEl('inputOilNextDate')?.value || '近日中';
     } else if (bookingType === '12ヶ月定期点検') {
-        date = state.customerData?.periodic_insp_next_date || elements.inputPeriodicNextDate.value || '近日中';
+        date = state.customerData?.periodic_insp_next_date || getEl('inputPeriodicNextDate')?.value || '近日中';
     } else {
-        date = state.customerData?.inspection_next_date || elements.inputInspNextDate.value || '未定';
+        date = state.customerData?.inspection_next_date || getEl('inputInspNextDate')?.value || '未定';
     }
 
     const msg = `【${bookingType}の来店予約】\n愛車: ${car}\n予定・満了日: ${date}\n希望日時: ${prefTime}\n\n上記の日程で予約・相談をお願いいたします。`;
@@ -163,6 +142,7 @@ async function fetchCustomerData() {
     try {
         const res = await fetch(`../api.php?action=get_customer&uid=${encodeURIComponent(state.userId)}`);
         const data = await res.json();
+        console.log('Customer data fetched:', data);
         if (data.success && data.customer) {
             state.customerData = data.customer;
             renderCustomerInfo(data.customer);
@@ -173,39 +153,63 @@ async function fetchCustomerData() {
 }
 
 function renderCustomerInfo(cust) {
+    const carModelEl = getEl('carModelDisplay');
+    const inputCarModelEl = getEl('inputCarModel');
     if (cust.car_model) {
-        elements.carModelDisplay.textContent = cust.car_model;
-        elements.inputCarModel.value = cust.car_model;
+        if (carModelEl) carModelEl.textContent = cust.car_model;
+        if (inputCarModelEl) inputCarModelEl.value = cust.car_model;
     }
+
+    const carNumEl = getEl('carNumDisplay');
+    const inputCarNumEl = getEl('inputCarNumber');
     if (cust.car_number) {
-        elements.carNumDisplay.textContent = `No. ${cust.car_number}`;
-        elements.inputCarNumber.value = cust.car_number;
+        if (carNumEl) carNumEl.textContent = `No. ${cust.car_number}`;
+        if (inputCarNumEl) inputCarNumEl.value = cust.car_number;
     }
+
+    // オイル交換
+    const oilDateEl = getEl('oilNextDateDisplay');
+    const inputOilEl = getEl('inputOilNextDate');
+    const oilBadgeEl = getEl('oilStatusBadge');
     if (cust.oil_next_date) {
-        elements.oilNextDateDisplay.textContent = cust.oil_next_date;
-        elements.inputOilNextDate.value = cust.oil_next_date;
-        updateBadge(elements.oilStatusBadge, cust.oil_next_date);
+        if (oilDateEl) oilDateEl.textContent = cust.oil_next_date;
+        if (inputOilEl) inputOilEl.value = cust.oil_next_date;
+        updateBadge(oilBadgeEl, cust.oil_next_date);
     } else {
-        elements.oilStatusBadge.textContent = '未設定';
-        elements.oilStatusBadge.className = 'maint-badge badge-warning';
+        if (oilBadgeEl) {
+            oilBadgeEl.textContent = '未設定';
+            oilBadgeEl.className = 'maint-badge badge-warning';
+        }
     }
 
+    // 12ヶ月定期点検
+    const periodicDateEl = getEl('periodicNextDateDisplay');
+    const inputPeriodicEl = getEl('inputPeriodicNextDate');
+    const periodicBadgeEl = getEl('periodicStatusBadge');
     if (cust.periodic_insp_next_date) {
-        elements.periodicNextDateDisplay.textContent = cust.periodic_insp_next_date;
-        elements.inputPeriodicNextDate.value = cust.periodic_insp_next_date;
-        updateBadge(elements.periodicStatusBadge, cust.periodic_insp_next_date);
+        if (periodicDateEl) periodicDateEl.textContent = cust.periodic_insp_next_date;
+        if (inputPeriodicEl) inputPeriodicEl.value = cust.periodic_insp_next_date;
+        updateBadge(periodicBadgeEl, cust.periodic_insp_next_date);
     } else {
-        elements.periodicStatusBadge.textContent = '未設定';
-        elements.periodicStatusBadge.className = 'maint-badge badge-warning';
+        if (periodicBadgeEl) {
+            periodicBadgeEl.textContent = '未設定';
+            periodicBadgeEl.className = 'maint-badge badge-warning';
+        }
     }
 
+    // 車検
+    const inspDateEl = getEl('inspNextDateDisplay');
+    const inputInspEl = getEl('inputInspNextDate');
+    const inspBadgeEl = getEl('inspStatusBadge');
     if (cust.inspection_next_date) {
-        elements.inspNextDateDisplay.textContent = cust.inspection_next_date;
-        elements.inputInspNextDate.value = cust.inspection_next_date;
-        updateBadge(elements.inspStatusBadge, cust.inspection_next_date);
+        if (inspDateEl) inspDateEl.textContent = cust.inspection_next_date;
+        if (inputInspEl) inputInspEl.value = cust.inspection_next_date;
+        updateBadge(inspBadgeEl, cust.inspection_next_date);
     } else {
-        elements.inspStatusBadge.textContent = '未設定';
-        elements.inspStatusBadge.className = 'maint-badge badge-warning';
+        if (inspBadgeEl) {
+            inspBadgeEl.textContent = '未設定';
+            inspBadgeEl.className = 'maint-badge badge-warning';
+        }
     }
 }
 
@@ -234,34 +238,43 @@ function updateBadge(badgeEl, targetDateStr) {
 }
 
 async function saveCustomerData() {
-    const carModel = elements.inputCarModel.value.trim();
-    const carNumber = elements.inputCarNumber.value.trim();
-    const oilDate = elements.inputOilNextDate.value;
-    const periodicDate = elements.inputPeriodicNextDate.value;
-    const inspDate = elements.inputInspNextDate.value;
+    const carModel = getEl('inputCarModel')?.value.trim() || '';
+    const carNumber = getEl('inputCarNumber')?.value.trim() || '';
+    const oilDate = getEl('inputOilNextDate')?.value || '';
+    const periodicDate = getEl('inputPeriodicNextDate')?.value || '';
+    const inspDate = getEl('inputInspNextDate')?.value || '';
 
     if (!carModel) {
         showToast('⚠️ 愛車の車種名を入力してください');
         return;
     }
 
-    elements.saveCustBtn.disabled = true;
-    elements.saveCustBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 保存中...';
+    const saveBtn = getEl('saveCustBtn');
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 保存中...';
+    }
 
     // 画面の表示を即時更新 (楽観的UI更新)
-    elements.carModelDisplay.textContent = carModel;
-    elements.carNumDisplay.textContent = carNumber ? `No. ${carNumber}` : '';
+    const carModelEl = getEl('carModelDisplay');
+    if (carModelEl) carModelEl.textContent = carModel;
+    const carNumEl = getEl('carNumDisplay');
+    if (carNumEl) carNumEl.textContent = carNumber ? `No. ${carNumber}` : '';
+    
     if (oilDate) {
-        elements.oilNextDateDisplay.textContent = oilDate;
-        updateBadge(elements.oilStatusBadge, oilDate);
+        const oilDateEl = getEl('oilNextDateDisplay');
+        if (oilDateEl) oilDateEl.textContent = oilDate;
+        updateBadge(getEl('oilStatusBadge'), oilDate);
     }
     if (periodicDate) {
-        elements.periodicNextDateDisplay.textContent = periodicDate;
-        updateBadge(elements.periodicStatusBadge, periodicDate);
+        const periodicDateEl = getEl('periodicNextDateDisplay');
+        if (periodicDateEl) periodicDateEl.textContent = periodicDate;
+        updateBadge(getEl('periodicStatusBadge'), periodicDate);
     }
     if (inspDate) {
-        elements.inspNextDateDisplay.textContent = inspDate;
-        updateBadge(elements.inspStatusBadge, inspDate);
+        const inspDateEl = getEl('inspNextDateDisplay');
+        if (inspDateEl) inspDateEl.textContent = inspDate;
+        updateBadge(getEl('inspStatusBadge'), inspDate);
     }
 
     const payload = new URLSearchParams({
@@ -275,6 +288,8 @@ async function saveCustomerData() {
         inspection_next_date: inspDate
     });
 
+    console.log('Saving customer with payload:', payload.toString());
+
     try {
         const res = await fetch('../api.php', {
             method: 'POST',
@@ -282,6 +297,7 @@ async function saveCustomerData() {
             body: payload.toString()
         });
         const data = await res.json();
+        console.log('Save response:', data);
         if (data.success) {
             showToast('✅ 情報を保存し、LINEへ確認メッセージをお送りしました！');
             await fetchCustomerData();
@@ -292,8 +308,10 @@ async function saveCustomerData() {
         console.error('Save error:', e);
         showToast('✅ 保存内容を更新しました');
     } finally {
-        elements.saveCustBtn.disabled = false;
-        elements.saveCustBtn.innerHTML = '<i class="fa-solid fa-check"></i> この内容で保存する';
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> この内容で保存する';
+        }
     }
 }
 

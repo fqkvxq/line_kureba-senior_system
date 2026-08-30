@@ -204,6 +204,11 @@ try {
                 exit;
             }
 
+            // カラムの存在を確実に保証
+            try {
+                $db->exec("ALTER TABLE customers ADD COLUMN periodic_insp_next_date DATE");
+            } catch (Exception $e) {}
+
             $stmt = $db->prepare("SELECT * FROM customers WHERE user_id = :uid LIMIT 1");
             $stmt->execute([':uid' => $userId]);
             $customer = $stmt->fetch();
@@ -228,6 +233,14 @@ try {
             if (empty($userId)) {
                 $userId = 'USER_' . uniqid();
             }
+
+            // カラムの存在を確実に保証 (自己修復)
+            try {
+                $db->exec("ALTER TABLE customers ADD COLUMN periodic_insp_next_date DATE");
+            } catch (Exception $e) {}
+            try {
+                $db->exec("ALTER TABLE customers ADD COLUMN periodic_reminded_at DATETIME");
+            } catch (Exception $e) {}
 
             writeDebugLog("顧客メンテナンス保存受付", [
                 'uid' => $userId,
