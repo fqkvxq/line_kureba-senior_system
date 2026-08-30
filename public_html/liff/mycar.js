@@ -95,6 +95,13 @@ function initEventListeners() {
         });
     }
 
+    const initLinkBtn = getEl('initLinkBtn');
+    if (initLinkBtn) {
+        initLinkBtn.addEventListener('click', async () => {
+            await triggerInitialLink();
+        });
+    }
+
     const bookingModal = getEl('bookingModal');
     const modalTitle = getEl('modalBookingTitle');
     const closeBtn = getEl('closeBookingModalBtn');
@@ -129,6 +136,41 @@ function initEventListeners() {
     });
 }
 
+async function triggerInitialLink() {
+    const btn = getEl('initLinkBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 連携中...';
+    }
+
+    try {
+        const payload = new URLSearchParams({
+            action: 'init_customer_link',
+            uid: state.userId,
+            uname: state.userName
+        });
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('✅ 店舗との連携が完了しました！');
+            await fetchCustomerData();
+        } else {
+            showToast('⚠️ 連携に失敗しました');
+        }
+    } catch (e) {
+        showToast('⚠️ 通信エラーが発生しました');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-link"></i> 店舗と連携して手帳を発行する';
+        }
+    }
+}
+
 async function submitMaintenanceBooking(bookingType, prefTime) {
     const currentCar = getCurrentActiveCar();
     const car = currentCar?.car_model || getEl('inputCarModel')?.value || '愛車';
@@ -161,14 +203,20 @@ async function fetchCustomerData() {
         console.log('Customer data fetched:', data);
         if (data.success) {
             state.cars = data.cars || [];
-            if (state.activeCarIndex >= state.cars.length) {
-                state.activeCarIndex = Math.max(0, state.cars.length - 1);
-            }
-            renderCarTabs();
-            if (state.cars.length > 0) {
-                renderCarInfo(state.cars[state.activeCarIndex]);
-            } else {
+            
+            const linkCard = getEl('initLinkCard');
+            if (state.cars.length === 0) {
+                if (linkCard) linkCard.style.display = 'block';
+                state.activeCarIndex = -1;
+                renderCarTabs();
                 showNewCarForm();
+            } else {
+                if (linkCard) linkCard.style.display = 'none';
+                if (state.activeCarIndex >= state.cars.length || state.activeCarIndex < 0) {
+                    state.activeCarIndex = 0;
+                }
+                renderCarTabs();
+                renderCarInfo(state.cars[state.activeCarIndex]);
             }
         }
     } catch (e) {

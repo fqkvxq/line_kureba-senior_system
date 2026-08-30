@@ -218,6 +218,67 @@ try {
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
+        // --- 5-2. ユーザー用: 店舗との初期連携（未登録ユーザーの管理画面自動認識） ---
+        case 'init_customer_link':
+            $userId = trim($_POST['uid'] ?? ($_GET['uid'] ?? ''));
+            $userName = trim($_POST['uname'] ?? ($_GET['uname'] ?? ''));
+
+            if (empty($userId)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'ユーザーIDが必要です']);
+                exit;
+            }
+
+            // 既存車両を確認
+            $checkStmt = $db->prepare("SELECT * FROM customer_cars WHERE user_id = :uid LIMIT 1");
+            $checkStmt->execute([':uid' => $userId]);
+            $existing = $checkStmt->fetch();
+
+            if (!$existing) {
+                // 初期連携レコードを登録
+                $insertStmt = $db->prepare("
+                    INSERT INTO customer_cars (
+                        user_id, user_name, car_model, car_number,
+                        created_at, updated_at
+                    ) VALUES (
+                        :uid, :uname, '【未登録】愛車登録待ち', '',
+                        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                    )
+                ");
+                $insertStmt->execute([
+                    ':uid' => $userId,
+                    ':uname' => $userName ?: '新規お客様'
+                ]);
+                $newCarId = (int)$db->lastInsertId();
+
+                writeDebugLog("店舗初期連携完了", ['uid' => $userId, 'name' => $userName, 'car_id' => $newCarId]);
+
+                // LINEメッセージで連携完了を通知
+                if (str_starts_with($userId, 'U')) {
+                    $displayName = $userName ?: 'お客様';
+                    $welcomeMsg = [
+                        'type' => 'text',
+                        'text' => "{$displayName} 様\n\n【" . SHOP_NAME . "】愛車点検パスポートとの連携が完了しました！🚗✨\n\n店舗スタッフ側でお客様の愛車や点検予定日（オイル・定期点検・車検）の登録・設定が可能です。\nご自身で登録される場合は、メニューの「愛車点検パスポート」よりいつでもご入力いただけます。"
+                    ];
+                    try {
+                        sendLinePushMessage($userId, [$welcomeMsg]);
+                    } catch (Exception $e) {}
+                }
+            }
+
+            // 最新の車両一覧を取得して返却
+            $stmt = $db->prepare("SELECT * FROM customer_cars WHERE user_id = :uid ORDER BY id ASC");
+            $stmt->execute([':uid' => $userId]);
+            $cars = $stmt->fetchAll();
+
+            echo json_encode([
+                'success' => true,
+                'message' => '店舗との連携が完了しました！',
+                'cars' => $cars,
+                'customer' => !empty($cars) ? $cars[0] : null
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
         // --- 6. ユーザー用: 愛車の登録・更新 ---
         case 'save_customer':
             $carId = !empty($_POST['car_id']) ? (int)$_POST['car_id'] : null;

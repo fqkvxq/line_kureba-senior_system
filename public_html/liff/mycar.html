@@ -347,6 +347,18 @@
 
     <!-- コンテンツ -->
     <div class="section-container">
+        <!-- 未登録ユーザー用: 店舗ワンタップ連携バナー -->
+        <div class="init-link-card" id="initLinkCard" style="display: none; background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #6ee7b7; border-radius: 16px; padding: 18px; margin-bottom: 18px; text-align: center;">
+            <div style="font-size: 28px; margin-bottom: 6px;">🤝</div>
+            <h3 style="font-size: 15px; font-weight: 800; color: #065f46; margin: 0 0 6px;">店舗とLINEを連携する</h3>
+            <p style="font-size: 12px; color: #047857; margin: 0 0 14px; line-height: 1.4;">
+                店舗スタッフに愛車や点検予定日の登録をおまかせしたい方は、下のボタンを押してください。店舗管理画面に自動連携されます。
+            </p>
+            <button class="btn-init-link" id="initLinkBtn" style="width: 100%; height: 44px; background: #06C755; color: #fff; border: none; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(6,199,85,0.3);">
+                <i class="fa-solid fa-link"></i> 店舗と連携して手帳を発行する
+            </button>
+        </div>
+
         <!-- オイル交換カード -->
         <div class="maint-card oil">
             <div class="maint-card-header">
@@ -494,6 +506,6 @@
     <!-- トースト通知 -->
     <div class="toast" id="appToast"></div>
 
-    <script src="mycar.js?v=20260831_3"></script>
+    <script src="mycar.js?v=20260831_4"></script>
 </body>
 </html>
