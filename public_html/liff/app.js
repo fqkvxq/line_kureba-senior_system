@@ -78,14 +78,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     await fetchCarData();
 });
 
+const LIFF_ID = '2011335169-9x8ydjaV';
+
 /**
  * LIFF初期化
  */
 async function initLiff() {
     try {
         if (typeof liff !== 'undefined') {
-            // LIFF IDが設定されている場合は初期化
-            // await liff.init({ liffId: '2011335169-9x8ydjaV' });
+            await liff.init({ liffId: LIFF_ID });
             if (liff.isLoggedIn()) {
                 state.isLiffLoggedIn = true;
                 state.userProfile = await liff.getProfile();

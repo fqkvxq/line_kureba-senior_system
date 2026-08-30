@@ -40,27 +40,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+const LIFF_ID = '2011335169-9x8ydjaV';
+
 async function initLiff() {
     try {
         if (typeof liff !== 'undefined') {
-            // await liff.init({ liffId: '2011335169-9x8ydjaV' });
-            if (liff.isLoggedIn()) {
-                const profile = await liff.getProfile();
-                state.userId = profile.userId;
-                state.userName = profile.displayName;
-                state.userAvatar = profile.pictureUrl || '';
+            await liff.init({ liffId: LIFF_ID });
+            
+            if (!liff.isLoggedIn()) {
+                // LINEクライアント外や未ログイン時はログイン画面へ
+                liff.login();
+                return;
+            }
 
-                elements.userNameText.textContent = state.userName + ' 様';
-                if (state.userAvatar) {
-                    elements.userAvatar.src = state.userAvatar;
-                }
+            const profile = await liff.getProfile();
+            state.userId = profile.userId;
+            state.userName = profile.displayName;
+            state.userAvatar = profile.pictureUrl || '';
+
+            elements.userNameText.textContent = state.userName + ' 様';
+            if (state.userAvatar) {
+                elements.userAvatar.src = state.userAvatar;
             }
         }
     } catch (e) {
         console.warn('LIFF init error / browser fallback:', e);
     }
 
-    // ブラウザテスト用のフォールバック
+    // ブラウザテスト用のフォールバック (URLパラメータ ?uid=... &uname=...)
     if (!state.userId) {
         const urlParams = new URLSearchParams(window.location.search);
         state.userId = urlParams.get('uid') || 'DEMO_USER_001';
