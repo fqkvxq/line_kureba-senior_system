@@ -6,14 +6,75 @@
 
 require_once __DIR__ . '/config.php';
 
+// --- ブラウザ等からの直接GETアクセスの場合は診断画面を表示 ---
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    header('Content-Type: text/html; charset=utf-8');
+    
+    // DB状態確認
+    $dbStatus = 'エラー';
+    $carCount = 0;
+    $dbPath = DB_PATH;
+    try {
+        $db = getDbConnection();
+        $stmt = $db->query("SELECT COUNT(*) as cnt FROM cars WHERE is_active = 1");
+        $carCount = (int)$stmt->fetch()['cnt'];
+        $dbStatus = "正常稼働中 (有効在庫: {$carCount}台)";
+    } catch (Exception $e) {
+        $dbStatus = "接続失敗: " . htmlspecialchars($e->getMessage());
+    }
+
+    $tokenConfigured = (LINE_CHANNEL_ACCESS_TOKEN !== 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') ? '<span style="color:green;">設定済み</span>' : '<span style="color:red;">未設定 (config.phpに貼り付けてください)</span>';
+    $secretConfigured = (LINE_CHANNEL_SECRET !== 'YOUR_CHANNEL_SECRET_HERE') ? '<span style="color:green;">設定済み</span>' : '<span style="color:red;">未設定</span>';
+    
+    echo <<<HTML
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head><meta charset="utf-8"><title>LINE Car Search Webhook 診断</title>
+    <style>body{font-family:sans-serif;padding:30px;line-height:1.6;background:#f8fafc;color:#1e293b}
+    .card{background:#fff;padding:24px;border-radius:12px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);max-width:600px;margin:0 auto}
+    h2{margin-top:0;color:#06C755}table{width:100%;border-collapse:collapse;margin:16px 0}
+    td,th{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:14px}
+    .log-box{background:#0f172a;color:#a5f3fc;padding:12px;border-radius:8px;font-family:monospace;font-size:12px;max-height:200px;overflow-y:auto;white-space:pre-wrap}
+    </style></head>
+    <body>
+    <div class="card">
+        <h2>🚗 LINE Webhook 稼働ステータス</h2>
+        <table>
+            <tr><th>項目</th><th>状態</th></tr>
+            <tr><td>Webhook エンドポイント</td><td>正常応答中 (200 OK)</td></tr>
+            <tr><td>チャネルアクセストークン</td><td>{$tokenConfigured}</td></tr>
+            <tr><td>チャネルシークレット</td><td>{$secretConfigured}</td></tr>
+            <tr><td>DBパス</td><td><code>{$dbPath}</code></td></tr>
+            <tr><td>データベース状態</td><td><strong>{$dbStatus}</strong></td></tr>
+        </table>
+        <h3>📋 最近のログ (webhook_debug.log)</h3>
+        <div class="log-box">
+HTML;
+    $logFile = __DIR__ . '/webhook_debug.log';
+    if (file_exists($logFile)) {
+        $lines = array_slice(file($logFile), -15);
+        echo htmlspecialchars(implode('', $lines));
+    } else {
+        echo "ログはまだありません。LINEでメッセージを送信すると記録されます。";
+    }
+    echo <<<HTML
+        </div>
+    </div>
+    </body></html>
+HTML;
+    exit;
+}
+
 // 生のリクエストボディを取得
 $rawInput = file_get_contents('php://input');
+writeDebugLog("Webhook受信", ['bytes' => strlen($rawInput)]);
 
 // 署名検証 (Channel Secretが設定されている場合)
 if (LINE_CHANNEL_SECRET !== 'YOUR_CHANNEL_SECRET_HERE' && !empty($_SERVER['HTTP_X_LINE_SIGNATURE'])) {
     $signature = $_SERVER['HTTP_X_LINE_SIGNATURE'];
     $hash = base64_encode(hash_hmac('sha256', $rawInput, LINE_CHANNEL_SECRET, true));
     if (!hash_equals($hash, $signature)) {
+        writeDebugLog("署名検証エラー (Signature mismatch)");
         http_response_code(403);
         echo 'Invalid signature';
         exit;
@@ -22,27 +83,37 @@ if (LINE_CHANNEL_SECRET !== 'YOUR_CHANNEL_SECRET_HERE' && !empty($_SERVER['HTTP_
 
 $data = json_decode($rawInput, true);
 if (empty($data['events'])) {
+    writeDebugLog("イベントなし (検証Pingなど)");
     http_response_code(200);
     echo 'OK (No events)';
     exit;
 }
 
-$db = getDbConnection();
+try {
+    $db = getDbConnection();
+} catch (Exception $e) {
+    writeDebugLog("DB接続例外: " . $e->getMessage());
+    http_response_code(500);
+    exit;
+}
 
 foreach ($data['events'] as $event) {
     $replyToken = $event['replyToken'] ?? null;
     if (!$replyToken) continue;
 
     $type = $event['type'];
+    writeDebugLog("イベント処理開始", ['type' => $type]);
 
     if ($type === 'message' && $event['message']['type'] === 'text') {
         $userText = trim($event['message']['text']);
+        writeDebugLog("テキスト受信", ['text' => $userText]);
         handleTextMessage($db, $replyToken, $userText);
     } elseif ($type === 'postback') {
         $postbackData = $event['postback']['data'] ?? '';
+        writeDebugLog("ポストバック受信", ['data' => $postbackData]);
         handlePostback($db, $replyToken, $postbackData);
     } elseif ($type === 'follow') {
-        // 友だち追加時のあいさつ
+        writeDebugLog("友だち追加イベント");
         handleFollow($replyToken);
     }
 }
@@ -136,6 +207,8 @@ function searchCarsAndReply(PDO $db, string $replyToken, array $criteria, string
     $stmt->execute($params);
     $cars = $stmt->fetchAll();
 
+    writeDebugLog("検索実行完了", ['heading' => $heading, 'hitCount' => count($cars)]);
+
     if (empty($cars)) {
         $messages = [
             [
@@ -156,7 +229,7 @@ function searchCarsAndReply(PDO $db, string $replyToken, array $criteria, string
 
     $flexMessage = [
         'type' => 'flex',
-        'altText' => "{$heading} ({count($cars)}件)",
+        'altText' => "{$heading} (" . count($cars) . "件)",
         'contents' => [
             'type' => 'carousel',
             'contents' => $bubbles
@@ -186,7 +259,6 @@ function buildCarFlexBubble(array $car): array {
     $year = !empty($car['year']) ? $car['year'] : '-';
     $distance = !empty($car['distance']) ? $car['distance'] : '-';
     $repair = !empty($car['repair_history']) ? $car['repair_history'] : '-';
-    $shaken = !empty($car['shaken']) ? $car['shaken'] : '-';
     $detailUrl = $car['detail_url'];
 
     // 問い合わせ文面
@@ -211,7 +283,6 @@ function buildCarFlexBubble(array $car): array {
             'layout' => 'vertical',
             'paddingAll' => '12px',
             'contents' => [
-                // 車名
                 [
                     'type' => 'text',
                     'text' => $shortTitle,
@@ -220,7 +291,6 @@ function buildCarFlexBubble(array $car): array {
                     'wrap' => true,
                     'maxLines' => 2
                 ],
-                // 価格バッジ
                 [
                     'type' => 'box',
                     'layout' => 'baseline',
@@ -244,7 +314,6 @@ function buildCarFlexBubble(array $car): array {
                         ]
                     ]
                 ],
-                // スペック詳細 (年式・走行距離・修復歴)
                 [
                     'type' => 'box',
                     'layout' => 'vertical',
@@ -366,7 +435,7 @@ function getQuickReplyItems(): array {
  */
 function sendReplyMessage(string $replyToken, array $messages) {
     if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
-        // 設定前の場合
+        writeDebugLog("返信スキップ: LINE_CHANNEL_ACCESS_TOKEN が未設定です");
         return;
     }
 
@@ -386,6 +455,14 @@ function sendReplyMessage(string $replyToken, array $messages) {
         ],
         CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE)
     ]);
-    curl_exec($ch);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
     curl_close($ch);
+
+    writeDebugLog("LINE API返信結果", [
+        'httpCode' => $httpCode,
+        'response' => $res,
+        'curlError' => $curlErr
+    ]);
 }
