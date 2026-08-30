@@ -205,8 +205,8 @@ function searchCarsAndReply(PDO $db, string $replyToken, array $criteria, string
 
         $whereSql = implode(' AND ', $where);
         
-        // 全SQLiteバージョン互換のORDER BY構文 (NULLS LASTを使わない)
-        $stmt = $db->prepare("SELECT * FROM cars WHERE {$whereSql} ORDER BY (total_price_num IS NULL), total_price_num ASC LIMIT 10");
+        // 最大40台まで取得 (LINEの1回返信上限: 10台×4カルーセル = 40台)
+        $stmt = $db->prepare("SELECT * FROM cars WHERE {$whereSql} ORDER BY (total_price_num IS NULL), total_price_num ASC LIMIT 40");
         $stmt->execute($params);
         $cars = $stmt->fetchAll();
 
@@ -237,23 +237,28 @@ function searchCarsAndReply(PDO $db, string $replyToken, array $criteria, string
             throw new Exception("バブル生成に失敗しました");
         }
 
-        $flexMessage = [
-            'type' => 'flex',
-            'altText' => "{$heading} (" . count($bubbles) . "件)",
-            'contents' => [
-                'type' => 'carousel',
-                'contents' => $bubbles
-            ],
-            'quickReply' => getQuickReplyItems()
-        ];
+        // LINEの仕様: 1カルーセルあたり最大10件 -> 10件ずつ分割して複数カルーセルで一括返信
+        $bubbleChunks = array_chunk($bubbles, 10);
+        $totalCount = count($bubbles);
 
         $messages = [
             [
                 'type' => 'text',
-                'text' => "🔍 {$heading} をお送りします（" . count($bubbles) . "件）"
-            ],
-            $flexMessage
+                'text' => "🔍 {$heading} （全{$totalCount}件）"
+            ]
         ];
+
+        foreach ($bubbleChunks as $idx => $chunk) {
+            $messages[] = [
+                'type' => 'flex',
+                'altText' => "{$heading} (" . ($idx * 10 + 1) . "〜" . ($idx * 10 + count($chunk)) . "件目)",
+                'contents' => [
+                    'type' => 'carousel',
+                    'contents' => $chunk
+                ],
+                'quickReply' => getQuickReplyItems()
+            ];
+        }
 
         sendReplyMessage($replyToken, $messages);
     } catch (Exception $e) {
