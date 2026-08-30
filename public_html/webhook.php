@@ -502,7 +502,7 @@ function generateCarSearchMessages(PDO $db, array $criteria, string $heading, st
         }
 
         if (!empty($criteria['low_mileage'])) {
-            $where[] = "(title LIKE '%未使用%' OR distance LIKE '%10km%' OR distance LIKE '%123km%' OR (distance_num IS NOT NULL AND distance_num <= 3.0))";
+            $where[] = "(title LIKE '%未使用%' OR (distance NOT LIKE '%万km%' AND distance LIKE '%km%') OR (distance_num IS NOT NULL AND distance_num <= 0.5))";
         }
 
         if (!empty($criteria['min_price'])) {
@@ -1519,7 +1519,7 @@ function generateEquipmentMenuMessages(PDO $db): array {
                         $isMatch = true;
                     }
                 } elseif (in_array('_low_mileage_', $item['match'])) {
-                    if (str_contains($car['title'], '未使用') || str_contains($car['distance'], '10km') || (!empty($car['distance_num']) && $car['distance_num'] <= 3.0)) {
+                    if (str_contains($car['title'], '未使用') || (!str_contains($car['distance'], '万km') && str_contains($car['distance'], 'km')) || (!empty($car['distance_num']) && $car['distance_num'] <= 0.5)) {
                         $isMatch = true;
                     }
                 } else {
