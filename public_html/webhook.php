@@ -464,16 +464,32 @@ function generateCarSearchMessages(PDO $db, array $criteria, string $heading, st
         if (!empty($criteria['equip'])) {
             $eq = $criteria['equip'];
             if ($eq === 'ナビ') {
-                $where[] = "(title LIKE '%ナビ%' OR title LIKE '%地デジ%' OR title LIKE '%TV%' OR title LIKE '%オーディオ%' OR equipments LIKE '%ナビ%' OR equipments LIKE '%テレビ%')";
-            } elseif ($eq === 'バックカメラ') {
-                $where[] = "(title LIKE '%バックカメラ%' OR title LIKE '%全方位%' OR title LIKE '%アラウンドビュー%' OR equipments LIKE '%バックカメラ%' OR equipments LIKE '%カメラ%')";
-            } elseif ($eq === 'ETC') {
+                $where[] = "(title LIKE '%ナビ%' OR title LIKE '%地デジ%' OR title LIKE '%TV%' OR title LIKE '%ＴＶ%' OR title LIKE '%オーディオ%' OR equipments LIKE '%ナビ%' OR equipments LIKE '%テレビ%')";
+            } elseif ($eq === 'TV' || $eq === 'テレビ' || $eq === '地デジ') {
+                $where[] = "(title LIKE '%地デジ%' OR title LIKE '%フルセグ%' OR title LIKE '%ワンセグ%' OR title LIKE '%ＴＶ%' OR title LIKE '%TV%' OR title LIKE '%テレビ%' OR equipments LIKE '%テレビ%' OR equipments LIKE '%地デジ%' OR equipments LIKE '%ワンセグ%' OR equipments LIKE '%フルセグ%')";
+            } elseif ($eq === 'バックカメラ' || $eq === 'カメラ') {
+                $where[] = "(title LIKE '%バックカメラ%' OR title LIKE '%全方位%' OR title LIKE '%アラウンドビュー%' OR title LIKE '%カメラ%' OR equipments LIKE '%バックカメラ%' OR equipments LIKE '%カメラ%')";
+            } elseif ($eq === 'Bluetooth' || $eq === 'ブルートゥース') {
+                $where[] = "(title LIKE '%Bluetooth%' OR title LIKE '%Ｂｌｕｅｔｏｏｔｈ%' OR title LIKE '%ブルートゥース%' OR title LIKE '%カープレイ%' OR title LIKE '%carplay%' OR equipments LIKE '%Bluetooth%')";
+            } elseif ($eq === 'ETC' || $eq === 'ＥＴＣ') {
                 $where[] = "(title LIKE '%ETC%' OR title LIKE '%ＥＴＣ%' OR equipments LIKE '%ETC%')";
-            } elseif ($eq === 'スライド') {
+            } elseif ($eq === 'ドラレコ' || $eq === 'ドライブレコーダー') {
+                $where[] = "(title LIKE '%ドラレコ%' OR title LIKE '%ドライブレコーダー%' OR equipments LIKE '%ドライブレコーダー%' OR equipments LIKE '%ドラレコ%')";
+            } elseif ($eq === 'スライド' || $eq === 'パワースライド') {
                 $where[] = "(title LIKE '%スライド%' OR title LIKE '%パワースライド%' OR equipments LIKE '%スライド%')";
-            } elseif ($eq === '軽減' || $eq === '安全') {
-                $where[] = "(title LIKE '%軽減%' OR title LIKE '%ブレーキ%' OR title LIKE '%センシング%' OR title LIKE '%スマートアシスト%' OR title LIKE '%セーフティ%' OR equipments LIKE '%安全%' OR equipments LIKE '%衝突%')";
-            } elseif ($eq === '4WD') {
+            } elseif ($eq === 'スマートキー' || $eq === 'キーレス') {
+                $where[] = "(title LIKE '%スマートキー%' OR title LIKE '%インテリジェント%' OR title LIKE '%プッシュスタート%' OR title LIKE '%キーレス%' OR equipments LIKE '%スマートキー%')";
+            } elseif ($eq === 'シートヒーター' || $eq === 'ヒーター') {
+                $where[] = "(title LIKE '%シートヒーター%' OR equipments LIKE '%シートヒーター%')";
+            } elseif ($eq === 'LED' || $eq === 'ＬＥＤ' || $eq === 'HID') {
+                $where[] = "(title LIKE '%LED%' OR title LIKE '%ＬＥＤ%' OR title LIKE '%HID%' OR title LIKE '%ＨＩＤ%' OR title LIKE '%オートライト%' OR equipments LIKE '%LED%' OR equipments LIKE '%オートライト%')";
+            } elseif ($eq === 'アルミ' || $eq === 'ホイール') {
+                $where[] = "(title LIKE '%アルミ%' OR title LIKE '%ホイール%' OR equipments LIKE '%アルミ%')";
+            } elseif ($eq === 'レザー' || $eq === '本革') {
+                $where[] = "(title LIKE '%本革%' OR title LIKE '%レザー%' OR title LIKE '%ハーフレザー%' OR title LIKE '%革調%' OR equipments LIKE '%本革%' OR equipments LIKE '%レザー%')";
+            } elseif ($eq === '軽減' || $eq === '安全' || $eq === 'ブレーキ') {
+                $where[] = "(title LIKE '%軽減%' OR title LIKE '%ブレーキ%' OR title LIKE '%センシング%' OR title LIKE '%スマートアシスト%' OR title LIKE '%セーフティ%' OR title LIKE '%プロパイロット%' OR equipments LIKE '%安全%' OR equipments LIKE '%衝突%')";
+            } elseif ($eq === '4WD' || $eq === '４ＷＤ' || $eq === '四駆') {
                 $where[] = "(title LIKE '%4WD%' OR title LIKE '%４ＷＤ%' OR title LIKE '%四駆%' OR drive_type LIKE '%4WD%' OR drive_type LIKE '%四駆%')";
             } else {
                 $where[] = "(title LIKE :eq OR equipments LIKE :eq)";
