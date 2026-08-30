@@ -63,17 +63,22 @@ function getDbConnection(): PDO {
 }
 
 /**
- * 現在のベースURLを自動取得 (例: https://kureba.co.jp/line-car-search)
+ * 現在のベースURLを自動取得 (LINE Flex Message用に必ず https:// を保証)
  */
 function getBaseUrl(): string {
-    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || ($_SERVER['SERVER_PORT'] ?? 80) == 443) ? "https://" : "http://";
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    // LINEの仕様でURI actionはHTTPS必須のため、常にhttpsを優先
+    $protocol = "https://";
+    $host = $_SERVER['HTTP_HOST'] ?? 'kureba.co.jp';
+    
+    // スクリプトパスの特定
     $scriptDir = dirname($_SERVER['SCRIPT_NAME'] ?? '');
     $scriptDir = str_replace('\\', '/', $scriptDir);
     if ($scriptDir === '/' || $scriptDir === '.') {
         $scriptDir = '';
     }
-    return rtrim($protocol . $host . $scriptDir, '/');
+    
+    $url = $protocol . $host . $scriptDir;
+    return rtrim($url, '/');
 }
 
 /**
