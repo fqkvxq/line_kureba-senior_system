@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <link rel="stylesheet" href="style.css?v=20260831_2">
+    <link rel="stylesheet" href="style.css?v=20260831_3">
     <style>
         .passport-header {
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
@@ -238,6 +238,74 @@
         .btn-save-cust:active {
             background: #05a847;
         }
+        .btn-delete-car {
+            width: 46px;
+            height: 46px;
+            background: #fee2e2;
+            color: #ef4444;
+            border: 1px solid #fca5a5;
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .btn-delete-car:active {
+            background: #fecaca;
+        }
+        .car-tabs-scroll {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 0 0 12px;
+            margin-bottom: 12px;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        .car-tabs-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        .car-tab-item {
+            flex-shrink: 0;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.85);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+        .car-tab-item.active {
+            background: #06C755;
+            color: #fff;
+            border-color: #06C755;
+            box-shadow: 0 4px 12px rgba(6, 199, 85, 0.35);
+        }
+        .car-tab-add {
+            flex-shrink: 0;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px dashed rgba(255, 255, 255, 0.4);
+            background: transparent;
+            color: #cbd5e1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .car-tab-add:active {
+            background: rgba(255, 255, 255, 0.15);
+        }
         .nav-back-link {
             display: flex;
             align-items: center;
@@ -263,9 +331,14 @@
             </div>
         </div>
 
+        <!-- 複数台切り替えタブ -->
+        <div class="car-tabs-scroll" id="carTabsContainer">
+            <!-- JSで動的生成 -->
+        </div>
+
         <div class="car-summary-card">
             <div>
-                <div class="car-summary-title">ご登録愛車</div>
+                <div class="car-summary-title">選択中の愛車</div>
                 <div class="car-summary-name" id="carModelDisplay">未設定（下部より登録）</div>
             </div>
             <div class="car-summary-num" id="carNumDisplay">--</div>
@@ -380,9 +453,16 @@
                 </p>
             </div>
 
-            <button class="btn-save-cust" id="saveCustBtn">
-                <i class="fa-solid fa-check"></i> この内容で保存する
-            </button>
+            <input type="hidden" id="currentCarId" value="">
+
+            <div style="display: flex; gap: 8px; margin-top: 10px;">
+                <button class="btn-save-cust" id="saveCustBtn" style="flex: 1;">
+                    <i class="fa-solid fa-check"></i> この内容で保存する
+                </button>
+                <button class="btn-delete-car" id="deleteCarBtn" title="この愛車を削除" style="display: none;">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </div>
         </div>
 
         <!-- 在庫検索へ戻るリンク -->
@@ -414,6 +494,6 @@
     <!-- トースト通知 -->
     <div class="toast" id="appToast"></div>
 
-    <script src="mycar.js?v=20260831_2"></script>
+    <script src="mycar.js?v=20260831_3"></script>
 </body>
 </html>

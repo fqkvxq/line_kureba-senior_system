@@ -78,12 +78,13 @@ function getDbConnection(): PDO {
         $pdo->exec("PRAGMA busy_timeout = 5000");
     } catch (Exception $e) {}
 
-    // 顧客メンテナンス管理テーブルの確実な初期化
+    // 複数台対応: customer_cars テーブルの初期化
     $pdo->exec("
-        CREATE TABLE IF NOT EXISTS customers (
-            user_id TEXT PRIMARY KEY,
+        CREATE TABLE IF NOT EXISTS customer_cars (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
             user_name TEXT,
-            car_model TEXT,
+            car_model TEXT NOT NULL,
             car_number TEXT,
             oil_last_date DATE,
             oil_next_date DATE,
@@ -99,39 +100,49 @@ function getDbConnection(): PDO {
     ");
 
     // インデックス作成
-    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_customers_oil_next ON customers(oil_next_date)"); } catch (Exception $e) {}
-    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_customers_periodic_next ON customers(periodic_insp_next_date)"); } catch (Exception $e) {}
-    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_customers_inspection_next ON customers(inspection_next_date)"); } catch (Exception $e) {}
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_user_id ON customer_cars(user_id)"); } catch (Exception $e) {}
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_oil_next ON customer_cars(oil_next_date)"); } catch (Exception $e) {}
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_periodic_next ON customer_cars(periodic_insp_next_date)"); } catch (Exception $e) {}
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_inspection_next ON customer_cars(inspection_next_date)"); } catch (Exception $e) {}
 
-    // 既存テーブルの既存カラムを取得して不足カラムを確実に追加
+    // 既存 customers テーブルからのデータ移行（初回1回のみ）
     try {
-        $colsStmt = $pdo->query("PRAGMA table_info(customers)");
-        $existingCols = [];
-        while ($col = $colsStmt->fetch()) {
-            $existingCols[] = $col['name'];
-        }
-
-        $requiredCols = [
-            'user_name' => 'TEXT',
-            'car_model' => 'TEXT',
-            'car_number' => 'TEXT',
-            'oil_last_date' => 'DATE',
-            'oil_next_date' => 'DATE',
-            'periodic_insp_next_date' => 'DATE',
-            'inspection_next_date' => 'DATE',
-            'staff_memo' => 'TEXT',
-            'oil_reminded_at' => 'DATETIME',
-            'periodic_reminded_at' => 'DATETIME',
-            'inspection_reminded_at' => 'DATETIME',
-            'created_at' => 'DATETIME DEFAULT CURRENT_TIMESTAMP',
-            'updated_at' => 'DATETIME DEFAULT CURRENT_TIMESTAMP'
-        ];
-
-        foreach ($requiredCols as $colName => $colDef) {
-            if (!in_array($colName, $existingCols, true)) {
-                try {
-                    $pdo->exec("ALTER TABLE customers ADD COLUMN {$colName} {$colDef}");
-                } catch (Exception $ex) {}
+        $countCars = $pdo->query("SELECT COUNT(*) FROM customer_cars")->fetchColumn();
+        if ($countCars == 0) {
+            $hasLegacy = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='customers'")->fetch();
+            if ($hasLegacy) {
+                $legacyRows = $pdo->query("SELECT * FROM customers WHERE car_model IS NOT NULL AND car_model != ''")->fetchAll();
+                $insertStmt = $pdo->prepare("
+                    INSERT INTO customer_cars (
+                        user_id, user_name, car_model, car_number,
+                        oil_last_date, oil_next_date, periodic_insp_next_date, inspection_next_date,
+                        staff_memo, oil_reminded_at, periodic_reminded_at, inspection_reminded_at,
+                        created_at, updated_at
+                    ) VALUES (
+                        :user_id, :user_name, :car_model, :car_number,
+                        :oil_last_date, :oil_next_date, :periodic_insp_next_date, :inspection_next_date,
+                        :staff_memo, :oil_reminded_at, :periodic_reminded_at, :inspection_reminded_at,
+                        :created_at, :updated_at
+                    )
+                ");
+                foreach ($legacyRows as $r) {
+                    $insertStmt->execute([
+                        ':user_id' => $r['user_id'],
+                        ':user_name' => $r['user_name'] ?? '',
+                        ':car_model' => $r['car_model'],
+                        ':car_number' => $r['car_number'] ?? '',
+                        ':oil_last_date' => $r['oil_last_date'] ?? null,
+                        ':oil_next_date' => $r['oil_next_date'] ?? null,
+                        ':periodic_insp_next_date' => $r['periodic_insp_next_date'] ?? null,
+                        ':inspection_next_date' => $r['inspection_next_date'] ?? null,
+                        ':staff_memo' => $r['staff_memo'] ?? null,
+                        ':oil_reminded_at' => $r['oil_reminded_at'] ?? null,
+                        ':periodic_reminded_at' => $r['periodic_reminded_at'] ?? null,
+                        ':inspection_reminded_at' => $r['inspection_reminded_at'] ?? null,
+                        ':created_at' => $r['created_at'] ?? date('Y-m-d H:i:s'),
+                        ':updated_at' => $r['updated_at'] ?? date('Y-m-d H:i:s')
+                    ]);
+                }
             }
         }
     } catch (Exception $e) {}

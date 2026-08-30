@@ -48,7 +48,7 @@ $reportDetails = [];
 // 1. オイル交換リマインド判定 & 送信
 // ==========================================
 $stmt = $db->prepare("
-    SELECT * FROM customers 
+    SELECT * FROM customer_cars 
     WHERE oil_next_date IS NOT NULL 
       AND (oil_next_date = :today OR oil_next_date = :in7days OR oil_next_date < :today)
       AND (oil_reminded_at IS NULL OR date(oil_reminded_at) != :today)
@@ -188,8 +188,8 @@ foreach ($oilTargetCustomers as $cust) {
 
     $res = sendLinePushMessage($userId, [$flexMessage]);
     if (!empty($res['success'])) {
-        $updateStmt = $db->prepare("UPDATE customers SET oil_reminded_at = CURRENT_TIMESTAMP WHERE user_id = :uid");
-        $updateStmt->execute([':uid' => $userId]);
+        $updateStmt = $db->prepare("UPDATE customer_cars SET oil_reminded_at = CURRENT_TIMESTAMP WHERE id = :id");
+        $updateStmt->execute([':id' => $cust['id']]);
         $oilSentCount++;
         $reportDetails[] = [
             'name' => $userName,
@@ -207,7 +207,7 @@ foreach ($oilTargetCustomers as $cust) {
 // 2. 12ヶ月定期点検リマインド判定 & 送信
 // ==========================================
 $stmt = $db->prepare("
-    SELECT * FROM customers 
+    SELECT * FROM customer_cars 
     WHERE periodic_insp_next_date IS NOT NULL 
       AND (periodic_insp_next_date = :today OR periodic_insp_next_date = :in7days OR periodic_insp_next_date = :in14days OR periodic_insp_next_date < :today)
       AND (periodic_reminded_at IS NULL OR date(periodic_reminded_at) != :today)
@@ -262,7 +262,7 @@ foreach ($periodicTargetCustomers as $cust) {
                     ],
                     [
                         'type' => 'text',
-                        'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n愛車【{$carModel}】の法定12ヶ月定期点検の時期をお知らせいたします。",
+                        'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n愛車【{$carModel}】の12ヶ月定期点検の時期が近づいております。",
                         'size' => 'xs',
                         'color' => '#475569',
                         'margin' => 'sm',
@@ -285,7 +285,7 @@ foreach ($periodicTargetCustomers as $cust) {
                                 'type' => 'box',
                                 'layout' => 'baseline',
                                 'contents' => [
-                                    ['type' => 'text', 'text' => '対象車両', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
+                                    ['type' => 'text', 'text' => '対象愛車', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
                                     ['type' => 'text', 'text' => $carModel, 'size' => 'xs', 'weight' => 'bold', 'color' => '#1e293b', 'flex' => 6]
                                 ]
                             ],
@@ -293,8 +293,8 @@ foreach ($periodicTargetCustomers as $cust) {
                                 'type' => 'box',
                                 'layout' => 'baseline',
                                 'contents' => [
-                                    ['type' => 'text', 'text' => '次回点検日', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
-                                    ['type' => 'text', 'text' => $inspDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#e02424', 'flex' => 6]
+                                    ['type' => 'text', 'text' => '次回点検予定', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
+                                    ['type' => 'text', 'text' => $inspDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#10b981', 'flex' => 6]
                                 ]
                             ],
                             [
@@ -342,8 +342,8 @@ foreach ($periodicTargetCustomers as $cust) {
 
     $res = sendLinePushMessage($userId, [$flexMessage]);
     if (!empty($res['success'])) {
-        $updateStmt = $db->prepare("UPDATE customers SET periodic_reminded_at = CURRENT_TIMESTAMP WHERE user_id = :uid");
-        $updateStmt->execute([':uid' => $userId]);
+        $updateStmt = $db->prepare("UPDATE customer_cars SET periodic_reminded_at = CURRENT_TIMESTAMP WHERE id = :id");
+        $updateStmt->execute([':id' => $cust['id']]);
         $periodicSentCount++;
         $reportDetails[] = [
             'name' => $userName,
@@ -361,7 +361,7 @@ foreach ($periodicTargetCustomers as $cust) {
 // 3. 車検満了リマインド判定 & 送信
 // ==========================================
 $stmt = $db->prepare("
-    SELECT * FROM customers 
+    SELECT * FROM customer_cars 
     WHERE inspection_next_date IS NOT NULL 
       AND (inspection_next_date = :today OR inspection_next_date = :in14days OR inspection_next_date = :in30days OR inspection_next_date < :today)
       AND (inspection_reminded_at IS NULL OR date(inspection_reminded_at) != :today)
@@ -448,14 +448,22 @@ foreach ($inspTargetCustomers as $cust) {
                                 'layout' => 'baseline',
                                 'contents' => [
                                     ['type' => 'text', 'text' => '車検満了日', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
-                                    ['type' => 'text', 'text' => $inspDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#e02424', 'flex' => 6]
+                                    ['type' => 'text', 'text' => $inspDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#3b82f6', 'flex' => 6]
+                                ]
+                            ],
+                            [
+                                'type' => 'box',
+                                'layout' => 'baseline',
+                                'contents' => [
+                                    ['type' => 'text', 'text' => '受検の目安', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
+                                    ['type' => 'text', 'text' => "満了日の約1ヶ月前〜受検可能", 'size' => 'xs', 'color' => '#475569', 'flex' => 6]
                                 ]
                             ]
                         ]
                     ],
                     [
                         'type' => 'text',
-                        'text' => "車検満了日の約1ヶ月前より受検が可能です。\n代車の手配や事前お見積もりも承っておりますので、お気軽にご連絡ください！",
+                        'text' => "※満了日の約1ヶ月前より受検が可能です。\n代車の手配や事前お見積もりも承っておりますので、お気軽にご連絡ください！",
                         'size' => 'xxs',
                         'color' => '#64748b',
                         'margin' => 'md',
@@ -488,8 +496,8 @@ foreach ($inspTargetCustomers as $cust) {
 
     $res = sendLinePushMessage($userId, [$flexMessage]);
     if (!empty($res['success'])) {
-        $updateStmt = $db->prepare("UPDATE customers SET inspection_reminded_at = CURRENT_TIMESTAMP WHERE user_id = :uid");
-        $updateStmt->execute([':uid' => $userId]);
+        $updateStmt = $db->prepare("UPDATE customer_cars SET inspection_reminded_at = CURRENT_TIMESTAMP WHERE id = :id");
+        $updateStmt->execute([':id' => $cust['id']]);
         $shakenSentCount++;
         $reportDetails[] = [
             'name' => $userName,

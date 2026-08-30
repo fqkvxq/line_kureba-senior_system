@@ -286,19 +286,19 @@ function renderTable() {
                 <td style="font-size: 11px; color: #64748b;">${updated}</td>
                 <td>
                     <div class="action-btns">
-                        <button class="btn-remind-oil" onclick="sendManualReminder('${c.user_id}', 'oil', '${escapeHtml(c.user_name)}', '${escapeHtml(c.car_model)}')" title="オイル交換リマインドをLINE送信">
+                        <button class="btn-remind-oil" onclick="sendManualReminder('${c.id}', '${c.user_id}', 'oil', '${escapeHtml(c.user_name)}', '${escapeHtml(c.car_model)}')" title="オイル交換リマインドをLINE送信">
                             <i class="fa-solid fa-oil-can"></i> オイル
                         </button>
-                        <button class="btn-remind-periodic" onclick="sendManualReminder('${c.user_id}', 'periodic', '${escapeHtml(c.user_name)}', '${escapeHtml(c.car_model)}')" title="12ヶ月点検リマインドをLINE送信">
+                        <button class="btn-remind-periodic" onclick="sendManualReminder('${c.id}', '${c.user_id}', 'periodic', '${escapeHtml(c.user_name)}', '${escapeHtml(c.car_model)}')" title="12ヶ月点検リマインドをLINE送信">
                             <i class="fa-solid fa-clipboard-check"></i> 点検
                         </button>
-                        <button class="btn-remind-insp" onclick="sendManualReminder('${c.user_id}', 'inspection', '${escapeHtml(c.user_name)}', '${escapeHtml(c.car_model)}')" title="車検リマインドをLINE送信">
+                        <button class="btn-remind-insp" onclick="sendManualReminder('${c.id}', '${c.user_id}', 'inspection', '${escapeHtml(c.user_name)}', '${escapeHtml(c.car_model)}')" title="車検リマインドをLINE送信">
                             <i class="fa-solid fa-shield-halved"></i> 車検
                         </button>
-                        <button class="btn-edit" onclick="editCustomerById('${c.user_id}')">
+                        <button class="btn-edit" onclick="editCarRecordById(${c.id})">
                             <i class="fa-solid fa-pen"></i>
                         </button>
-                        <button class="btn-delete" onclick="deleteCustomerById('${c.user_id}', '${escapeHtml(c.user_name)}')">
+                        <button class="btn-delete" onclick="deleteCarRecordById(${c.id}, '${escapeHtml(c.car_model)}', '${escapeHtml(c.user_name)}')">
                             <i class="fa-solid fa-trash"></i>
                         </button>
                     </div>
@@ -308,7 +308,7 @@ function renderTable() {
     }).join('');
 }
 
-window.sendManualReminder = async function(userId, type, userName, carModel) {
+window.sendManualReminder = async function(carId, userId, type, userName, carModel) {
     if (!userId.startsWith('U')) {
         alert('この顧客は手動登録（LINE未連携）のため、LINEメッセージを送信できません。');
         return;
@@ -327,6 +327,7 @@ window.sendManualReminder = async function(userId, type, userName, carModel) {
         const payload = new URLSearchParams({
             action: 'admin_send_reminder',
             password: state.password,
+            car_id: carId,
             uid: userId,
             type: type
         });
@@ -368,19 +369,21 @@ function getBadgeHtml(dateStr) {
     }
 }
 
-window.editCustomerById = function(userId) {
-    const cust = state.allCustomers.find(c => c.user_id === userId);
+let activeEditingCarId = null;
+
+window.editCarRecordById = function(carId) {
+    const cust = state.allCustomers.find(c => Number(c.id) === Number(carId));
     if (cust) openEditModal(cust);
 };
 
-window.deleteCustomerById = async function(userId, userName) {
-    if (!confirm(`「${userName || 'この顧客'}」のデータを削除しますか？`)) return;
+window.deleteCarRecordById = async function(carId, carModel, userName) {
+    if (!confirm(`「${userName || '顧客'}」の愛車「${carModel || '車両'}」を削除しますか？`)) return;
 
     try {
         const payload = new URLSearchParams({
             action: 'admin_delete_customer',
             password: state.password,
-            uid: userId
+            car_id: carId
         });
         const res = await fetch('../api.php', {
             method: 'POST',
@@ -399,8 +402,9 @@ window.deleteCustomerById = async function(userId, userName) {
 
 function openEditModal(cust) {
     if (cust) {
-        elements.modalTitle.textContent = `顧客メンテナンス情報の編集: ${cust.user_name || ''}`;
-        elements.editUserId.value = cust.user_id || '';
+        activeEditingCarId = cust.id;
+        elements.modalTitle.textContent = `愛車・メンテナンス情報の編集: ${cust.car_model || ''} (${cust.user_name || ''})`;
+        elements.editUserId.value = cust.id || '';
         elements.editUserUid.value = cust.user_id || '';
         elements.editUserName.value = cust.user_name || '';
         elements.editCarModel.value = cust.car_model || '';
@@ -411,7 +415,8 @@ function openEditModal(cust) {
         elements.editInspectionNextDate.value = cust.inspection_next_date || '';
         elements.editStaffMemo.value = cust.staff_memo || '';
     } else {
-        elements.modalTitle.textContent = '新規顧客メンテナンス情報の登録';
+        activeEditingCarId = null;
+        elements.modalTitle.textContent = '新規顧客・愛車メンテナンス情報の登録';
         elements.editUserId.value = '';
         elements.editUserUid.value = '';
         elements.editUserName.value = '';
@@ -443,6 +448,7 @@ async function saveCustomer() {
     const payload = new URLSearchParams({
         action: 'admin_save_customer',
         password: state.password,
+        car_id: activeEditingCarId || '',
         uid: elements.editUserUid.value.trim() || elements.editUserId.value.trim(),
         uname: userName,
         car_model: carModel,

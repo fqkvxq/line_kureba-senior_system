@@ -1,12 +1,13 @@
 /**
- * マイカー点検パスポート LIFFフロントエンドロジック
+ * マイカー点検パスポート LIFFフロントエンドロジック (複数台対応)
  */
 
 const state = {
     userId: '',
     userName: '',
     userAvatar: '',
-    customerData: null
+    cars: [],
+    activeCarIndex: 0
 };
 
 function getEl(id) {
@@ -87,6 +88,13 @@ function initEventListeners() {
         });
     }
 
+    const deleteBtn = getEl('deleteCarBtn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', async () => {
+            await deleteActiveCar();
+        });
+    }
+
     const bookingModal = getEl('bookingModal');
     const modalTitle = getEl('modalBookingTitle');
     const closeBtn = getEl('closeBookingModalBtn');
@@ -122,14 +130,15 @@ function initEventListeners() {
 }
 
 async function submitMaintenanceBooking(bookingType, prefTime) {
-    const car = state.customerData?.car_model || getEl('inputCarModel')?.value || '愛車';
+    const currentCar = getCurrentActiveCar();
+    const car = currentCar?.car_model || getEl('inputCarModel')?.value || '愛車';
     let date = '未定';
     if (bookingType === 'オイル交換') {
-        date = state.customerData?.oil_next_date || getEl('inputOilNextDate')?.value || '近日中';
+        date = currentCar?.oil_next_date || getEl('inputOilNextDate')?.value || '近日中';
     } else if (bookingType === '12ヶ月定期点検') {
-        date = state.customerData?.periodic_insp_next_date || getEl('inputPeriodicNextDate')?.value || '近日中';
+        date = currentCar?.periodic_insp_next_date || getEl('inputPeriodicNextDate')?.value || '近日中';
     } else {
-        date = state.customerData?.inspection_next_date || getEl('inputInspNextDate')?.value || '未定';
+        date = currentCar?.inspection_next_date || getEl('inputInspNextDate')?.value || '未定';
     }
 
     const msg = `【${bookingType}の来店予約】\n愛車: ${car}\n予定・満了日: ${date}\n希望日時: ${prefTime}\n\n上記の日程で予約・相談をお願いいたします。`;
@@ -138,83 +147,169 @@ async function submitMaintenanceBooking(bookingType, prefTime) {
     sendLineChatMessage(msg);
 }
 
+function getCurrentActiveCar() {
+    if (state.cars && state.cars.length > state.activeCarIndex) {
+        return state.cars[state.activeCarIndex];
+    }
+    return null;
+}
+
 async function fetchCustomerData() {
     try {
         const res = await fetch(`../api.php?action=get_customer&uid=${encodeURIComponent(state.userId)}`);
         const data = await res.json();
         console.log('Customer data fetched:', data);
-        if (data.success && data.customer) {
-            state.customerData = data.customer;
-            renderCustomerInfo(data.customer);
+        if (data.success) {
+            state.cars = data.cars || [];
+            if (state.activeCarIndex >= state.cars.length) {
+                state.activeCarIndex = Math.max(0, state.cars.length - 1);
+            }
+            renderCarTabs();
+            if (state.cars.length > 0) {
+                renderCarInfo(state.cars[state.activeCarIndex]);
+            } else {
+                showNewCarForm();
+            }
         }
     } catch (e) {
         console.warn('Fetch customer error:', e);
     }
 }
 
-function renderCustomerInfo(cust) {
+function renderCarTabs() {
+    const container = getEl('carTabsContainer');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    state.cars.forEach((car, idx) => {
+        const btn = document.createElement('button');
+        btn.className = `car-tab-item ${idx === state.activeCarIndex ? 'active' : ''}`;
+        const carTitle = car.car_model || `愛車 ${idx + 1}`;
+        btn.innerHTML = `<i class="fa-solid fa-car-side"></i> <span>${escapeHtml(carTitle)}</span>`;
+        btn.addEventListener('click', () => {
+            state.activeCarIndex = idx;
+            renderCarTabs();
+            renderCarInfo(state.cars[idx]);
+        });
+        container.appendChild(btn);
+    });
+
+    // 「+ 愛車を追加」ボタン
+    const addBtn = document.createElement('button');
+    addBtn.className = 'car-tab-add';
+    addBtn.innerHTML = '<i class="fa-solid fa-plus"></i> 愛車を追加';
+    addBtn.addEventListener('click', () => {
+        showNewCarForm();
+    });
+    container.appendChild(addBtn);
+}
+
+function showNewCarForm() {
+    state.activeCarIndex = -1; // 新規追加中モード
+    
+    // タブのactive解除
+    document.querySelectorAll('.car-tab-item').forEach(el => el.classList.remove('active'));
+
+    getEl('currentCarId').value = '';
+    getEl('inputCarModel').value = '';
+    getEl('inputCarNumber').value = '';
+    getEl('inputOilNextDate').value = '';
+    getEl('inputPeriodicNextDate').value = '';
+    getEl('inputInspNextDate').value = '';
+
+    const carModelEl = getEl('carModelDisplay');
+    if (carModelEl) carModelEl.textContent = '新規登録の愛車';
+    const carNumEl = getEl('carNumDisplay');
+    if (carNumEl) carNumEl.textContent = '--';
+
+    // バッジをリセット
+    resetBadge(getEl('oilStatusBadge'), getEl('oilNextDateDisplay'));
+    resetBadge(getEl('periodicStatusBadge'), getEl('periodicNextDateDisplay'));
+    resetBadge(getEl('inspStatusBadge'), getEl('inspNextDateDisplay'));
+
+    // 削除ボタン非表示
+    const deleteBtn = getEl('deleteCarBtn');
+    if (deleteBtn) deleteBtn.style.display = 'none';
+
+    // フォーカス
+    getEl('inputCarModel')?.focus();
+    showToast('🚗 新しい愛車の情報を入力してください');
+}
+
+function resetBadge(badgeEl, displayEl) {
+    if (badgeEl) {
+        badgeEl.textContent = '未設定';
+        badgeEl.className = 'maint-badge badge-warning';
+    }
+    if (displayEl) {
+        displayEl.textContent = '未設定';
+    }
+}
+
+function renderCarInfo(car) {
+    if (!car) return;
+
+    getEl('currentCarId').value = car.id || '';
+    
     const carModelEl = getEl('carModelDisplay');
     const inputCarModelEl = getEl('inputCarModel');
-    if (cust.car_model) {
-        if (carModelEl) carModelEl.textContent = cust.car_model;
-        if (inputCarModelEl) inputCarModelEl.value = cust.car_model;
-    }
+    if (carModelEl) carModelEl.textContent = car.car_model || '未設定';
+    if (inputCarModelEl) inputCarModelEl.value = car.car_model || '';
 
     const carNumEl = getEl('carNumDisplay');
     const inputCarNumEl = getEl('inputCarNumber');
-    if (cust.car_number) {
-        if (carNumEl) carNumEl.textContent = `No. ${cust.car_number}`;
-        if (inputCarNumEl) inputCarNumEl.value = cust.car_number;
-    }
+    if (carNumEl) carNumEl.textContent = car.car_number ? `No. ${car.car_number}` : '--';
+    if (inputCarNumEl) inputCarNumEl.value = car.car_number || '';
 
     // オイル交換
     const oilDateEl = getEl('oilNextDateDisplay');
     const inputOilEl = getEl('inputOilNextDate');
     const oilBadgeEl = getEl('oilStatusBadge');
-    if (cust.oil_next_date) {
-        if (oilDateEl) oilDateEl.textContent = cust.oil_next_date;
-        if (inputOilEl) inputOilEl.value = cust.oil_next_date;
-        updateBadge(oilBadgeEl, cust.oil_next_date);
+    if (car.oil_next_date) {
+        if (oilDateEl) oilDateEl.textContent = car.oil_next_date;
+        if (inputOilEl) inputOilEl.value = car.oil_next_date;
+        updateBadge(oilBadgeEl, car.oil_next_date);
     } else {
-        if (oilBadgeEl) {
-            oilBadgeEl.textContent = '未設定';
-            oilBadgeEl.className = 'maint-badge badge-warning';
-        }
+        resetBadge(oilBadgeEl, oilDateEl);
+        if (inputOilEl) inputOilEl.value = '';
     }
 
     // 12ヶ月定期点検
     const periodicDateEl = getEl('periodicNextDateDisplay');
     const inputPeriodicEl = getEl('inputPeriodicNextDate');
     const periodicBadgeEl = getEl('periodicStatusBadge');
-    if (cust.periodic_insp_next_date) {
-        if (periodicDateEl) periodicDateEl.textContent = cust.periodic_insp_next_date;
-        if (inputPeriodicEl) inputPeriodicEl.value = cust.periodic_insp_next_date;
-        updateBadge(periodicBadgeEl, cust.periodic_insp_next_date);
+    if (car.periodic_insp_next_date) {
+        if (periodicDateEl) periodicDateEl.textContent = car.periodic_insp_next_date;
+        if (inputPeriodicEl) inputPeriodicEl.value = car.periodic_insp_next_date;
+        updateBadge(periodicBadgeEl, car.periodic_insp_next_date);
     } else {
-        if (periodicBadgeEl) {
-            periodicBadgeEl.textContent = '未設定';
-            periodicBadgeEl.className = 'maint-badge badge-warning';
-        }
+        resetBadge(periodicBadgeEl, periodicDateEl);
+        if (inputPeriodicEl) inputPeriodicEl.value = '';
     }
 
     // 車検
     const inspDateEl = getEl('inspNextDateDisplay');
     const inputInspEl = getEl('inputInspNextDate');
     const inspBadgeEl = getEl('inspStatusBadge');
-    if (cust.inspection_next_date) {
-        if (inspDateEl) inspDateEl.textContent = cust.inspection_next_date;
-        if (inputInspEl) inputInspEl.value = cust.inspection_next_date;
-        updateBadge(inspBadgeEl, cust.inspection_next_date);
+    if (car.inspection_next_date) {
+        if (inspDateEl) inspDateEl.textContent = car.inspection_next_date;
+        if (inputInspEl) inputInspEl.value = car.inspection_next_date;
+        updateBadge(inspBadgeEl, car.inspection_next_date);
     } else {
-        if (inspBadgeEl) {
-            inspBadgeEl.textContent = '未設定';
-            inspBadgeEl.className = 'maint-badge badge-warning';
-        }
+        resetBadge(inspBadgeEl, inspDateEl);
+        if (inputInspEl) inputInspEl.value = '';
+    }
+
+    // 複数台ある場合は削除ボタンを表示
+    const deleteBtn = getEl('deleteCarBtn');
+    if (deleteBtn) {
+        deleteBtn.style.display = (state.cars.length > 1) ? 'flex' : 'none';
     }
 }
 
 function updateBadge(badgeEl, targetDateStr) {
-    if (!badgeEl) return;
+    if (!badgeEl || !targetDateStr) return;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const target = new Date(targetDateStr);
@@ -238,6 +333,7 @@ function updateBadge(badgeEl, targetDateStr) {
 }
 
 async function saveCustomerData() {
+    const carId = getEl('currentCarId')?.value || '';
     const carModel = getEl('inputCarModel')?.value.trim() || '';
     const carNumber = getEl('inputCarNumber')?.value.trim() || '';
     const oilDate = getEl('inputOilNextDate')?.value || '';
@@ -255,30 +351,9 @@ async function saveCustomerData() {
         saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 保存中...';
     }
 
-    // 画面の表示を即時更新 (楽観的UI更新)
-    const carModelEl = getEl('carModelDisplay');
-    if (carModelEl) carModelEl.textContent = carModel;
-    const carNumEl = getEl('carNumDisplay');
-    if (carNumEl) carNumEl.textContent = carNumber ? `No. ${carNumber}` : '';
-    
-    if (oilDate) {
-        const oilDateEl = getEl('oilNextDateDisplay');
-        if (oilDateEl) oilDateEl.textContent = oilDate;
-        updateBadge(getEl('oilStatusBadge'), oilDate);
-    }
-    if (periodicDate) {
-        const periodicDateEl = getEl('periodicNextDateDisplay');
-        if (periodicDateEl) periodicDateEl.textContent = periodicDate;
-        updateBadge(getEl('periodicStatusBadge'), periodicDate);
-    }
-    if (inspDate) {
-        const inspDateEl = getEl('inspNextDateDisplay');
-        if (inspDateEl) inspDateEl.textContent = inspDate;
-        updateBadge(getEl('inspStatusBadge'), inspDate);
-    }
-
     const payload = new URLSearchParams({
         action: 'save_customer',
+        car_id: carId,
         uid: state.userId,
         uname: state.userName,
         car_model: carModel,
@@ -288,7 +363,7 @@ async function saveCustomerData() {
         inspection_next_date: inspDate
     });
 
-    console.log('Saving customer with payload:', payload.toString());
+    console.log('Saving car with payload:', payload.toString());
 
     try {
         const res = await fetch('../api.php', {
@@ -315,6 +390,39 @@ async function saveCustomerData() {
     }
 }
 
+async function deleteActiveCar() {
+    const car = getCurrentActiveCar();
+    if (!car || !car.id) return;
+
+    if (!confirm(`愛車「${car.car_model || '選択中の車両'}」を削除してもよろしいですか？`)) {
+        return;
+    }
+
+    const payload = new URLSearchParams({
+        action: 'delete_customer_car',
+        car_id: car.id,
+        uid: state.userId
+    });
+
+    try {
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('🗑️ 愛車を削除しました');
+            state.activeCarIndex = 0;
+            await fetchCustomerData();
+        } else {
+            showToast('⚠️ ' + (data.error || '削除に失敗しました'));
+        }
+    } catch (e) {
+        showToast('⚠️ 通信エラーが発生しました');
+    }
+}
+
 function sendLineChatMessage(text) {
     if (typeof liff !== 'undefined' && liff.isInClient()) {
         liff.sendMessages([{ type: 'text', text: text }]).then(() => {
@@ -337,9 +445,21 @@ function copyToClipboard(text) {
 }
 
 function showToast(msg) {
-    elements.toast.textContent = msg;
-    elements.toast.classList.add('show');
+    const toast = getEl('appToast');
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.classList.add('show');
     setTimeout(() => {
-        elements.toast.classList.remove('show');
+        toast.classList.remove('show');
     }, 3500);
+}
+
+function escapeHtml(str) {
+    return (str || '').replace(/[&<>"']/g, m => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    })[m]);
 }

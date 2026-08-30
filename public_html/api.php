@@ -198,7 +198,7 @@ try {
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
-        // --- 5. ユーザー用: 自身のメンテナンス情報取得 ---
+        // --- 5. ユーザー用: 自身の全愛車・メンテナンス情報取得 ---
         case 'get_customer':
             $userId = $_GET['uid'] ?? ($_POST['uid'] ?? '');
             if (empty($userId)) {
@@ -207,23 +207,20 @@ try {
                 exit;
             }
 
-            // カラムの存在を確実に保証
-            try {
-                $db->exec("ALTER TABLE customers ADD COLUMN periodic_insp_next_date DATE");
-            } catch (Exception $e) {}
-
-            $stmt = $db->prepare("SELECT * FROM customers WHERE user_id = :uid LIMIT 1");
+            $stmt = $db->prepare("SELECT * FROM customer_cars WHERE user_id = :uid ORDER BY id ASC");
             $stmt->execute([':uid' => $userId]);
-            $customer = $stmt->fetch();
+            $cars = $stmt->fetchAll();
 
             echo json_encode([
                 'success' => true,
-                'customer' => $customer ?: null
+                'cars' => $cars,
+                'customer' => !empty($cars) ? $cars[0] : null
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
-        // --- 6. ユーザー用: 自身の愛車・オイル交換日・定期点検・車検日保存 ---
+        // --- 6. ユーザー用: 愛車の登録・更新 ---
         case 'save_customer':
+            $carId = !empty($_POST['car_id']) ? (int)$_POST['car_id'] : null;
             $userId = trim($_POST['uid'] ?? '');
             $userName = trim($_POST['uname'] ?? '');
             $carModel = trim($_POST['car_model'] ?? '');
@@ -237,15 +234,8 @@ try {
                 $userId = 'USER_' . uniqid();
             }
 
-            // カラムの存在を確実に保証 (自己修復)
-            try {
-                $db->exec("ALTER TABLE customers ADD COLUMN periodic_insp_next_date DATE");
-            } catch (Exception $e) {}
-            try {
-                $db->exec("ALTER TABLE customers ADD COLUMN periodic_reminded_at DATETIME");
-            } catch (Exception $e) {}
-
-            writeDebugLog("顧客メンテナンス保存受付", [
+            writeDebugLog("顧客メンテナンス保存受付 (複数台対応)", [
+                'car_id' => $carId,
                 'uid' => $userId,
                 'name' => $userName,
                 'car' => $carModel,
@@ -254,14 +244,11 @@ try {
                 'shaken' => $inspectionNextDate
             ]);
 
-            // 既存レコード確認
-            $checkStmt = $db->prepare("SELECT * FROM customers WHERE user_id = :uid LIMIT 1");
-            $checkStmt->execute([':uid' => $userId]);
-            $existing = $checkStmt->fetch();
-
-            if ($existing) {
+            $savedCarId = $carId;
+            if ($carId) {
+                // 指定車両の更新
                 $stmt = $db->prepare("
-                    UPDATE customers SET
+                    UPDATE customer_cars SET
                         user_name = :uname,
                         car_model = :car_model,
                         car_number = :car_number,
@@ -270,11 +257,23 @@ try {
                         periodic_insp_next_date = :periodic_next_date,
                         inspection_next_date = :inspection_next_date,
                         updated_at = CURRENT_TIMESTAMP
-                    WHERE user_id = :uid
+                    WHERE id = :car_id AND user_id = :uid
                 ");
+                $stmt->execute([
+                    ':car_id' => $carId,
+                    ':uid' => $userId,
+                    ':uname' => $userName,
+                    ':car_model' => $carModel,
+                    ':car_number' => $carNumber,
+                    ':oil_last_date' => $oilLastDate,
+                    ':oil_next_date' => $oilNextDate,
+                    ':periodic_next_date' => $periodicInspNextDate,
+                    ':inspection_next_date' => $inspectionNextDate,
+                ]);
             } else {
+                // 新規車両の追加
                 $stmt = $db->prepare("
-                    INSERT INTO customers (
+                    INSERT INTO customer_cars (
                         user_id, user_name, car_model, car_number,
                         oil_last_date, oil_next_date, periodic_insp_next_date, inspection_next_date,
                         created_at, updated_at
@@ -284,18 +283,18 @@ try {
                         CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                     )
                 ");
+                $stmt->execute([
+                    ':uid' => $userId,
+                    ':uname' => $userName,
+                    ':car_model' => $carModel,
+                    ':car_number' => $carNumber,
+                    ':oil_last_date' => $oilLastDate,
+                    ':oil_next_date' => $oilNextDate,
+                    ':periodic_next_date' => $periodicInspNextDate,
+                    ':inspection_next_date' => $inspectionNextDate,
+                ]);
+                $savedCarId = (int)$db->lastInsertId();
             }
-
-            $stmt->execute([
-                ':uid' => $userId,
-                ':uname' => $userName,
-                ':car_model' => $carModel,
-                ':car_number' => $carNumber,
-                ':oil_last_date' => $oilLastDate,
-                ':oil_next_date' => $oilNextDate,
-                ':periodic_next_date' => $periodicInspNextDate,
-                ':inspection_next_date' => $inspectionNextDate,
-            ]);
 
             // LINEユーザーIDの場合、LINEトークへ登録完了メッセージを送信
             if (str_starts_with($userId, 'U')) {
@@ -307,7 +306,7 @@ try {
 
                 $confirmFlex = [
                     'type' => 'flex',
-                    'altText' => "【設定保存完了】愛車のメンテナンス予定日を登録・更新しました",
+                    'altText' => "【設定保存完了】{$carModel}のメンテナンス予定日を登録・更新しました",
                     'contents' => [
                         'type' => 'bubble',
                         'size' => 'mega',
@@ -333,7 +332,7 @@ try {
                                 ],
                                 [
                                     'type' => 'text',
-                                    'text' => "愛車のメンテナンス予定日を保存・更新しました！\n予定日が近づきましたら、LINEにてリマインドをお届けします。",
+                                    'text' => "愛車【{$carModel}】のメンテナンス予定日を保存・更新しました！\n予定日が近づきましたら、LINEにてリマインドをお届けします。",
                                     'size' => 'xs',
                                     'color' => '#475569',
                                     'margin' => 'sm',
@@ -388,7 +387,7 @@ try {
                                 ],
                                 [
                                     'type' => 'text',
-                                    'text' => "※予定日の変更は、メニューの「愛車点検パスポート」よりいつでも行えます。",
+                                    'text' => "※予定日の変更・2台目以降の登録は、メニューの「愛車点検パスポート」よりいつでも行えます。",
                                     'size' => 'xxs',
                                     'color' => '#64748b',
                                     'margin' => 'md',
@@ -427,8 +426,10 @@ try {
 
             echo json_encode([
                 'success' => true,
-                'message' => 'メンテナンス情報を保存しました！',
+                'message' => '愛車のメンテナンス情報を保存しました！',
+                'car_id' => $savedCarId,
                 'customer' => [
+                    'id' => $savedCarId,
                     'user_id' => $userId,
                     'user_name' => $userName,
                     'car_model' => $carModel,
@@ -438,6 +439,23 @@ try {
                     'inspection_next_date' => $inspectionNextDate
                 ]
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
+        // --- 6-2. ユーザー用: 指定愛車の削除 ---
+        case 'delete_customer_car':
+            $carId = (int)($_POST['car_id'] ?? 0);
+            $userId = trim($_POST['uid'] ?? '');
+
+            if (!$carId || !$userId) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => '車両IDとユーザーIDが必要です']);
+                exit;
+            }
+
+            $stmt = $db->prepare("DELETE FROM customer_cars WHERE id = :car_id AND user_id = :uid");
+            $stmt->execute([':car_id' => $carId, ':uid' => $userId]);
+
+            echo json_encode(['success' => true, 'message' => '車両を削除しました']);
             break;
 
         // --- 7. 店舗管理者用: 顧客一覧取得 ---
@@ -475,7 +493,7 @@ try {
             }
 
             $whereSql = implode(' AND ', $where);
-            $stmt = $db->prepare("SELECT * FROM customers WHERE {$whereSql} ORDER BY updated_at DESC");
+            $stmt = $db->prepare("SELECT * FROM customer_cars WHERE {$whereSql} ORDER BY updated_at DESC");
             $stmt->execute($params);
             $customers = $stmt->fetchAll();
 
@@ -495,6 +513,7 @@ try {
                 exit;
             }
 
+            $carId = !empty($_POST['car_id']) ? (int)$_POST['car_id'] : null;
             $userId = trim($_POST['uid'] ?? '');
             $userName = trim($_POST['uname'] ?? '');
             $carModel = trim($_POST['car_model'] ?? '');
@@ -509,13 +528,9 @@ try {
                 $userId = 'MANUAL_' . uniqid();
             }
 
-            $checkStmt = $db->prepare("SELECT * FROM customers WHERE user_id = :uid LIMIT 1");
-            $checkStmt->execute([':uid' => $userId]);
-            $existing = $checkStmt->fetch();
-
-            if ($existing) {
+            if ($carId) {
                 $stmt = $db->prepare("
-                    UPDATE customers SET
+                    UPDATE customer_cars SET
                         user_name = :uname,
                         car_model = :car_model,
                         car_number = :car_number,
@@ -525,11 +540,22 @@ try {
                         inspection_next_date = :inspection_next_date,
                         staff_memo = :staff_memo,
                         updated_at = CURRENT_TIMESTAMP
-                    WHERE user_id = :uid
+                    WHERE id = :id
                 ");
+                $stmt->execute([
+                    ':id' => $carId,
+                    ':uname' => $userName,
+                    ':car_model' => $carModel,
+                    ':car_number' => $carNumber,
+                    ':oil_last_date' => $oilLastDate,
+                    ':oil_next_date' => $oilNextDate,
+                    ':periodic_next_date' => $periodicInspNextDate,
+                    ':inspection_next_date' => $inspectionNextDate,
+                    ':staff_memo' => $staffMemo
+                ]);
             } else {
                 $stmt = $db->prepare("
-                    INSERT INTO customers (
+                    INSERT INTO customer_cars (
                         user_id, user_name, car_model, car_number,
                         oil_last_date, oil_next_date, periodic_insp_next_date, inspection_next_date,
                         staff_memo, created_at, updated_at
@@ -539,19 +565,18 @@ try {
                         :staff_memo, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                     )
                 ");
+                $stmt->execute([
+                    ':uid' => $userId,
+                    ':uname' => $userName,
+                    ':car_model' => $carModel,
+                    ':car_number' => $carNumber,
+                    ':oil_last_date' => $oilLastDate,
+                    ':oil_next_date' => $oilNextDate,
+                    ':periodic_next_date' => $periodicInspNextDate,
+                    ':inspection_next_date' => $inspectionNextDate,
+                    ':staff_memo' => $staffMemo
+                ]);
             }
-
-            $stmt->execute([
-                ':uid' => $userId,
-                ':uname' => $userName,
-                ':car_model' => $carModel,
-                ':car_number' => $carNumber,
-                ':oil_last_date' => $oilLastDate,
-                ':oil_next_date' => $oilNextDate,
-                ':periodic_next_date' => $periodicInspNextDate,
-                ':inspection_next_date' => $inspectionNextDate,
-                ':staff_memo' => $staffMemo
-            ]);
 
             echo json_encode([
                 'success' => true,
@@ -568,9 +593,14 @@ try {
                 exit;
             }
 
+            $carId = !empty($_POST['car_id']) ? (int)$_POST['car_id'] : null;
             $userId = $_POST['uid'] ?? '';
-            if (!empty($userId)) {
-                $stmt = $db->prepare("DELETE FROM customers WHERE user_id = :uid");
+
+            if ($carId) {
+                $stmt = $db->prepare("DELETE FROM customer_cars WHERE id = :id");
+                $stmt->execute([':id' => $carId]);
+            } elseif (!empty($userId)) {
+                $stmt = $db->prepare("DELETE FROM customer_cars WHERE user_id = :uid");
                 $stmt->execute([':uid' => $userId]);
             }
 
@@ -586,28 +616,35 @@ try {
                 exit;
             }
 
+            $carId = !empty($_POST['car_id']) ? (int)$_POST['car_id'] : null;
             $userId = $_POST['uid'] ?? '';
             $type = $_POST['type'] ?? 'oil'; // oil, periodic, or inspection (shaken)
 
-            if (empty($userId)) {
+            if (empty($userId) && empty($carId)) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'error' => 'ユーザーIDが必要です']);
+                echo json_encode(['success' => false, 'error' => 'ユーザーIDまたは車両IDが必要です']);
                 exit;
             }
 
-            if (!str_starts_with($userId, 'U')) {
-                http_response_code(400);
-                echo json_encode(['success' => false, 'error' => 'この顧客は手動登録（LINE未連携）のため、LINE送信できません']);
-                exit;
+            if ($carId) {
+                $stmt = $db->prepare("SELECT * FROM customer_cars WHERE id = :id LIMIT 1");
+                $stmt->execute([':id' => $carId]);
+            } else {
+                $stmt = $db->prepare("SELECT * FROM customer_cars WHERE user_id = :uid LIMIT 1");
+                $stmt->execute([':uid' => $userId]);
             }
-
-            $stmt = $db->prepare("SELECT * FROM customers WHERE user_id = :uid LIMIT 1");
-            $stmt->execute([':uid' => $userId]);
             $cust = $stmt->fetch();
 
             if (!$cust) {
                 http_response_code(404);
-                echo json_encode(['success' => false, 'error' => '顧客情報が見つかりませんでした']);
+                echo json_encode(['success' => false, 'error' => '顧客・車両情報が見つかりませんでした']);
+                exit;
+            }
+
+            $userId = $cust['user_id'];
+            if (!str_starts_with($userId, 'U')) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'この顧客は手動登録（LINE未連携）のため、LINE送信できません']);
                 exit;
             }
 
