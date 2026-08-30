@@ -565,7 +565,7 @@ try {
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
-        // --- 9. 店舗管理者用: 顧客削除 ---
+        // --- 9. 店舗管理者用: 顧客・車両削除 ---
         case 'admin_delete_customer':
             $authPass = $_POST['password'] ?? '';
             if ($authPass !== ADMIN_PASSWORD) {
@@ -575,7 +575,9 @@ try {
             }
 
             $carId = !empty($_POST['car_id']) ? (int)$_POST['car_id'] : null;
-            $userId = $_POST['uid'] ?? '';
+            $userId = trim($_POST['uid'] ?? '');
+
+            writeDebugLog("店舗管理者 顧客・車両削除実行", ['car_id' => $carId, 'uid' => $userId]);
 
             if ($carId) {
                 $stmt = $db->prepare("DELETE FROM customer_cars WHERE id = :id");
@@ -583,6 +585,14 @@ try {
             } elseif (!empty($userId)) {
                 $stmt = $db->prepare("DELETE FROM customer_cars WHERE user_id = :uid");
                 $stmt->execute([':uid' => $userId]);
+            }
+
+            // 旧 customers テーブルが存在していればそちらからも安全に削除
+            if (!empty($userId)) {
+                try {
+                    $stmtLegacy = $db->prepare("DELETE FROM customers WHERE user_id = :uid");
+                    $stmtLegacy->execute([':uid' => $userId]);
+                } catch (Exception $e) {}
             }
 
             echo json_encode(['success' => true, 'message' => '削除しました'], JSON_UNESCAPED_UNICODE);

@@ -262,15 +262,17 @@ function renderTable() {
 
     elements.emptyTablePlaceholder.style.display = 'none';
 
-    elements.customerTableBody.innerHTML = filtered.map(c => {
+    elements.customerTableBody.innerHTML = filtered.map((c, idx) => {
         const oilBadge = getBadgeHtml(c.oil_next_date);
         const periodicBadge = getBadgeHtml(c.periodic_insp_next_date);
         const inspBadge = getBadgeHtml(c.inspection_next_date);
         const memo = c.staff_memo ? escapeHtml(c.staff_memo) : '<span style="color:#cbd5e1">-</span>';
         const updated = (c.updated_at || '').substring(0, 10);
+        const carId = c.id || '';
+        const userId = c.user_id || '';
 
         return `
-            <tr>
+            <tr data-index="${idx}">
                 <td>
                     <div class="cust-name">${escapeHtml(c.user_name || '名前なし')}</div>
                     <div class="cust-uid">${escapeHtml(c.user_id || '')}</div>
@@ -286,19 +288,19 @@ function renderTable() {
                 <td style="font-size: 11px; color: #64748b;">${updated}</td>
                 <td>
                     <div class="action-btns">
-                        <button class="btn-remind-oil" onclick="sendManualReminder('${c.id}', '${c.user_id}', 'oil', '${escapeHtml(c.user_name)}', '${escapeHtml(c.car_model)}')" title="オイル交換リマインドをLINE送信">
+                        <button class="btn-remind-oil" data-action="remind-oil" data-idx="${idx}" title="オイル交換リマインドをLINE送信">
                             <i class="fa-solid fa-oil-can"></i> オイル
                         </button>
-                        <button class="btn-remind-periodic" onclick="sendManualReminder('${c.id}', '${c.user_id}', 'periodic', '${escapeHtml(c.user_name)}', '${escapeHtml(c.car_model)}')" title="12ヶ月点検リマインドをLINE送信">
+                        <button class="btn-remind-periodic" data-action="remind-periodic" data-idx="${idx}" title="12ヶ月点検リマインドをLINE送信">
                             <i class="fa-solid fa-clipboard-check"></i> 点検
                         </button>
-                        <button class="btn-remind-insp" onclick="sendManualReminder('${c.id}', '${c.user_id}', 'inspection', '${escapeHtml(c.user_name)}', '${escapeHtml(c.car_model)}')" title="車検リマインドをLINE送信">
+                        <button class="btn-remind-insp" data-action="remind-insp" data-idx="${idx}" title="車検リマインドをLINE送信">
                             <i class="fa-solid fa-shield-halved"></i> 車検
                         </button>
-                        <button class="btn-edit" onclick="editCarRecordById(${c.id})">
+                        <button class="btn-edit" data-action="edit" data-idx="${idx}" title="編集">
                             <i class="fa-solid fa-pen"></i>
                         </button>
-                        <button class="btn-delete" onclick="deleteCarRecordById(${c.id}, '${escapeHtml(c.car_model)}', '${escapeHtml(c.user_name)}')">
+                        <button class="btn-delete" data-action="delete" data-idx="${idx}" title="削除">
                             <i class="fa-solid fa-trash"></i>
                         </button>
                     </div>
@@ -306,10 +308,33 @@ function renderTable() {
             </tr>
         `;
     }).join('');
+
+    // 安全なイベントリスナー登録
+    elements.customerTableBody.querySelectorAll('.action-btns button').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const action = btn.getAttribute('data-action');
+            const idx = parseInt(btn.getAttribute('data-idx'), 10);
+            const cust = filtered[idx];
+            if (!cust) return;
+
+            if (action === 'remind-oil') {
+                sendManualReminder(cust.id, cust.user_id, 'oil', cust.user_name, cust.car_model);
+            } else if (action === 'remind-periodic') {
+                sendManualReminder(cust.id, cust.user_id, 'periodic', cust.user_name, cust.car_model);
+            } else if (action === 'remind-insp') {
+                sendManualReminder(cust.id, cust.user_id, 'inspection', cust.user_name, cust.car_model);
+            } else if (action === 'edit') {
+                openEditModal(cust);
+            } else if (action === 'delete') {
+                deleteCarRecord(cust);
+            }
+        });
+    });
 }
 
 window.sendManualReminder = async function(carId, userId, type, userName, carModel) {
-    if (!userId.startsWith('U')) {
+    if (!userId || !userId.startsWith('U')) {
         alert('この顧客は手動登録（LINE未連携）のため、LINEメッセージを送信できません。');
         return;
     }
@@ -318,7 +343,7 @@ window.sendManualReminder = async function(carId, userId, type, userName, carMod
     if (type === 'periodic') typeLabel = '📋 12ヶ月定期点検リマインド';
     if (type === 'inspection') typeLabel = '🚗 車検満了リマインド';
 
-    if (!confirm(`【${userName} 様 (${carModel})】へ\n「${typeLabel}」のLINEメッセージを今すぐ送信しますか？`)) {
+    if (!confirm(`【${userName || 'お客様'} 様 (${carModel || '愛車'})】へ\n「${typeLabel}」のLINEメッセージを今すぐ送信しますか？`)) {
         return;
     }
 
@@ -327,8 +352,8 @@ window.sendManualReminder = async function(carId, userId, type, userName, carMod
         const payload = new URLSearchParams({
             action: 'admin_send_reminder',
             password: state.password,
-            car_id: carId,
-            uid: userId,
+            car_id: carId || '',
+            uid: userId || '',
             type: type
         });
         const res = await fetch('../api.php', {
@@ -338,7 +363,7 @@ window.sendManualReminder = async function(carId, userId, type, userName, carMod
         });
         const data = await res.json();
         if (data.success) {
-            showToast(`✅ ${userName} 様へLINEリマインドを送信しました！`);
+            showToast(`✅ ${userName || 'お客様'} 様へLINEリマインドを送信しました！`);
             await fetchCustomers();
         } else {
             alert(data.error || '送信に失敗しました');
@@ -371,19 +396,22 @@ function getBadgeHtml(dateStr) {
 
 let activeEditingCarId = null;
 
-window.editCarRecordById = function(carId) {
-    const cust = state.allCustomers.find(c => Number(c.id) === Number(carId));
-    if (cust) openEditModal(cust);
-};
+async function deleteCarRecord(cust) {
+    if (!cust) return;
+    const name = cust.user_name || '顧客';
+    const car = cust.car_model || '愛車';
 
-window.deleteCarRecordById = async function(carId, carModel, userName) {
-    if (!confirm(`「${userName || '顧客'}」の愛車「${carModel || '車両'}」を削除しますか？`)) return;
+    if (!confirm(`【${name} 様】の愛車「${car}」のデータを削除しますか？\n（※この操作は取り消せません）`)) {
+        return;
+    }
 
     try {
+        showToast('削除中...');
         const payload = new URLSearchParams({
             action: 'admin_delete_customer',
             password: state.password,
-            car_id: carId
+            car_id: cust.id || '',
+            uid: cust.user_id || ''
         });
         const res = await fetch('../api.php', {
             method: 'POST',
@@ -392,13 +420,15 @@ window.deleteCarRecordById = async function(carId, carModel, userName) {
         });
         const data = await res.json();
         if (data.success) {
-            showToast('削除しました');
+            showToast('✅ 削除しました');
             await fetchCustomers();
+        } else {
+            alert('⚠️ 削除に失敗しました: ' + (data.error || ''));
         }
     } catch (e) {
-        showToast('削除に失敗しました');
+        alert('⚠️ 通信エラーが発生しました');
     }
-};
+}
 
 function openEditModal(cust) {
     if (cust) {
