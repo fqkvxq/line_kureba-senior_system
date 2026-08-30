@@ -464,19 +464,19 @@ function generateCarSearchMessages(PDO $db, array $criteria, string $heading, st
         if (!empty($criteria['equip'])) {
             $eq = $criteria['equip'];
             if ($eq === 'ナビ') {
-                $where[] = "(title LIKE '%ナビ%' OR title LIKE '%地デジ%' OR title LIKE '%TV%' OR title LIKE '%オーディオ%')";
+                $where[] = "(title LIKE '%ナビ%' OR title LIKE '%地デジ%' OR title LIKE '%TV%' OR title LIKE '%オーディオ%' OR equipments LIKE '%ナビ%' OR equipments LIKE '%テレビ%')";
             } elseif ($eq === 'バックカメラ') {
-                $where[] = "(title LIKE '%バックカメラ%' OR title LIKE '%全方位%' OR title LIKE '%アラウンドビュー%')";
+                $where[] = "(title LIKE '%バックカメラ%' OR title LIKE '%全方位%' OR title LIKE '%アラウンドビュー%' OR equipments LIKE '%バックカメラ%' OR equipments LIKE '%カメラ%')";
             } elseif ($eq === 'ETC') {
-                $where[] = "(title LIKE '%ETC%' OR title LIKE '%ＥＴＣ%')";
+                $where[] = "(title LIKE '%ETC%' OR title LIKE '%ＥＴＣ%' OR equipments LIKE '%ETC%')";
             } elseif ($eq === 'スライド') {
-                $where[] = "(title LIKE '%スライド%' OR title LIKE '%パワースライド%')";
+                $where[] = "(title LIKE '%スライド%' OR title LIKE '%パワースライド%' OR equipments LIKE '%スライド%')";
             } elseif ($eq === '軽減' || $eq === '安全') {
-                $where[] = "(title LIKE '%軽減%' OR title LIKE '%ブレーキ%' OR title LIKE '%センシング%' OR title LIKE '%スマートアシスト%' OR title LIKE '%セーフティ%')";
+                $where[] = "(title LIKE '%軽減%' OR title LIKE '%ブレーキ%' OR title LIKE '%センシング%' OR title LIKE '%スマートアシスト%' OR title LIKE '%セーフティ%' OR equipments LIKE '%安全%' OR equipments LIKE '%衝突%')";
             } elseif ($eq === '4WD') {
-                $where[] = "(title LIKE '%4WD%' OR title LIKE '%４ＷＤ%' OR title LIKE '%四駆%')";
+                $where[] = "(title LIKE '%4WD%' OR title LIKE '%４ＷＤ%' OR title LIKE '%四駆%' OR drive_type LIKE '%4WD%' OR drive_type LIKE '%四駆%')";
             } else {
-                $where[] = "(title LIKE :eq)";
+                $where[] = "(title LIKE :eq OR equipments LIKE :eq)";
                 $params[':eq'] = "%{$eq}%";
             }
         }

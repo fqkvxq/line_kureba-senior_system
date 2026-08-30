@@ -40,7 +40,7 @@ try {
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
     
-    // テーブル作成
+    // テーブル作成・カラム拡張
     $db->exec("
         CREATE TABLE IF NOT EXISTS cars (
             id TEXT PRIMARY KEY,
@@ -58,6 +58,12 @@ try {
             shaken TEXT,
             image_url TEXT,
             detail_url TEXT,
+            drive_type TEXT,
+            color TEXT,
+            transmission TEXT,
+            passengers TEXT,
+            fuel TEXT,
+            equipments TEXT,
             is_active INTEGER DEFAULT 1,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -66,8 +72,88 @@ try {
         CREATE INDEX IF NOT EXISTS idx_cars_price ON cars(total_price_num);
         CREATE INDEX IF NOT EXISTS idx_cars_title ON cars(title);
     ");
+
+    // 既存テーブルへのカラム追加マイグレーション
+    $columnsToAdd = ['drive_type', 'color', 'transmission', 'passengers', 'fuel', 'equipments'];
+    foreach ($columnsToAdd as $col) {
+        try {
+            $db->exec("ALTER TABLE cars ADD COLUMN {$col} TEXT");
+        } catch (Exception $e) {}
+    }
 } catch (Exception $e) {
     die("DB接続エラー: " . $e->getMessage() . "\n");
+}
+
+/**
+ * グーネット各車両詳細ページから基本仕様・全装備項目をスクレイピング
+ */
+function fetchCarDetailSpecs(string $detailUrl, string $userAgent): array {
+    $result = [
+        'drive_type' => '',
+        'color' => '',
+        'transmission' => '',
+        'passengers' => '',
+        'fuel' => '',
+        'equipments' => ''
+    ];
+
+    $ch = curl_init($detailUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_USERAGENT => $userAgent,
+        CURLOPT_TIMEOUT => 15,
+        CURLOPT_SSL_VERIFYPEER => false,
+    ]);
+    $rawHtml = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode !== 200 || empty($rawHtml)) {
+        return $result;
+    }
+
+    $encoding = mb_detect_encoding($rawHtml, ['EUC-JP', 'UTF-8', 'SJIS', 'CP51932'], true) ?: 'EUC-JP';
+    $html = mb_convert_encoding($rawHtml, 'UTF-8', $encoding);
+
+    // 1. 基本仕様スペックの抽出
+    if (preg_match_all('/<th[^>]*>(.*?)<\/th>\s*<td[^>]*>(.*?)<\/td>/s', $html, $matches, PREG_SET_ORDER)) {
+        foreach ($matches as $m) {
+            $k = trim(preg_replace('/\s+/', ' ', strip_tags($m[1])));
+            $v = trim(preg_replace('/\s+/', ' ', strip_tags($m[2])));
+            if ($k === '' || $v === '' || $v === '－' || $v === '-') continue;
+
+            if ($k === '駆動方式' || $k === '駆動形式') $result['drive_type'] = $v;
+            elseif ($k === '車体色') $result['color'] = $v;
+            elseif ($k === 'ミッション') $result['transmission'] = $v;
+            elseif ($k === '乗車定員') $result['passengers'] = $v;
+            elseif ($k === '燃料' || $k === '使用燃料') $result['fuel'] = $v;
+        }
+    }
+
+    // 2. 装備リストの抽出 (装備 & 運転支援・安全装備)
+    $activeEquipments = [];
+    if (preg_match('/<h3>装備.*?<\/h3>(.*?)<h3>購入パック/s', $html, $eqSection)) {
+        $secHtml = $eqSection[1];
+        if (preg_match_all('/<li[^>]*>(.*?)<\/li>/s', $secHtml, $liMatches)) {
+            foreach ($liMatches[1] as $li) {
+                $item = trim(preg_replace('/\s+/', ' ', strip_tags($li)));
+                if ($item === '' || str_starts_with($item, '※')) continue;
+                // 未装備(先頭に - または － がつく)を除外
+                $firstChar = mb_substr($item, 0, 1);
+                if ($firstChar === '－' || $firstChar === '-') {
+                    continue;
+                }
+                $activeEquipments[] = $item;
+            }
+        }
+    }
+
+    if (!empty($activeEquipments)) {
+        $result['equipments'] = implode(', ', array_unique($activeEquipments));
+    }
+
+    return $result;
 }
 
 // 同期前の既存アクティブ車両ID一覧を取得 (新着検知用)
@@ -116,7 +202,6 @@ while (true) {
     $html = mb_convert_encoding($rawHtml, 'UTF-8', $encoding);
 
     // 車両ブロックを抽出
-    // グーネットの車両コンテナ: div.box_item_detail
     preg_match_all('/<div class="box_item_detail[^"]*" id="tr_([^"]+)"[^>]*>(.*?)<!--\/\/ \.application -->/s', $html, $matches, PREG_SET_ORDER);
 
     if (empty($matches)) {
@@ -193,6 +278,11 @@ while (true) {
             }
         }
 
+        // 7. 詳細ページから全仕様・装備一覧を追加取得！
+        echo "  [詳細ページ取得中] ID: {$carId} ({$title}) ...\n";
+        $detailSpecs = fetchCarDetailSpecs($detailUrl, $userAgent);
+        usleep(300000); // 0.3秒待機
+
         $carData = [
             'id' => $carId,
             'shop_code' => $shopCode,
@@ -209,6 +299,12 @@ while (true) {
             'shaken' => $shaken,
             'image_url' => $imageUrl,
             'detail_url' => $detailUrl,
+            'drive_type' => $detailSpecs['drive_type'],
+            'color' => $detailSpecs['color'],
+            'transmission' => $detailSpecs['transmission'],
+            'passengers' => $detailSpecs['passengers'],
+            'fuel' => $detailSpecs['fuel'],
+            'equipments' => $detailSpecs['equipments'],
         ];
 
         $allCars[$carId] = $carData;
@@ -222,7 +318,7 @@ while (true) {
         $pageCarCount++;
     }
 
-    echo "  -> {$pageCarCount} 台の車両データを抽出しました。\n";
+    echo "  -> {$pageCarCount} 台の車両詳細データを抽出しました。\n";
 
     if ($pageCarCount < 20) {
         break;
@@ -248,11 +344,13 @@ try {
             id, shop_code, title, total_price_text, total_price_num,
             base_price_text, base_price_num, year, distance, distance_num,
             displacement, repair_history, shaken, image_url, detail_url,
+            drive_type, color, transmission, passengers, fuel, equipments,
             is_active, updated_at
         ) VALUES (
             :id, :shop_code, :title, :total_price_text, :total_price_num,
             :base_price_text, :base_price_num, :year, :distance, :distance_num,
             :displacement, :repair_history, :shaken, :image_url, :detail_url,
+            :drive_type, :color, :transmission, :passengers, :fuel, :equipments,
             1, CURRENT_TIMESTAMP
         )
     ");
@@ -274,6 +372,12 @@ try {
             ':shaken' => $car['shaken'],
             ':image_url' => $car['image_url'],
             ':detail_url' => $car['detail_url'],
+            ':drive_type' => $car['drive_type'],
+            ':color' => $car['color'],
+            ':transmission' => $car['transmission'],
+            ':passengers' => $car['passengers'],
+            ':fuel' => $car['fuel'],
+            ':equipments' => $car['equipments'],
         ]);
     }
 
