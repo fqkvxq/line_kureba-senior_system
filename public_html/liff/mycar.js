@@ -174,6 +174,33 @@ function initEventListeners() {
     submitGeneralBtn?.addEventListener('click', async () => {
         await submitGeneralInquiry();
     });
+
+    // 豆知識ガイドボタン
+    document.querySelectorAll('.btn-knowledge-item').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const topic = btn.getAttribute('data-topic');
+            showToast('📖 LINEトークに豆知識ガイドをお届けします...');
+            try {
+                const payload = new URLSearchParams({
+                    action: 'trigger_postback',
+                    uid: state.userId,
+                    data: `action=show_knowledge&topic=${encodeURIComponent(topic)}`
+                });
+                await fetch('../api.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: payload.toString()
+                });
+                setTimeout(() => {
+                    if (typeof liff !== 'undefined' && liff.isInClient()) {
+                        liff.closeWindow();
+                    }
+                }, 700);
+            } catch (e) {
+                console.warn('Knowledge trigger error:', e);
+            }
+        });
+    });
 }
 
 async function triggerInitialLink() {

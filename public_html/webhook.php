@@ -189,7 +189,13 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
         return;
     }
 
-    // 2. 特殊キーワードの判定
+    // 2-2. カーライフ豆知識・お役立ちガイドの判定
+    if (preg_match('/(豆知識|お役立ち|ガイド|選び方|中古車の選び方|知識|コラム|マガジン|ノウハウ)/u', $text)) {
+        sendKnowledgeMenuMessage($replyToken);
+        return;
+    }
+
+    // 3. 特殊キーワードの判定
     if (in_array($text, ['在庫一覧', '車を探す', 'メニュー', '在庫', '車', '全台'])) {
         searchCarsAndReply($db, $replyToken, [], '現在の在庫車両一覧', $userId);
         return;
@@ -276,6 +282,17 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
         // --- 7-3. サイレント検索: 走行距離メニュー表示 ---
         case 'show_distance_menu':
             sendDistanceMenuMessage($db, $replyToken);
+            break;
+
+        // --- 7-4. お役立ちガイド・カーライフ豆知識メニュー表示 ---
+        case 'show_knowledge_menu':
+            sendKnowledgeMenuMessage($replyToken);
+            break;
+
+        // --- 7-5. お役立ちガイド・個別記事詳細表示 ---
+        case 'show_knowledge':
+            $topic = trim($params['topic'] ?? 'used_car');
+            sendKnowledgeDetailMessage($replyToken, $topic);
             break;
 
         // --- 8. サイレント検索: 価格帯絞り込み実行 ---
@@ -381,6 +398,15 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bo
 
         case 'show_distance_menu':
             $messages = generateDistanceMenuMessages($db);
+            break;
+
+        case 'show_knowledge_menu':
+            $messages = generateKnowledgeMenuMessages();
+            break;
+
+        case 'show_knowledge':
+            $topic = trim($params['topic'] ?? 'used_car');
+            $messages = generateKnowledgeDetailMessage($topic);
             break;
 
         case 'search_price':
@@ -1518,6 +1544,466 @@ function generateDistanceMenuMessages(PDO $db): array {
 }
 
 /**
+ * カーライフ豆知識・お役立ちガイドメニューを送信
+ */
+function sendKnowledgeMenuMessage(string $replyToken) {
+    $messages = generateKnowledgeMenuMessages();
+    sendReplyMessage($replyToken, $messages);
+}
+
+/**
+ * カーライフ豆知識・個別記事を送信
+ */
+function sendKnowledgeDetailMessage(string $replyToken, string $topic) {
+    $messages = generateKnowledgeDetailMessage($topic);
+    sendReplyMessage($replyToken, $messages);
+}
+
+/**
+ * カーライフ豆知識・お役立ちガイド（目次カルーセル）を生成
+ */
+function generateKnowledgeMenuMessages(): array {
+    $topics = [
+        [
+            'topic' => 'used_car',
+            'badge' => '🚗 車選びの極意',
+            'badge_color' => '#3b82f6',
+            'title' => '失敗しない中古車の選び方',
+            'desc' => 'プロが教える！走行距離・修復歴・整備履歴など後悔しない5大チェックポイント。',
+            'read_time' => '約2分で読める'
+        ],
+        [
+            'topic' => 'oil',
+            'badge' => '🛢️ 愛車長持ちの秘訣',
+            'badge_color' => '#f59e0b',
+            'title' => 'エンジンオイル交換の真実',
+            'desc' => '「まだ走れる」は危険？適切な交換サイクルとフィルター交換の重要性を解説。',
+            'read_time' => '約1.5分で読める'
+        ],
+        [
+            'topic' => 'periodic',
+            'badge' => '📋 予防整備の基礎',
+            'badge_color' => '#10b981',
+            'title' => '法定12ヶ月点検の必要性',
+            'desc' => '車検に通っていても安心できない？受けるメリットと車検との違いをプロが解説。',
+            'read_time' => '約2分で読める'
+        ],
+        [
+            'topic' => 'inspection',
+            'badge' => '🔍 安心＆スムーズ',
+            'badge_color' => '#6366f1',
+            'title' => '車検の基礎知識と賢い受け方',
+            'desc' => '満了日の1ヶ月前から受検可能！費用の内訳や準備物、安心車検のポイント。',
+            'read_time' => '約2分で読める'
+        ],
+        [
+            'topic' => 'battery_tire',
+            'badge' => '⚠️ トラブル予防',
+            'badge_color' => '#ef4444',
+            'title' => 'バッテリー・タイヤ・日常点検',
+            'desc' => '出先での突然死を防ぐ！季節ごとのトラブル対策と交換サインの見極め方。',
+            'read_time' => '約1.5分で読める'
+        ]
+    ];
+
+    $bubbles = [];
+    foreach ($topics as $t) {
+        $bubbles[] = [
+            'type' => 'bubble',
+            'size' => 'kilo',
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'paddingAll' => '16px',
+                'contents' => [
+                    [
+                        'type' => 'box',
+                        'layout' => 'baseline',
+                        'contents' => [
+                            [
+                                'type' => 'text',
+                                'text' => $t['badge'],
+                                'weight' => 'bold',
+                                'size' => 'xs',
+                                'color' => $t['badge_color']
+                            ]
+                        ]
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => $t['title'],
+                        'weight' => 'bold',
+                        'size' => 'md',
+                        'color' => '#1e293b',
+                        'wrap' => true,
+                        'margin' => 'sm'
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => $t['desc'],
+                        'size' => 'xs',
+                        'color' => '#64748b',
+                        'wrap' => true,
+                        'margin' => 'sm'
+                    ],
+                    [
+                        'type' => 'separator',
+                        'margin' => 'md'
+                    ],
+                    [
+                        'type' => 'box',
+                        'layout' => 'baseline',
+                        'margin' => 'sm',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '⏱ ' . $t['read_time'], 'size' => 'xxs', 'color' => '#94a3b8']
+                        ]
+                    ]
+                ]
+            ],
+            'footer' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'paddingAll' => '12px',
+                'contents' => [
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => '#06C755',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'postback',
+                            'label' => '📖 詳しく読む',
+                            'data' => 'action=show_knowledge&topic=' . urlencode($t['topic'])
+                        ]
+                    ]
+                ]
+            ]
+        ];
+    }
+
+    return [
+        [
+            'type' => 'flex',
+            'altText' => '【カーライフお役立ちガイド】自動車の基礎知識・豆知識',
+            'contents' => [
+                'type' => 'carousel',
+                'contents' => $bubbles
+            ],
+            'quickReply' => getQuickReplyItems()
+        ]
+    ];
+}
+
+/**
+ * 各テーマの詳細解説 Flex Message を生成
+ */
+function generateKnowledgeDetailMessage(string $topic): array {
+    $articleData = [];
+
+    switch ($topic) {
+        case 'used_car':
+            $articleData = [
+                'badge' => '🚗 車選びの極意',
+                'badge_color' => '#3b82f6',
+                'title' => '失敗しない中古車の選び方',
+                'subtitle' => 'プロが教える！後悔しない5大見極め術',
+                'sections' => [
+                    [
+                        'icon' => '1️⃣',
+                        'title' => '年式と走行距離のバランス',
+                        'desc' => '一般的な走行距離の目安は【1年＝約8,000km〜1万km】です。10年で1万kmなど極端に走行が少ない放置車よりも、年式相応に定期的に動いてオイル交換されていた車両の方が好調なケースが多いです。'
+                    ],
+                    [
+                        'icon' => '2️⃣',
+                        'title' => '修復歴（事故歴）の有無を確認',
+                        'desc' => '「修復歴あり」とは車の骨格（フレーム）にダメージ・修理歴がある車を指します。外見が綺麗でも走行安定性に影響が出る可能性があるため、修復歴の有無を明確に開示している店舗を選びましょう。'
+                    ],
+                    [
+                        'icon' => '3️⃣',
+                        'title' => '定期点検記録簿（整備手帳）',
+                        'desc' => '過去の点検や消耗品交換の履歴が残っている記録簿は、前オーナーが大切に乗っていた最大の証拠です。'
+                    ],
+                    [
+                        'icon' => '4️⃣',
+                        'title' => '車内のニオイと下回りのサビ',
+                        'desc' => '写真ではわからないタバコ・ペット臭や、降雪地・沿岸部特有の下回りサビは要チェックです。'
+                    ],
+                    [
+                        'icon' => '5️⃣',
+                        'title' => '支払総額と保証内容',
+                        'desc' => '車両本体価格の安さだけで判断せず、諸費用込みの「支払総額」と「保証期間・範囲」を必ず確認しましょう。'
+                    ]
+                ],
+                'summary' => 'アップファーレンでは全車両の修復歴を開示し、厳選した高品質車両のみを支払総額明瞭で展示しております！',
+                'action_btn' => [
+                    'label' => '🚗 アップファーレンの在庫を見る',
+                    'data' => 'action=search_all'
+                ]
+            ];
+            break;
+
+        case 'oil':
+            $articleData = [
+                'badge' => '🛢️ 愛車長持ちの秘訣',
+                'badge_color' => '#f59e0b',
+                'title' => 'エンジンオイル交換の基本と真実',
+                'subtitle' => '愛車の心臓を守る血液！適切な交換サイクル',
+                'sections' => [
+                    [
+                        'icon' => '🩸',
+                        'title' => 'エンジンオイルの5大役割',
+                        'desc' => 'エンジン内部の「潤滑・冷却・洗浄・防錆・密封」を担っています。走行しなくても空気中の水分や熱で半年〜1年で酸化劣化します。'
+                    ],
+                    [
+                        'icon' => '⏱',
+                        'title' => '適切な交換サイクルの目安',
+                        'desc' => "・軽自動車／ターボ車：3,000〜5,000km または 半年\n・普通車（NA）：5,000〜10,000km または 半年〜1年\n※近距離のチョイ乗りが多い車はシビアコンディション（過酷環境）となり、早めの交換が推奨されます。"
+                    ],
+                    [
+                        'icon' => '⚠️',
+                        'title' => '交換を怠るとどうなる？',
+                        'desc' => 'オイルがドロドロになり燃費が悪化、異音の発生、最悪の場合はエンジンが焼き付き、載せ替えで30万〜50万円以上の高額出費になることもあります。'
+                    ],
+                    [
+                        'icon' => '🔄',
+                        'title' => 'オイルエレメント（フィルター）',
+                        'desc' => 'オイル内のスラッジ（ゴミ）をろ過するフィルターです。【オイル交換2回に1回】の同時交換が鉄則です。'
+                    ]
+                ],
+                'summary' => '定期的なオイル交換こそが、愛車を最も安く・長く乗り続けるための最高の予防メンテナンスです。',
+                'action_btn' => [
+                    'label' => '📅 オイル交換の来店予約・相談',
+                    'data' => 'action=ask_maintenance&type=oil'
+                ]
+            ];
+            break;
+
+        case 'periodic':
+            $articleData = [
+                'badge' => '📋 予防整備の基礎',
+                'badge_color' => '#10b981',
+                'title' => '法定12ヶ月定期点検の必要性',
+                'subtitle' => '車検だけでは不十分！法律で定められた点検',
+                'sections' => [
+                    [
+                        'icon' => '⚖️',
+                        'title' => '車検と12ヶ月点検の決定的な違い',
+                        'desc' => "・車検：受検した「その瞬間」に国の保安基準を満たしているかを確認する検査\n・12ヶ月点検：次の車検までの1年間、安全にトラブルなく走行できるかを分解・予防整備する点検"
+                    ],
+                    [
+                        'icon' => '🔍',
+                        'title' => '主な点検項目（26〜27項目）',
+                        'desc' => 'ブレーキの分解・清掃・残量確認、サスペンションのガタ、ベルト類の緩みや劣化、排気漏れ、オイル漏れなどをプロが徹底チェックします。'
+                    ],
+                    [
+                        'icon' => '💡',
+                        'title' => '定期点検を受ける3大メリット',
+                        'desc' => "① 出先での突然の故障や事故を未然に防止\n② 消耗品の早期発見で将来の大きな修理代を節約\n③ 定期点検記録簿が残り、将来の車売却・下取り時の査定額がアップ！"
+                    ]
+                ],
+                'summary' => '1年に1回のプロによる健康診断で、安心快適なカーライフを守りましょう！',
+                'action_btn' => [
+                    'label' => '📅 12ヶ月定期点検の予約・相談',
+                    'data' => 'action=ask_maintenance&type=periodic'
+                ]
+            ];
+            break;
+
+        case 'inspection':
+            $articleData = [
+                'badge' => '🔍 安心＆スムーズ',
+                'badge_color' => '#6366f1',
+                'title' => '車検の基礎知識と賢い受け方',
+                'subtitle' => '満了日の1ヶ月前から受検可能！準備と流れ',
+                'sections' => [
+                    [
+                        'icon' => '🗓',
+                        'title' => '受検のベストタイミング',
+                        'desc' => '車検満了日の【1ヶ月前】から受けられます。1ヶ月前に受けても次回の満了日は短縮されず、有効期限は丸々2年（新車時3年）引き継がれます。'
+                    ],
+                    [
+                        'icon' => '💰',
+                        'title' => '車検費用の内訳と仕組み',
+                        'desc' => "① 法定費用（国に納める重量税・自賠責保険料・印紙代＝どこでも一律）\n② 車検基本料・検査料・予防整備費用（お店によって異なる部分）"
+                    ],
+                    [
+                        'icon' => '📄',
+                        'title' => 'ご来店時の必要書類',
+                        'desc' => "・自動車検査証（車検証）\n・自賠責保険証明書\n・自動車税納税証明書\n・認印 / ホイールロックナットアダプター（該当車）"
+                    ]
+                ],
+                'summary' => 'アップファーレンでは事前無料お見積もりを実施中！不要な過剰整備は一切行わず、わかりやすくご説明いたします。',
+                'action_btn' => [
+                    'label' => '📅 車検の事前見積もり・予約相談',
+                    'data' => 'action=ask_maintenance&type=inspection'
+                ]
+            ];
+            break;
+
+        case 'battery_tire':
+        default:
+            $articleData = [
+                'badge' => '⚠️ トラブル予防',
+                'badge_color' => '#ef4444',
+                'title' => 'バッテリー・タイヤ・日常点検',
+                'subtitle' => '突然の路上トラブルを防ぐ日常ケア',
+                'sections' => [
+                    [
+                        'icon' => '🔋',
+                        'title' => 'バッテリーの寿命（2〜3年）',
+                        'desc' => '最近のバッテリーは直前まで元気に動くため前兆がわかりにくく、夏（エアコン多用）や冬（寒さで性能低下）に突然死します。2年以上経過していたらテスター診断をおすすめします。'
+                    ],
+                    [
+                        'icon' => '🛞',
+                        'title' => 'タイヤの交換サイン',
+                        'desc' => "・残り溝1.6mm以下（スリップサイン露出＝車検不適合＆雨天スリップ危険）\n・製造から4〜5年経過（ゴムが硬化しひび割れ発生）\n・偏摩耗（片側だけ減る）"
+                    ],
+                    [
+                        'icon' => '❄️',
+                        'title' => 'エアコンの冷え・ニオイ',
+                        'desc' => 'エアコンフィルターは1年または1万kmごとの交換が目安。冷えが悪い場合はエアコンガスのクリーニング・補充で驚くほど復活します。'
+                    ]
+                ],
+                'summary' => '少しでも「いつもと違う音や振動」を感じたら、放置せずお気軽にご相談ください！',
+                'action_btn' => [
+                    'label' => '🛠️ 来店・点検相談フォームを開く',
+                    'data' => 'action=show_equipment_menu'
+                ]
+            ];
+            break;
+    }
+
+    $sectionBoxes = [];
+    foreach ($articleData['sections'] as $sec) {
+        $sectionBoxes[] = [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'margin' => 'md',
+            'backgroundColor' => '#f8fafc',
+            'paddingAll' => '12px',
+            'cornerRadius' => 'md',
+            'contents' => [
+                [
+                    'type' => 'box',
+                    'layout' => 'baseline',
+                    'contents' => [
+                        ['type' => 'text', 'text' => $sec['icon'] . ' ' . $sec['title'], 'weight' => 'bold', 'size' => 'sm', 'color' => '#1e293b', 'wrap' => true]
+                    ]
+                ],
+                [
+                    'type' => 'text',
+                    'text' => $sec['desc'],
+                    'size' => 'xs',
+                    'color' => '#475569',
+                    'wrap' => true,
+                    'margin' => 'sm'
+                ]
+            ]
+        ];
+    }
+
+    $detailBubble = [
+        'type' => 'bubble',
+        'size' => 'mega',
+        'body' => [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'paddingAll' => '20px',
+            'contents' => [
+                [
+                    'type' => 'box',
+                    'layout' => 'baseline',
+                    'contents' => [
+                        [
+                            'type' => 'text',
+                            'text' => $articleData['badge'],
+                            'weight' => 'bold',
+                            'size' => 'xs',
+                            'color' => $articleData['badge_color']
+                        ]
+                    ]
+                ],
+                [
+                    'type' => 'text',
+                    'text' => $articleData['title'],
+                    'weight' => 'bold',
+                    'size' => 'lg',
+                    'color' => '#1e293b',
+                    'margin' => 'xs'
+                ],
+                [
+                    'type' => 'text',
+                    'text' => $articleData['subtitle'],
+                    'size' => 'xs',
+                    'color' => '#64748b',
+                    'margin' => 'xs'
+                ],
+                [
+                    'type' => 'separator',
+                    'margin' => 'md'
+                ],
+                [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'margin' => 'md',
+                    'contents' => $sectionBoxes
+                ],
+                [
+                    'type' => 'separator',
+                    'margin' => 'lg'
+                ],
+                [
+                    'type' => 'text',
+                    'text' => '💡 ' . $articleData['summary'],
+                    'size' => 'xs',
+                    'color' => '#334155',
+                    'wrap' => true,
+                    'margin' => 'md'
+                ]
+            ]
+        ],
+        'footer' => [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'spacing' => 'sm',
+            'paddingAll' => '14px',
+            'contents' => [
+                [
+                    'type' => 'button',
+                    'style' => 'primary',
+                    'color' => '#06C755',
+                    'height' => 'sm',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => $articleData['action_btn']['label'],
+                        'data' => $articleData['action_btn']['data']
+                    ]
+                ],
+                [
+                    'type' => 'button',
+                    'style' => 'secondary',
+                    'height' => 'sm',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '📚 他の豆知識ガイドを見る',
+                        'data' => 'action=show_knowledge_menu'
+                    ]
+                ]
+            ]
+        ]
+    ];
+
+    return [
+        [
+            'type' => 'flex',
+            'altText' => "【{$articleData['title']}】カーライフお役立ちガイド",
+            'contents' => $detailBubble,
+            'quickReply' => getQuickReplyItems()
+        ]
+    ];
+}
+
+/**
  * 車種・ボディタイプ選択メニュー送信
  */
 function sendTypeMenuMessage(PDO $db, string $replyToken) {
@@ -2022,6 +2508,14 @@ function getQuickReplyItems(): array {
                     'type' => 'postback',
                     'label' => '🛣️ 距離で探す',
                     'data' => 'action=show_distance_menu'
+                ]
+            ],
+            [
+                'type' => 'action',
+                'action' => [
+                    'type' => 'postback',
+                    'label' => '📚 豆知識ガイド',
+                    'data' => 'action=show_knowledge_menu'
                 ]
             ],
             [
