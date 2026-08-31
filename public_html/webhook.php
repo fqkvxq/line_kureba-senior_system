@@ -1560,16 +1560,16 @@ function sendKnowledgeDetailMessage(string $replyToken, string $topic) {
 }
 
 /**
- * カーライフ豆知識・お役立ちガイド（目次3段カルーセル・全21テーマ）を生成
+ * カーライフ豆知識・お役立ちガイド（目次3段カルーセル・全21テーマ・通し番号付き）を生成
  */
 function generateKnowledgeMenuMessages(): array {
-    // 1段目: 車選び＆購入・手続きガイド（7テーマ）
+    // 1段目: 車選び＆購入・手続きガイド（①〜⑦）
     $group1Topics = [
         [
             'topic' => 'used_car',
             'badge' => '🚗 車選びの極意',
             'badge_color' => '#3b82f6',
-            'title' => '失敗しない中古車の選び方',
+            'title' => '① 失敗しない中古車の選び方',
             'desc' => "プロが教える！走行距離・修復歴・整備履歴など後悔しない5大チェックポイント。",
             'read_time' => '約2分で読める'
         ],
@@ -1577,7 +1577,7 @@ function generateKnowledgeMenuMessages(): array {
             'topic' => 'kei_vs_compact',
             'badge' => '🚙 徹底比較ガイド',
             'badge_color' => '#8b5cf6',
-            'title' => '軽自動車 vs 普通車の維持費比較',
+            'title' => '② 軽自動車 vs 普通車の維持費比較',
             'desc' => "税金・車検・燃費・保険料の年間コスト差と、ライフスタイル別の賢い選び方。",
             'read_time' => '約2分で読める'
         ],
@@ -1585,7 +1585,7 @@ function generateKnowledgeMenuMessages(): array {
             'topic' => 'body_type_guide',
             'badge' => '🚙 目的別・車選び',
             'badge_color' => '#0284c7',
-            'title' => 'ボディタイプ別の特徴と選び方',
+            'title' => '③ ボディタイプ別の特徴と選び方',
             'desc' => "軽・SUV・ミニバン・コンパクトの特徴と、家族構成や用途に合った最適車種診断。",
             'read_time' => '約2分で読める'
         ],
@@ -1593,7 +1593,7 @@ function generateKnowledgeMenuMessages(): array {
             'topic' => 'car_loan',
             'badge' => '💳 ローン＆資金計画',
             'badge_color' => '#4f46e5',
-            'title' => 'オートローンの賢い選び方',
+            'title' => '④ オートローンの賢い選び方',
             'desc' => "金利の種類、無理のない返済比率（手取りの15〜20%）、事前仮審査のメリット。",
             'read_time' => '約2分で読める'
         ],
@@ -1601,7 +1601,7 @@ function generateKnowledgeMenuMessages(): array {
             'topic' => 'best_timing',
             'badge' => '💰 お得な買い時',
             'badge_color' => '#ea580c',
-            'title' => '車のお得な買い時・購入時期',
+            'title' => '⑤ 車のお得な買い時・購入時期',
             'desc' => "決算期（3月・9月）やモデルチェンジ後、自動車税の課税時期から見るベストな時期。",
             'read_time' => '約2分で読める'
         ],
@@ -1609,7 +1609,7 @@ function generateKnowledgeMenuMessages(): array {
             'topic' => 'car_paperwork',
             'badge' => '📄 手続き＆流れ',
             'badge_color' => '#0891b2',
-            'title' => '必要書類と納車までの流れ',
+            'title' => '⑥ 必要書類と納車までの流れ',
             'desc' => "車庫証明や印鑑証明、住民票の準備から納車前点検・受取までのステップを解説。",
             'read_time' => '約2分で読める'
         ],
@@ -1617,19 +1617,19 @@ function generateKnowledgeMenuMessages(): array {
             'topic' => 'trade_in',
             'badge' => '🛡️ 査定額UPの秘訣',
             'badge_color' => '#d97706',
-            'title' => '愛車を高く売る・下取りのコツ',
+            'title' => '⑦ 愛車を高く売る・下取りのコツ',
             'desc' => "査定士が見る重要ポイント、純正パーツ保管、ベストな売却タイミングを伝授。",
             'read_time' => '約2分で読める'
         ]
     ];
 
-    // 2段目: メンテナンス・点検＆ケアガイド（7テーマ）
+    // 2段目: メンテナンス・点検＆ケアガイド（⑧〜⑭）
     $group2Topics = [
         [
             'topic' => 'oil',
             'badge' => '🛢️ 愛車長持ちの秘訣',
             'badge_color' => '#f59e0b',
-            'title' => 'エンジンオイル交換の真実',
+            'title' => '⑧ エンジンオイル交換の真実',
             'desc' => "「まだ走れる」は危険？適切な交換サイクルとフィルター交換の重要性を解説。",
             'read_time' => '約1.5分で読める'
         ],
@@ -1637,7 +1637,7 @@ function generateKnowledgeMenuMessages(): array {
             'topic' => 'periodic',
             'badge' => '📋 予防整備の基礎',
             'badge_color' => '#10b981',
-            'title' => '法定12ヶ月点検の必要性',
+            'title' => '⑨ 法定12ヶ月点検の必要性',
             'desc' => "車検に通っていても安心できない？受けるメリットと車検との違いをプロが解説。",
             'read_time' => '約2分で読める'
         ],
@@ -1645,7 +1645,7 @@ function generateKnowledgeMenuMessages(): array {
             'topic' => 'inspection',
             'badge' => '🔍 安心＆スムーズ',
             'badge_color' => '#6366f1',
-            'title' => '車検の基礎知識と賢い受け方',
+            'title' => '⑩ 車検の基礎知識と賢い受け方',
             'desc' => "満了日の1ヶ月前から受検可能！費用の内訳や準備物、安心車検のポイント。",
             'read_time' => '約2分で読める'
         ],
@@ -1653,7 +1653,7 @@ function generateKnowledgeMenuMessages(): array {
             'topic' => 'battery_tire',
             'badge' => '⚠️ トラブル予防',
             'badge_color' => '#ef4444',
-            'title' => 'バッテリー・タイヤ・日常点検',
+            'title' => '⑪ バッテリー・タイヤ・日常点検',
             'desc' => "出先での突然死を防ぐ！季節ごとのトラブル対策と交換サインの見極め方。",
             'read_time' => '約1.5分で読める'
         ],
@@ -1661,7 +1661,7 @@ function generateKnowledgeMenuMessages(): array {
             'topic' => 'brake_care',
             'badge' => '🛑 安全の要・ブレーキ',
             'badge_color' => '#e11d48',
-            'title' => 'ブレーキの寿命と重要チェック',
+            'title' => '⑫ ブレーキの寿命と重要チェック',
             'desc' => "パッド残厚3mmの危険サイン、キーキー音の正体、フルード吸湿劣化の注意点。",
             'read_time' => '約1.5分で読める'
         ],
@@ -1669,7 +1669,7 @@ function generateKnowledgeMenuMessages(): array {
             'topic' => 'aircon_care',
             'badge' => '❄️ 快適ドライブ',
             'badge_color' => '#0ea5e9',
-            'title' => 'カーエアコンの効き＆悪臭ケア',
+            'title' => '⑬ カーエアコンの効き＆悪臭ケア',
             'desc' => "エアコンフィルター交換時期、エバポレーター消臭洗浄、ガス補充で冷え復活！",
             'read_time' => '約1.5分で読める'
         ],
@@ -1677,19 +1677,19 @@ function generateKnowledgeMenuMessages(): array {
             'topic' => 'car_wash_care',
             'badge' => '🧼 愛車ケア＆美観',
             'badge_color' => '#06b6d4',
-            'title' => '洗車＆ボディコーティング術',
+            'title' => '⑭ 洗車＆ボディコーティング術',
             'desc' => "炎天下の洗車NG理由、洗車キズを防ぐ洗い方、コーティングを長持ちさせる秘訣。",
             'read_time' => '約2分で読める'
         ]
     ];
 
-    // 3段目: 安全運転・トラブル緊急対処＆季節対策（7テーマ）
+    // 3段目: 安全運転・トラブル緊急対処＆季節対策（⑮〜㉑）
     $group3Topics = [
         [
             'topic' => 'winter_driving',
             'badge' => '❄️ 冬道・降雪対策',
             'badge_color' => '#0284c7',
-            'title' => '雪道運転と冬タイヤの極意',
+            'title' => '⑮ 雪道運転と冬タイヤの極意',
             'desc' => "スタッドレスの寿命見極め（プラットホーム）と融雪剤による下回り防錆対策。",
             'read_time' => '約2分で読める'
         ],
@@ -1697,7 +1697,7 @@ function generateKnowledgeMenuMessages(): array {
             'topic' => 'warning_lights',
             'badge' => '🚨 緊急・トラブル診断',
             'badge_color' => '#dc2626',
-            'title' => '警告灯の意味と緊急時の対処法',
+            'title' => '⑯ 警告灯の意味と緊急時の対処法',
             'desc' => "黄色と赤色の危険度の違い、異音（カタカタ・キーキー）の正体と初期対応。",
             'read_time' => '約2分で読める'
         ],
@@ -1705,7 +1705,7 @@ function generateKnowledgeMenuMessages(): array {
             'topic' => 'rain_driving',
             'badge' => '🌧️ 雨天・悪天候対策',
             'badge_color' => '#2563eb',
-            'title' => '雨の日の安全運転と冠水対策',
+            'title' => '⑰ 雨の日の安全運転と冠水対策',
             'desc' => "冠水道路の走行限界、ハイドロプレーニング予防、撥水とワイパー視界確保。",
             'read_time' => '約2分で読める'
         ],
@@ -1713,7 +1713,7 @@ function generateKnowledgeMenuMessages(): array {
             'topic' => 'accident_guide',
             'badge' => '💥 緊急初動マニュアル',
             'badge_color' => '#b91c1c',
-            'title' => '事故・故障時の緊急対応手順',
+            'title' => '⑱ 事故・故障時の緊急対応手順',
             'desc' => "二次災害防止、119番・110番の義務、警察の事故証明と保険会社連絡ステップ。",
             'read_time' => '約2分で読める'
         ],
@@ -1721,7 +1721,7 @@ function generateKnowledgeMenuMessages(): array {
             'topic' => 'fuel_economy',
             'badge' => '⛽ 燃費＆節約術',
             'badge_color' => '#059669',
-            'title' => '燃費アップ＆愛車の節約術',
+            'title' => '⑲ 燃費アップ＆愛車の節約術',
             'desc' => "ふんわりアクセル・タイヤ空気圧・不要な荷物軽量化でガソリン代を大幅カット！",
             'read_time' => '約1.5分で読める'
         ],
@@ -1729,7 +1729,7 @@ function generateKnowledgeMenuMessages(): array {
             'topic' => 'beginner_driver',
             'badge' => '🔰 安心ドライブ',
             'badge_color' => '#16a34a',
-            'title' => '初心者・ペーパードライバー術',
+            'title' => '⑳ 初心者・ペーパードライバー術',
             'desc' => "車幅感覚の掴み方、バック駐車の目印、死角の確認、車間距離の安全マニュアル。",
             'read_time' => '約2分で読める'
         ],
@@ -1737,7 +1737,7 @@ function generateKnowledgeMenuMessages(): array {
             'topic' => 'car_accessories',
             'badge' => '🔌 便利アイテム・装備',
             'badge_color' => '#7c3aed',
-            'title' => 'ドラレコ・ETC・LED便利知識',
+            'title' => '㉑ ドラレコ・ETC・LED便利知識',
             'desc' => "前後2カメラドラレコの選び方、ETC2.0の割引メリット、車検対応LED化の注意点。",
             'read_time' => '約2分で読める'
         ]
@@ -1825,7 +1825,7 @@ function generateKnowledgeMenuMessages(): array {
     return [
         [
             'type' => 'flex',
-            'altText' => '【第1弾: 車選び＆購入・手続きガイド】カーライフ豆知識',
+            'altText' => '【第1弾: 車選び＆購入・手続きガイド ①〜⑦】カーライフ豆知識',
             'contents' => [
                 'type' => 'carousel',
                 'contents' => $buildCarouselBubbles($group1Topics)
@@ -1833,7 +1833,7 @@ function generateKnowledgeMenuMessages(): array {
         ],
         [
             'type' => 'flex',
-            'altText' => '【第2弾: メンテナンス・点検＆ケアガイド】カーライフ豆知識',
+            'altText' => '【第2弾: メンテナンス・点検＆ケアガイド ⑧〜⑭】カーライフ豆知識',
             'contents' => [
                 'type' => 'carousel',
                 'contents' => $buildCarouselBubbles($group2Topics)
@@ -1841,7 +1841,7 @@ function generateKnowledgeMenuMessages(): array {
         ],
         [
             'type' => 'flex',
-            'altText' => '【第3弾: 安全運転・トラブル対処＆季節対策】カーライフ豆知識',
+            'altText' => '【第3弾: 安全運転・トラブル対処＆便利知識 ⑮〜㉑】カーライフ豆知識',
             'contents' => [
                 'type' => 'carousel',
                 'contents' => $buildCarouselBubbles($group3Topics)
@@ -1860,9 +1860,9 @@ function generateKnowledgeDetailMessage(string $topic): array {
     switch ($topic) {
         case 'used_car':
             $articleData = [
-                'badge' => '🚗 車選びの極意',
+                'badge' => '🚗 車選びの極意【①】',
                 'badge_color' => '#3b82f6',
-                'title' => '失敗しない中古車の選び方',
+                'title' => '① 失敗しない中古車の選び方',
                 'subtitle' => 'プロが教える！後悔しない5大見極め術',
                 'sections' => [
                     [
@@ -1901,9 +1901,9 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'kei_vs_compact':
             $articleData = [
-                'badge' => '🚙 徹底比較ガイド',
+                'badge' => '🚙 徹底比較ガイド【②】',
                 'badge_color' => '#8b5cf6',
-                'title' => '軽自動車 vs 普通車の維持費比較',
+                'title' => '② 軽自動車 vs 普通車の維持費比較',
                 'subtitle' => '税金・車検・使い勝手のリアルな違い',
                 'sections' => [
                     [
@@ -1932,9 +1932,9 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'body_type_guide':
             $articleData = [
-                'badge' => '🚙 目的別・車選び',
+                'badge' => '🚙 目的別・車選び【③】',
                 'badge_color' => '#0284c7',
-                'title' => 'ボディタイプ別の特徴と選び方',
+                'title' => '③ ボディタイプ別の特徴と選び方',
                 'subtitle' => '用途や家族構成に合わせた最適車種診断',
                 'sections' => [
                     [
@@ -1963,9 +1963,9 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'car_loan':
             $articleData = [
-                'badge' => '💳 ローン＆資金計画',
+                'badge' => '💳 ローン＆資金計画【④】',
                 'badge_color' => '#4f46e5',
-                'title' => 'オートローンの賢い選び方',
+                'title' => '④ オートローンの賢い選び方',
                 'subtitle' => '金利の仕組みと無理のない返済プランの立て方',
                 'sections' => [
                     [
@@ -1992,83 +1992,11 @@ function generateKnowledgeDetailMessage(string $topic): array {
             ];
             break;
 
-        case 'fuel_economy':
-            $articleData = [
-                'badge' => '⛽ 燃費＆節約術',
-                'badge_color' => '#059669',
-                'title' => '燃費アップ＆愛車の節約術',
-                'subtitle' => 'ちょっとしたコツで年間数万円の節約に！',
-                'sections' => [
-                    [
-                        'icon' => '🟢',
-                        'title' => 'ふんわりアクセル「eスタート」',
-                        'desc' => "発進時の最初の5秒で時速20kmを目安にゆっくり踏み出すだけで、約10%燃費が向上します。\n車間距離に余裕を持った等速走行も効果的です。"
-                    ],
-                    [
-                        'icon' => '💨',
-                        'title' => 'タイヤ空気圧の定期点検',
-                        'desc' => "空気圧は走行しなくても自然に【1ヶ月で約5〜10%】低下します。\n空気圧が適正値より50kPa低いと燃費が約2〜4%悪化します。月1回の補充がおすすめです。"
-                    ],
-                    [
-                        'icon' => '📦',
-                        'title' => '不要な積載物の降車',
-                        'desc' => "100kgの荷物を積むと燃費が約3%悪化します。\nトランクに乗せっぱなしのアウトドア用品や工具類は整理しましょう。"
-                    ],
-                    [
-                        'icon' => '🛢️',
-                        'title' => '低粘度オイルの活用',
-                        'desc' => "指定粘度（0W-20や0W-16など）の省燃費オイルを使用することで、エンジン内部の抵抗を減らし燃費を維持できます。"
-                    ]
-                ],
-                'summary' => '日頃の小さな意識と定期的な点検で、ガソリン代を賢く節約しましょう！',
-                'action_btn' => [
-                    'label' => '🚗 燃費良好な在庫車両を見る',
-                    'data' => 'action=search_all'
-                ]
-            ];
-            break;
-
-        case 'trade_in':
-            $articleData = [
-                'badge' => '🛡️ 査定額UPの秘訣',
-                'badge_color' => '#d97706',
-                'title' => '愛車を高く売る・下取りのコツ',
-                'subtitle' => '査定士が見るポイントと乗り換えのベスト時期',
-                'sections' => [
-                    [
-                        'icon' => '📋',
-                        'title' => '定期点検記録簿の完備',
-                        'desc' => "整備手帳にディーラーや整備工場での点検印・記録が揃っていると、大切に扱われていた証拠となり査定プラス評価になります。"
-                    ],
-                    [
-                        'icon' => '💎',
-                        'title' => '純正パーツ・説明書・スペアキー',
-                        'desc' => "社外ナビやホイールに交換していても、純正パーツを保管しておくと査定が上がります。\nスペアキーの有無も数万円の査定差になることがあります。"
-                    ],
-                    [
-                        'icon' => '🚭',
-                        'title' => '車内の清潔感とニオイ対策',
-                        'desc' => "タバコ臭やペット臭、シートのシミは減額対象になります。\n査定前に車内清掃と消臭を行っておくのが鉄則です。"
-                    ],
-                    [
-                        'icon' => '🗓',
-                        'title' => 'ベストな手放しタイミング',
-                        'desc' => "車検が切れる直前や、中古車需要が高まる1〜3月・9月は高額査定が出やすい時期です。"
-                    ]
-                ],
-                'summary' => 'アップファーレンでは愛車の下取り・無料査定を実施中！お乗り換えのご相談もお気軽にどうぞ。',
-                'action_btn' => [
-                    'label' => '💬 愛車の下取り・乗り換えを相談',
-                    'data' => 'action=search_all'
-                ]
-            ];
-            break;
-
         case 'best_timing':
             $articleData = [
-                'badge' => '💰 お得な買い時',
+                'badge' => '💰 お得な買い時【⑤】',
                 'badge_color' => '#ea580c',
-                'title' => '車のお得な買い時・購入時期',
+                'title' => '⑤ 車のお得な買い時・購入時期',
                 'subtitle' => '賢く買って得するベストなタイミング',
                 'sections' => [
                     [
@@ -2097,9 +2025,9 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'car_paperwork':
             $articleData = [
-                'badge' => '📄 手続き＆流れ',
+                'badge' => '📄 手続き＆流れ【⑥】',
                 'badge_color' => '#0891b2',
-                'title' => '必要書類と納車までの流れ',
+                'title' => '⑥ 必要書類と納車までの流れ',
                 'subtitle' => '準備から納車当日までの完全ステップ',
                 'sections' => [
                     [
@@ -2131,42 +2059,47 @@ function generateKnowledgeDetailMessage(string $topic): array {
             ];
             break;
 
-        case 'beginner_driver':
+        case 'trade_in':
             $articleData = [
-                'badge' => '🔰 安心ドライブ',
-                'badge_color' => '#16a34a',
-                'title' => '初心者・ペーパードライバー安心術',
-                'subtitle' => '運転の不安を解消する基本テクニック',
+                'badge' => '🛡️ 査定額UPの秘訣【⑦】',
+                'badge_color' => '#d97706',
+                'title' => '⑦ 愛車を高く売る・下取りのコツ',
+                'subtitle' => '査定士が見るポイントと乗り換えのベスト時期',
                 'sections' => [
                     [
-                        'icon' => '📐',
-                        'title' => '車幅感覚の掴み方',
-                        'desc' => "運転席から見て「道路の白線がフロントガラスのどこを通るか」を目印に覚えると、左寄りの感覚が簡単に掴めます。\nボンネットの見切りが良い車を選ぶのもポイントです。"
+                        'icon' => '📋',
+                        'title' => '定期点検記録簿の完備',
+                        'desc' => "整備手帳にディーラーや整備工場での点検印・記録が揃っていると、大切に扱われていた証拠となり査定プラス評価になります。"
                     ],
                     [
-                        'icon' => '🅿️',
-                        'title' => 'バック駐車のコツ',
-                        'desc' => "駐車枠に対して約45度に車体を傾けてからバックを開始し、サイドミラーで隣の車の角と自分の後輪の位置関係を確認しながらゆっくり下がると一発で収まります。"
+                        'icon' => '💎',
+                        'title' => '純正パーツ・説明書・スペアキー',
+                        'desc' => "社外ナビやホイールに交換していても、純正パーツを保管しておくと査定が上がります。\nスペアキーの有無も数万円の査定差になることがあります。"
                     ],
                     [
-                        'icon' => '👀',
-                        'title' => '死角の確認と車間距離',
-                        'desc' => "ミラーだけでなく目視での死角確認が事故防止の鍵です。\n車間距離は「前の車が通過した地点を自分が2秒後に通過する」間隔を目安に保ちましょう。"
+                        'icon' => '🚭',
+                        'title' => '車内の清潔感とニオイ対策',
+                        'desc' => "タバコ臭やペット臭、シートのシミは減額対象になります。\n査定前に車内清掃と消臭を行っておくのが鉄則です。"
+                    ],
+                    [
+                        'icon' => '🗓',
+                        'title' => 'ベストな手放しタイミング',
+                        'desc' => "車検が切れる直前や、中古車需要が高まる1〜3月・9月は高額査定が出やすい時期です。"
                     ]
                 ],
-                'summary' => '見切りの良いコンパクトカーやバックカメラ付きの軽自動車など、運転しやすいお車を多数ご用意しております！',
+                'summary' => 'アップファーレンでは愛車の下取り・無料査定を実施中！お乗り換えのご相談もお気軽にどうぞ。',
                 'action_btn' => [
-                    'label' => '🚘 運転しやすい軽・コンパクトを見る',
-                    'data' => 'action=search_kei'
+                    'label' => '💬 愛車の下取り・乗り換えを相談',
+                    'data' => 'action=search_all'
                 ]
             ];
             break;
 
         case 'oil':
             $articleData = [
-                'badge' => '🛢️ 愛車長持ちの秘訣',
+                'badge' => '🛢️ 愛車長持ちの秘訣【⑧】',
                 'badge_color' => '#f59e0b',
-                'title' => 'エンジンオイル交換の基本と真実',
+                'title' => '⑧ エンジンオイル交換の基本と真実',
                 'subtitle' => '愛車の心臓を守る血液！適切な交換サイクル',
                 'sections' => [
                     [
@@ -2200,9 +2133,9 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'periodic':
             $articleData = [
-                'badge' => '📋 予防整備の基礎',
+                'badge' => '📋 予防整備の基礎【⑨】',
                 'badge_color' => '#10b981',
-                'title' => '法定12ヶ月定期点検の必要性',
+                'title' => '⑨ 法定12ヶ月定期点検の必要性',
                 'subtitle' => '車検だけでは不十分！法律で定められた点検',
                 'sections' => [
                     [
@@ -2231,9 +2164,9 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'inspection':
             $articleData = [
-                'badge' => '🔍 安心＆スムーズ',
+                'badge' => '🔍 安心＆スムーズ【⑩】',
                 'badge_color' => '#6366f1',
-                'title' => '車検の基礎知識と賢い受け方',
+                'title' => '⑩ 車検の基礎知識と賢い受け方',
                 'subtitle' => '満了日の1ヶ月前から受検可能！準備と流れ',
                 'sections' => [
                     [
@@ -2262,9 +2195,9 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'battery_tire':
             $articleData = [
-                'badge' => '⚠️ トラブル予防',
+                'badge' => '⚠️ トラブル予防【⑪】',
                 'badge_color' => '#ef4444',
-                'title' => 'バッテリー・タイヤ・日常点検',
+                'title' => '⑪ バッテリー・タイヤ・日常点検',
                 'subtitle' => '突然の路上トラブルを防ぐ日常ケア',
                 'sections' => [
                     [
@@ -2293,9 +2226,9 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'brake_care':
             $articleData = [
-                'badge' => '🛑 安全の要・ブレーキ',
+                'badge' => '🛑 安全の要・ブレーキ【⑫】',
                 'badge_color' => '#e11d48',
-                'title' => 'ブレーキの寿命と重要チェック',
+                'title' => '⑫ ブレーキの寿命と重要チェック',
                 'subtitle' => '命を守る最重要パーツ！キーキー音は見逃すな',
                 'sections' => [
                     [
@@ -2324,9 +2257,9 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'aircon_care':
             $articleData = [
-                'badge' => '❄️ 快適ドライブ',
+                'badge' => '❄️ 快適ドライブ【⑬】',
                 'badge_color' => '#0ea5e9',
-                'title' => 'カーエアコンの効き＆悪臭ケア',
+                'title' => '⑬ カーエアコンの効き＆悪臭ケア',
                 'subtitle' => '夏場の冷え不良・カビ臭をスッキリ解決！',
                 'sections' => [
                     [
@@ -2355,9 +2288,9 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'car_wash_care':
             $articleData = [
-                'badge' => '🧼 愛車ケア＆美観',
+                'badge' => '🧼 愛車ケア＆美観【⑭】',
                 'badge_color' => '#06b6d4',
-                'title' => '洗車＆ボディコーティング術',
+                'title' => '⑭ 洗車＆ボディコーティング術',
                 'subtitle' => '愛車の輝きを長く保つプロのお手入れ法',
                 'sections' => [
                     [
@@ -2386,9 +2319,9 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'winter_driving':
             $articleData = [
-                'badge' => '❄️ 冬道・降雪対策',
+                'badge' => '❄️ 冬道・降雪対策【⑮】',
                 'badge_color' => '#0284c7',
-                'title' => '雪道運転と冬タイヤの極意',
+                'title' => '⑮ 雪道運転と冬タイヤの極意',
                 'subtitle' => '降雪地域の安心カーライフ！冬支度の鉄則',
                 'sections' => [
                     [
@@ -2417,9 +2350,9 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'warning_lights':
             $articleData = [
-                'badge' => '🚨 緊急・トラブル診断',
+                'badge' => '🚨 緊急・トラブル診断【⑯】',
                 'badge_color' => '#dc2626',
-                'title' => '警告灯の意味と緊急時の対処法',
+                'title' => '⑯ 警告灯の意味と緊急時の対処法',
                 'subtitle' => '色でわかる危険度と初期対応マニュアル',
                 'sections' => [
                     [
@@ -2448,9 +2381,9 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'rain_driving':
             $articleData = [
-                'badge' => '🌧️ 雨天・悪天候対策',
+                'badge' => '🌧️ 雨天・悪天候対策【⑰】',
                 'badge_color' => '#2563eb',
-                'title' => '雨の日の安全運転と冠水対策',
+                'title' => '⑰ 雨の日の安全運転と冠水対策',
                 'subtitle' => 'スリップ防止＆大雨時の水没トラブル回避術',
                 'sections' => [
                     [
@@ -2479,9 +2412,9 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'accident_guide':
             $articleData = [
-                'badge' => '💥 緊急初動マニュアル',
+                'badge' => '💥 緊急初動マニュアル【⑱】',
                 'badge_color' => '#b91c1c',
-                'title' => '事故・故障時の緊急対応手順',
+                'title' => '⑱ 事故・故障時の緊急対応手順',
                 'subtitle' => '焦らず行動！現場で絶対にやるべき4ステップ',
                 'sections' => [
                     [
@@ -2513,12 +2446,79 @@ function generateKnowledgeDetailMessage(string $topic): array {
             ];
             break;
 
+        case 'fuel_economy':
+            $articleData = [
+                'badge' => '⛽ 燃費＆節約術【⑲】',
+                'badge_color' => '#059669',
+                'title' => '⑲ 燃費アップ＆愛車の節約術',
+                'subtitle' => 'ちょっとしたコツで年間数万円の節約に！',
+                'sections' => [
+                    [
+                        'icon' => '🟢',
+                        'title' => 'ふんわりアクセル「eスタート」',
+                        'desc' => "発進時の最初の5秒で時速20kmを目安にゆっくり踏み出すだけで、約10%燃費が向上します。\n車間距離に余裕を持った等速走行も効果的です。"
+                    ],
+                    [
+                        'icon' => '💨',
+                        'title' => 'タイヤ空気圧の定期点検',
+                        'desc' => "空気圧は走行しなくても自然に【1ヶ月で約5〜10%】低下します。\n空気圧が適正値より50kPa低いと燃費が約2〜4%悪化します。月1回の補充がおすすめです。"
+                    ],
+                    [
+                        'icon' => '📦',
+                        'title' => '不要な積載物の降車',
+                        'desc' => "100kgの荷物を積むと燃費が約3%悪化します。\nトランクに乗せっぱなしのアウトドア用品や工具類は整理しましょう。"
+                    ],
+                    [
+                        'icon' => '🛢️',
+                        'title' => '低粘度オイルの活用',
+                        'desc' => "指定粘度（0W-20や0W-16など）の省燃費オイルを使用することで、エンジン内部の抵抗を減らし燃費を維持できます。"
+                    ]
+                ],
+                'summary' => '日頃の小さな意識と定期的な点検で、ガソリン代を賢く節約しましょう！',
+                'action_btn' => [
+                    'label' => '🚗 燃費良好な在庫車両を見る',
+                    'data' => 'action=search_all'
+                ]
+            ];
+            break;
+
+        case 'beginner_driver':
+            $articleData = [
+                'badge' => '🔰 安心ドライブ【⑳】',
+                'badge_color' => '#16a34a',
+                'title' => '⑳ 初心者・ペーパードライバー安心術',
+                'subtitle' => '運転の不安を解消する基本テクニック',
+                'sections' => [
+                    [
+                        'icon' => '📐',
+                        'title' => '車幅感覚の掴み方',
+                        'desc' => "運転席から見て「道路の白線がフロントガラスのどこを通るか」を目印に覚えると、左寄りの感覚が簡単に掴めます。\nボンネットの見切りが良い車を選ぶのもポイントです。"
+                    ],
+                    [
+                        'icon' => '🅿️',
+                        'title' => 'バック駐車のコツ',
+                        'desc' => "駐車枠に対して約45度に車体を傾けてからバックを開始し、サイドミラーで隣の車の角と自分の後輪の位置関係を確認しながらゆっくり下がると一発で収まります。"
+                    ],
+                    [
+                        'icon' => '👀',
+                        'title' => '死角の確認と車間距離',
+                        'desc' => "ミラーだけでなく目視での死角確認が事故防止の鍵です。\n車間距離は「前の車が通過した地点を自分が2秒後に通過する」間隔を目安に保ちましょう。"
+                    ]
+                ],
+                'summary' => '見切りの良いコンパクトカーやバックカメラ付きの軽自動車など、運転しやすいお車を多数ご用意しております！',
+                'action_btn' => [
+                    'label' => '🚘 運転しやすい軽・コンパクトを見る',
+                    'data' => 'action=search_kei'
+                ]
+            ];
+            break;
+
         case 'car_accessories':
         default:
             $articleData = [
-                'badge' => '🔌 便利アイテム・装備',
+                'badge' => '🔌 便利アイテム・装備【㉑】',
                 'badge_color' => '#7c3aed',
-                'title' => 'ドラレコ・ETC・LED便利知識',
+                'title' => '㉑ ドラレコ・ETC・LED便利知識',
                 'subtitle' => '後付け・アップグレードで愛車がもっと快適に！',
                 'sections' => [
                     [
@@ -2671,7 +2671,7 @@ function generateKnowledgeDetailMessage(string $topic): array {
                     'height' => 'sm',
                     'action' => [
                         'type' => 'postback',
-                        'label' => '📚 他の豆知識ガイドを見る',
+                        'label' => '📚 豆知識ガイド一覧へ戻る',
                         'data' => 'action=show_knowledge_menu'
                     ]
                 ]
