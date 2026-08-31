@@ -509,6 +509,9 @@ try {
                     ]
                 ];
 
+                require_once __DIR__ . '/webhook.php';
+                $confirmFlex['quickReply'] = getQuickReplyItems();
+
                 try {
                     sendLinePushMessage($userId, [$confirmFlex]);
                 } catch (Exception $pushErr) {
@@ -708,6 +711,9 @@ try {
                         ]
                     ]
                 ];
+
+                require_once __DIR__ . '/webhook.php';
+                $confirmFlex['quickReply'] = getQuickReplyItems();
 
                 try {
                     sendLinePushMessage($userId, [$confirmFlex]);
