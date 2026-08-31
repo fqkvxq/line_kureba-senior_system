@@ -1867,9 +1867,7 @@ function generateKnowledgeDetailMessage(string $topic): array {
                 'summary' => '少しでも「いつもと違う音や振動」を感じたら、放置せずお気軽にご相談ください！',
                 'action_btn' => [
                     'label' => '🛠️ 来店・点検相談フォームを開く',
-                    'uri' => defined('LIFF_ID') && LIFF_ID !== 'YOUR_LIFF_ID_HERE'
-                        ? 'https://liff.line.me/' . LIFF_ID . '?page=mycar'
-                        : 'https://www.goo-net.com/usedcar_shop/0601492/stock.html'
+                    'uri' => 'https://liff.line.me/2011335169-9x8ydjaV/mycar.html'
                 ]
             ];
             break;
