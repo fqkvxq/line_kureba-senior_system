@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>読み込み中...</title>
+    <title>準備中...</title>
     <!-- LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
@@ -15,19 +15,20 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             background: #ffffff;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            color: #64748b;
+            color: #1e293b;
+            padding: 16px;
         }
         .container {
             text-align: center;
-            max-width: 90%;
-            padding: 20px;
+            max-width: 92%;
+            width: 360px;
         }
         .spinner {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border: 3px solid #e2e8f0;
             border-top: 3px solid #06C755;
             border-radius: 50%;
@@ -38,10 +39,22 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .btn-close {
-            display: none;
-            margin-top: 16px;
-            padding: 10px 24px;
+        .status-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+        .status-sub {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 12px;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            margin-top: 12px;
+            padding: 12px 16px;
             background: #06C755;
             color: #ffffff;
             border: none;
@@ -49,32 +62,49 @@
             font-size: 14px;
             font-weight: bold;
             cursor: pointer;
+            text-decoration: none;
         }
-        .debug-box {
-            display: none;
+        .log-box {
             margin-top: 14px;
             padding: 10px;
-            background: #fef2f2;
-            border: 1px solid #fecaca;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
             border-radius: 8px;
             font-size: 11px;
-            color: #b91c1c;
+            color: #475569;
             text-align: left;
+            white-space: pre-wrap;
             word-break: break-all;
+            max-height: 180px;
+            overflow-y: auto;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="spinner" id="spinner"></div>
-        <div id="statusText" style="font-size: 15px; font-weight: bold; color: #1e293b; margin-bottom: 6px;">準備中...</div>
-        <div id="subText" style="font-size: 12px; color: #94a3b8;">LINEトークへお届けしています</div>
-        <button id="btnClose" class="btn-close" onclick="closeApp()">トーク画面に戻る</button>
-        <div id="debugLog" class="debug-box"></div>
+        <div class="status-title" id="statusTitle">お車情報を準備中...</div>
+        <div class="status-sub" id="statusSub">LINEトークへお届けしています</div>
+        <button id="btnClose" class="btn" style="display: none;" onclick="closeApp()">トーク画面に戻る</button>
+        <button id="btnLogin" class="btn" style="display: none; background: #3b82f6;" onclick="doLogin()">LINEログイン・連携する</button>
+        <div id="logBox" class="log-box">初期化中...</div>
     </div>
 
     <script>
         const LIFF_ID = '2011340718-OaRM8tV4';
+        const logBox = document.getElementById('logBox');
+        const statusTitle = document.getElementById('statusTitle');
+        const statusSub = document.getElementById('statusSub');
+        const spinner = document.getElementById('spinner');
+        const btnClose = document.getElementById('btnClose');
+        const btnLogin = document.getElementById('btnLogin');
+
+        function addLog(msg) {
+            console.log(msg);
+            if (logBox) {
+                logBox.textContent += '\n' + msg;
+            }
+        }
 
         function closeApp() {
             try {
@@ -88,56 +118,66 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            const statusEl = document.getElementById('statusText');
-            const subEl = document.getElementById('subText');
-            const spinnerEl = document.getElementById('spinner');
-            const btnCloseEl = document.getElementById('btnClose');
-            const debugEl = document.getElementById('debugLog');
-
-            function showDebug(msg) {
-                if (debugEl) {
-                    debugEl.style.display = 'block';
-                    debugEl.textContent = msg;
-                }
-                if (btnCloseEl) {
-                    btnCloseEl.style.display = 'inline-block';
-                }
+        function doLogin() {
+            if (typeof liff !== 'undefined') {
+                liff.login();
             }
+        }
 
+        document.addEventListener('DOMContentLoaded', async () => {
             try {
+                addLog('1. LIFF SDK 初期化開始...');
                 if (typeof liff === 'undefined') {
-                    showDebug('LIFF SDKが読み込めませんでした');
-                    return;
+                    throw new Error('LIFF SDKの読み込みに失敗しました');
                 }
 
                 await liff.init({ liffId: LIFF_ID });
+                addLog('2. LIFF init成功 (isInClient: ' + liff.isInClient() + ', isLoggedIn: ' + liff.isLoggedIn() + ')');
+
+                if (!liff.isLoggedIn()) {
+                    addLog('3. 未ログイン状態のため、ログイン画面を表示します');
+                    if (spinner) spinner.style.display = 'none';
+                    statusTitle.textContent = 'LINE認証が必要です';
+                    statusSub.textContent = '下のボタンを押して連携を完了してください';
+                    btnLogin.style.display = 'block';
+                    // LINE内なら自動でログインリダイレクト
+                    if (liff.isInClient()) {
+                        liff.login();
+                    }
+                    return;
+                }
 
                 let userId = '';
 
-                // 1. LIFF Contextから取得
+                // 1. Contextから取得
                 try {
                     const ctx = liff.getContext();
                     if (ctx && ctx.userId) userId = ctx.userId;
                 } catch(e) {}
 
-                // 2. ログインプロファイルから取得
-                if (!userId && liff.isLoggedIn()) {
+                // 2. Profileから取得
+                if (!userId) {
                     try {
                         const profile = await liff.getProfile();
                         if (profile && profile.userId) userId = profile.userId;
                     } catch(e) {}
                 }
 
-                // 3. IDトークンから取得
-                if (!userId && liff.isLoggedIn()) {
+                // 3. ID Tokenから取得
+                if (!userId) {
                     try {
                         const idToken = liff.getDecodedIDToken();
                         if (idToken && idToken.sub) userId = idToken.sub;
                     } catch(e) {}
                 }
 
-                // URLパラメータ（通常クエリ & liff.state）の解析
+                addLog('4. 取得したユーザーID: ' + (userId ? userId.substring(0, 8) + '...' : '空'));
+
+                if (!userId) {
+                    throw new Error('ユーザーIDの取得に失敗しました');
+                }
+
+                // URLパラメータ解析
                 const urlParams = new URLSearchParams(window.location.search);
                 let queryStr = '';
 
@@ -152,16 +192,8 @@
                     queryStr = urlParams.toString();
                 }
 
-                console.log('Triggering silent postback:', { userId, queryStr });
-
-                if (!userId) {
-                    if (spinnerEl) spinnerEl.style.display = 'none';
-                    statusEl.textContent = '⚠️ LINEユーザーIDを取得できませんでした';
-                    statusEl.style.color = '#ef4444';
-                    subEl.textContent = 'LINEアプリ内からご利用ください';
-                    showDebug('userId is empty. isInClient: ' + liff.isInClient());
-                    return;
-                }
+                addLog('5. パラメータ: ' + queryStr);
+                addLog('6. api.phpへPush送信リクエスト中...');
 
                 const payload = new URLSearchParams({
                     action: 'trigger_postback',
@@ -177,29 +209,28 @@
                 });
 
                 const json = await res.json();
-                console.log('Trigger API response:', json);
+                addLog('7. API結果: ' + JSON.stringify(json));
 
                 if (json.success) {
-                    statusEl.textContent = '✅ トークルームにお届けしました！';
-                    subEl.textContent = 'トーク画面をご確認ください';
-                    if (spinnerEl) spinnerEl.style.display = 'none';
-                    
-                    // 0.4秒後に自動クローズ
+                    statusTitle.textContent = '✅ トークルームにお届けしました！';
+                    statusSub.textContent = 'トーク画面をご確認ください';
+                    if (spinner) spinner.style.display = 'none';
+                    addLog('8. 0.5秒後に自動クローズします...');
+
                     setTimeout(() => {
                         closeApp();
-                    }, 400);
+                    }, 500);
                 } else {
-                    if (spinnerEl) spinnerEl.style.display = 'none';
-                    statusEl.textContent = '⚠️ 送信エラーが発生しました';
-                    statusEl.style.color = '#ef4444';
-                    showDebug('APIエラー: ' + (json.error || json.message || JSON.stringify(json)));
+                    throw new Error('APIエラー: ' + (json.error || JSON.stringify(json)));
                 }
-            } catch (e) {
-                if (spinnerEl) spinnerEl.style.display = 'none';
-                console.error('Trigger error:', e);
-                statusEl.textContent = '⚠️ 処理中にエラーが発生しました';
-                statusEl.style.color = '#ef4444';
-                showDebug('Exception: ' + e.message);
+
+            } catch (err) {
+                if (spinner) spinner.style.display = 'none';
+                statusTitle.textContent = '⚠️ 処理中にエラーが発生しました';
+                statusTitle.style.color = '#ef4444';
+                statusSub.textContent = 'エラーログをご確認ください';
+                addLog('❌ 例外エラー: ' + err.message);
+                if (btnClose) btnClose.style.display = 'block';
             }
         });
     </script>
