@@ -686,6 +686,9 @@ function generateCarSearchMessages(PDO $db, array $criteria, string $heading, st
             ]
         ];
 
+        // 最大4カルーセル（40台）まで（LINEの1リクエスト上限: テキスト1件 + カルーセル4件 = 5件）
+        $bubbleChunks = array_slice($bubbleChunks, 0, 4);
+
         foreach ($bubbleChunks as $idx => $chunk) {
             $messages[] = [
                 'type' => 'flex',
@@ -693,9 +696,14 @@ function generateCarSearchMessages(PDO $db, array $criteria, string $heading, st
                 'contents' => [
                     'type' => 'carousel',
                     'contents' => $chunk
-                ],
-                'quickReply' => getQuickReplyItems()
+                ]
             ];
+        }
+
+        // quickReply はLINE仕様により最後のメッセージオブジェクトにのみ付与
+        if (!empty($messages)) {
+            $lastIdx = count($messages) - 1;
+            $messages[$lastIdx]['quickReply'] = getQuickReplyItems();
         }
 
         return $messages;
