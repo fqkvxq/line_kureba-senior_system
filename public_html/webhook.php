@@ -2673,7 +2673,7 @@ function generateKnowledgeDetailMessage(string $topic): array {
                     'action' => [
                         'type' => 'uri',
                         'label' => '👥 この豆知識を友だちにシェア',
-                        'uri' => 'https://liff.line.me/2011335169-9x8ydjaV/mycar.html?share=' . urlencode($topic)
+                        'uri' => 'https://liff.line.me/2011335169-9x8ydjaV/share.html?topic=' . urlencode($topic)
                     ]
                 ],
                 [

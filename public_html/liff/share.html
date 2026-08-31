@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>シェア</title>
+    <!-- LIFF SDK -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #64748b;
+        }
+        .spinner {
+            width: 28px;
+            height: 28px;
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #06C755;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="spinner"></div>
+
+    <script>
+        const LIFF_ID = '2011335169-9x8ydjaV';
+
+        // 全21テーマのナレッジ記事マスター辞書
+        const KNOWLEDGE_ARTICLES = {
+            used_car: {
+                badge: '🚗 車選びの極意【①】',
+                title: '① 失敗しない中古車の選び方',
+                subtitle: 'プロが教える！後悔しない5大見極め術',
+                sections: [
+                    { icon: '1️⃣', title: '年式と走行距離のバランス', desc: '目安は1年＝約8,000km〜1万km。定期的にオイル交換されていた車両が安心。' },
+                    { icon: '2️⃣', title: '修復歴（事故歴）の有無を確認', desc: '車の骨格（フレーム）に修理歴がないか明確に開示している店舗を選びましょう。' },
+                    { icon: '3️⃣', title: '整備記録簿（メンテナンスノート）', desc: '過去の点検履歴や消耗品交換記録が残っている車は安心度大。' },
+                    { icon: '4️⃣', title: '車両の保証内容と期間', desc: '購入後のトラブルに備え、エンジン・ミッション等の無料保証期間を確認。' },
+                    { icon: '5️⃣', title: '支払総額（乗り出し価格）の明瞭さ', desc: '車体価格だけでなく、諸費用や税金を含めた総額表示店を選びましょう。' }
+                ],
+                summary: 'アップファーレンでは全車に徹底点検＆保証をお付けし、安心の中古車選びをサポートいたします！'
+            },
+            kei_vs_compact: {
+                badge: '🚙 徹底比較ガイド【②】',
+                title: '② 軽自動車 vs 普通車の維持費比較',
+                subtitle: '税金・車検・燃費から見る賢い選び方',
+                sections: [
+                    { icon: '💰', title: '年間維持費の差は約5〜8万円！', desc: '自動車税や重量税、自賠責保険、高速料金まで軽自動車が圧倒的にリーズナブル。' },
+                    { icon: '👥', title: '乗車人数と室内空間', desc: '軽は4人乗り、普通車は5人〜8人乗り。ファミリーユースなら普通車が快適。' },
+                    { icon: '🛣️', title: '走行安定性と長距離運転', desc: '高速道路や坂道、長距離ドライブの静粛性と疲労感は普通車（1.5L前後）に軍配。' }
+                ],
+                summary: '毎日の街乗り中心なら軽自動車、週末の家族ドライブや高速走行が多いならコンパクトカーがおすすめです！'
+            },
+            body_type_guide: {
+                badge: '🚙 目的別・車選び【③】',
+                title: '③ ボディタイプ別の特徴と選び方',
+                subtitle: '用途・家族構成に合った最適車種診断',
+                sections: [
+                    { icon: '🚗', title: '軽ハイトワゴン（N-BOX/タント等）', desc: 'スライドドアと広々頭上空間で子育て世代・お買い物に大人気。' },
+                    { icon: '🚙', title: 'SUV・クロスオーバー（ヤリスクロス/ヴェゼル等）', desc: '高い視界で見切りが良く、雪道やアウトドア・悪路走破性が抜群。' },
+                    { icon: '🚐', title: 'ミニバン・コンパクトカー（セレナ/ノート等）', desc: '大人数乗車や小回り低燃費など、家族旅行や通勤に万能。' }
+                ],
+                summary: 'アップファーレンでは軽からSUV・ミニバンまで豊富な在庫をご用意しております！'
+            },
+            car_loan: {
+                badge: '💳 ローン＆資金計画【④】',
+                title: '④ オートローンの賢い選び方',
+                subtitle: '金利の仕組みと無理のない返済プランの立て方',
+                sections: [
+                    { icon: '🏦', title: '主なローンの種類と特徴', desc: 'ディーラー提携（即日審査）、銀行ローン（低金利）、自社ローン等があります。' },
+                    { icon: '📊', title: '実質年率と支払総額の比較', desc: '月々の返済額だけでなく、最終的な金利手数料を含めた総支払額を確認。' },
+                    { icon: '💡', title: '安心の返済比率（手取りの15〜20%）', desc: '毎月の返済は手取り月収の15〜20%以内に抑えるのが無理なく維持できる黄金比率。' }
+                ],
+                summary: 'アップファーレンではお客様のライフスタイルに合わせた各種ローンシミュレーションを無料で行っております！'
+            },
+            best_timing: {
+                badge: '💰 お得な買い時【⑤】',
+                title: '⑤ 車のお得な買い時・購入時期',
+                subtitle: '賢く買って得するベストなタイミング',
+                sections: [
+                    { icon: '🗓', title: '決算期（3月・9月）', desc: '販売目標達成のため値引きやオプションサービスが充実しやすい狙い目。' },
+                    { icon: '🔄', title: 'フルモデルチェンジ直後', desc: '前型モデルの下取り車が多く市場に出回り、お得に良質車が手に入ります。' },
+                    { icon: '💴', title: '自動車税（4月課税）のタイミング', desc: '軽自動車は月割り課税がないため4月2日以降の購入がお得。' }
+                ],
+                summary: 'タイミングを見極めて、お目当ての愛車をお得に手に入れましょう！'
+            },
+            car_paperwork: {
+                badge: '📄 手続き＆流れ【⑥】',
+                title: '⑥ 必要書類と納車までの流れ',
+                subtitle: '準備から納車当日までの完全ステップ',
+                sections: [
+                    { icon: '1️⃣', title: 'ご契約時の必要書類', desc: '普通車：印鑑証明書・実印。軽自動車：住民票・認印を用意。' },
+                    { icon: '2️⃣', title: '納車前点検・整備', desc: '法定点検、消耗品交換、内外装クリーニングを実施。' },
+                    { icon: '3️⃣', title: '登録手続きと納車', desc: '名義変更・ナンバー取得完了後、店頭またはご自宅へご納車。' }
+                ],
+                summary: '書類の書き方や手続きはスタッフが親切丁寧にサポートいたします！'
+            },
+            car_insurance: {
+                badge: '🛡️ 任意保険の見直し【⑦】',
+                title: '⑦ 自動車保険の賢い見直し術',
+                subtitle: '補償を手厚く＆保険料を安く抑えるコツ',
+                sections: [
+                    { icon: '⚖️', title: '自賠責保険と任意保険の違い', desc: '自賠責は対人補償のみで上限あり。任意保険（対人対物無制限）は必須。' },
+                    { icon: '🚘', title: '車両保険の免責金額設定', desc: '免責（自己負担）を5万〜10万円に設定するだけで毎年の保険料を大幅カット。' },
+                    { icon: '👥', title: '運転者限定・年齢条件の適正化', desc: '本人限定や夫婦限定、35歳以上補償など現在の運転環境に合わせて見直し。' }
+                ],
+                summary: 'アップファーレンでは自動車保険の無料診断・見直し相談も承っております！'
+            },
+            oil_change: {
+                badge: '🛢️ メンテナンスの基本【⑧】',
+                title: '⑧ エンジンオイル交換の重要性と時期',
+                subtitle: '愛車の寿命を延ばす一番の秘訣',
+                sections: [
+                    { icon: '⏱', title: '交換目安（走行5,000kmまたは半年）', desc: 'ターボ車やシビアコンディション（短距離走行中心）は3,000〜5,000kmが安心。' },
+                    { icon: '⚠️', title: 'オイル交換を怠るとどうなる？', desc: '燃費悪化、異音・パワーダウン、最悪はエンジン焼き付きで数十万円の修理代に。' },
+                    { icon: '🔄', title: 'オイルエレメント（フィルター）', desc: 'オイル交換2回に1回のペースでフィルターも同時交換しましょう。' }
+                ],
+                summary: '定期的なオイル交換こそがお車の健康を保つ一番安くて確実な投資です！'
+            },
+            shaken_guide: {
+                badge: '📋 車検の基礎知識【⑨】',
+                title: '⑨ 車検（継続検査）の流れと費用節約',
+                subtitle: '満了日の1ヶ月前から受検可能！',
+                sections: [
+                    { icon: '🔍', title: '車検の満了日確認方法', desc: '車検証の有効期間満了日、またはフロントガラスの車検ステッカー裏面を確認。' },
+                    { icon: '💰', title: '法定費用と車検基本料の内訳', desc: '重量税・自賠責・印紙代（法定費用）＋24ヶ月点検・整備費用で構成。' },
+                    { icon: '💡', title: '費用を抑えるポイント', desc: '事前の無料事前見積もりで不要な追加整備を省き、早期予約割引を活用。' }
+                ],
+                summary: 'アップファーレンでは事前お見積もり・代車無料貸出を実施しております！'
+            },
+            periodic_check: {
+                badge: '🔧 法定点検の重要性【⑩】',
+                title: '⑩ 12ヶ月定期点検を受けるメリット',
+                subtitle: '車検と車検の間に行う大切な健康診断',
+                sections: [
+                    { icon: '🛡️', title: '故障の早期発見・予防整備', desc: 'ブレーキパッド摩耗、バッテリー劣化、ベルト類のひび割れを事前防止。' },
+                    { icon: '📘', title: '点検整備済ステッカー（ダイヤル）', desc: 'プロ整備士の点検を受けた証。愛車の売却・下取り査定額アップにも直結。' },
+                    { icon: '🔒', title: 'メーカー保証の継続条件', desc: '定期点検を受けていないと特別保証が適用外になるケースがあります。' }
+                ],
+                summary: '1年に1回の健康診断で、いつでも安心・快適なドライブを！'
+            },
+            battery_care: {
+                badge: '⚡ 電装トラブル予防【⑪】',
+                title: '⑪ バッテリー上がりの原因と寿命診断',
+                subtitle: '突然死を防ぐ！交換サインの見極め方',
+                sections: [
+                    { icon: '⏳', title: 'バッテリーの寿命目安（2〜3年）', desc: 'アイドリングストップ車や電装品多数のお車は2年前後での点検がおすすめ。' },
+                    { icon: '⚠️', title: 'バッテリー劣化の初期サイン', desc: 'エンジン始動時のセルモーターの回転が鈍い、ヘッドライトが暗いなど。' },
+                    { icon: '❄️', title: '冬場・夏場の注意点', desc: '極端な寒暖差で化学反応が低下し、真冬や真夏に突然死しやすくなります。' }
+                ],
+                summary: '無料のバッテリー電圧点検もいつでも店頭で実施しております！'
+            },
+            brake_care: {
+                badge: '🛑 安全の要・ブレーキ【⑫】',
+                title: '⑫ ブレーキパッドの寿命と重要点検',
+                subtitle: '命を守る最重要保安部品のチェック術',
+                sections: [
+                    { icon: '📏', title: 'パッド残厚の危険ライン（3mm以下）', desc: '新品は約10mm。残り3mm以下は即交換推奨、1mm以下はローター破損の危険。' },
+                    { icon: '🔊', title: '「キーキー」異音のサイン', desc: 'パッドに付いた警告センサー（ウェアインジケーター）が交換時期を知らせています。' },
+                    { icon: '💧', title: 'ブレーキフルードの吸湿劣化', desc: '2年ごとの車検時にブレーキフルードも同時交換するのが鉄則。' }
+                ],
+                summary: 'ブレーキの違和感や異音を感じたら、無理せずすぐにご相談ください！'
+            },
+            aircon_care: {
+                badge: '❄️ 快適ドライブ【⑬】',
+                title: '⑬ カーエアコンの効き＆悪臭対策',
+                subtitle: 'フィルター交換とエバポレーター洗浄',
+                sections: [
+                    { icon: '🍃', title: 'エアコンフィルター（年1回交換）', desc: '花粉・ホコリ・カビの蓄積で風量低下＆嫌な臭いの原因に。' },
+                    { icon: '🧼', title: 'エバポレーターの除菌消臭洗浄', desc: 'カビの温床となる冷却装置を直接洗浄して、新車同様の爽やかな風を復活！' },
+                    { icon: '❄️', title: 'エアコンガスクリーニング＆補充', desc: 'ガス不足で冷えが弱い時は真空引き・規定量充填で冷却性能が劇的に回復。' }
+                ],
+                summary: 'エアコンメンテナンスで、季節を問わず快適な車内空間をキープしましょう！'
+            },
+            car_wash_care: {
+                badge: '🧼 愛車ケア＆美観【⑭】',
+                title: '⑭ 正しい洗車＆ボディコーティング術',
+                subtitle: '愛車の輝きを長く保つプロの技',
+                sections: [
+                    { icon: '☀️', title: '炎天下の洗車はNG！', desc: '水分が急速に蒸発し、イオンデポジット（水シミ・雨ジミ）が焼き付く原因に。' },
+                    { icon: '🧽', title: 'たっぷりの泡で上から下へ洗う', desc: 'まずは高圧水で砂埃を落とし、泡のクッションで撫でるように洗車キズを防止。' },
+                    { icon: '✨', title: 'ガラスコーティングの効果', desc: '深みのある艶と強力な撥水性、紫外線や汚れから塗装面を長期保護。' }
+                ],
+                summary: 'プロによる手洗い洗車やボディガラスコーティングもお気軽にご相談ください！'
+            },
+            winter_driving: {
+                badge: '❄️ 冬道・降雪対策【⑮】',
+                title: '⑮ 雪道運転とスタッドレスタイヤの極意',
+                subtitle: '新潟の厳しい冬を安全に乗り切る知識',
+                sections: [
+                    { icon: '🛞', title: 'スタッドレスの寿命（プラットホーム）', desc: '溝が50%摩耗すると冬タイヤとして使用不可。製造から3〜4年が交換目安。' },
+                    { icon: '🧊', title: 'ブラックアイスバーンと急操作厳禁', desc: '濡れた路面に見える凍結道路に注意。「急アクセル・急ブレーキ・急ハンドル」はNG。' },
+                    { icon: '🚿', title: '消雪パイプ・融雪剤の下回り防錆', desc: '塩分を含んだ融雪剤はサビの天敵。シーズン前の下回り防錆塗装（アンダーコート）が必須。' }
+                ],
+                summary: 'スタッドレスタイヤの履き替え・ご購入や下回り防錆塗装も承っております！'
+            },
+            warning_lights: {
+                badge: '🚨 緊急・トラブル診断【⑯】',
+                title: '⑯ 警告灯の意味と緊急時の対処法',
+                subtitle: '点灯したらどうする？赤と黄の危険度',
+                sections: [
+                    { icon: '🔴', title: '赤色警告灯（即時安全な場所へ停車）', desc: '油圧警告灯（オイル不足）、水温警告灯（オーバーヒート）、ブレーキ警告灯など。' },
+                    { icon: '🟡', title: '黄色警告灯（速やかに点検整備）', desc: 'エンジンチェックランプ、ABS警告灯など。自走可能でも早めの診断機チェックが必要。' },
+                    { icon: '⚠️', title: '異音（カタカタ・キーキー）のサイン', desc: '足回りやベルト類の緩み・摩耗。放置すると重大故障に繋がるため早期相談。' }
+                ],
+                summary: 'メーター内に見慣れないマークが点灯したら、慌てず安全な場所に止めてご連絡ください！'
+            },
+            rain_driving: {
+                badge: '🌧️ 雨天・悪天候対策【⑰】',
+                title: '⑰ 雨の日の安全運転と冠水対策',
+                subtitle: 'ハイドロプレーニング現象と視界確保',
+                sections: [
+                    { icon: '🌊', title: 'ハイドロプレーニング現象の恐怖', desc: '雨の高速道路でタイヤが水膜に浮きハンドルが効かなくなる現象。タイヤ溝の残量が命綱。' },
+                    { icon: '🌊', title: '冠水道路の走行限界（ドア下端まで）', desc: 'マフラーやエアクリーナーから水を吸うとエンジンが即死します。深さが不明な冠水路は迂回。' },
+                    { icon: '👀', title: 'ガラス撥水加工＆ワイパーゴム交換', desc: 'ワイパーゴムは年1回交換が目安。ガラス撥水で夜間や豪雨でも視界クリア。' }
+                ],
+                summary: 'ワイパー交換やフロントガラス超撥水コーティングで雨の日も安心視界を！'
+            },
+            accident_guide: {
+                badge: '💥 緊急初動マニュアル【⑱】',
+                title: '⑱ 事故・故障時の緊急対応手順',
+                subtitle: '万が一の時に落ち着いて行動する4ステップ',
+                sections: [
+                    { icon: '1️⃣', title: '二次被害の防止とハザード点灯', desc: '安全な場所へ車両を移動し、ハザード点灯・三角表示板・発煙筒で後続車に知らせる。' },
+                    { icon: '2️⃣', title: '負傷者の救護と119番通報', desc: '怪我人がいる場合は最優先で救急車を手配し、可能な範囲で応急手当を行う。' },
+                    { icon: '3️⃣', title: '警察への110番通報（事故証明）', desc: '物損事故でも警察への届出は法律上の義務。届け出がないと保険請求できません。' },
+                    { icon: '4️⃣', title: '保険会社・店舗への連絡', desc: '相手の連絡先を確認し、保険会社および修理工場（アップファーレン）へ連絡。' }
+                ],
+                summary: '万が一の事故やお車のトラブル時は、アップファーレンへもお気軽にご相談ください！'
+            },
+            fuel_economy: {
+                badge: '⛽ 燃費＆節約術【⑲】',
+                title: '⑲ 燃費アップ＆愛車の節約術',
+                subtitle: 'ちょっとしたコツで年間数万円の節約に！',
+                sections: [
+                    { icon: '🟢', title: 'ふんわりアクセル「eスタート」', desc: '発進後5秒で時速20kmを目安にゆっくり踏み出すだけで約10%燃費向上。' },
+                    { icon: '💨', title: 'タイヤ空気圧の定期点検', desc: '空気圧が適正値より50kPa低いと燃費が約2〜4%悪化。月1回の補充がおすすめ。' },
+                    { icon: '📦', title: '不要な積載物の降車', desc: '100kgの荷物を積むと燃費が約3%悪化。トランクの荷物は整理しましょう。' }
+                ],
+                summary: '日頃の小さな意識と定期的な点検で、ガソリン代を賢く節約しましょう！'
+            },
+            beginner_driver: {
+                badge: '🔰 安心ドライブ【⑳】',
+                title: '⑳ 初心者・ペーパードライバー安心術',
+                subtitle: '運転の不安を解消する基本テクニック',
+                sections: [
+                    { icon: '📐', title: '車幅感覚の掴み方', desc: '道路の白線がフロントガラスのどこを通るか目印を覚えると左寄りの感覚が掴めます。' },
+                    { icon: '🅿️', title: 'バック駐車のコツ', desc: '駐車枠に対して約45度に傾けてから開始し、サイドミラーで後輪位置を確認。' },
+                    { icon: '👀', title: '死角の確認と車間距離', desc: 'ミラーだけでなく目視での死角確認が事故防止の鍵。車間距離は2秒間隔をキープ。' }
+                ],
+                summary: '見切りの良い軽自動車やバックカメラ付き車両など運転しやすいお車を多数ご用意！'
+            },
+            car_accessories: {
+                badge: '🔌 便利アイテム・装備【㉑】',
+                title: '㉑ ドラレコ・ETC・LED便利知識',
+                subtitle: '愛車をもっと快適＆安心にするアイテム',
+                sections: [
+                    { icon: '📷', title: '前後2カメラドライブレコーダー', desc: 'あおり運転対策や駐車監視機能付きが安心。万が一の証拠能力も抜群。' },
+                    { icon: '💳', title: 'ETC2.0のメリットと新セキュリティ', desc: '圏央道割引や渋滞情報受信に対応。旧規格ETCは今後使えなくなるため注意。' },
+                    { icon: '💡', title: 'LEDヘッドライト化の注意点', desc: '夜間の視認性が劇的UP。車検対応のカットラインがしっかり出るバルブを選択。' }
+                ],
+                summary: '持ち込みドラレコやETC・LEDの取り付け・配線加工もプロが丁寧に行います！'
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            let topic = 'used_car';
+            try {
+                const params = new URLSearchParams(window.location.search);
+                topic = params.get('topic') || params.get('share') || params.get('share_topic') || 'used_car';
+            } catch(e) {}
+
+            const data = KNOWLEDGE_ARTICLES[topic] || KNOWLEDGE_ARTICLES['used_car'];
+
+            // シェア用 Flex Message の生成
+            const sectionContents = data.sections.map(s => ({
+                type: 'box',
+                layout: 'vertical',
+                margin: 'sm',
+                backgroundColor: '#f8fafc',
+                paddingAll: '8px',
+                cornerRadius: 'md',
+                contents: [
+                    {
+                        type: 'text',
+                        text: `${s.icon} ${s.title}`,
+                        weight: 'bold',
+                        size: 'xs',
+                        color: '#1e293b'
+                    },
+                    {
+                        type: 'text',
+                        text: s.desc,
+                        size: 'xxs',
+                        color: '#475569',
+                        wrap: true,
+                        margin: 'xs'
+                    }
+                ]
+            }));
+
+            const shareFlexMessage = {
+                type: 'flex',
+                altText: `【クルマの豆知識】${data.title}`,
+                contents: {
+                    type: 'bubble',
+                    size: 'mega',
+                    body: {
+                        type: 'box',
+                        layout: 'vertical',
+                        paddingAll: '16px',
+                        contents: [
+                            {
+                                type: 'text',
+                                text: '📢 友だちからのお役立ちクルマ情報！',
+                                weight: 'bold',
+                                size: 'xxs',
+                                color: '#06C755'
+                            },
+                            {
+                                type: 'text',
+                                text: data.badge,
+                                weight: 'bold',
+                                size: 'xs',
+                                color: '#3b82f6',
+                                margin: 'xs'
+                            },
+                            {
+                                type: 'text',
+                                text: data.title,
+                                weight: 'bold',
+                                size: 'md',
+                                color: '#1e293b',
+                                margin: 'xs',
+                                wrap: true
+                            },
+                            {
+                                type: 'text',
+                                text: data.subtitle,
+                                size: 'xs',
+                                color: '#64748b',
+                                margin: 'xs'
+                            },
+                            {
+                                type: 'separator',
+                                margin: 'md'
+                            },
+                            {
+                                type: 'box',
+                                layout: 'vertical',
+                                margin: 'sm',
+                                contents: sectionContents
+                            },
+                            {
+                                type: 'separator',
+                                margin: 'md'
+                            },
+                            {
+                                type: 'text',
+                                text: `💡 ${data.summary}`,
+                                size: 'xxs',
+                                color: '#334155',
+                                wrap: true,
+                                margin: 'sm'
+                            }
+                        ]
+                    },
+                    footer: {
+                        type: 'box',
+                        layout: 'vertical',
+                        spacing: 'sm',
+                        paddingAll: '12px',
+                        contents: [
+                            {
+                                type: 'button',
+                                style: 'primary',
+                                color: '#06C755',
+                                height: 'sm',
+                                action: {
+                                    type: 'uri',
+                                    label: '📚 他の豆知識ガイドも見る',
+                                    uri: 'https://liff.line.me/2011335169-9x8ydjaV/trigger.html?action=show_knowledge_menu'
+                                }
+                            },
+                            {
+                                type: 'button',
+                                style: 'secondary',
+                                height: 'sm',
+                                action: {
+                                    type: 'uri',
+                                    label: '🚗 アップファーレンの在庫を見る',
+                                    uri: 'https://liff.line.me/2011335169-9x8ydjaV/index.html'
+                                }
+                            }
+                        ]
+                    }
+                }
+            };
+
+            try {
+                if (typeof liff !== 'undefined') {
+                    await liff.init({ liffId: LIFF_ID });
+
+                    if (liff.isLoggedIn() && liff.isApiAvailable('shareTargetPicker')) {
+                        const res = await liff.shareTargetPicker([shareFlexMessage]);
+                        // 送信完了またはキャンセル後、直ちにウィンドウを閉じる
+                        if (liff.isInClient()) {
+                            liff.closeWindow();
+                        } else {
+                            window.close();
+                        }
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn('Share error:', err);
+            }
+
+            // フォールバック（未対応環境など）
+            const shareText = `【クルマのお役立ち豆知識】\n${data.title}\n\n${data.subtitle}\n\n▼豆知識ガイド一覧はこちら\nhttps://liff.line.me/2011335169-9x8ydjaV/trigger.html?action=show_knowledge_menu`;
+            const lineShareUrl = `https://line.me/R/msg/text/?${encodeURIComponent(shareText)}`;
+            window.location.replace(lineShareUrl);
+        });
+    </script>
+</body>
+</html>
