@@ -1867,7 +1867,9 @@ function generateKnowledgeDetailMessage(string $topic): array {
                 'summary' => '少しでも「いつもと違う音や振動」を感じたら、放置せずお気軽にご相談ください！',
                 'action_btn' => [
                     'label' => '🛠️ 来店・点検相談フォームを開く',
-                    'data' => 'action=show_equipment_menu'
+                    'uri' => defined('LIFF_ID') && LIFF_ID !== 'YOUR_LIFF_ID_HERE'
+                        ? 'https://liff.line.me/' . LIFF_ID . '?page=mycar'
+                        : 'https://www.goo-net.com/usedcar_shop/0601492/stock.html'
                 ]
             ];
             break;
@@ -1899,6 +1901,21 @@ function generateKnowledgeDetailMessage(string $topic): array {
                     'margin' => 'sm'
                 ]
             ]
+        ];
+    }
+
+    $mainBtnAction = [];
+    if (!empty($articleData['action_btn']['uri'])) {
+        $mainBtnAction = [
+            'type' => 'uri',
+            'label' => $articleData['action_btn']['label'],
+            'uri' => $articleData['action_btn']['uri']
+        ];
+    } else {
+        $mainBtnAction = [
+            'type' => 'postback',
+            'label' => $articleData['action_btn']['label'],
+            'data' => $articleData['action_btn']['data']
         ];
     }
 
@@ -1973,11 +1990,7 @@ function generateKnowledgeDetailMessage(string $topic): array {
                     'style' => 'primary',
                     'color' => '#06C755',
                     'height' => 'sm',
-                    'action' => [
-                        'type' => 'postback',
-                        'label' => $articleData['action_btn']['label'],
-                        'data' => $articleData['action_btn']['data']
-                    ]
+                    'action' => $mainBtnAction
                 ],
                 [
                     'type' => 'button',
