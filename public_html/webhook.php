@@ -264,6 +264,11 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             sendReplyMessage($replyToken, $messages);
             break;
 
+        // --- 5-2. 点検受付メニュー表示 ---
+        case 'open_mycar':
+            sendMyCarMenuMessage($replyToken);
+            break;
+
         // --- 6. サイレント検索: 価格帯メニュー表示 ---
         case 'show_price_menu':
             sendPriceMenuMessage($replyToken);
@@ -384,6 +389,10 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bo
     $messages = [];
 
     switch ($action) {
+        case 'open_mycar':
+            $messages = generateMyCarMenuMessages();
+            break;
+
         case 'show_price_menu':
             $messages = generatePriceMenuMessages();
             break;
@@ -3471,7 +3480,7 @@ function generateEquipmentMenuMessages(PDO $db): array {
 }
 
 /**
- * クイックリプライボタン一覧（完全サイレントPostback方式）
+ * クイックリプライボタン一覧（LINE Messaging API 完全準拠: postbackのみ）
  */
 function getQuickReplyItems(): array {
     return [
@@ -3479,9 +3488,9 @@ function getQuickReplyItems(): array {
             [
                 'type' => 'action',
                 'action' => [
-                    'type' => 'uri',
+                    'type' => 'postback',
                     'label' => '🛠️ 点検受付',
-                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
+                    'data' => 'action=open_mycar'
                 ]
             ],
             [
@@ -3538,14 +3547,6 @@ function getQuickReplyItems(): array {
                     'type' => 'postback',
                     'label' => '🚘 軽自動車',
                     'data' => 'action=search_kei'
-                ]
-            ],
-            [
-                'type' => 'action',
-                'action' => [
-                    'type' => 'postback',
-                    'label' => '💎 50万以下',
-                    'data' => 'action=search_price&max_price=50'
                 ]
             ]
         ]
