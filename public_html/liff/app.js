@@ -138,13 +138,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch(e) {
             console.warn('Silent trigger error:', e);
         } finally {
-            setTimeout(() => {
+            try {
                 if (typeof liff !== 'undefined' && liff.isInClient()) {
                     liff.closeWindow();
                 } else {
                     window.close();
                 }
-            }, 300);
+            } catch(err) {
+                window.close();
+            }
+            setTimeout(() => {
+                try { liff.closeWindow(); } catch(e) {}
+            }, 200);
         }
         return;
     }
