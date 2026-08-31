@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await fetchCarData();
 });
 
-const LIFF_ID = '2011335169-9x8ydjaV';
+const LIFF_ID = '2011340718-OaRM8tV4';
 
 /**
  * LIFF初期化

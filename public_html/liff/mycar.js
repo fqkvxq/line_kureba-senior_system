@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-const LIFF_ID = '2011335169-9x8ydjaV';
+const LIFF_ID = '2011340718-OaRM8tV4';
 
 async function initLiff() {
     // 1. ローカルストレージから永続IDを取得または生成
@@ -329,7 +329,7 @@ async function shareKnowledgeToFriends(topic) {
                         action: {
                             type: 'uri',
                             label: '📚 他の豆知識ガイドも見る',
-                            uri: 'https://liff.line.me/2011335169-9x8ydjaV/trigger.html?action=show_knowledge_menu'
+                            uri: 'https://liff.line.me/2011340718-OaRM8tV4/trigger.html?action=show_knowledge_menu'
                         }
                     },
                     {
@@ -339,7 +339,7 @@ async function shareKnowledgeToFriends(topic) {
                         action: {
                             type: 'uri',
                             label: '🚗 アップファーレンの在庫を見る',
-                            uri: 'https://liff.line.me/2011335169-9x8ydjaV/index.html'
+                            uri: 'https://liff.line.me/2011340718-OaRM8tV4/index.html'
                         }
                     }
                 ]
@@ -366,7 +366,7 @@ async function shareKnowledgeToFriends(topic) {
     }
 
     // 2. ブラウザや未対応環境時のフォールバック (LINE URLスキーム共有)
-    const shareText = `【クルマのお役立ち豆知識】\n${data.title}\n\n${data.subtitle}\n\n▼豆知識ガイド一覧はこちら\nhttps://liff.line.me/2011335169-9x8ydjaV/trigger.html?action=show_knowledge_menu\n\n▼アップファーレンの展示在庫を見る\nhttps://liff.line.me/2011335169-9x8ydjaV/index.html`;
+    const shareText = `【クルマのお役立ち豆知識】\n${data.title}\n\n${data.subtitle}\n\n▼豆知識ガイド一覧はこちら\nhttps://liff.line.me/2011340718-OaRM8tV4/trigger.html?action=show_knowledge_menu\n\n▼アップファーレンの展示在庫を見る\nhttps://liff.line.me/2011340718-OaRM8tV4/index.html`;
     const lineShareUrl = `https://line.me/R/msg/text/?${encodeURIComponent(shareText)}`;
     
     if (navigator.share) {
