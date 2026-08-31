@@ -1,16 +1,16 @@
 <?php
 /**
  * LINE Messaging API Webhook ハンドラー
- * LINE公式アカウントからのメッセージを受信し、データベースの車両情報をFlex Messageで返信します。
+ * LINE公式アカウントから�EメチE��ージを受信し、データベ�Eスの車両惁E��をFlex Messageで返信します、E
  */
 
 require_once __DIR__ . '/config.php';
 
-// --- ブラウザ等からの直接GETアクセスの場合は診断画面を表示 ---
+// --- ブラウザ等から�E直接GETアクセスの場合�E診断画面を表示 ---
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     header('Content-Type: text/html; charset=utf-8');
     
-    // DB状態確認
+    // DB状態確誁E
     $dbStatus = 'エラー';
     $carCount = 0;
     $dbPath = DB_PATH;
@@ -20,11 +20,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $carCount = (int)$stmt->fetch()['cnt'];
         $dbStatus = "正常稼働中 (有効在庫: {$carCount}台)";
     } catch (Exception $e) {
-        $dbStatus = "接続失敗: " . htmlspecialchars($e->getMessage());
+        $dbStatus = "接続失敁E " . htmlspecialchars($e->getMessage());
     }
 
-    $tokenConfigured = (LINE_CHANNEL_ACCESS_TOKEN !== 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') ? '<span style="color:green;">設定済み</span>' : '<span style="color:red;">未設定 (config.phpに貼り付けてください)</span>';
-    $secretConfigured = (LINE_CHANNEL_SECRET !== 'YOUR_CHANNEL_SECRET_HERE') ? '<span style="color:green;">設定済み</span>' : '<span style="color:red;">未設定</span>';
+    $tokenConfigured = (LINE_CHANNEL_ACCESS_TOKEN !== 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') ? '<span style="color:green;">設定済み</span>' : '<span style="color:red;">未設宁E(config.phpに貼り付けてください)</span>';
+    $secretConfigured = (LINE_CHANNEL_SECRET !== 'YOUR_CHANNEL_SECRET_HERE') ? '<span style="color:green;">設定済み</span>' : '<span style="color:red;">未設宁E/span>';
     
     echo <<<HTML
     <!DOCTYPE html>
@@ -38,16 +38,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     </style></head>
     <body>
     <div class="card">
-        <h2>🚗 LINE Webhook 稼働ステータス</h2>
+        <h2>🚗 LINE Webhook 稼働スチE�Eタス</h2>
         <table>
-            <tr><th>項目</th><th>状態</th></tr>
-            <tr><td>Webhook エンドポイント</td><td>正常応答中 (200 OK)</td></tr>
-            <tr><td>チャネルアクセストークン</td><td>{$tokenConfigured}</td></tr>
-            <tr><td>チャネルシークレット</td><td>{$secretConfigured}</td></tr>
+            <tr><th>頁E��</th><th>状慁E/th></tr>
+            <tr><td>Webhook エンド�EインチE/td><td>正常応答中 (200 OK)</td></tr>
+            <tr><td>チャネルアクセスト�Eクン</td><td>{$tokenConfigured}</td></tr>
+            <tr><td>チャネルシークレチE��</td><td>{$secretConfigured}</td></tr>
             <tr><td>DBパス</td><td><code>{$dbPath}</code></td></tr>
-            <tr><td>データベース状態</td><td><strong>{$dbStatus}</strong></td></tr>
+            <tr><td>チE�Eタベ�Eス状慁E/td><td><strong>{$dbStatus}</strong></td></tr>
         </table>
-        <h3>📋 最近のログ (最新35件)</h3>
+        <h3>📋 最近�Eログ (最新35件)</h3>
         <div class="log-box">
 HTML;
     $logFile = __DIR__ . '/webhook_debug.log';
@@ -55,7 +55,7 @@ HTML;
         $lines = array_slice(file($logFile), -35);
         echo htmlspecialchars(implode('', $lines));
     } else {
-        echo "ログはまだありません。LINEでメッセージを送信すると記録されます。";
+        echo "ログはまだありません、EINEでメチE��ージを送信すると記録されます、E;
     }
     echo <<<HTML
         </div>
@@ -65,13 +65,13 @@ HTML;
     exit;
 }
 
-// --- Webhookリクエスト受信時のエントリポイント実行 ---
+// --- Webhookリクエスト受信時�Eエントリポイント実衁E---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?? '') === 'webhook.php' || basename($_SERVER['PHP_SELF'] ?? '') === 'webhook.php')) {
-    // 生のリクエストボディを取得
+    // 生�Eリクエスト�EチE��を取征E
     $rawInput = file_get_contents('php://input');
     writeDebugLog("Webhook受信", ['bytes' => strlen($rawInput)]);
 
-    // 署名検証 (Channel Secretが設定されている場合)
+    // 署名検証 (Channel Secretが設定されてぁE��場吁E
     if (LINE_CHANNEL_SECRET !== 'YOUR_CHANNEL_SECRET_HERE' && !empty($_SERVER['HTTP_X_LINE_SIGNATURE'])) {
         $signature = $_SERVER['HTTP_X_LINE_SIGNATURE'];
         $hash = base64_encode(hash_hmac('sha256', $rawInput, LINE_CHANNEL_SECRET, true));
@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
 
     $data = json_decode($rawInput, true);
     if (empty($data['events'])) {
-        writeDebugLog("イベントなし (検証Pingなど)");
+        writeDebugLog("イベントなぁE(検証Pingなど)");
         http_response_code(200);
         echo 'OK (No events)';
         exit;
@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
     try {
         $db = getDbConnection();
     } catch (Exception $e) {
-        writeDebugLog("DB接続例外: " . $e->getMessage());
+        writeDebugLog("DB接続例夁E " . $e->getMessage());
         http_response_code(500);
         exit;
     }
@@ -105,18 +105,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
 
         $userId = $event['source']['userId'] ?? '';
         $type = $event['type'];
-        writeDebugLog("イベント処理開始", ['type' => $type, 'userId' => $userId]);
+        writeDebugLog("イベント�E琁E��姁E, ['type' => $type, 'userId' => $userId]);
 
         if ($type === 'message' && $event['message']['type'] === 'text') {
             $userText = trim($event['message']['text']);
-            writeDebugLog("テキスト受信", ['text' => $userText, 'userId' => $userId]);
+            writeDebugLog("チE��スト受信", ['text' => $userText, 'userId' => $userId]);
             handleTextMessage($db, $replyToken, $userText, $userId);
         } elseif ($type === 'postback') {
             $postbackData = $event['postback']['data'] ?? '';
-            writeDebugLog("ポストバック受信", ['data' => $postbackData, 'userId' => $userId]);
+            writeDebugLog("ポストバチE��受信", ['data' => $postbackData, 'userId' => $userId]);
             handlePostback($db, $replyToken, $postbackData, $userId);
         } elseif ($type === 'follow') {
-            writeDebugLog("友だち追加イベント", ['userId' => $userId]);
+            writeDebugLog("友だち追加イベンチE, ['userId' => $userId]);
             handleFollow($replyToken);
         }
     }
@@ -126,28 +126,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
     exit;
 }
 
-// --- イベント処理関数群 ---
+// --- イベント�E琁E��数群 ---
 
 /**
- * テキストメッセージの処理
+ * チE��ストメチE��ージの処琁E
  */
 function handleTextMessage(PDO $db, string $replyToken, string $text, string $userId = '') {
-    // 0. LIFFからのご来店・ご相談受付メッセージを受信した場合（api.phpで処理済みのため二重返信を防止）
-    if (str_contains($text, '【ご来店・ご相談の受付】') || str_contains($text, '【修理・点検・カスタム相談】')) {
-        // すでにPush送信・Discord通知済みのため、追加返信は行わず正常終了
+    // 0. LIFFからのご来店�Eご相諁E��付メチE��ージを受信した場合！Epi.phpで処琁E��みのため二重返信を防止�E�E
+    if (str_contains($text, '【ご来店�Eご相諁E�E受付、E) || str_contains($text, '【修琁E�E点検�Eカスタム相諁E��E)) {
+        // すでにPush送信・Discord通知済みのため、追加返信は行わず正常終亁E
         return;
     }
 
-    // 1. LIFFマイカー画面からの予約確定メッセージを受信した場合（例: 【12ヶ月定期点検の来店予約】など）
-    if (preg_match('/【(.*?)の来店予約】/u', $text, $m)) {
-        $bookingType = $m[1]; // オイル交換, 12ヶ月定期点検, 車検 など
+    // 1. LIFFマイカー画面からの予紁E��定メチE��ージを受信した場合（侁E 、E2ヶ月定期点検�E来店予紁E��など�E�E
+    if (preg_match('/、E.*?)の来店予紁E��Eu', $text, $m)) {
+        $bookingType = $m[1]; // オイル交揁E 12ヶ月定期点椁E 車椁Eなど
         
-        $carModel = '愛車';
-        if (preg_match('/愛車:\s*(.+)/u', $text, $carM)) {
+        $carModel = '愛軁E;
+        if (preg_match('/愛軁E\s*(.+)/u', $text, $carM)) {
             $carModel = trim($carM[1]);
         }
-        $prefTime = '希望日時指定あり';
-        if (preg_match('/希望日時:\s*(.+)/u', $text, $prefM)) {
+        $prefTime = '希望日時指定あめE;
+        if (preg_match('/希望日晁E\s*(.+)/u', $text, $prefM)) {
             $prefTime = trim($prefM[1]);
         }
 
@@ -155,13 +155,13 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
         return;
     }
 
-    // 2. オイル交換・定期点検・車検・メンテナンス関連のキーワード判定 (在庫検索の誤爆防止)
-    if (preg_match('/^(オイル|オイル交換|車検|点検|12ヶ月|12ヶ月点検|法定点検|メンテナンス)$/u', trim($text))) {
-        // 顧客の登録愛車を取得
-        $carModel = '愛車';
+    // 2. オイル交換�E定期点検�E車検�EメンチE��ンス関連のキーワード判宁E(在庫検索の誤爁E��止)
+    if (preg_match('/^(オイル|オイル交換|車検|点検|12ヶ朁E12ヶ月点検|法定点検|メンチE��ンス)$/u', trim($text))) {
+        // 顧客の登録愛車を取征E
+        $carModel = '愛軁E;
         $oilDate = '近日中';
         $periodicDate = '近日中';
-        $inspDate = '未定';
+        $inspDate = '未宁E;
         if (!empty($userId)) {
             $stmt = $db->prepare("SELECT * FROM customer_cars WHERE user_id = :uid ORDER BY updated_at DESC LIMIT 1");
             $stmt->execute([':uid' => $userId]);
@@ -174,7 +174,7 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
             }
         }
 
-        if (preg_match('/(点検|12ヶ月|法定)/u', $text)) {
+        if (preg_match('/(点検|12ヶ朁E法宁E/u', $text)) {
             $type = 'periodic';
             $targetDate = $periodicDate;
         } elseif (preg_match('/(オイル)/u', $text)) {
@@ -189,64 +189,64 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
         return;
     }
 
-    // 2-2. カーライフ豆知識・お役立ちガイドの判定
-    if (preg_match('/(豆知識|お役立ち|ガイド|選び方|中古車の選び方|知識|コラム|マガジン|ノウハウ)/u', $text)) {
+    // 2-2. カーライフ豁E��識�Eお役立ちガイド�E判宁E
+    if (preg_match('/(豁E��譁Eお役立ち|ガイド|選び方|中古車�E選び方|知譁Eコラム|マガジン|ノウハウ)/u', $text)) {
         sendKnowledgeMenuMessage($replyToken);
         return;
     }
 
-    // 3. 特殊キーワードの判定
-    if (in_array($text, ['在庫一覧', '車を探す', 'メニュー', '在庫', '車', '全台'])) {
+    // 3. 特殊キーワード�E判宁E
+    if (in_array($text, ['在庫一覧', '車を探ぁE, 'メニュー', '在庫', '軁E, '全台'])) {
         searchCarsAndReply($db, $replyToken, [], '現在の在庫車両一覧', $userId);
         return;
     }
 
-    // 3. 価格帯キーワードの判定 (例: 50万以下, 100万円以下, 50万円)
-    if (preg_match('/([0-9\.]+)\s*(万|万円)?\s*(以下|未満)?/u', $text, $matches)) {
+    // 3. 価格帯キーワード�E判宁E(侁E 50丁E��丁E 100丁E�E以丁E 50丁E�E)
+    if (preg_match('/([0-9\.]+)\s*(丁E丁E�E)?\s*(以下|未満)?/u', $text, $matches)) {
         $price = (float)$matches[1];
         if ($price > 0 && $price < 2000) {
-            searchCarsAndReply($db, $replyToken, ['max_price' => $price], "支払総額 {$price}万円以下の車両", $userId);
+            searchCarsAndReply($db, $replyToken, ['max_price' => $price], "支払総顁E{$price}丁E�E以下�E車両", $userId);
             return;
         }
     }
 
     // 4. フリーワード検索 (車名など)
-    searchCarsAndReply($db, $replyToken, ['keyword' => $text], "「{$text}」の検索結果", $userId);
+    searchCarsAndReply($db, $replyToken, ['keyword' => $text], "「{$text}」�E検索結果", $userId);
 }
 
 /**
- * ポストバックイベントの処理
+ * ポストバチE��イベント�E処琁E
  */
 function handlePostback(PDO $db, string $replyToken, string $dataStr, string $userId = '') {
     parse_str($dataStr, $params);
     $action = $params['action'] ?? '';
 
     switch ($action) {
-        // --- 1. 車両問い合わせ確認ステップ (誤タップ防止) ---
+        // --- 1. 車両問い合わせ確認スチE��チE(誤タチE�E防止) ---
         case 'ask_inquiry':
             $carId = $params['id'] ?? '';
             sendInquiryConfirmMessage($db, $replyToken, $carId, $userId);
             break;
 
-        // --- 2. 正式問い合わせ送信実行 (真剣度高) ---
+        // --- 2. 正式問ぁE��わせ送信実衁E(真剣度髁E ---
         case 'submit_inquiry':
             $carId = $params['id'] ?? '';
-            $inquiryType = $params['type'] ?? '在庫確認';
+            $inquiryType = $params['type'] ?? '在庫確誁E;
             handleSubmitInquiry($db, $replyToken, $carId, $inquiryType, $userId);
             break;
 
-        // --- 3. メンテナンス(オイル交換/車検)予約確認ステップ (誤タップ防止) ---
+        // --- 3. メンチE��ンス(オイル交揁E車椁E予紁E��認スチE��チE(誤タチE�E防止) ---
         case 'ask_maintenance':
             $maintType = $params['type'] ?? 'oil';
-            $carModel = $params['car'] ?? '愛車';
+            $carModel = $params['car'] ?? '愛軁E;
             $date = $params['date'] ?? '近日中';
             sendMaintenanceBookingConfirmMessage($replyToken, $maintType, $carModel, $date, $userId);
             break;
 
-        // --- 4. メンテナンス(オイル交換/車検)予約確定送信 (真剣度高) ---
+        // --- 4. メンチE��ンス(オイル交揁E車椁E予紁E��定送信 (真剣度髁E ---
         case 'submit_maintenance':
             $maintType = $params['type'] ?? 'oil';
-            $carModel = $params['car'] ?? '愛車';
+            $carModel = $params['car'] ?? '愛軁E;
             $prefTime = $params['pref'] ?? '近日中の希望';
             handleSubmitMaintenanceBooking($replyToken, $maintType, $carModel, $prefTime, $userId);
             break;
@@ -257,7 +257,7 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             $messages = [
                 [
                     'type' => 'text',
-                    'text' => "ご案内をキャンセルしました。\n気になるお車やメンテナンスのご相談はお気軽に下のボタンよりどうぞ🚗",
+                    'text' => "ご案�Eをキャンセルしました、En気になるお車やメンチE��ンスのご相諁E�Eお気軽に下�EボタンよりどぁE��🚗",
                     'quickReply' => getQuickReplyItems()
                 ]
             ];
@@ -274,7 +274,7 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             sendTypeMenuMessage($db, $replyToken);
             break;
 
-        // --- 7-2. サイレント検索: 装備・仕様メニュー表示 ---
+        // --- 7-2. サイレント検索: 裁E��・仕様メニュー表示 ---
         case 'show_equipment_menu':
             sendEquipmentMenuMessage($db, $replyToken);
             break;
@@ -284,32 +284,32 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             sendDistanceMenuMessage($db, $replyToken);
             break;
 
-        // --- 7-4. お役立ちガイド・カーライフ豆知識メニュー表示 ---
+        // --- 7-4. お役立ちガイド�Eカーライフ豁E��識メニュー表示 ---
         case 'show_knowledge_menu':
             sendKnowledgeMenuMessage($replyToken);
             break;
 
-        // --- 7-5. お役立ちガイド・個別記事詳細表示 ---
+        // --- 7-5. お役立ちガイド�E個別記事詳細表示 ---
         case 'show_knowledge':
             $topic = trim($params['topic'] ?? 'used_car');
             sendKnowledgeDetailMessage($replyToken, $topic);
             break;
 
-        // --- 8. サイレント検索: 価格帯絞り込み実行 ---
+        // --- 8. サイレント検索: 価格帯絞り込み実衁E---
         case 'search_price':
             $maxPrice = (float)($params['max_price'] ?? 0);
             $minPrice = (float)($params['min_price'] ?? 0);
             $criteria = [];
-            $title = "支払総額 {$maxPrice}万円以下の車両";
+            $title = "支払総顁E{$maxPrice}丁E�E以下�E車両";
             if ($maxPrice > 0) $criteria['max_price'] = $maxPrice;
             if ($minPrice > 0) {
                 $criteria['min_price'] = $minPrice;
-                $title = "支払総額 {$minPrice}万〜{$maxPrice}万円の車両";
+                $title = "支払総顁E{$minPrice}丁E��{$maxPrice}丁E�Eの車両";
             }
             searchCarsAndReply($db, $replyToken, $criteria, $title, $userId);
             break;
 
-        // --- 8-2. サイレント検索: 走行距離絞り込み実行 ---
+        // --- 8-2. サイレント検索: 走行距離絞り込み実衁E---
         case 'search_distance':
             $maxD = isset($params['max_distance']) ? (float)$params['max_distance'] : null;
             $minD = isset($params['min_distance']) ? (float)$params['min_distance'] : null;
@@ -317,44 +317,44 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             $title = "走行距離で絞り込み";
             if ($maxD !== null) {
                 $criteria['max_distance'] = $maxD;
-                $title = "走行距離 {$maxD}万km以下の車両";
+                $title = "走行距離 {$maxD}万km以下�E車両";
             }
             if ($minD !== null) {
                 $criteria['min_distance'] = $minD;
-                $title = "走行距離 {$minD}万km以上の車両";
+                $title = "走行距離 {$minD}万km以上�E車両";
             }
             searchCarsAndReply($db, $replyToken, $criteria, $title, $userId);
             break;
 
         // --- 9. サイレント検索: 軽自動車専用絞り込み ---
         case 'search_kei':
-            searchCarsAndReply($db, $replyToken, ['is_kei' => true], "軽自動車の一覧", $userId);
+            searchCarsAndReply($db, $replyToken, ['is_kei' => true], "軽自動車�E一覧", $userId);
             break;
 
-        // --- 9-2. サイレント検索: 装備・仕様絞り込み ---
+        // --- 9-2. サイレント検索: 裁E��・仕様絞り込み ---
         case 'search_equip':
             $keyword = trim($params['keyword'] ?? '');
-            searchCarsAndReply($db, $replyToken, ['equip' => $keyword], "「{$keyword}」装備の車両一覧", $userId);
+            searchCarsAndReply($db, $replyToken, ['equip' => $keyword], "「{$keyword}」裁E��の車両一覧", $userId);
             break;
 
-        // --- 9-3. サイレント検索: 修復歴なし ---
+        // --- 9-3. サイレント検索: 修復歴なぁE---
         case 'search_repair_none':
-            searchCarsAndReply($db, $replyToken, ['repair' => 'none'], "修復歴なし（無事故車）の一覧", $userId);
+            searchCarsAndReply($db, $replyToken, ['repair' => 'none'], "修復歴なし（無事故車）�E一覧", $userId);
             break;
 
-        // --- 9-4. サイレント検索: 届出済未使用車 / 低走行 ---
+        // --- 9-4. サイレント検索: 届�E済未使用軁E/ 低走衁E---
         case 'search_low_mileage':
-            searchCarsAndReply($db, $replyToken, ['low_mileage' => true], "届出済未使用車・低走行車の一覧", $userId);
+            searchCarsAndReply($db, $replyToken, ['low_mileage' => true], "届�E済未使用車�E低走行車�E一覧", $userId);
             break;
 
-        // --- 9-5. サイレント検索: 車種・キーワード絞り込み実行 ---
+        // --- 9-5. サイレント検索: 車種・キーワード絞り込み実衁E---
         case 'search_type':
         case 'search_keyword':
             $keyword = trim($params['keyword'] ?? '');
-            if ($keyword === '軽' || $keyword === '軽自動車') {
-                searchCarsAndReply($db, $replyToken, ['is_kei' => true], "軽自動車の一覧", $userId);
+            if ($keyword === '軽' || $keyword === '軽自動軁E) {
+                searchCarsAndReply($db, $replyToken, ['is_kei' => true], "軽自動車�E一覧", $userId);
             } else {
-                $title = !empty($keyword) ? "「{$keyword}」の車両一覧" : "最新の在庫車両一覧";
+                $title = !empty($keyword) ? "「{$keyword}」�E車両一覧" : "最新の在庫車両一覧";
                 searchCarsAndReply($db, $replyToken, ['keyword' => $keyword], $title, $userId);
             }
             break;
@@ -368,16 +368,16 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
 }
 
 /**
- * LIFF Trigger からのPush送信用サイレントPostback実行関数
+ * LIFF Trigger からのPush送信用サイレンチEostback実行関数
  */
 function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bool {
     parse_str($dataStr, $params);
     $action = $params['action'] ?? '';
 
-    writeDebugLog("LIFF Silent Postback Push実行", ['uid' => $userId, 'action' => $action, 'data' => $dataStr]);
+    writeDebugLog("LIFF Silent Postback Push実衁E, ['uid' => $userId, 'action' => $action, 'data' => $dataStr]);
 
     if (!str_starts_with($userId, 'U')) {
-        writeDebugLog("Push送信スキップ: 有効なLINEユーザーIDではありません ({$userId})");
+        writeDebugLog("Push送信スキチE�E: 有効なLINEユーザーIDではありません ({$userId})");
         return false;
     }
 
@@ -413,11 +413,11 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bo
             $maxPrice = (float)($params['max_price'] ?? 0);
             $minPrice = (float)($params['min_price'] ?? 0);
             $criteria = [];
-            $title = "支払総額 {$maxPrice}万円以下の車両";
+            $title = "支払総顁E{$maxPrice}丁E�E以下�E車両";
             if ($maxPrice > 0) $criteria['max_price'] = $maxPrice;
             if ($minPrice > 0) {
                 $criteria['min_price'] = $minPrice;
-                $title = "支払総額 {$minPrice}万〜{$maxPrice}万円の車両";
+                $title = "支払総顁E{$minPrice}丁E��{$maxPrice}丁E�Eの車両";
             }
             $messages = generateCarSearchMessages($db, $criteria, $title, $userId);
             break;
@@ -429,39 +429,39 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bo
             $title = "走行距離で絞り込み";
             if ($maxD !== null) {
                 $criteria['max_distance'] = $maxD;
-                $title = "走行距離 {$maxD}万km以下の車両";
+                $title = "走行距離 {$maxD}万km以下�E車両";
             }
             if ($minD !== null) {
                 $criteria['min_distance'] = $minD;
-                $title = "走行距離 {$minD}万km以上の車両";
+                $title = "走行距離 {$minD}万km以上�E車両";
             }
             $messages = generateCarSearchMessages($db, $criteria, $title, $userId);
             break;
 
         case 'search_kei':
-            $messages = generateCarSearchMessages($db, ['is_kei' => true], "軽自動車の一覧", $userId);
+            $messages = generateCarSearchMessages($db, ['is_kei' => true], "軽自動車�E一覧", $userId);
             break;
 
         case 'search_equip':
             $keyword = trim($params['keyword'] ?? '');
-            $messages = generateCarSearchMessages($db, ['equip' => $keyword], "「{$keyword}」装備の車両一覧", $userId);
+            $messages = generateCarSearchMessages($db, ['equip' => $keyword], "「{$keyword}」裁E��の車両一覧", $userId);
             break;
 
         case 'search_repair_none':
-            $messages = generateCarSearchMessages($db, ['repair' => 'none'], "修復歴なし（無事故車）の一覧", $userId);
+            $messages = generateCarSearchMessages($db, ['repair' => 'none'], "修復歴なし（無事故車）�E一覧", $userId);
             break;
 
         case 'search_low_mileage':
-            $messages = generateCarSearchMessages($db, ['low_mileage' => true], "届出済未使用車・低走行車の一覧", $userId);
+            $messages = generateCarSearchMessages($db, ['low_mileage' => true], "届�E済未使用車�E低走行車�E一覧", $userId);
             break;
 
         case 'search_type':
         case 'search_keyword':
             $keyword = trim($params['keyword'] ?? '');
-            if ($keyword === '軽' || $keyword === '軽自動車') {
-                $messages = generateCarSearchMessages($db, ['is_kei' => true], "軽自動車の一覧", $userId);
+            if ($keyword === '軽' || $keyword === '軽自動軁E) {
+                $messages = generateCarSearchMessages($db, ['is_kei' => true], "軽自動車�E一覧", $userId);
             } else {
-                $title = !empty($keyword) ? "「{$keyword}」の車両一覧" : "最新の在庫車両一覧";
+                $title = !empty($keyword) ? "「{$keyword}」�E車両一覧" : "最新の在庫車両一覧";
                 $messages = generateCarSearchMessages($db, ['keyword' => $keyword], $title, $userId);
             }
             break;
@@ -478,7 +478,7 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bo
                 $chunks = array_chunk($messages, 5);
                 foreach ($chunks as $chunk) {
                     $res = sendLinePushMessage($userId, $chunk);
-                    writeDebugLog("Push分割送信結果", ['userId' => $userId, 'success' => $res['success'] ?? false, 'response' => $res['response'] ?? '']);
+                    writeDebugLog("Push刁E��送信結果", ['userId' => $userId, 'success' => $res['success'] ?? false, 'response' => $res['response'] ?? '']);
                 }
                 return true;
             } else {
@@ -487,7 +487,7 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bo
                 return !empty($res['success']);
             }
         } catch (Exception $e) {
-            writeDebugLog("Silent Postback Push送信例外: " . $e->getMessage());
+            writeDebugLog("Silent Postback Push送信例夁E " . $e->getMessage());
             return false;
         }
     }
@@ -496,13 +496,13 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bo
 }
 
 /**
- * 友だち追加時のあいさつメッセージ
+ * 友だち追加時�EあいさつメチE��ージ
  */
 function handleFollow(string $replyToken) {
     $messages = [
         [
             'type' => 'text',
-            'text' => "友だち追加ありがとうございます！🚗✨\n\n【" . SHOP_NAME . "】の最新在庫車両をいつでもLINEから検索いただけます。\n\n気になる車種名を入力するか、下のボタンをタップしてみてください！",
+            'text' => "友だち追加ありがとぁE��ざいます！🚗✨\n\n、E . SHOP_NAME . "】�E最新在庫車両をいつでめEINEから検索ぁE��だけます、En\n気になる車種名を入力するか、下�EボタンをタチE�Eしてみてください�E�E,
             'quickReply' => getQuickReplyItems()
         ]
     ];
@@ -518,7 +518,7 @@ function searchCarsAndReply(PDO $db, string $replyToken, array $criteria, string
 }
 
 /**
- * 車両検索メッセージ配列を生成 (Reply / Push 共通)
+ * 車両検索メチE��ージ配�Eを生戁E(Reply / Push 共送E
  */
 function generateCarSearchMessages(PDO $db, array $criteria, string $heading, string $userId = ''): array {
     try {
@@ -529,36 +529,36 @@ function generateCarSearchMessages(PDO $db, array $criteria, string $heading, st
             $kw = trim($criteria['keyword']);
             if ($kw === 'ミラ' || $kw === 'ミライース') {
                 $where[] = "(
-                    (title LIKE '%ミライース%' OR title LIKE '%ミラココア%' OR title LIKE '%ミラジーノ%' OR title LIKE '%ミラトコット%' OR title LIKE 'ダイハツ ミラ%' OR title LIKE '% ミラ %' OR title LIKE 'ミラ %' OR title LIKE '% ミラ')
+                    (title LIKE '%ミライース%' OR title LIKE '%ミラココア%' OR title LIKE '%ミラジーチE' OR title LIKE '%ミラトコチE��%' OR title LIKE 'ダイハツ ミラ%' OR title LIKE '% ミラ %' OR title LIKE 'ミラ %' OR title LIKE '% ミラ')
                     OR (title LIKE '%ミラ%' AND title NOT LIKE '%ミラー%')
                 )";
-            } elseif ($kw === 'デイズ' || $kw === 'ルークス') {
-                $where[] = "(title LIKE '%デイズ%' OR title LIKE '%ルークス%' OR title LIKE '%DAYZ%' OR title LIKE '%ROOX%')";
-            } elseif ($kw === 'N-BOX' || $kw === 'エヌボックス') {
-                $where[] = "(title LIKE '%N-BOX%' OR title LIKE '%Ｎ－ＢＯＸ%' OR title LIKE '%NBOX%')";
-            } elseif ($kw === 'タント') {
-                $where[] = "(title LIKE '%タント%' OR title LIKE '%TANTO%')";
-            } elseif ($kw === 'スペーシア') {
-                $where[] = "(title LIKE '%スペーシア%' OR title LIKE '%SPACIA%')";
+            } elseif ($kw === 'チE��ズ' || $kw === 'ルークス') {
+                $where[] = "(title LIKE '%チE��ズ%' OR title LIKE '%ルークス%' OR title LIKE '%DAYZ%' OR title LIKE '%ROOX%')";
+            } elseif ($kw === 'N-BOX' || $kw === 'エヌ�EチE��ス') {
+                $where[] = "(title LIKE '%N-BOX%' OR title LIKE '%�E��E�Ｂ�E��E�%' OR title LIKE '%NBOX%')";
+            } elseif ($kw === 'タンチE) {
+                $where[] = "(title LIKE '%タンチE' OR title LIKE '%TANTO%')";
+            } elseif ($kw === 'スペ�Eシア') {
+                $where[] = "(title LIKE '%スペ�Eシア%' OR title LIKE '%SPACIA%')";
             } elseif ($kw === 'ワゴンR') {
-                $where[] = "(title LIKE '%ワゴンR%' OR title LIKE '%ワゴンＲ%' OR title LIKE '%スティングレー%')";
+                $where[] = "(title LIKE '%ワゴンR%' OR title LIKE '%ワゴン�E�%' OR title LIKE '%スチE��ングレー%')";
             } elseif ($kw === 'ムーヴ') {
                 $where[] = "(title LIKE '%ムーヴ%' OR title LIKE '%キャンバス%' OR title LIKE '%MOVE%')";
-            } elseif ($kw === 'アルト') {
-                $where[] = "(title LIKE '%アルト%' OR title LIKE '%ラパン%' OR title LIKE '%ALTO%')";
+            } elseif ($kw === 'アルチE) {
+                $where[] = "(title LIKE '%アルチE' OR title LIKE '%ラパン%' OR title LIKE '%ALTO%')";
             } elseif ($kw === 'ハスラー') {
                 $where[] = "(title LIKE '%ハスラー%' OR title LIKE '%HUSTLER%')";
-            } elseif ($kw === '輸入車' || $kw === '外車') {
-                $where[] = "(title LIKE '%ベンツ%' OR title LIKE '%BMW%' OR title LIKE '%フォルクスワーゲン%' OR title LIKE '%アウディ%' OR title LIKE '%キャデラック%' OR title LIKE '%MINI%' OR title LIKE '%ボルボ%' OR title LIKE '%Bクラス%' OR title LIKE '%B180%' OR title LIKE '%CTS%')";
-            } elseif ($kw === 'コンパクト') {
-                $where[] = "(displacement != '660cc' AND (title LIKE '%コンパクト%' OR title LIKE '%フィット%' OR title LIKE '%アクア%' OR title LIKE '%ヤリス%' OR title LIKE '%ノート%' OR title LIKE '%パッソ%' OR title LIKE '%スイフト%' OR title LIKE '%ヴィッツ%' OR title LIKE '%デミオ%' OR title LIKE '%マーチ%' OR title LIKE '%ポロ%' OR title LIKE '%ゴルフ%' OR title LIKE '%ルーミー%' OR title LIKE '%ソリオ%' OR title LIKE '%タンク%' OR title LIKE '%FIT%' OR title LIKE '%AQUA%' OR title LIKE '%NOTE%'))";
+            } elseif ($kw === '輸入軁E || $kw === '外軁E) {
+                $where[] = "(title LIKE '%ベンチE' OR title LIKE '%BMW%' OR title LIKE '%フォルクスワーゲン%' OR title LIKE '%アウチE��%' OR title LIKE '%キャチE��チE��%' OR title LIKE '%MINI%' OR title LIKE '%ボルチE' OR title LIKE '%Bクラス%' OR title LIKE '%B180%' OR title LIKE '%CTS%')";
+            } elseif ($kw === 'コンパクチE) {
+                $where[] = "(displacement != '660cc' AND (title LIKE '%コンパクチE' OR title LIKE '%フィチE��%' OR title LIKE '%アクア%' OR title LIKE '%ヤリス%' OR title LIKE '%ノ�EチE' OR title LIKE '%パッソ%' OR title LIKE '%スイフト%' OR title LIKE '%ヴィチE��%' OR title LIKE '%チE��オ%' OR title LIKE '%マ�EチE' OR title LIKE '%ポロ%' OR title LIKE '%ゴルチE' OR title LIKE '%ルーミ�E%' OR title LIKE '%ソリオ%' OR title LIKE '%タンク%' OR title LIKE '%FIT%' OR title LIKE '%AQUA%' OR title LIKE '%NOTE%'))";
             } elseif ($kw === 'ワゴン') {
-                $where[] = "(title LIKE '%ワゴン%' OR title LIKE '%セレナ%' OR title LIKE '%ヴォクシー%' OR title LIKE '%ノア%' OR title LIKE '%ステップワゴン%' OR title LIKE '%フリード%' OR title LIKE '%シエンタ%' OR title LIKE '%アルファード%' OR title LIKE '%ヴェルファイア%' OR title LIKE '%デリカ%' OR title LIKE '%エスティマ%' OR title LIKE '%オデッセイ%')";
+                $where[] = "(title LIKE '%ワゴン%' OR title LIKE '%セレチE' OR title LIKE '%ヴォクシー%' OR title LIKE '%ノア%' OR title LIKE '%スチE��プワゴン%' OR title LIKE '%フリーチE' OR title LIKE '%シエンタ%' OR title LIKE '%アルファーチE' OR title LIKE '%ヴェルファイア%' OR title LIKE '%チE��カ%' OR title LIKE '%エスチE��チE' OR title LIKE '%オチE��セイ%')";
             } elseif ($kw === '4WD') {
                 $where[] = "(
-                    drive_type LIKE '%4WD%' OR drive_type LIKE '%４ＷＤ%' OR drive_type LIKE '%四駆%' OR drive_type LIKE '%AWD%' OR drive_type LIKE '%ＡＷＤ%'
-                    OR title LIKE '%4WD%' OR title LIKE '%４ＷＤ%' OR title LIKE '%AWD%' OR title LIKE '%ＡＷＤ%' OR title LIKE '%SUV%' OR title LIKE '%クロスオーバー%' OR title LIKE '%キャデラック%' OR title LIKE '%XT5%'
-                    OR title LIKE '%ハスラー%' OR title LIKE '%ジムニー%' OR title LIKE '%ヴェゼル%' OR title LIKE '%ヤリスクロス%' OR title LIKE '%ライズ%' OR title LIKE '%ロッキー%' OR title LIKE '%エクストレイル%' OR title LIKE '%フォレスター%' OR title LIKE '%CX-%' OR title LIKE '%C-HR%'
+                    drive_type LIKE '%4WD%' OR drive_type LIKE '%�E�Ｗ�E�%' OR drive_type LIKE '%四駁E' OR drive_type LIKE '%AWD%' OR drive_type LIKE '%�E��E��E�%'
+                    OR title LIKE '%4WD%' OR title LIKE '%�E�Ｗ�E�%' OR title LIKE '%AWD%' OR title LIKE '%�E��E��E�%' OR title LIKE '%SUV%' OR title LIKE '%クロスオーバ�E%' OR title LIKE '%キャチE��チE��%' OR title LIKE '%XT5%'
+                    OR title LIKE '%ハスラー%' OR title LIKE '%ジムニ�E%' OR title LIKE '%ヴェゼル%' OR title LIKE '%ヤリスクロス%' OR title LIKE '%ライズ%' OR title LIKE '%ロチE��ー%' OR title LIKE '%エクストレイル%' OR title LIKE '%フォレスター%' OR title LIKE '%CX-%' OR title LIKE '%C-HR%'
                 )";
             } else {
                 $where[] = "(title LIKE :kw OR displacement LIKE :kw OR year LIKE :kw)";
@@ -567,41 +567,41 @@ function generateCarSearchMessages(PDO $db, array $criteria, string $heading, st
         }
 
         if (!empty($criteria['is_kei'])) {
-            $where[] = "(displacement = '660cc' OR displacement LIKE '66%' OR title LIKE '%軽自動車%')";
+            $where[] = "(displacement = '660cc' OR displacement LIKE '66%' OR title LIKE '%軽自動軁E')";
         }
 
         if (!empty($criteria['equip'])) {
             $eq = $criteria['equip'];
             if ($eq === 'ナビ') {
-                $where[] = "(title LIKE '%ナビ%' OR title LIKE '%地デジ%' OR title LIKE '%TV%' OR title LIKE '%ＴＶ%' OR title LIKE '%オーディオ%' OR equipments LIKE '%ナビ%' OR equipments LIKE '%テレビ%')";
-            } elseif ($eq === 'TV' || $eq === 'テレビ' || $eq === '地デジ') {
-                $where[] = "(title LIKE '%地デジ%' OR title LIKE '%フルセグ%' OR title LIKE '%ワンセグ%' OR title LIKE '%ＴＶ%' OR title LIKE '%TV%' OR title LIKE '%テレビ%' OR equipments LIKE '%テレビ%' OR equipments LIKE '%地デジ%' OR equipments LIKE '%ワンセグ%' OR equipments LIKE '%フルセグ%')";
+                $where[] = "(title LIKE '%ナビ%' OR title LIKE '%地チE��%' OR title LIKE '%TV%' OR title LIKE '%�E��E�%' OR title LIKE '%オーチE��オ%' OR equipments LIKE '%ナビ%' OR equipments LIKE '%チE��チE')";
+            } elseif ($eq === 'TV' || $eq === 'チE��チE || $eq === '地チE��') {
+                $where[] = "(title LIKE '%地チE��%' OR title LIKE '%フルセグ%' OR title LIKE '%ワンセグ%' OR title LIKE '%�E��E�%' OR title LIKE '%TV%' OR title LIKE '%チE��チE' OR equipments LIKE '%チE��チE' OR equipments LIKE '%地チE��%' OR equipments LIKE '%ワンセグ%' OR equipments LIKE '%フルセグ%')";
             } elseif ($eq === 'バックカメラ' || $eq === 'カメラ') {
-                $where[] = "(title LIKE '%バックカメラ%' OR title LIKE '%全方位%' OR title LIKE '%アラウンドビュー%' OR title LIKE '%カメラ%' OR equipments LIKE '%バックカメラ%' OR equipments LIKE '%カメラ%')";
+                $where[] = "(title LIKE '%バックカメラ%' OR title LIKE '%全方佁E' OR title LIKE '%アラウンドビュー%' OR title LIKE '%カメラ%' OR equipments LIKE '%バックカメラ%' OR equipments LIKE '%カメラ%')";
             } elseif ($eq === 'Bluetooth' || $eq === 'ブルートゥース') {
-                $where[] = "(title LIKE '%Bluetooth%' OR title LIKE '%Ｂｌｕｅｔｏｏｔｈ%' OR title LIKE '%ブルートゥース%' OR title LIKE '%カープレイ%' OR title LIKE '%carplay%' OR equipments LIKE '%Bluetooth%')";
-            } elseif ($eq === 'ETC' || $eq === 'ＥＴＣ') {
-                $where[] = "(title LIKE '%ETC%' OR title LIKE '%ＥＴＣ%' OR equipments LIKE '%ETC%')";
+                $where[] = "(title LIKE '%Bluetooth%' OR title LIKE '%�E��E�ｕａE��ｏｏｔａE' OR title LIKE '%ブルートゥース%' OR title LIKE '%カープレイ%' OR title LIKE '%carplay%' OR equipments LIKE '%Bluetooth%')";
+            } elseif ($eq === 'ETC' || $eq === '�E��E��E�') {
+                $where[] = "(title LIKE '%ETC%' OR title LIKE '%�E��E��E�%' OR equipments LIKE '%ETC%')";
             } elseif ($eq === 'ドラレコ' || $eq === 'ドライブレコーダー') {
                 $where[] = "(title LIKE '%ドラレコ%' OR title LIKE '%ドライブレコーダー%' OR equipments LIKE '%ドライブレコーダー%' OR equipments LIKE '%ドラレコ%')";
-            } elseif ($eq === 'スライド' || $eq === 'パワースライド') {
-                $where[] = "(title LIKE '%スライド%' OR title LIKE '%パワースライド%' OR equipments LIKE '%スライド%')";
-            } elseif ($eq === 'スマートキー' || $eq === 'キーレス') {
-                $where[] = "(title LIKE '%スマートキー%' OR title LIKE '%インテリジェント%' OR title LIKE '%プッシュスタート%' OR title LIKE '%キーレス%' OR equipments LIKE '%スマートキー%')";
-            } elseif ($eq === 'シートヒーター' || $eq === 'ヒーター') {
+            } elseif ($eq === 'スライチE || $eq === 'パワースライチE) {
+                $where[] = "(title LIKE '%スライチE' OR title LIKE '%パワースライチE' OR equipments LIKE '%スライチE')";
+            } elseif ($eq === 'スマ�Eトキー' || $eq === 'キーレス') {
+                $where[] = "(title LIKE '%スマ�Eトキー%' OR title LIKE '%インチE��ジェンチE' OR title LIKE '%プッシュスターチE' OR title LIKE '%キーレス%' OR equipments LIKE '%スマ�Eトキー%')";
+            } elseif ($eq === 'シートヒーター' || $eq === 'ヒ�Eター') {
                 $where[] = "(title LIKE '%シートヒーター%' OR equipments LIKE '%シートヒーター%')";
-            } elseif ($eq === 'LED' || $eq === 'ＬＥＤ' || $eq === 'HID') {
-                $where[] = "(title LIKE '%LED%' OR title LIKE '%ＬＥＤ%' OR title LIKE '%HID%' OR title LIKE '%ＨＩＤ%' OR title LIKE '%オートライト%' OR equipments LIKE '%LED%' OR equipments LIKE '%オートライト%')";
-            } elseif ($eq === 'アルミ' || $eq === 'ホイール') {
-                $where[] = "(title LIKE '%アルミ%' OR title LIKE '%ホイール%' OR equipments LIKE '%アルミ%')";
+            } elseif ($eq === 'LED' || $eq === '�E��E��E�' || $eq === 'HID') {
+                $where[] = "(title LIKE '%LED%' OR title LIKE '%�E��E��E�%' OR title LIKE '%HID%' OR title LIKE '%�E��E��E�%' OR title LIKE '%オートライチE' OR equipments LIKE '%LED%' OR equipments LIKE '%オートライチE')";
+            } elseif ($eq === 'アルチE || $eq === 'ホイール') {
+                $where[] = "(title LIKE '%アルチE' OR title LIKE '%ホイール%' OR equipments LIKE '%アルチE')";
             } elseif ($eq === 'レザー' || $eq === '本革') {
-                $where[] = "(title LIKE '%本革%' OR title LIKE '%レザー%' OR title LIKE '%ハーフレザー%' OR title LIKE '%革調%' OR equipments LIKE '%本革%' OR equipments LIKE '%レザー%')";
-            } elseif ($eq === '軽減' || $eq === '安全' || $eq === 'ブレーキ') {
-                $where[] = "(title LIKE '%軽減%' OR title LIKE '%ブレーキ%' OR title LIKE '%センシング%' OR title LIKE '%スマートアシスト%' OR title LIKE '%セーフティ%' OR title LIKE '%プロパイロット%' OR equipments LIKE '%安全%' OR equipments LIKE '%衝突%')";
-            } elseif ($eq === '4WD' || $eq === '４ＷＤ' || $eq === '四駆') {
+                $where[] = "(title LIKE '%本革%' OR title LIKE '%レザー%' OR title LIKE '%ハ�Eフレザー%' OR title LIKE '%革調%' OR equipments LIKE '%本革%' OR equipments LIKE '%レザー%')";
+            } elseif ($eq === '軽渁E || $eq === '安�E' || $eq === 'ブレーキ') {
+                $where[] = "(title LIKE '%軽渁E' OR title LIKE '%ブレーキ%' OR title LIKE '%センシング%' OR title LIKE '%スマ�EトアシスチE' OR title LIKE '%セーフティ%' OR title LIKE '%プロパイロチE��%' OR equipments LIKE '%安�E%' OR equipments LIKE '%衝突E')";
+            } elseif ($eq === '4WD' || $eq === '�E�Ｗ�E�' || $eq === '四駁E) {
                 $where[] = "(
-                    drive_type LIKE '%4WD%' OR drive_type LIKE '%４ＷＤ%' OR drive_type LIKE '%四駆%' OR drive_type LIKE '%AWD%' OR drive_type LIKE '%ＡＷＤ%'
-                    OR title LIKE '%4WD%' OR title LIKE '%４ＷＤ%' OR title LIKE '%AWD%' OR title LIKE '%四駆%' OR title LIKE '%クロスオーバー%' OR title LIKE '%キャデラック%' OR title LIKE '%XT5%'
+                    drive_type LIKE '%4WD%' OR drive_type LIKE '%�E�Ｗ�E�%' OR drive_type LIKE '%四駁E' OR drive_type LIKE '%AWD%' OR drive_type LIKE '%�E��E��E�%'
+                    OR title LIKE '%4WD%' OR title LIKE '%�E�Ｗ�E�%' OR title LIKE '%AWD%' OR title LIKE '%四駁E' OR title LIKE '%クロスオーバ�E%' OR title LIKE '%キャチE��チE��%' OR title LIKE '%XT5%'
                 )";
             } else {
                 $where[] = "(title LIKE :eq OR equipments LIKE :eq)";
@@ -610,7 +610,7 @@ function generateCarSearchMessages(PDO $db, array $criteria, string $heading, st
         }
 
         if (isset($criteria['repair']) && $criteria['repair'] === 'none') {
-            $where[] = "(repair_history = 'なし' OR repair_history = '-' OR repair_history IS NULL)";
+            $where[] = "(repair_history = 'なぁE OR repair_history = '-' OR repair_history IS NULL)";
         }
 
         if (!empty($criteria['low_mileage'])) {
@@ -639,24 +639,24 @@ function generateCarSearchMessages(PDO $db, array $criteria, string $heading, st
 
         $whereSql = implode(' AND ', $where);
         
-        // 最大40台まで取得 (LINEの1回返信上限: 10台×4カルーセル = 40台)
+        // 最大40台まで取征E(LINEの1回返信上限: 10台ÁEカルーセル = 40台)
         $stmt = $db->prepare("SELECT * FROM cars WHERE {$whereSql} ORDER BY (total_price_num IS NULL), total_price_num ASC LIMIT 40");
         $stmt->execute($params);
         $cars = $stmt->fetchAll();
 
-        writeDebugLog("検索実行完了", ['heading' => $heading, 'hitCount' => count($cars), 'userId' => $userId]);
+        writeDebugLog("検索実行完亁E, ['heading' => $heading, 'hitCount' => count($cars), 'userId' => $userId]);
 
         if (empty($cars)) {
             return [
                 [
                     'type' => 'text',
-                    'text' => "申し訳ありません。ご指定の条件に一致する車両が見つかりませんでした。\n\n別のキーワードや価格帯でお試しください！",
+                    'text' => "申し訳ありません。ご持E���E条件に一致する車両が見つかりませんでした、En\n別のキーワードや価格帯でお試しください�E�E,
                     'quickReply' => getQuickReplyItems()
                 ]
             ];
         }
 
-        // カルーセルバブルを構築
+        // カルーセルバブルを構篁E
         $bubbles = [];
         foreach ($cars as $car) {
             $bubble = buildCarFlexBubble($car, $userId);
@@ -666,24 +666,24 @@ function generateCarSearchMessages(PDO $db, array $criteria, string $heading, st
         }
 
         if (empty($bubbles)) {
-            throw new Exception("バブル生成に失敗しました");
+            throw new Exception("バブル生�Eに失敗しました");
         }
 
-        // LINEの仕様: 1カルーセルあたり最大10件 -> 10件ずつ分割して複数カルーセルで一括返信
+        // LINEの仕槁E 1カルーセルあたり最大10件 -> 10件ずつ刁E��して褁E��カルーセルで一括返信
         $bubbleChunks = array_chunk($bubbles, 10);
         $totalCount = count($bubbles);
 
         $messages = [
             [
                 'type' => 'text',
-                'text' => "🔍 {$heading} （全{$totalCount}件）"
+                'text' => "🔍 {$heading} �E��E{$totalCount}件�E�E
             ]
         ];
 
         foreach ($bubbleChunks as $idx => $chunk) {
             $messages[] = [
                 'type' => 'flex',
-                'altText' => "{$heading} (" . ($idx * 10 + 1) . "〜" . ($idx * 10 + count($chunk)) . "件目)",
+                'altText' => "{$heading} (" . ($idx * 10 + 1) . "、E . ($idx * 10 + count($chunk)) . "件目)",
                 'contents' => [
                     'type' => 'carousel',
                     'contents' => $chunk
@@ -694,11 +694,11 @@ function generateCarSearchMessages(PDO $db, array $criteria, string $heading, st
 
         return $messages;
     } catch (Exception $e) {
-        writeDebugLog("検索生成例外エラー: " . $e->getMessage());
+        writeDebugLog("検索生�E例外エラー: " . $e->getMessage());
         return [
             [
                 'type' => 'text',
-                'text' => "申し訳ありません。検索中にエラーが発生しました。\nしばらくしてからもう一度お試しください。",
+                'text' => "申し訳ありません。検索中にエラーが発生しました、Enし�Eらくしてからもう一度お試しください、E,
                 'quickReply' => getQuickReplyItems()
             ]
         ];
@@ -706,12 +706,12 @@ function generateCarSearchMessages(PDO $db, array $criteria, string $heading, st
 }
 
 /**
- * 車両1台分のFlex Messageバブルを構築
+ * 車両1台刁E�EFlex Messageバブルを構篁E
  */
 function buildCarFlexBubble(array $car, string $userId = ''): array {
     $rawTitle = trim($car['title'] ?? '');
     if (empty($rawTitle)) {
-        $rawTitle = '車両情報';
+        $rawTitle = '車両惁E��';
     }
     $shortTitle = mb_substr($rawTitle, 0, 32) . (mb_strlen($rawTitle) > 32 ? '...' : '');
 
@@ -732,7 +732,7 @@ function buildCarFlexBubble(array $car, string $userId = ''): array {
     $trackingUrl = $baseUrl . '/redirect.php?id=' . urlencode($car['id']) . '&uid=' . urlencode($userId) . '&src=' . urlencode('LINE Flex Message');
 
     // 問い合わせ文面
-    $inquiryText = "【車両問い合わせ】\n車名: {$rawTitle}\n支払総額: {$totalPrice}\n詳細: {$detailUrl}\n\nこちらの車両について詳しく知りたいです。";
+    $inquiryText = "【車両問い合わせ】\n車名: {$rawTitle}\n支払総顁E {$totalPrice}\n詳細: {$detailUrl}\n\nこちら�E車両につぁE��詳しく知りたぁE��す、E;
     if (mb_strlen($inquiryText) > 290) {
         $inquiryText = mb_substr($inquiryText, 0, 290) . '...';
     }
@@ -772,7 +772,7 @@ function buildCarFlexBubble(array $car, string $userId = ''): array {
                     'contents' => [
                         [
                             'type' => 'text',
-                            'text' => '支払総額',
+                            'text' => '支払総顁E,
                             'size' => 'xs',
                             'color' => '#888888',
                             'flex' => 0
@@ -798,7 +798,7 @@ function buildCarFlexBubble(array $car, string $userId = ''): array {
                             'type' => 'box',
                             'layout' => 'baseline',
                             'contents' => [
-                                ['type' => 'text', 'text' => '年式', 'color' => '#999999', 'size' => 'xxs', 'flex' => 2],
+                                ['type' => 'text', 'text' => '年弁E, 'color' => '#999999', 'size' => 'xxs', 'flex' => 2],
                                 ['type' => 'text', 'text' => $year, 'size' => 'xxs', 'color' => '#333333', 'flex' => 5]
                             ]
                         ],
@@ -835,7 +835,7 @@ function buildCarFlexBubble(array $car, string $userId = ''): array {
                     'height' => 'sm',
                     'action' => [
                         'type' => 'postback',
-                        'label' => '💬 お問い合わせ・相談',
+                        'label' => '💬 お問ぁE��わせ・相諁E,
                         'data' => 'action=ask_inquiry&id=' . urlencode($car['id'])
                     ]
                 ],
@@ -855,7 +855,7 @@ function buildCarFlexBubble(array $car, string $userId = ''): array {
 }
 
 /**
- * 問い合わせ確認カード（誤タップ防止 & 要望選択）を送信
+ * 問い合わせ確認カード（誤タチE�E防止 & 要望選択）を送信
  */
 function sendInquiryConfirmMessage(PDO $db, string $replyToken, string $carId, string $userId = '') {
     $stmt = $db->prepare("SELECT * FROM cars WHERE id = :id LIMIT 1");
@@ -863,7 +863,7 @@ function sendInquiryConfirmMessage(PDO $db, string $replyToken, string $carId, s
     $car = $stmt->fetch();
 
     if (!$car) {
-        $messages = [['type' => 'text', 'text' => '該当の車両情報が見つかりませんでした。', 'quickReply' => getQuickReplyItems()]];
+        $messages = [['type' => 'text', 'text' => '該当�E車両惁E��が見つかりませんでした、E, 'quickReply' => getQuickReplyItems()]];
         sendReplyMessage($replyToken, $messages);
         return;
     }
@@ -890,7 +890,7 @@ function sendInquiryConfirmMessage(PDO $db, string $replyToken, string $carId, s
             'contents' => [
                 [
                     'type' => 'text',
-                    'text' => '📋 お問い合わせ内容の確認',
+                    'text' => '📋 お問ぁE��わせ冁E��の確誁E,
                     'weight' => 'bold',
                     'size' => 'md',
                     'color' => '#1e293b'
@@ -906,7 +906,7 @@ function sendInquiryConfirmMessage(PDO $db, string $replyToken, string $carId, s
                 ],
                 [
                     'type' => 'text',
-                    'text' => "支払総額: {$totalPrice}",
+                    'text' => "支払総顁E {$totalPrice}",
                     'weight' => 'bold',
                     'size' => 'md',
                     'color' => '#E02424',
@@ -918,7 +918,7 @@ function sendInquiryConfirmMessage(PDO $db, string $replyToken, string $carId, s
                 ],
                 [
                     'type' => 'text',
-                    'text' => "ご希望のお問い合わせ項目をタップしてください。\n（スタッフが確認の上、本トークにてご案内します）",
+                    'text' => "ご希望のお問ぁE��わせ頁E��をタチE�Eしてください、En�E�スタチE��が確認�E上、本ト�Eクにてご案�Eします！E,
                     'size' => 'xs',
                     'color' => '#64748b',
                     'margin' => 'md',
@@ -940,8 +940,8 @@ function sendInquiryConfirmMessage(PDO $db, string $replyToken, string $carId, s
                     'action' => [
                         'type' => 'postback',
                         'label' => '📦 在庫・状態を確認したい',
-                        'data' => 'action=submit_inquiry&id=' . urlencode($carId) . '&type=' . urlencode('在庫・状態確認'),
-                        'displayText' => "【在庫・状態確認】をお願いします"
+                        'data' => 'action=submit_inquiry&id=' . urlencode($carId) . '&type=' . urlencode('在庫・状態確誁E),
+                        'displayText' => "【在庫・状態確認】をお願いしまぁE
                     ]
                 ],
                 [
@@ -951,9 +951,9 @@ function sendInquiryConfirmMessage(PDO $db, string $replyToken, string $carId, s
                     'height' => 'sm',
                     'action' => [
                         'type' => 'postback',
-                        'label' => '📑 支払総額の見積もりが欲しい',
+                        'label' => '📑 支払総額�E見積もりが欲しい',
                         'data' => 'action=submit_inquiry&id=' . urlencode($carId) . '&type=' . urlencode('総額見積もり依頼'),
-                        'displayText' => "【支払総額の見積もり】をお願いします"
+                        'displayText' => "【支払総額�E見積もり】をお願いしまぁE
                     ]
                 ],
                 [
@@ -964,8 +964,8 @@ function sendInquiryConfirmMessage(PDO $db, string $replyToken, string $carId, s
                     'action' => [
                         'type' => 'postback',
                         'label' => '🚗 実車見学・試乗を希望',
-                        'data' => 'action=submit_inquiry&id=' . urlencode($carId) . '&type=' . urlencode('実車見学・試乗予約'),
-                        'displayText' => "【実車見学・試乗】を希望します"
+                        'data' => 'action=submit_inquiry&id=' . urlencode($carId) . '&type=' . urlencode('実車見学・試乗予紁E),
+                        'displayText' => "【実車見学・試乗】を希望しまぁE
                     ]
                 ],
                 [
@@ -974,9 +974,9 @@ function sendInquiryConfirmMessage(PDO $db, string $replyToken, string $carId, s
                     'height' => 'sm',
                     'action' => [
                         'type' => 'postback',
-                        'label' => '❌ キャンセル',
+                        'label' => '❁Eキャンセル',
                         'data' => 'action=cancel_inquiry',
-                        'displayText' => "キャンセルします"
+                        'displayText' => "キャンセルしまぁE
                     ]
                 ]
             ]
@@ -995,7 +995,7 @@ function sendInquiryConfirmMessage(PDO $db, string $replyToken, string $carId, s
 }
 
 /**
- * 正式問い合わせ実行（Discord通知 ＆ 受付完了メッセージ）
+ * 正式問ぁE��わせ実行！Eiscord通知 �E�E受付完亁E��チE��ージ�E�E
  */
 function handleSubmitInquiry(PDO $db, string $replyToken, string $carId, string $inquiryType, string $userId = '') {
     $stmt = $db->prepare("SELECT * FROM cars WHERE id = :id LIMIT 1");
@@ -1003,7 +1003,7 @@ function handleSubmitInquiry(PDO $db, string $replyToken, string $carId, string 
     $car = $stmt->fetch();
 
     if (!$car) {
-        $messages = [['type' => 'text', 'text' => '車両情報が見つかりませんでした。', 'quickReply' => getQuickReplyItems()]];
+        $messages = [['type' => 'text', 'text' => '車両惁E��が見つかりませんでした、E, 'quickReply' => getQuickReplyItems()]];
         sendReplyMessage($replyToken, $messages);
         return;
     }
@@ -1011,21 +1011,21 @@ function handleSubmitInquiry(PDO $db, string $replyToken, string $carId, string 
     $rawTitle = trim($car['title'] ?? '車両');
     $totalPrice = !empty($car['total_price_text']) ? $car['total_price_text'] : '要問合せ';
 
-    // ユーザー情報取得
+    // ユーザー惁E��取征E
     $userProfile = !empty($userId) ? getLineUserProfile($userId) : null;
-    $userName = $userProfile['displayName'] ?? 'お客様';
+    $userName = $userProfile['displayName'] ?? 'お客槁E;
 
-    // 1. Discord へ正式問い合わせ通知を送信！
+    // 1. Discord へ正式問ぁE��わせ通知を送信�E�E
     if (function_exists('sendDiscordInquiryNotification')) {
         sendDiscordInquiryNotification($car, $inquiryType, $userProfile, $userId);
-        writeDebugLog("正式問い合わせ通知送信完了", ['carId' => $carId, 'type' => $inquiryType, 'user' => $userName]);
+        writeDebugLog("正式問ぁE��わせ通知送信完亁E, ['carId' => $carId, 'type' => $inquiryType, 'user' => $userName]);
     }
 
-    // 2. ユーザーへ受付完了メッセージを返信
+    // 2. ユーザーへ受付完亁E��チE��ージを返信
     $messages = [
         [
             'type' => 'text',
-            'text' => "{$userName} 様\n\n【{$inquiryType}】のご依頼を承りました！🚗✨\n\n対象車両: {$rawTitle}\n支払総額: {$totalPrice}\n\n担当スタッフが内容を確認し、本トークにて折り返しご連絡・ご案内させていただきます。今しばらくお待ちくださいませ！",
+            'text' => "{$userName} 様\n\n【{$inquiryType}】�Eご依頼を承りました�E�🚗✨\n\n対象車両: {$rawTitle}\n支払総顁E {$totalPrice}\n\n拁E��スタチE��が�E容を確認し、本ト�Eクにて折り返しご連絡・ご案�EさせてぁE��だきます。今しばらくお征E��くださいませ！E,
             'quickReply' => getQuickReplyItems()
         ]
     ];
@@ -1034,24 +1034,24 @@ function handleSubmitInquiry(PDO $db, string $replyToken, string $carId, string 
 }
 
 /**
- * メンテナンス（オイル交換/車検点検）予約確認メッセージ (誤タップ防止)
+ * メンチE��ンス�E�オイル交揁E車検点検）予紁E��認メチE��ージ (誤タチE�E防止)
  */
 function sendMaintenanceBookingConfirmMessage(string $replyToken, string $type, string $carModel, string $targetDate, string $userId = '') {
     if ($type === 'oil') {
-        $title = '🛢 オイル交換 来店予約のご確認';
+        $title = '🛢 オイル交揁E来店予紁E�Eご確誁E;
         $color = '#f59e0b';
         $labelDate = '次回オイル予定日';
-        $typeName = 'オイル交換';
+        $typeName = 'オイル交揁E;
     } elseif ($type === 'periodic') {
-        $title = '📋 12ヶ月定期点検 ご予約のご確認';
+        $title = '📋 12ヶ月定期点椁Eご予紁E�Eご確誁E;
         $color = '#10b981';
         $labelDate = '次回点検予定日';
-        $typeName = '12ヶ月定期点検';
+        $typeName = '12ヶ月定期点椁E;
     } else {
-        $title = '🚗 車検 来店予約のご確認';
+        $title = '🚗 車椁E来店予紁E�Eご確誁E;
         $color = '#3b82f6';
-        $labelDate = '車検満了日';
-        $typeName = '車検';
+        $labelDate = '車検満亁E��';
+        $typeName = '車椁E;
     }
 
     $confirmBubble = [
@@ -1071,7 +1071,7 @@ function sendMaintenanceBookingConfirmMessage(string $replyToken, string $type, 
                 ],
                 [
                     'type' => 'text',
-                    'text' => "ご希望のご来店日時・時間帯をお選びください。\n担当スタッフが空き状況を確認し、本トークにて折り返しご案内いたします！",
+                    'text' => "ご希望のご来店日時�E時間帯をお選びください、En拁E��スタチE��が空き状況を確認し、本ト�Eクにて折り返しご案�EぁE��します！E,
                     'size' => 'xs',
                     'color' => '#475569',
                     'margin' => 'sm',
@@ -1094,7 +1094,7 @@ function sendMaintenanceBookingConfirmMessage(string $replyToken, string $type, 
                             'type' => 'box',
                             'layout' => 'baseline',
                             'contents' => [
-                                ['type' => 'text', 'text' => '対象愛車', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
+                                ['type' => 'text', 'text' => '対象愛軁E, 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
                                 ['type' => 'text', 'text' => $carModel, 'size' => 'xs', 'weight' => 'bold', 'color' => '#1e293b', 'flex' => 6]
                             ]
                         ],
@@ -1123,9 +1123,9 @@ function sendMaintenanceBookingConfirmMessage(string $replyToken, string $type, 
                     'height' => 'sm',
                     'action' => [
                         'type' => 'postback',
-                        'label' => '☀️ 平日（午前中）を希望',
-                        'data' => 'action=submit_maintenance&type=' . urlencode($typeName) . '&car=' . urlencode($carModel) . '&pref=' . urlencode('平日（午前中）'),
-                        'displayText' => "【{$typeName}】平日（午前中）に来店を希望します"
+                        'label' => '☀�E�E平日�E�午前中�E�を希望',
+                        'data' => 'action=submit_maintenance&type=' . urlencode($typeName) . '&car=' . urlencode($carModel) . '&pref=' . urlencode('平日�E�午前中�E�E),
+                        'displayText' => "【{$typeName}】平日�E�午前中�E�に来店を希望しまぁE
                     ]
                 ],
                 [
@@ -1135,9 +1135,9 @@ function sendMaintenanceBookingConfirmMessage(string $replyToken, string $type, 
                     'height' => 'sm',
                     'action' => [
                         'type' => 'postback',
-                        'label' => '🌤️ 平日（午後）を希望',
-                        'data' => 'action=submit_maintenance&type=' . urlencode($typeName) . '&car=' . urlencode($carModel) . '&pref=' . urlencode('平日（午後）'),
-                        'displayText' => "【{$typeName}】平日（午後）に来店を希望します"
+                        'label' => '🌤�E�E平日�E�午後）を希望',
+                        'data' => 'action=submit_maintenance&type=' . urlencode($typeName) . '&car=' . urlencode($carModel) . '&pref=' . urlencode('平日�E�午後！E),
+                        'displayText' => "【{$typeName}】平日�E�午後）に来店を希望しまぁE
                     ]
                 ],
                 [
@@ -1149,7 +1149,7 @@ function sendMaintenanceBookingConfirmMessage(string $replyToken, string $type, 
                         'type' => 'postback',
                         'label' => '🎈 土日・祝日を希望',
                         'data' => 'action=submit_maintenance&type=' . urlencode($typeName) . '&car=' . urlencode($carModel) . '&pref=' . urlencode('土日・祝日'),
-                        'displayText' => "【{$typeName}】土日・祝日に来店を希望します"
+                        'displayText' => "【{$typeName}】土日・祝日に来店を希望しまぁE
                     ]
                 ],
                 [
@@ -1158,9 +1158,9 @@ function sendMaintenanceBookingConfirmMessage(string $replyToken, string $type, 
                     'height' => 'sm',
                     'action' => [
                         'type' => 'postback',
-                        'label' => '💬 日程を個別にLINE相談',
-                        'data' => 'action=submit_maintenance&type=' . urlencode($typeName) . '&car=' . urlencode($carModel) . '&pref=' . urlencode('日程を個別に相談したい'),
-                        'displayText' => "【{$typeName}】日程について個別に相談したいです"
+                        'label' => '💬 日程を個別にLINE相諁E,
+                        'data' => 'action=submit_maintenance&type=' . urlencode($typeName) . '&car=' . urlencode($carModel) . '&pref=' . urlencode('日程を個別に相諁E��たい'),
+                        'displayText' => "【{$typeName}】日程につぁE��個別に相諁E��たいでぁE
                     ]
                 ],
                 [
@@ -1169,9 +1169,9 @@ function sendMaintenanceBookingConfirmMessage(string $replyToken, string $type, 
                     'height' => 'sm',
                     'action' => [
                         'type' => 'postback',
-                        'label' => '❌ キャンセル',
+                        'label' => '❁Eキャンセル',
                         'data' => 'action=cancel_maintenance',
-                        'displayText' => "キャンセルします"
+                        'displayText' => "キャンセルしまぁE
                     ]
                 ]
             ]
@@ -1181,7 +1181,7 @@ function sendMaintenanceBookingConfirmMessage(string $replyToken, string $type, 
     $messages = [
         [
             'type' => 'flex',
-            'altText' => "【ご予約確認】{$title}",
+            'altText' => "【ご予紁E��認】{$title}",
             'contents' => $confirmBubble
         ]
     ];
@@ -1190,24 +1190,24 @@ function sendMaintenanceBookingConfirmMessage(string $replyToken, string $type, 
 }
 
 /**
- * メンテナンス予約実行（Discord通知 ＆ 受付完了メッセージ）
+ * メンチE��ンス予紁E��行！Eiscord通知 �E�E受付完亁E��チE��ージ�E�E
  */
 function handleSubmitMaintenanceBooking(string $replyToken, string $bookingType, string $carModel, string $prefTime, string $userId = '') {
-    // ユーザー情報取得
+    // ユーザー惁E��取征E
     $userProfile = !empty($userId) ? getLineUserProfile($userId) : null;
-    $userName = $userProfile['displayName'] ?? 'お客様';
+    $userName = $userProfile['displayName'] ?? 'お客槁E;
 
-    // 1. Discord へ予約申し込み通知を送信！
+    // 1. Discord へ予紁E��し込み通知を送信�E�E
     if (function_exists('sendDiscordMaintenanceBookingNotification')) {
         sendDiscordMaintenanceBookingNotification($bookingType, $carModel, $prefTime, $userProfile, $userId);
-        writeDebugLog("メンテナンス予約Discord通知完了", ['type' => $bookingType, 'car' => $carModel, 'user' => $userName, 'pref' => $prefTime]);
+        writeDebugLog("メンチE��ンス予約Discord通知完亁E, ['type' => $bookingType, 'car' => $carModel, 'user' => $userName, 'pref' => $prefTime]);
     }
 
-    // 2. ユーザーへ受付完了メッセージを返信
+    // 2. ユーザーへ受付完亁E��チE��ージを返信
     $messages = [
         [
             'type' => 'text',
-            'text' => "{$userName} 様\n\n【{$bookingType}】のご予約相談を承りました！🛠️✨\n\n対象愛車: {$carModel}\nご希望日時: {$prefTime}\n\n店舗スタッフがピットの空き状況を確認し、本トークにて確定日程・お見積もりのご案内をお送りいたします。どうぞよろしくお願いいたします！🚗",
+            'text' => "{$userName} 様\n\n【{$bookingType}】�Eご予紁E��諁E��承りました�E�🛠�E�✨\n\n対象愛軁E {$carModel}\nご希望日晁E {$prefTime}\n\n店�EスタチE��がピチE��の空き状況を確認し、本ト�Eクにて確定日程�Eお見積もり�Eご案�Eをお送りぁE��します。どぁE��よろしくお願いぁE��します！🚁E,
             'quickReply' => getQuickReplyItems()
         ]
     ];
@@ -1224,7 +1224,7 @@ function sendPriceMenuMessage(string $replyToken) {
 }
 
 /**
- * 価格帯選択メニュー（サイレントボタン式Flex Message）生成
+ * 価格帯選択メニュー�E�サイレント�Eタン式Flex Message�E�生戁E
  */
 function generatePriceMenuMessages(): array {
     $priceBubble = [
@@ -1237,14 +1237,14 @@ function generatePriceMenuMessages(): array {
             'contents' => [
                 [
                     'type' => 'text',
-                    'text' => '💰 ご予算・支払総額から探す',
+                    'text' => '💰 ご予算�E支払総額から探ぁE,
                     'weight' => 'bold',
                     'size' => 'md',
                     'color' => '#1e293b'
                 ],
                 [
                     'type' => 'text',
-                    'text' => 'ご希望の価格帯をタップしてください。',
+                    'text' => 'ご希望の価格帯をタチE�Eしてください、E,
                     'size' => 'xs',
                     'color' => '#64748b',
                     'margin' => 'xs'
@@ -1271,7 +1271,7 @@ function generatePriceMenuMessages(): array {
                                     'flex' => 1,
                                     'action' => [
                                         'type' => 'postback',
-                                        'label' => '〜30万円',
+                                        'label' => '、E0丁E�E',
                                         'data' => 'action=search_price&max_price=30'
                                     ]
                                 ],
@@ -1282,7 +1282,7 @@ function generatePriceMenuMessages(): array {
                                     'flex' => 1,
                                     'action' => [
                                         'type' => 'postback',
-                                        'label' => '〜50万円',
+                                        'label' => '、E0丁E�E',
                                         'data' => 'action=search_price&max_price=50'
                                     ]
                                 ]
@@ -1300,7 +1300,7 @@ function generatePriceMenuMessages(): array {
                                     'flex' => 1,
                                     'action' => [
                                         'type' => 'postback',
-                                        'label' => '〜70万円',
+                                        'label' => '、E0丁E�E',
                                         'data' => 'action=search_price&max_price=70'
                                     ]
                                 ],
@@ -1311,7 +1311,7 @@ function generatePriceMenuMessages(): array {
                                     'flex' => 1,
                                     'action' => [
                                         'type' => 'postback',
-                                        'label' => '〜100万円',
+                                        'label' => '、E00丁E�E',
                                         'data' => 'action=search_price&max_price=100'
                                     ]
                                 ]
@@ -1329,7 +1329,7 @@ function generatePriceMenuMessages(): array {
                                     'flex' => 1,
                                     'action' => [
                                         'type' => 'postback',
-                                        'label' => '〜150万円',
+                                        'label' => '、E50丁E�E',
                                         'data' => 'action=search_price&max_price=150'
                                     ]
                                 ],
@@ -1340,7 +1340,7 @@ function generatePriceMenuMessages(): array {
                                     'flex' => 1,
                                     'action' => [
                                         'type' => 'postback',
-                                        'label' => '〜200万円',
+                                        'label' => '、E00丁E�E',
                                         'data' => 'action=search_price&max_price=200'
                                     ]
                                 ]
@@ -1367,7 +1367,7 @@ function generatePriceMenuMessages(): array {
     return [
         [
             'type' => 'flex',
-            'altText' => 'ご予算・支払総額から探す',
+            'altText' => 'ご予算�E支払総額から探ぁE,
             'contents' => $priceBubble,
             'quickReply' => getQuickReplyItems()
         ]
@@ -1383,7 +1383,7 @@ function sendDistanceMenuMessage(PDO $db, string $replyToken) {
 }
 
 /**
- * 走行距離メニューを生成 (Reply / Push 共通) - 動的在庫集計型
+ * 走行距離メニューを生戁E(Reply / Push 共送E - 動的在庫雁E��型
  */
 function generateDistanceMenuMessages(PDO $db): array {
     $cars = [];
@@ -1395,7 +1395,7 @@ function generateDistanceMenuMessages(PDO $db): array {
     // 走行距離帯のマスター定義
     $distanceDefs = [
         [
-            'name' => '届出済未使用車',
+            'name' => '届�E済未使用軁E,
             'action' => 'search_low_mileage',
             'param' => '',
             'check' => function($car) {
@@ -1403,7 +1403,7 @@ function generateDistanceMenuMessages(PDO $db): array {
             }
         ],
         [
-            'name' => '〜1万km',
+            'name' => '、E万km',
             'action' => 'search_distance',
             'param' => 'max_distance=1.0',
             'check' => function($car) {
@@ -1411,7 +1411,7 @@ function generateDistanceMenuMessages(PDO $db): array {
             }
         ],
         [
-            'name' => '〜3万km',
+            'name' => '、E万km',
             'action' => 'search_distance',
             'param' => 'max_distance=3.0',
             'check' => function($car) {
@@ -1419,7 +1419,7 @@ function generateDistanceMenuMessages(PDO $db): array {
             }
         ],
         [
-            'name' => '〜5万km',
+            'name' => '、E万km',
             'action' => 'search_distance',
             'param' => 'max_distance=5.0',
             'check' => function($car) {
@@ -1427,7 +1427,7 @@ function generateDistanceMenuMessages(PDO $db): array {
             }
         ],
         [
-            'name' => '〜7万km',
+            'name' => '、E万km',
             'action' => 'search_distance',
             'param' => 'max_distance=7.0',
             'check' => function($car) {
@@ -1435,7 +1435,7 @@ function generateDistanceMenuMessages(PDO $db): array {
             }
         ],
         [
-            'name' => '〜10万km',
+            'name' => '、E0万km',
             'action' => 'search_distance',
             'param' => 'max_distance=10.0',
             'check' => function($car) {
@@ -1443,7 +1443,7 @@ function generateDistanceMenuMessages(PDO $db): array {
             }
         ],
         [
-            'name' => '10万km超',
+            'name' => '10万km趁E,
             'action' => 'search_distance',
             'param' => 'min_distance=10.0',
             'check' => function($car) {
@@ -1491,14 +1491,14 @@ function generateDistanceMenuMessages(PDO $db): array {
                     'contents' => [
                         [
                             'type' => 'text',
-                            'text' => '走行距離で探す' . $titleSuffix,
+                            'text' => '走行距離で探ぁE . $titleSuffix,
                             'weight' => 'bold',
                             'size' => 'md',
                             'color' => '#1e293b'
                         ],
                         [
                             'type' => 'text',
-                            'text' => '在庫に実在する走行距離帯から選べます',
+                            'text' => '在庫に実在する走行距離帯から選べまぁE,
                             'size' => 'xs',
                             'color' => '#64748b',
                             'margin' => 'xs'
@@ -1524,7 +1524,7 @@ function generateDistanceMenuMessages(PDO $db): array {
         return [
             [
                 'type' => 'text',
-                'text' => "現在、該当する走行距離条件の在庫を更新中です。",
+                'text' => "現在、該当する走行距離条件の在庫を更新中です、E,
                 'quickReply' => getQuickReplyItems()
             ]
         ];
@@ -1533,7 +1533,7 @@ function generateDistanceMenuMessages(PDO $db): array {
     return [
         [
             'type' => 'flex',
-            'altText' => '走行距離から探す',
+            'altText' => '走行距離から探ぁE,
             'contents' => [
                 'type' => 'carousel',
                 'contents' => $activeBubbles
@@ -1544,7 +1544,7 @@ function generateDistanceMenuMessages(PDO $db): array {
 }
 
 /**
- * カーライフ豆知識・お役立ちガイドメニューを送信
+ * カーライフ豁E��識�Eお役立ちガイドメニューを送信
  */
 function sendKnowledgeMenuMessage(string $replyToken) {
     $messages = generateKnowledgeMenuMessages();
@@ -1552,7 +1552,7 @@ function sendKnowledgeMenuMessage(string $replyToken) {
 }
 
 /**
- * カーライフ豆知識・個別記事を送信
+ * カーライフ豁E��識�E個別記事を送信
  */
 function sendKnowledgeDetailMessage(string $replyToken, string $topic) {
     $messages = generateKnowledgeDetailMessage($topic);
@@ -1560,246 +1560,246 @@ function sendKnowledgeDetailMessage(string $replyToken, string $topic) {
 }
 
 /**
- * カーライフ豆知識・お役立ちガイド（目次3段カルーセル・全21テーマ・通し番号付き）を生成
+ * カーライフ豁E��識�Eお役立ちガイド（目次3段カルーセル・全21チE�Eマ�E通し番号付き�E�を生�E
  */
 function generateKnowledgeMenuMessages(): array {
-    // 1段目: 車選び＆購入・手続きガイド（①〜⑦）
+    // 1段目: 車選び�E�E��入・手続きガイド（①〜⑦�E�E
     $group1Topics = [
         [
             'topic' => 'used_car',
-            'badge' => '🚗 車選びの極意',
+            'badge' => '🚗 車選びの極愁E,
             'badge_color' => '#3b82f6',
-            'title' => '① 失敗しない中古車の選び方',
-            'desc' => "プロが教える！走行距離・修復歴・整備履歴など後悔しない5大チェックポイント。",
-            'read_time' => '約2分で読める'
+            'title' => '① 失敗しなぁE��古車�E選び方',
+            'desc' => "プロが教える�E�走行距離・修復歴・整備履歴など後悔しなぁE大チェチE��ポイント、E,
+            'read_time' => '紁E刁E��読める'
         ],
         [
             'topic' => 'kei_vs_compact',
-            'badge' => '🚙 徹底比較ガイド',
+            'badge' => '🚙 徹底比輁E��イチE,
             'badge_color' => '#8b5cf6',
-            'title' => '② 軽自動車 vs 普通車の維持費比較',
-            'desc' => "税金・車検・燃費・保険料の年間コスト差と、ライフスタイル別の賢い選び方。",
-            'read_time' => '約2分で読める'
+            'title' => '② 軽自動軁Evs 普通車�E維持費比輁E,
+            'desc' => "税��・車検�E燁E��・保険料�E年間コスト差と、ライフスタイル別の賢ぁE��び方、E,
+            'read_time' => '紁E刁E��読める'
         ],
         [
             'topic' => 'body_type_guide',
-            'badge' => '🚙 目的別・車選び',
+            'badge' => '🚙 目皁E��・車選び',
             'badge_color' => '#0284c7',
             'title' => '③ ボディタイプ別の特徴と選び方',
-            'desc' => "軽・SUV・ミニバン・コンパクトの特徴と、家族構成や用途に合った最適車種診断。",
-            'read_time' => '約2分で読める'
+            'desc' => "軽・SUV・ミニバン・コンパクト�E特徴と、家族構�EめE��途に合った最適車種診断、E,
+            'read_time' => '紁E刁E��読める'
         ],
         [
             'topic' => 'car_loan',
-            'badge' => '💳 ローン＆資金計画',
+            'badge' => '💳 ローン�E�E��E��計画',
             'badge_color' => '#4f46e5',
-            'title' => '④ オートローンの賢い選び方',
-            'desc' => "金利の種類、無理のない返済比率（手取りの15〜20%）、事前仮審査のメリット。",
-            'read_time' => '約2分で読める'
+            'title' => '④ オートローンの賢ぁE��び方',
+            'desc' => "金利の種類、無琁E�EなぁE��済比率�E�手取りの15、E0%�E�、事前仮審査のメリチE��、E,
+            'read_time' => '紁E刁E��読める'
         ],
         [
             'topic' => 'best_timing',
-            'badge' => '💰 お得な買い時',
+            'badge' => '💰 お得な買ぁE��',
             'badge_color' => '#ea580c',
-            'title' => '⑤ 車のお得な買い時・購入時期',
-            'desc' => "決算期（3月・9月）やモデルチェンジ後、自動車税の課税時期から見るベストな時期。",
-            'read_time' => '約2分で読める'
+            'title' => '⑤ 車�Eお得な買ぁE��・購入時期',
+            'desc' => "決算期�E�E月�E9月）やモチE��チェンジ後、�E動車税�E課税時期から見るベストな時期、E,
+            'read_time' => '紁E刁E��読める'
         ],
         [
             'topic' => 'car_paperwork',
-            'badge' => '📄 手続き＆流れ',
+            'badge' => '📄 手続き�E�E��れ',
             'badge_color' => '#0891b2',
-            'title' => '⑥ 必要書類と納車までの流れ',
-            'desc' => "車庫証明や印鑑証明、住民票の準備から納車前点検・受取までのステップを解説。",
-            'read_time' => '約2分で読める'
+            'title' => '⑥ 忁E��書類と納車までの流れ',
+            'desc' => "車庫証明や印鑑証明、住民票の準備から納車前点検�E受取までのスチE��プを解説、E,
+            'read_time' => '紁E刁E��読める'
         ],
         [
             'topic' => 'trade_in',
-            'badge' => '🛡️ 査定額UPの秘訣',
+            'badge' => '🛡�E�E査定額UPの秘訣',
             'badge_color' => '#d97706',
-            'title' => '⑦ 愛車を高く売る・下取りのコツ',
-            'desc' => "査定士が見る重要ポイント、純正パーツ保管、ベストな売却タイミングを伝授。",
-            'read_time' => '約2分で読める'
+            'title' => '⑦ 愛車を高く売る�E下取り�EコチE,
+            'desc' => "査定士が見る重要�Eイント、純正パ�EチE��管、�Eストな売却タイミングを伝授、E,
+            'read_time' => '紁E刁E��読める'
         ]
     ];
 
-    // 2段目: メンテナンス・点検＆ケアガイド（⑧〜⑭）
+    // 2段目: メンチE��ンス・点検！E��アガイド（⑧〜⑭�E�E
     $group2Topics = [
         [
             'topic' => 'oil',
-            'badge' => '🛢️ 愛車長持ちの秘訣',
+            'badge' => '🛢�E�E愛車長持ちの秘訣',
             'badge_color' => '#f59e0b',
-            'title' => '⑧ エンジンオイル交換の真実',
-            'desc' => "「まだ走れる」は危険？適切な交換サイクルとフィルター交換の重要性を解説。",
-            'read_time' => '約1.5分で読める'
+            'title' => '⑧ エンジンオイル交換�E真宁E,
+            'desc' => "「まだ走れる」�E危険�E�適刁E��交換サイクルとフィルター交換�E重要性を解説、E,
+            'read_time' => '紁E.5刁E��読める'
         ],
         [
             'topic' => 'periodic',
-            'badge' => '📋 予防整備の基礎',
+            'badge' => '📋 予防整備�E基礁E,
             'badge_color' => '#10b981',
-            'title' => '⑨ 法定12ヶ月点検の必要性',
-            'desc' => "車検に通っていても安心できない？受けるメリットと車検との違いをプロが解説。",
-            'read_time' => '約2分で読める'
+            'title' => '⑨ 法宁E2ヶ月点検�E忁E��性',
+            'desc' => "車検に通ってぁE��も安忁E��きなぁE��受けるメリチE��と車検との違いを�Eロが解説、E,
+            'read_time' => '紁E刁E��読める'
         ],
         [
             'topic' => 'inspection',
-            'badge' => '🔍 安心＆スムーズ',
+            'badge' => '🔍 安忁E��E��ムーズ',
             'badge_color' => '#6366f1',
-            'title' => '⑩ 車検の基礎知識と賢い受け方',
-            'desc' => "満了日の1ヶ月前から受検可能！費用の内訳や準備物、安心車検のポイント。",
-            'read_time' => '約2分で読める'
+            'title' => '⑩ 車検�E基礎知識と賢ぁE��け方',
+            'desc' => "満亁E��の1ヶ月前から受検可能�E�費用の冁E��めE��備物、安忁E��検�Eポイント、E,
+            'read_time' => '紁E刁E��読める'
         ],
         [
             'topic' => 'battery_tire',
-            'badge' => '⚠️ トラブル予防',
+            'badge' => '⚠�E�Eトラブル予防',
             'badge_color' => '#ef4444',
-            'title' => '⑪ バッテリー・タイヤ・日常点検',
-            'desc' => "出先での突然死を防ぐ！季節ごとのトラブル対策と交換サインの見極め方。",
-            'read_time' => '約1.5分で読める'
+            'title' => '⑪ バッチE��ー・タイヤ・日常点椁E,
+            'desc' => "出先での突然死を防ぐ！季節ごとのトラブル対策と交換サインの見極め方、E,
+            'read_time' => '紁E.5刁E��読める'
         ],
         [
             'topic' => 'brake_care',
-            'badge' => '🛑 安全の要・ブレーキ',
+            'badge' => '🛑 安�Eの要�Eブレーキ',
             'badge_color' => '#e11d48',
-            'title' => '⑫ ブレーキの寿命と重要チェック',
-            'desc' => "パッド残厚3mmの危険サイン、キーキー音の正体、フルード吸湿劣化の注意点。",
-            'read_time' => '約1.5分で読める'
+            'title' => '⑫ ブレーキの寿命と重要チェチE��',
+            'desc' => "パッド残厚3mmの危険サイン、キーキー音の正体、フルード吸湿劣化�E注意点、E,
+            'read_time' => '紁E.5刁E��読める'
         ],
         [
             'topic' => 'aircon_care',
-            'badge' => '❄️ 快適ドライブ',
+            'badge' => '❁E��E快適ドライチE,
             'badge_color' => '#0ea5e9',
-            'title' => '⑬ カーエアコンの効き＆悪臭ケア',
-            'desc' => "エアコンフィルター交換時期、エバポレーター消臭洗浄、ガス補充で冷え復活！",
-            'read_time' => '約1.5分で読める'
+            'title' => '⑬ カーエアコンの効き！E��臭ケア',
+            'desc' => "エアコンフィルター交換時期、エバ�Eレーター消�E洗流E��ガス補�Eで冷え復活�E�E,
+            'read_time' => '紁E.5刁E��読める'
         ],
         [
             'topic' => 'car_wash_care',
-            'badge' => '🧼 愛車ケア＆美観',
+            'badge' => '🧼 愛車ケア�E�E��観',
             'badge_color' => '#06b6d4',
-            'title' => '⑭ 洗車＆ボディコーティング術',
-            'desc' => "炎天下の洗車NG理由、洗車キズを防ぐ洗い方、コーティングを長持ちさせる秘訣。",
-            'read_time' => '約2分で読める'
+            'title' => '⑭ 洗車！E�EチE��コーチE��ング衁E,
+            'desc' => "炎天下�E洗車NG琁E��、洗車キズを防ぐ洗い方、コーチE��ングを長持ちさせる秘訣、E,
+            'read_time' => '紁E刁E��読める'
         ]
     ];
 
-    // 3段目: 安全運転・トラブル緊急対処＆季節対策（⑮〜㉑）
+    // 3段目: 安�E運転・トラブル緊急対処�E�E��節対策（⑮〜㉑�E�E
     $group3Topics = [
         [
             'topic' => 'winter_driving',
-            'badge' => '❄️ 冬道・降雪対策',
+            'badge' => '❁E��E冬道�E降雪対筁E,
             'badge_color' => '#0284c7',
-            'title' => '⑮ 雪道運転と冬タイヤの極意',
-            'desc' => "スタッドレスの寿命見極め（プラットホーム）と融雪剤による下回り防錆対策。",
-            'read_time' => '約2分で読める'
+            'title' => '⑮ 雪道運転と冬タイヤの極愁E,
+            'desc' => "スタチE��レスの寿命見極めE���EラチE��ホ�Eム�E�と融雪剤による下回り防錁E��策、E,
+            'read_time' => '紁E刁E��読める'
         ],
         [
             'topic' => 'warning_lights',
             'badge' => '🚨 緊急・トラブル診断',
             'badge_color' => '#dc2626',
-            'title' => '⑯ 警告灯の意味と緊急時の対処法',
-            'desc' => "黄色と赤色の危険度の違い、異音（カタカタ・キーキー）の正体と初期対応。",
-            'read_time' => '約2分で読める'
+            'title' => '⑯ 警告�Eの意味と緊急時�E対処況E,
+            'desc' => "黁E��と赤色の危険度の違い、異音�E�カタカタ・キーキー�E��E正体と初期対応、E,
+            'read_time' => '紁E刁E��読める'
         ],
         [
             'topic' => 'rain_driving',
-            'badge' => '🌧️ 雨天・悪天候対策',
+            'badge' => '🌧�E�E雨天・悪天候対筁E,
             'badge_color' => '#2563eb',
-            'title' => '⑰ 雨の日の安全運転と冠水対策',
-            'desc' => "冠水道路の走行限界、ハイドロプレーニング予防、撥水とワイパー視界確保。",
-            'read_time' => '約2分で読める'
+            'title' => '⑰ 雨の日の安�E運転と冠水対筁E,
+            'desc' => "冠水道路の走行限界、ハイドロプレーニング予防、撥水とワイパ�E視界確保、E,
+            'read_time' => '紁E刁E��読める'
         ],
         [
             'topic' => 'accident_guide',
             'badge' => '💥 緊急初動マニュアル',
             'badge_color' => '#b91c1c',
-            'title' => '⑱ 事故・故障時の緊急対応手順',
-            'desc' => "二次災害防止、119番・110番の義務、警察の事故証明と保険会社連絡ステップ。",
-            'read_time' => '約2分で読める'
+            'title' => '⑱ 事故・敁E��時�E緊急対応手頁E,
+            'desc' => "二次災害防止、E19番・110番の義務、警察�E事故証明と保険会社連絡スチE��プ、E,
+            'read_time' => '紁E刁E��読める'
         ],
         [
             'topic' => 'fuel_economy',
-            'badge' => '⛽ 燃費＆節約術',
+            'badge' => '⛽ 燁E���E�E��紁E��E,
             'badge_color' => '#059669',
-            'title' => '⑲ 燃費アップ＆愛車の節約術',
-            'desc' => "ふんわりアクセル・タイヤ空気圧・不要な荷物軽量化でガソリン代を大幅カット！",
-            'read_time' => '約1.5分で読める'
+            'title' => '⑲ 燁E��アチE�E�E�E�E車�E節紁E��E,
+            'desc' => "ふんわりアクセル・タイヤ空気圧・不要な荷物軽量化でガソリン代を大幁E��チE���E�E,
+            'read_time' => '紁E.5刁E��読める'
         ],
         [
             'topic' => 'beginner_driver',
-            'badge' => '🔰 安心ドライブ',
+            'badge' => '🔰 安忁E��ライチE,
             'badge_color' => '#16a34a',
-            'title' => '⑳ 初心者・ペーパードライバー術',
-            'desc' => "車幅感覚の掴み方、バック駐車の目印、死角の確認、車間距離の安全マニュアル。",
-            'read_time' => '約2分で読める'
+            'title' => '⑳ 初忁E��E�Eペ�Eパ�Eドライバ�E衁E,
+            'desc' => "車幁E��覚�E掴み方、バチE��駐車�E目印、死角�E確認、車間距離の安�Eマニュアル、E,
+            'read_time' => '紁E刁E��読める'
         ],
         [
             'topic' => 'car_accessories',
-            'badge' => '🔌 便利アイテム・装備',
+            'badge' => '🔌 便利アイチE��・裁E��',
             'badge_color' => '#7c3aed',
-            'title' => '㉑ ドラレコ・ETC・LED便利知識',
-            'desc' => "前後2カメラドラレコの選び方、ETC2.0の割引メリット、車検対応LED化の注意点。",
-            'read_time' => '約2分で読める'
+            'title' => '㉁Eドラレコ・ETC・LED便利知譁E,
+            'desc' => "前征Eカメラドラレコの選び方、ETC2.0の割引メリチE��、車検対応LED化�E注意点、E,
+            'read_time' => '紁E刁E��読める'
         ]
     ];
 
-    // 4段目: 愛車長持ち・査定UP＆トラブルレスキュー（㉒〜㉘）
+    // 4段目: 愛車長持ち・査定UP�E�E��ラブルレスキュー�E�㉒〜㉘�E�E
     $group4Topics = [
         [
             'topic' => 'car_appraisal',
-            'badge' => '💴 愛車売却＆査定UP',
+            'badge' => '💴 愛車売却�E�E��定UP',
             'badge_color' => '#d97706',
-            'title' => '㉒ 愛車を高く売る・査定UP術',
-            'desc' => "洗車・車内消臭・純正パーツ保管・査定時期の見極めで買取額が大幅アップ！",
-            'read_time' => '約2分で読める'
+            'title' => '㉁E愛車を高く売る�E査定UP衁E,
+            'desc' => "洗車�E車�E消�E・純正パ�EチE��管・査定時期�E見極めで買取額が大幁E��チE�E�E�E,
+            'read_time' => '紁E刁E��読める'
         ],
         [
             'topic' => 'tire_rotation',
-            'badge' => '🛞 タイヤ長持ち・安全',
+            'badge' => '🛞 タイヤ長持ち・安�E',
             'badge_color' => '#0284c7',
-            'title' => '㉓ タイヤローテーションと偏摩耗',
-            'desc' => "前後の摩耗差を解消！5,000kmごとの位置交換でタイヤ寿命が1.5倍に延びる。",
-            'read_time' => '約1.5分で読める'
+            'title' => '㉁EタイヤローチE�Eションと偏摩老E,
+            'desc' => "前後�E摩耗差を解消！E,000kmごとの位置交換でタイヤ寿命ぁE.5倍に延びる、E,
+            'read_time' => '紁E.5刁E��読める'
         ],
         [
             'topic' => 'disaster_car_stay',
-            'badge' => '🏕️ 防災・緊急車中泊',
+            'badge' => '🏕�E�E防災・緊急車中況E,
             'badge_color' => '#dc2626',
-            'title' => '㉔ 車の防災＆災害時車中泊マニュアル',
-            'desc' => "大雪立ち往生・地震対策。一酸化炭素中毒防止と車載すべき防災7つ道具。",
-            'read_time' => '約2分で読める'
+            'title' => '㉁E車�E防災�E�E��害時車中泊�Eニュアル',
+            'desc' => "大雪立ち往生�E地霁E��策。一酸化炭素中毒防止と車載すべき防災7つ道�E、E,
+            'read_time' => '紁E刁E��読める'
         ],
         [
             'topic' => 'headlight_yellowing',
-            'badge' => '✨ 美観＆夜間視界',
+            'badge' => '✨ 美観�E�E��間視界',
             'badge_color' => '#7c3aed',
-            'title' => '㉕ ヘッドライト黄ばみ除去と予防',
-            'desc' => "紫外線劣化の黄ばみは光量不足で車検落ちの原因に！クリアな瞳を取り戻す方法。",
-            'read_time' => '約1.5分で読める'
+            'title' => '㉁Eヘッドライト黁E�Eみ除去と予防',
+            'desc' => "紫外線劣化�E黁E�Eみは光量不足で車検落ちの原因に�E�クリアな瞳を取り戻す方法、E,
+            'read_time' => '紁E.5刁E��読める'
         ],
         [
             'topic' => 'smart_key_battery',
             'badge' => '🔑 トラブル緊急脱出',
             'badge_color' => '#e11d48',
-            'title' => '㉖ スマートキー電池切れ時の始動法',
-            'desc' => "鍵が開かない・エンジンがかからない時の「内蔵キー＆タッチ始動」完全ガイド。",
-            'read_time' => '約1.5分で読める'
+            'title' => '㉁Eスマ�Eトキー電池刁E��時�E始動況E,
+            'desc' => "鍵が開かなぁE�EエンジンがかからなぁE��の「�E蔵キー�E�E��チE��始動」完�Eガイド、E,
+            'read_time' => '紁E.5刁E��読める'
         ],
         [
             'topic' => 'hybrid_battery_care',
-            'badge' => '🔋 HV・EVの賢い乗り方',
+            'badge' => '🔋 HV・EVの賢ぁE��り方',
             'badge_color' => '#059669',
-            'title' => '㉗ ハイブリッド車のバッテリー延命術',
-            'desc' => "駆動用バッテリーを長持ちさせる運転法と、見落としがちな「補機バッテリー」の盲点。",
-            'read_time' => '約2分で読める'
+            'title' => '㉁EハイブリチE��車�EバッチE��ー延命衁E,
+            'desc' => "駁E��用バッチE��ーを長持ちさせる運転法と、見落としがちな「補機バチE��リー」�E盲点、E,
+            'read_time' => '紁E刁E��読める'
         ],
         [
             'topic' => 'daily_car_check',
-            'badge' => '🔍 5分セルフ点検',
+            'badge' => '🔍 5刁E��ルフ点椁E,
             'badge_color' => '#2563eb',
-            'title' => '㉘ 日常点検「ぶ・た・は・と・う・み・ず」',
-            'desc' => "ドライブ前に5分でできる！プロも推奨する7大セルフチェックの合言葉。",
-            'read_time' => '約2分で読める'
+            'title' => '㉁E日常点検「�E・た�Eは・と・ぁE�Eみ・ず、E,
+            'desc' => "ドライブ前に5刁E��できる�E��Eロも推奨する7大セルフチェチE��の合言葉、E,
+            'read_time' => '紁E刁E��読める'
         ]
     ];
 
@@ -1885,7 +1885,7 @@ function generateKnowledgeMenuMessages(): array {
     return [
         [
             'type' => 'flex',
-            'altText' => '【第1弾: 車選び＆購入・手続きガイド ①〜⑦】カーライフ豆知識',
+            'altText' => '【第1弾: 車選び�E�E��入・手続きガイチE①〜⑦】カーライフ豁E��譁E,
             'contents' => [
                 'type' => 'carousel',
                 'contents' => $buildCarouselBubbles($group1Topics)
@@ -1893,7 +1893,7 @@ function generateKnowledgeMenuMessages(): array {
         ],
         [
             'type' => 'flex',
-            'altText' => '【第2弾: メンテナンス・点検＆ケアガイド ⑧〜⑭】カーライフ豆知識',
+            'altText' => '【第2弾: メンチE��ンス・点検！E��アガイチE⑧〜⑭】カーライフ豁E��譁E,
             'contents' => [
                 'type' => 'carousel',
                 'contents' => $buildCarouselBubbles($group2Topics)
@@ -1901,7 +1901,7 @@ function generateKnowledgeMenuMessages(): array {
         ],
         [
             'type' => 'flex',
-            'altText' => '【第3弾: 安全運転・トラブル対処＆便利知識 ⑮〜㉑】カーライフ豆知識',
+            'altText' => '【第3弾: 安�E運転・トラブル対処�E�E��利知譁E⑮〜㉑】カーライフ豁E��譁E,
             'contents' => [
                 'type' => 'carousel',
                 'contents' => $buildCarouselBubbles($group3Topics)
@@ -1909,7 +1909,7 @@ function generateKnowledgeMenuMessages(): array {
         ],
         [
             'type' => 'flex',
-            'altText' => '【第4弾: 愛車長持ち・査定UP＆トラブルレスキュー ㉒〜㉘】カーライフ豆知識',
+            'altText' => '【第4弾: 愛車長持ち・査定UP�E�E��ラブルレスキュー ㉒〜㉘】カーライフ豁E��譁E,
             'contents' => [
                 'type' => 'carousel',
                 'contents' => $buildCarouselBubbles($group4Topics)
@@ -1920,7 +1920,7 @@ function generateKnowledgeMenuMessages(): array {
 }
 
 /**
- * 各テーマの詳細解説 Flex Message を生成
+ * 吁E��ーマ�E詳細解説 Flex Message を生戁E
  */
 function generateKnowledgeDetailMessage(string $topic): array {
     $articleData = [];
@@ -1928,40 +1928,40 @@ function generateKnowledgeDetailMessage(string $topic): array {
     switch ($topic) {
         case 'used_car':
             $articleData = [
-                'badge' => '🚗 車選びの極意【①】',
+                'badge' => '🚗 車選びの極意【①、E,
                 'badge_color' => '#3b82f6',
-                'title' => '① 失敗しない中古車の選び方',
-                'subtitle' => 'プロが教える！後悔しない5大見極め術',
+                'title' => '① 失敗しなぁE��古車�E選び方',
+                'subtitle' => 'プロが教える�E�後悔しなぁE大見極め衁E,
                 'sections' => [
                     [
-                        'icon' => '1️⃣',
+                        'icon' => '1�E�⃣',
                         'title' => '年式と走行距離のバランス',
-                        'desc' => "一般的な走行距離の目安は【1年＝約8,000km〜1万km】です。\n10年で1万kmなど極端に走行が少ない放置車よりも、年式相応に定期的に動いてオイル交換されていた車両の方が好調なケースが多いです。"
+                        'desc' => "一般皁E��走行距離の目安�E、E年�E�紁E,000km、E万km】です、En10年で1万kmなど極端に走行が少なぁE��置車よりも、年式相応に定期皁E��動いてオイル交換されてぁE��車両の方が好調なケースが多いです、E
                     ],
                     [
-                        'icon' => '2️⃣',
-                        'title' => '修復歴（事故歴）の有無を確認',
-                        'desc' => "「修復歴あり」とは車の骨格（フレーム）にダメージ・修理歴がある車を指します。\n外見が綺麗でも走行安定性に影響が出る可能性があるため、修復歴の有無を明確に開示している店舗を選びましょう。"
+                        'icon' => '2�E�⃣',
+                        'title' => '修復歴�E�事故歴�E��E有無を確誁E,
+                        'desc' => "「修復歴あり」とは車�E骨格�E�フレーム�E�にダメージ・修琁E��がある車を持E��ます、En外見が綺麗でも走行安定性に影響が�Eる可能性があるため、修復歴の有無を�E確に開示してぁE��店�Eを選びましょぁE��E
                     ],
                     [
-                        'icon' => '3️⃣',
-                        'title' => '定期点検記録簿（整備手帳）',
-                        'desc' => "過去の点検や消耗品交換の履歴が残っている記録簿は、前オーナーが大切に乗っていた最大の証拠です。"
+                        'icon' => '3�E�⃣',
+                        'title' => '定期点検記録簿�E�整備手帳�E�E,
+                        'desc' => "過去の点検や消耗品交換�E履歴が残ってぁE��記録簿は、前オーナ�Eが大刁E��乗ってぁE��最大の証拠です、E
                     ],
                     [
-                        'icon' => '4️⃣',
-                        'title' => '車内のニオイと下回りのサビ',
-                        'desc' => "写真ではわからないタバコ・ペット臭や、降雪地・沿岸部特有の下回りサビは要チェックです。"
+                        'icon' => '4�E�⃣',
+                        'title' => '車�Eのニオイと下回り�EサチE,
+                        'desc' => "写真ではわからなぁE��バコ・ペット�EめE��E��雪地・沿岸部特有�E下回りサビ�E要チェチE��です、E
                     ],
                     [
-                        'icon' => '5️⃣',
-                        'title' => '支払総額と保証内容',
-                        'desc' => "車両本体価格の安さだけで判断せず、諸費用込みの「支払総額」と「保証期間・範囲」を必ず確認しましょう。"
+                        'icon' => '5�E�⃣',
+                        'title' => '支払総額と保証冁E��',
+                        'desc' => "車両本体価格の安さだけで判断せず、諸費用込みの「支払総額」と「保証期間・篁E��」を忁E��確認しましょぁE��E
                     ]
                 ],
-                'summary' => 'アップファーレンでは全車両の修復歴を開示し、厳選した高品質車両のみを支払総額明瞭で展示しております！',
+                'summary' => 'アチE�Eファーレンでは全車両の修復歴を開示し、厳選した高品質車両のみを支払総額�E瞭で展示しております！E,
                 'action_btn' => [
-                    'label' => '🚗 アップファーレンの在庫を見る',
+                    'label' => '🚗 アチE�Eファーレンの在庫を見る',
                     'data' => 'action=search_all'
                 ]
             ];
@@ -1969,30 +1969,30 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'kei_vs_compact':
             $articleData = [
-                'badge' => '🚙 徹底比較ガイド【②】',
+                'badge' => '🚙 徹底比輁E��イド【②、E,
                 'badge_color' => '#8b5cf6',
-                'title' => '② 軽自動車 vs 普通車の維持費比較',
-                'subtitle' => '税金・車検・使い勝手のリアルな違い',
+                'title' => '② 軽自動軁Evs 普通車�E維持費比輁E,
+                'subtitle' => '税��・車検�E使ぁE��手�Eリアルな違い',
                 'sections' => [
                     [
                         'icon' => '💴',
-                        'title' => '税金・固定費の圧倒的な差',
-                        'desc' => "・自動車税（年）：軽 10,800円 vs コンパクトカー 25,000〜30,500円（年間約1.5〜2万円差）\n・重量税（2年）：軽 6,600円 vs 普通車 16,400〜24,600円\n・高速道路料金：軽自動車は普通車より約20%割引！"
+                        'title' => '税��・固定費の圧倒的な差',
+                        'desc' => "・自動車税（年�E�：軽 10,800冁Evs コンパクトカー 25,000、E0,500冁E��年間紁E.5、E丁E�E差�E�\n・重量税！E年�E�：軽 6,600冁Evs 普通軁E16,400、E4,600冁En・高速道路料�߁E�軽自動車�E普通車より紁E0%割引！E
                     ],
                     [
                         'icon' => '🚗',
-                        'title' => '最新の軽自動車の進化',
-                        'desc' => "スライドドア（N-BOX・タント等）により大人4人がゆったり乗れ、シートアレンジや荷物の積載力も抜群。\n衝突被害軽減ブレーキ等の先進安全装備も普通車同等です。"
+                        'title' => '最新の軽自動車�E進匁E,
+                        'desc' => "スライドドア�E�E-BOX・タント等）により大人4人がゆったり乗れ、シートアレンジめE��物の積載力も抜群、En衝突被害軽減ブレーキ等�E先進安�E裁E��も普通車同等です、E
                     ],
                     [
-                        'icon' => '🛣️',
-                        'title' => '普通車（コンパクトカー）が向いている人',
-                        'desc' => "高速道路を頻繁に利用する方、長距離運転が多い方、5人乗車する機会がある方は、静粛性やパワーに余裕がある普通車がおすすめです。"
+                        'icon' => '🛣�E�E,
+                        'title' => '普通車（コンパクトカー�E�が向いてぁE��人',
+                        'desc' => "高速道路を頻繁に利用する方、E��距離運転が多い方、E人乗車する機会がある方は、E��粛性めE��ワーに余裕がある普通車がおすすめです、E
                     ]
                 ],
-                'summary' => 'お客様の使い方やご予算に合わせて、最適な車種選びをプロがアドバイスいたします！',
+                'summary' => 'お客様�E使ぁE��めE��予算に合わせて、最適な車種選びを�EロがアドバイスぁE��します！E,
                 'action_btn' => [
-                    'label' => '🚘 軽自動車の在庫一覧を見る',
+                    'label' => '🚘 軽自動車�E在庫一覧を見る',
                     'data' => 'action=search_kei'
                 ]
             ];
@@ -2000,30 +2000,30 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'body_type_guide':
             $articleData = [
-                'badge' => '🚙 目的別・車選び【③】',
+                'badge' => '🚙 目皁E��・車選び【③、E,
                 'badge_color' => '#0284c7',
                 'title' => '③ ボディタイプ別の特徴と選び方',
-                'subtitle' => '用途や家族構成に合わせた最適車種診断',
+                'subtitle' => '用途や家族構�Eに合わせた最適車種診断',
                 'sections' => [
                     [
                         'icon' => '🚗',
-                        'title' => '軽ハイトワゴン（N-BOX/タント/スペーシア等）',
-                        'desc' => "圧倒的な室内高とスライドドアで子育て世代や送迎・お買い物に最強。\n維持費の安さとリセールバリューの高さも大きな魅力です。"
+                        'title' => '軽ハイトワゴン�E�E-BOX/タンチEスペ�Eシア等！E,
+                        'desc' => "圧倒的な室冁E��とスライドドアで子育て世代めE��迎�Eお買ぁE��に最強、En維持費の安さとリセールバリューの高さも大きな魁E��です、E
                     ],
                     [
                         'icon' => '🚙',
-                        'title' => 'SUV / クロスオーバー（ヤリスクロス/ヴェゼル等）',
-                        'desc' => "アイポイントが高く運転しやすいのが特徴。悪路や雪道に強い4WDモデルも豊富で、アウトドア派や冬道重視の方に大人気です。"
+                        'title' => 'SUV / クロスオーバ�E�E�ヤリスクロス/ヴェゼル等！E,
+                        'desc' => "アイポイントが高く運転しやすいのが特徴。悪路めE��道に強ぁEWDモチE��も豊富で、アウトドア派めE�E道重視�E方に大人気です、E
                     ],
                     [
                         'icon' => '🚐',
-                        'title' => 'ミニバン・コンパクトカー（セレナ/フリード/ノート等）',
-                        'desc' => "3列シートで6〜8人乗れるミニバンは家族旅行に最適。\nコンパクトカーは小回りと低燃費、高速安定性のバランスに優れています。"
+                        'title' => 'ミニバン・コンパクトカー�E�セレチEフリーチEノ�Eト等！E,
+                        'desc' => "3列シートで6、E人乗れるミニバンは家族旅行に最適、Enコンパクトカーは小回りと低燃費、E��速安定性のバランスに優れてぁE��す、E
                     ]
                 ],
-                'summary' => 'アップファーレンでは軽からSUV・ミニバンまで豊富な在庫をご用意しております！',
+                'summary' => 'アチE�Eファーレンでは軽からSUV・ミニバンまで豊富な在庫をご用意しております！E,
                 'action_btn' => [
-                    'label' => '🚙 車種・ボディタイプで探す',
+                    'label' => '🚙 車種・ボディタイプで探ぁE,
                     'data' => 'action=show_type_menu'
                 ]
             ];
@@ -2031,30 +2031,30 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'car_loan':
             $articleData = [
-                'badge' => '💳 ローン＆資金計画【④】',
+                'badge' => '💳 ローン�E�E��E��計画【④、E,
                 'badge_color' => '#4f46e5',
-                'title' => '④ オートローンの賢い選び方',
-                'subtitle' => '金利の仕組みと無理のない返済プランの立て方',
+                'title' => '④ オートローンの賢ぁE��び方',
+                'subtitle' => '金利の仕絁E��と無琁E�EなぁE��済�Eランの立て方',
                 'sections' => [
                     [
                         'icon' => '🏦',
                         'title' => '主なローンの種類と特徴',
-                        'desc' => "・ディーラー・提携ローン：店頭で即日審査可能＆手続きが簡単\n・銀行マイカーローン：低金利だが審査に数日〜1週間程度\n・自社ローン：他社で審査に不安がある方向けの独自プラン"
+                        'desc' => "・チE��ーラー・提携ローン�E�店頭で即日審査可能�E�E��続きが簡単\n・銀行�Eイカーローン�E�低��利だが審査に数日、E週間程度\n・自社ローン�E�他社で審査に不安がある方向けの独自プラン"
                     ],
                     [
                         'icon' => '📊',
-                        'title' => '実質年率と支払総額の比較',
-                        'desc' => "表面上の月々返済額だけでなく「分割手数料を含めた最終的な総支払額」を必ず確認しましょう。\n頭金やボーナス払いの併用で総金利を抑えられます。"
+                        'title' => '実質年玁E��支払総額�E比輁E,
+                        'desc' => "表面上�E月、E��済額だけでなく「�E割手数料を含めた最終的な総支払額」を忁E��確認しましょぁE��En頭金やボ�Eナス払いの併用で総��利を抑えられます、E
                     ],
                     [
                         'icon' => '💡',
-                        'title' => '安心の返済比率（手取りの15〜20%）',
-                        'desc' => "毎月の返済額は手取り月収の【15%〜20%以内】に抑えるのが、ガソリン代や保険料を含めても無理なく維持できる黄金比率です。"
+                        'title' => '安忁E�E返済比率�E�手取りの15、E0%�E�E,
+                        'desc' => "毎月の返済額�E手取り月収�E、E5%、E0%以冁E��に抑える�Eが、ガソリン代めE��険料を含めても無琁E��く維持できる黁E��比率です、E
                     ]
                 ],
-                'summary' => 'アップファーレンではお客様のライフスタイルに合わせた各種ローンシミュレーションを無料で行っております！',
+                'summary' => 'アチE�Eファーレンではお客様�Eライフスタイルに合わせた吁E��ローンシミュレーションを無料で行っております！E,
                 'action_btn' => [
-                    'label' => '💬 お支払いプランをLINE相談',
+                    'label' => '💬 お支払いプランをLINE相諁E,
                     'data' => 'action=search_all'
                 ]
             ];
@@ -2062,28 +2062,28 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'best_timing':
             $articleData = [
-                'badge' => '💰 お得な買い時【⑤】',
+                'badge' => '💰 お得な買ぁE��【⑤、E,
                 'badge_color' => '#ea580c',
-                'title' => '⑤ 車のお得な買い時・購入時期',
-                'subtitle' => '賢く買って得するベストなタイミング',
+                'title' => '⑤ 車�Eお得な買ぁE��・購入時期',
+                'subtitle' => '賢く買って得する�Eストなタイミング',
                 'sections' => [
                     [
                         'icon' => '🗓',
-                        'title' => '決算期（3月・9月）',
-                        'desc' => "自動車業界の決算月である3月と中間決算の9月は、販売目標達成のため値引きやオプションサービスなどの特典が充実しやすい狙い目時期です。"
+                        'title' => '決算期�E�E月�E9月！E,
+                        'desc' => "自動車業界�E決算月である3月と中間決算�E9月�E、販売目標達成�Eため値引きめE��プションサービスなどの特典が�E実しめE��ぁE��ぁE��時期です、E
                     ],
                     [
                         'icon' => '🔄',
-                        'title' => 'フルモデルチェンジ直後',
-                        'desc' => "新型車が登場した直後は、前型モデルの下取り車や未使用車が多く市場に出回り、価格相場が下がりやすくお得に状態の良い車両が手に入ります。"
+                        'title' => 'フルモチE��チェンジ直征E,
+                        'desc' => "新型車が登場した直後�E、前型モチE��の下取り車や未使用車が多く市場に出回り、価格相場が下がりやすくお得に状態�E良ぁE��両が手に入ります、E
                     ],
                     [
                         'icon' => '💴',
-                        'title' => '自動車税（4月課税）のタイミング',
-                        'desc' => "自動車税は毎年4月1日時点の所有者に1年分課税されます。\n普通車は月割り課税ですが、軽自動車は月割り制度がないため【4月2日以降の購入】がお得です。"
+                        'title' => '自動車税！E月課税）�Eタイミング',
+                        'desc' => "自動車税�E毎年4朁E日時点の所有老E��1年刁E��税されます、En普通車�E月割り課税ですが、軽自動車�E月割り制度がなぁE��め、E朁E日以降�E購入】がお得です、E
                     ]
                 ],
-                'summary' => 'タイミングを見極めて、お目当ての愛車をお得に手に入れましょう！',
+                'summary' => 'タイミングを見極めて、お目当ての愛車をお得に手に入れましょぁE��E,
                 'action_btn' => [
                     'label' => '🚗 現在の厳選在庫一覧を見る',
                     'data' => 'action=search_all'
@@ -2093,35 +2093,35 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'car_paperwork':
             $articleData = [
-                'badge' => '📄 手続き＆流れ【⑥】',
+                'badge' => '📄 手続き�E�E��れ【⑥、E,
                 'badge_color' => '#0891b2',
-                'title' => '⑥ 必要書類と納車までの流れ',
-                'subtitle' => '準備から納車当日までの完全ステップ',
+                'title' => '⑥ 忁E��書類と納車までの流れ',
+                'subtitle' => '準備から納車当日までの完�EスチE��チE,
                 'sections' => [
                     [
-                        'icon' => '1️⃣',
-                        'title' => 'ご契約時の必要書類',
-                        'desc' => "・普通車：印鑑証明書（発行後3ヶ月以内）、実印\n・軽自動車：住民票（発行後3ヶ月以内）、認印\n※車庫証明が必要な地域では保管場所承諾証明書等を用意します。"
+                        'icon' => '1�E�⃣',
+                        'title' => 'ご契紁E��の忁E��書顁E,
+                        'desc' => "・普通車：印鑑証明書�E�発行征Eヶ月以冁E��、実印\n・軽自動車：住民票�E�発行征Eヶ月以冁E��、認印\n※車庫証明が忁E��な地域では保管場所承諾証明書等を用意します、E
                     ],
                     [
-                        'icon' => '2️⃣',
-                        'title' => '納車前点検・整備',
-                        'desc' => "ご契約後、法定点検や消耗品交換（オイル・エレメント・バッテリー・ワイパー等）、車検取得、ボディ美装を徹底的に行います。"
+                        'icon' => '2�E�⃣',
+                        'title' => '納車前点検�E整傁E,
+                        'desc' => "ご契紁E��、法定点検や消耗品交換（オイル・エレメント�EバッチE��ー・ワイパ�E等）、車検取得、�EチE��美裁E��徹底的に行います、E
                     ],
                     [
-                        'icon' => '3️⃣',
-                        'title' => '名義変更とナンバー登録',
-                        'desc' => "管轄の陸運支局・軽自動車検査協会にて、お客様名義への登録手続きを店舗が代行いたします。"
+                        'icon' => '3�E�⃣',
+                        'title' => '名義変更とナンバ�E登録',
+                        'desc' => "管轁E�E陸運支局・軽自動車検査協会にて、お客様名義への登録手続きを店�Eが代行いたします、E
                     ],
                     [
-                        'icon' => '4️⃣',
-                        'title' => '納車（約1〜3週間）',
-                        'desc' => "お車のお引き渡し時に操作説明や保証書のお渡しを行い、安心のカーライフがスタートします！"
+                        'icon' => '4�E�⃣',
+                        'title' => '納車（紁E、E週間！E,
+                        'desc' => "お車�Eお引き渡し時に操作説明や保証書のお渡しを行い、安忁E�Eカーライフがスタートします！E
                     ]
                 ],
-                'summary' => 'アップファーレンでは面倒な名義変更や書類作成もフルサポートいたします！',
+                'summary' => 'アチE�Eファーレンでは面倒な名義変更めE��類作�Eもフルサポ�Eトいたします！E,
                 'action_btn' => [
-                    'label' => '💬 購入手続きについてLINEで相談',
+                    'label' => '💬 購入手続きにつぁE��LINEで相諁E,
                     'data' => 'action=search_all'
                 ]
             ];
@@ -2129,35 +2129,35 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'trade_in':
             $articleData = [
-                'badge' => '🛡️ 査定額UPの秘訣【⑦】',
+                'badge' => '🛡�E�E査定額UPの秘訣【⑦、E,
                 'badge_color' => '#d97706',
-                'title' => '⑦ 愛車を高く売る・下取りのコツ',
-                'subtitle' => '査定士が見るポイントと乗り換えのベスト時期',
+                'title' => '⑦ 愛車を高く売る�E下取り�EコチE,
+                'subtitle' => '査定士が見るポイントと乗り換えのベスト時朁E,
                 'sections' => [
                     [
                         'icon' => '📋',
                         'title' => '定期点検記録簿の完備',
-                        'desc' => "整備手帳にディーラーや整備工場での点検印・記録が揃っていると、大切に扱われていた証拠となり査定プラス評価になります。"
+                        'desc' => "整備手帳にチE��ーラーめE��備工場での点検印・記録が揃ってぁE��と、大刁E��扱われてぁE��証拠となり査定�Eラス評価になります、E
                     ],
                     [
                         'icon' => '💎',
-                        'title' => '純正パーツ・説明書・スペアキー',
-                        'desc' => "社外ナビやホイールに交換していても、純正パーツを保管しておくと査定が上がります。\nスペアキーの有無も数万円の査定差になることがあります。"
+                        'title' => '純正パ�EチE�E説明書・スペアキー',
+                        'desc' => "社外ナビやホイールに交換してぁE��も、純正パ�EチE��保管しておくと査定が上がります、Enスペアキーの有無も数丁E�Eの査定差になることがあります、E
                     ],
                     [
                         'icon' => '🚭',
-                        'title' => '車内の清潔感とニオイ対策',
-                        'desc' => "タバコ臭やペット臭、シートのシミは減額対象になります。\n査定前に車内清掃と消臭を行っておくのが鉄則です。"
+                        'title' => '車�Eの渁E��感とニオイ対筁E,
+                        'desc' => "タバコ臭めE�EチE��臭、シート�Eシミ�E減額対象になります、En査定前に車�E渁E��と消�Eを行っておくのが鉄剁E��す、E
                     ],
                     [
                         'icon' => '🗓',
                         'title' => 'ベストな手放しタイミング',
-                        'desc' => "車検が切れる直前や、中古車需要が高まる1〜3月・9月は高額査定が出やすい時期です。"
+                        'desc' => "車検が刁E��る直前や、中古車需要が高まめE、E月�E9月�E高額査定が出めE��ぁE��期です、E
                     ]
                 ],
-                'summary' => 'アップファーレンでは愛車の下取り・無料査定を実施中！お乗り換えのご相談もお気軽にどうぞ。',
+                'summary' => 'アチE�Eファーレンでは愛車�E下取り�E無料査定を実施中�E�お乗り換えのご相諁E��お気軽にどぁE��、E,
                 'action_btn' => [
-                    'label' => '💬 愛車の下取り・乗り換えを相談',
+                    'label' => '💬 愛車�E下取り�E乗り換えを相諁E,
                     'data' => 'action=search_all'
                 ]
             ];
@@ -2165,35 +2165,35 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'oil':
             $articleData = [
-                'badge' => '🛢️ 愛車長持ちの秘訣【⑧】',
+                'badge' => '🛢�E�E愛車長持ちの秘訣【⑧、E,
                 'badge_color' => '#f59e0b',
-                'title' => '⑧ エンジンオイル交換の基本と真実',
-                'subtitle' => '愛車の心臓を守る血液！適切な交換サイクル',
+                'title' => '⑧ エンジンオイル交換�E基本と真宁E,
+                'subtitle' => '愛車�E忁E��を守る血液�E�E��刁E��交換サイクル',
                 'sections' => [
                     [
                         'icon' => '🩸',
                         'title' => 'エンジンオイルの5大役割',
-                        'desc' => "エンジン内部の「潤滑・冷却・洗浄・防錆・密封」を担っています。\n走行しなくても空気中の水分や熱で半年〜1年で酸化劣化します。"
+                        'desc' => "エンジン冁E��の「潤滑�E冷却・洗流E�E防錁E�E寁E��」を拁E��てぁE��す、En走行しなくても空気中の水刁E��熱で半年、E年で酸化劣化します、E
                     ],
                     [
                         'icon' => '⏱',
-                        'title' => '適切な交換サイクルの目安',
-                        'desc' => "・軽自動車／ターボ車：3,000〜5,000km または 半年\n・普通車（NA）：5,000〜10,000km または 半年〜1年\n※近距離のチョイ乗りが多い車はシビアコンディション（過酷環境）となり、早めの交換が推奨されます。"
+                        'title' => '適刁E��交換サイクルの目宁E,
+                        'desc' => "・軽自動車／ターボ車！E,000、E,000km また�E 半年\n・普通車！EA�E�！E,000、E0,000km また�E 半年、E年\n※近距離のチョイ乗りが多い車�EシビアコンチE��ション�E�過酷環墁E��となり、早め�E交換が推奨されます、E
                     ],
                     [
-                        'icon' => '⚠️',
-                        'title' => '交換を怠るとどうなる？',
-                        'desc' => "オイルがドロドロになり燃費が悪化、異音の発生、最悪の場合はエンジンが焼き付き、載せ替えで30万〜50万円以上の高額出費になることもあります。"
+                        'icon' => '⚠�E�E,
+                        'title' => '交換を怠るとどぁE��る！E,
+                        'desc' => "オイルがドロドロになり燃費が悪化、異音の発生、最悪の場合�Eエンジンが焼き付き、載せ替えで30丁E��E0丁E�E以上�E高額�E費になることもあります、E
                     ],
                     [
                         'icon' => '🔄',
-                        'title' => 'オイルエレメント（フィルター）',
-                        'desc' => "オイル内のスラッジ（ゴミ）をろ過するフィルターです。【オイル交換2回に1回】の同時交換が鉄則です。"
+                        'title' => 'オイルエレメント（フィルター�E�E,
+                        'desc' => "オイル冁E�EスラチE���E�ゴミ）をろ過するフィルターです。【オイル交揁E回に1回】�E同時交換が鉁E��です、E
                     ]
                 ],
-                'summary' => '定期的なオイル交換こそが、愛車を最も安く・長く乗り続けるための最高の予防メンテナンスです。',
+                'summary' => '定期皁E��オイル交換こそが、�E車を最も安く・長く乗り続けるため�E最高�E予防メンチE��ンスです、E,
                 'action_btn' => [
-                    'label' => '📅 オイル交換の来店予約・相談',
+                    'label' => '📅 オイル交換�E来店予紁E�E相諁E,
                     'data' => 'action=ask_maintenance&type=oil'
                 ]
             ];
@@ -2201,30 +2201,30 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'periodic':
             $articleData = [
-                'badge' => '📋 予防整備の基礎【⑨】',
+                'badge' => '📋 予防整備�E基礎【⑨、E,
                 'badge_color' => '#10b981',
-                'title' => '⑨ 法定12ヶ月定期点検の必要性',
-                'subtitle' => '車検だけでは不十分！法律で定められた点検',
+                'title' => '⑨ 法宁E2ヶ月定期点検�E忁E��性',
+                'subtitle' => '車検だけでは不十刁E��法律で定められた点椁E,
                 'sections' => [
                     [
-                        'icon' => '⚖️',
-                        'title' => '車検と12ヶ月点検の決定的な違い',
-                        'desc' => "・車検：受検した「その瞬間」に国の保安基準を満たしているかを確認する検査\n・12ヶ月点検：次の車検までの1年間、安全にトラブルなく走行できるかを分解・予防整備する点検"
+                        'icon' => '⚖︁E,
+                        'title' => '車検と12ヶ月点検�E決定的な違い',
+                        'desc' => "・車検：受検した「その瞬間」に国の保安基準を満たしてぁE��かを確認する検査\n・12ヶ月点検：次の車検までの1年間、安�Eにトラブルなく走行できるかを刁E��・予防整備する点椁E
                     ],
                     [
                         'icon' => '🔍',
-                        'title' => '主な点検項目（26〜27項目）',
-                        'desc' => "ブレーキの分解・清掃・残量確認、サスペンションのガタ、ベルト類の緩みや劣化、排気漏れ、オイル漏れなどをプロが徹底チェックします。"
+                        'title' => '主な点検頁E���E�E6、E7頁E���E�E,
+                        'desc' => "ブレーキの刁E��・渁E��・残量確認、サスペンションのガタ、�Eルト類�E緩みめE��化、排気漏れ、オイル漏れなどを�Eロが徹底チェチE��します、E
                     ],
                     [
                         'icon' => '💡',
-                        'title' => '定期点検を受ける3大メリット',
-                        'desc' => "① 出先での突然の故障や事故を未然に防止\n② 消耗品の早期発見で将来の大きな修理代を節約\n③ 定期点検記録簿が残り、将来の車売却・下取り時の査定額がアップ！"
+                        'title' => '定期点検を受けめE大メリチE��',
+                        'desc' => "① 出先での突然の敁E��めE��故を未然に防止\n② 消耗品の早期発見で封E��の大きな修琁E��を節約\n③ 定期点検記録簿が残り、封E��の車売却・下取り時の査定額がアチE�E�E�E
                     ]
                 ],
-                'summary' => '1年に1回のプロによる健康診断で、安心快適なカーライフを守りましょう！',
+                'summary' => '1年に1回�Eプロによる健康診断で、安忁E��適なカーライフを守りましょぁE��E,
                 'action_btn' => [
-                    'label' => '📅 12ヶ月定期点検の予約・相談',
+                    'label' => '📅 12ヶ月定期点検�E予紁E�E相諁E,
                     'data' => 'action=ask_maintenance&type=periodic'
                 ]
             ];
@@ -2232,30 +2232,30 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'inspection':
             $articleData = [
-                'badge' => '🔍 安心＆スムーズ【⑩】',
+                'badge' => '🔍 安忁E��E��ムーズ【⑩、E,
                 'badge_color' => '#6366f1',
-                'title' => '⑩ 車検の基礎知識と賢い受け方',
-                'subtitle' => '満了日の1ヶ月前から受検可能！準備と流れ',
+                'title' => '⑩ 車検�E基礎知識と賢ぁE��け方',
+                'subtitle' => '満亁E��の1ヶ月前から受検可能�E�準備と流れ',
                 'sections' => [
                     [
                         'icon' => '🗓',
-                        'title' => '受検のベストタイミング',
-                        'desc' => "車検満了日の【1ヶ月前】から受けられます。\n1ヶ月前に受けても次回の満了日は短縮されず、有効期限は丸々2年（新車時3年）引き継がれます。"
+                        'title' => '受検�Eベストタイミング',
+                        'desc' => "車検満亁E��の、Eヶ月前】から受けられます、En1ヶ月前に受けても次回�E満亁E��は短縮されず、有効期限は丸、E年�E�新車時3年�E�引き継がれます、E
                     ],
                     [
                         'icon' => '💰',
-                        'title' => '車検費用の内訳と仕組み',
-                        'desc' => "① 法定費用（国に納める重量税・自賠責保険料・印紙代＝どこでも一律）\n② 車検基本料・検査料・予防整備費用（お店によって異なる部分）"
+                        'title' => '車検費用の冁E��と仕絁E��',
+                        'desc' => "① 法定費用�E�国に納める重量税�E自賠責保険料�E印紙代�E�どこでも一律）\n② 車検基本料�E検査料�E予防整備費用�E�お店によって異なる部刁E��E
                     ],
                     [
                         'icon' => '📄',
-                        'title' => 'ご来店時の必要書類',
-                        'desc' => "・自動車検査証（車検証）\n・自賠責保険証明書\n・自動車税納税証明書\n・認印 / ホイールロックナットアダプター（該当車）"
+                        'title' => 'ご来店時の忁E��書顁E,
+                        'desc' => "・自動車検査証�E�車検証�E�\n・自賠責保険証明書\n・自動車税納税証明書\n・認印 / ホイールロチE��ナットアダプター�E�該当車！E
                     ]
                 ],
-                'summary' => 'アップファーレンでは事前無料お見積もりを実施中！不要な過剰整備は一切行わず、わかりやすくご説明いたします。',
+                'summary' => 'アチE�Eファーレンでは事前無料お見積もりを実施中�E�不要な過剰整備�E一刁E��わず、わかりめE��くご説明いたします、E,
                 'action_btn' => [
-                    'label' => '📅 車検の事前見積もり・予約相談',
+                    'label' => '📅 車検�E事前見積もり�E予紁E��諁E,
                     'data' => 'action=ask_maintenance&type=inspection'
                 ]
             ];
@@ -2263,252 +2263,252 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'battery_tire':
             $articleData = [
-                'badge' => '⚠️ トラブル予防【⑪】',
+                'badge' => '⚠�E�Eトラブル予防【⑪、E,
                 'badge_color' => '#ef4444',
-                'title' => '⑪ バッテリー・タイヤ・日常点検',
+                'title' => '⑪ バッチE��ー・タイヤ・日常点椁E,
                 'subtitle' => '突然の路上トラブルを防ぐ日常ケア',
                 'sections' => [
                     [
                         'icon' => '🔋',
-                        'title' => 'バッテリーの寿命（2〜3年）',
-                        'desc' => "最近のバッテリーは直前まで元気に動くため前兆がわかりにくく、夏（エアコン多用）や冬（寒さで性能低下）に突然死します。\n2年以上経過していたらテスター診断をおすすめします。"
+                        'title' => 'バッチE��ーの寿命�E�E、E年�E�E,
+                        'desc' => "最近�EバッチE��ーは直前まで允E��に動くため前�Eがわかりにくく、夏（エアコン多用�E�や冬�E�寒さで性能低下）に突然死します、En2年以上経過してぁE��らテスター診断をおすすめします、E
                     ],
                     [
                         'icon' => '🛞',
                         'title' => 'タイヤの交換サイン',
-                        'desc' => "・残り溝1.6mm以下（スリップサイン露出＝車検不適合＆雨天スリップ危険）\n・製造から4〜5年経過（ゴムが硬化しひび割れ発生）\n・偏摩耗（片側だけ減る）"
+                        'desc' => "・残り溁E.6mm以下（スリチE�Eサイン露出�E�車検不適合！E��天スリチE�E危険�E�\n・製造から4、E年経過�E�ゴムが硬化しひび割れ発生）\n・偏摩耗（片側だけ減る�E�E
                     ],
                     [
-                        'icon' => '❄️',
-                        'title' => 'エアコンの冷え・ニオイ',
-                        'desc' => "エアコンフィルターは1年または1万kmごとの交換が目安。\n冷えが悪い場合はエアコンガスのクリーニング・補充で驚くほど復活します。"
+                        'icon' => '❁E��E,
+                        'title' => 'エアコンの冷え�Eニオイ',
+                        'desc' => "エアコンフィルターは1年また�E1万kmごとの交換が目安、En冷えが悪ぁE��合�Eエアコンガスのクリーニング・補�Eで驚くほど復活します、E
                     ]
                 ],
-                'summary' => '少しでも「いつもと違う音や振動」を感じたら、放置せずお気軽にご相談ください！',
+                'summary' => '少しでも「いつもと違う音めE��動」を感じたら、放置せずお気軽にご相諁E��ださい�E�E,
                 'action_btn' => [
-                    'label' => '🛠️ 来店・点検相談フォームを開く',
-                    'uri' => 'https://liff.line.me/2011335169-9x8ydjaV/mycar.html'
+                    'label' => '🛠�E�E来店�E点検相諁E��ォームを開ぁE,
+                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
                 ]
             ];
             break;
 
         case 'brake_care':
             $articleData = [
-                'badge' => '🛑 安全の要・ブレーキ【⑫】',
+                'badge' => '🛑 安�Eの要�Eブレーキ【⑫、E,
                 'badge_color' => '#e11d48',
-                'title' => '⑫ ブレーキの寿命と重要チェック',
-                'subtitle' => '命を守る最重要パーツ！キーキー音は見逃すな',
+                'title' => '⑫ ブレーキの寿命と重要チェチE��',
+                'subtitle' => '命を守る最重要パーチE��キーキー音は見送E��な',
                 'sections' => [
                     [
                         'icon' => '📏',
-                        'title' => 'ブレーキパッドの残厚（3mmで即交換）',
-                        'desc' => "新品約10mmから摩耗し、残厚3mm以下は危険水域です。\n限界を超えるとディスクローターを削ってしまい、高額な部品交換が必要になります。"
+                        'title' => 'ブレーキパッド�E残厚�E�Emmで即交換！E,
+                        'desc' => "新品紁E0mmから摩耗し、残厚3mm以下�E危険水域です、En限界を趁E��るとチE��スクローターを削ってしまぁE��E��額な部品交換が忁E��になります、E
                     ],
                     [
                         'icon' => '🔊',
-                        'title' => 'ブレーキ鳴き（キーキー音）のサイン',
-                        'desc' => "ブレーキを踏んだ時に金属音が鳴るのは、パッド摩耗を知らせるセンサー（ウェアインジケーター）が接触している音です。早急に点検を受けましょう。"
+                        'title' => 'ブレーキ鳴き（キーキー音�E��Eサイン',
+                        'desc' => "ブレーキを踏んだ時に金属音が鳴る�Eは、パチE��摩耗を知らせるセンサー�E�ウェアインジケーター�E�が接触してぁE��音です。早急に点検を受けましょぁE��E
                     ],
                     [
                         'icon' => '💧',
-                        'title' => 'ブレーキフルード（2年毎交換）',
-                        'desc' => "ブレーキオイルは空気中の水分を吸収して劣化します。\n劣化すると下り坂などでオイルが沸騰しブレーキが利かなくなる「ベーパーロック現象」の原因になります。"
+                        'title' => 'ブレーキフルード！E年毎交換！E,
+                        'desc' => "ブレーキオイルは空気中の水刁E��吸収して劣化します、En劣化すると下り坂などでオイルが沸騰しブレーキが利かなくなる「�Eーパ�EロチE��現象」�E原因になります、E
                     ]
                 ],
-                'summary' => 'アップファーレンではブレーキの残量測定・フルード点検を迅速に実施いたします！',
+                'summary' => 'アチE�Eファーレンではブレーキの残量測定�Eフルード点検を迁E��に実施ぁE��します！E,
                 'action_btn' => [
-                    'label' => '🛠️ ブレーキ点検を予約・相談',
-                    'uri' => 'https://liff.line.me/2011335169-9x8ydjaV/mycar.html'
+                    'label' => '🛠�E�Eブレーキ点検を予紁E�E相諁E,
+                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
                 ]
             ];
             break;
 
         case 'aircon_care':
             $articleData = [
-                'badge' => '❄️ 快適ドライブ【⑬】',
+                'badge' => '❁E��E快適ドライブ【⑬、E,
                 'badge_color' => '#0ea5e9',
-                'title' => '⑬ カーエアコンの効き＆悪臭ケア',
-                'subtitle' => '夏場の冷え不良・カビ臭をスッキリ解決！',
+                'title' => '⑬ カーエアコンの効き！E��臭ケア',
+                'subtitle' => '夏場の冷え不良・カビ�EをスチE��リ解決�E�E,
                 'sections' => [
                     [
                         'icon' => '🧽',
-                        'title' => 'エアコンフィルター（年1回交換）',
-                        'desc' => "ホコリ・花粉・排ガスをキャッチするフィルターです。\n目詰まりすると風量が弱くなり、湿気でカビや嫌なニオイが発生します。"
+                        'title' => 'エアコンフィルター�E�年1回交換！E,
+                        'desc' => "ホコリ・花粉�E排ガスをキャチE��するフィルターです、En目詰まりすると風量が弱くなり、湿気でカビや嫌なニオイが発生します、E
                     ],
                     [
                         'icon' => '💧',
-                        'title' => 'エバポレーターの内部洗浄',
-                        'desc' => "エアコン内部の冷却ユニット（エバポレーター）は結露でカビの温床になりがちです。\n専用ケミカルでの高圧洗浄消臭で新車のような爽やかな風が蘇ります。"
+                        'title' => 'エバ�Eレーターの冁E��洗流E,
+                        'desc' => "エアコン冁E��の冷却ユニット（エバ�Eレーター�E��E結露でカビ�E温床になりがちです、En専用ケミカルでの高圧洗流E���Eで新車�Eような爽めE��な風が�Eります、E
                     ],
                     [
-                        'icon' => '❄️',
-                        'title' => 'エアコンガスのクリーニング・補充',
-                        'desc' => "配管の継ぎ目などからガスは毎年微量ずつ抜けます。\nガス圧の真空引き補充とコンプレッサーオイル添加剤で冷却性能が驚くほどUPします。"
+                        'icon' => '❁E��E,
+                        'title' => 'エアコンガスのクリーニング・補�E',
+                        'desc' => "配管の継ぎ目などからガスは毎年微量ずつ抜けます、Enガス圧の真空引き補�EとコンプレチE��ーオイル添加剤で冷却性能が驚くほどUPします、E
                     ]
                 ],
-                'summary' => '「冷えが悪い」「カビ臭い」と感じたら、本格的な夏・冬の前にメンテナンスをおすすめします！',
+                'summary' => '「�Eえが悪ぁE��「カビ�EぁE��と感じたら、本格皁E��夏�E冬の前にメンチE��ンスをおすすめします！E,
                 'action_btn' => [
-                    'label' => '🛠️ エアコン点検・相談をする',
-                    'uri' => 'https://liff.line.me/2011335169-9x8ydjaV/mycar.html'
+                    'label' => '🛠�E�Eエアコン点検�E相諁E��する',
+                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
                 ]
             ];
             break;
 
         case 'car_wash_care':
             $articleData = [
-                'badge' => '🧼 愛車ケア＆美観【⑭】',
+                'badge' => '🧼 愛車ケア�E�E��観【⑭、E,
                 'badge_color' => '#06b6d4',
-                'title' => '⑭ 洗車＆ボディコーティング術',
-                'subtitle' => '愛車の輝きを長く保つプロのお手入れ法',
+                'title' => '⑭ 洗車！E�EチE��コーチE��ング衁E,
+                'subtitle' => '愛車�E輝きを長く保つプロのお手入れ況E,
                 'sections' => [
                     [
-                        'icon' => '☀️',
-                        'title' => '炎天下・直射日光での洗車はNG',
-                        'desc' => "日差しで水滴がレンズの役割を果たし塗装を痛める「ウォータースポット」や、水道水のミネラル分が焼き付く「イオンデポジット」の原因になります。\n曇りの日や朝夕の涼しい時間帯がベストです。"
+                        'icon' => '☀�E�E,
+                        'title' => '炎天下�E直封E��光での洗車�ENG',
+                        'desc' => "日差しで水滴がレンズの役割を果たし塗裁E��痛める「ウォータースポット」や、水道水のミネラル刁E��焼き付く「イオンチE�EジチE��」�E原因になります、En曁E��の日めE��夕�E涼しい時間帯が�Eストです、E
                     ],
                     [
                         'icon' => '🧽',
-                        'title' => '洗車キズを防ぐ洗い方のコツ',
-                        'desc' => "① まずたっぷりの水で砂・ホコリを上から洗い流す\n② カーシャンプーをしっかり泡立てて「泡のクッション」で優しく洗う\n③ タイヤ・下回りはボディとスポンジを分ける"
+                        'title' => '洗車キズを防ぐ洗い方のコチE,
+                        'desc' => "① まずたっぷり�E水で砂�Eホコリを上から洗い流す\n② カーシャンプ�Eをしっかり泡立てて「泡のクチE��ョン」で優しく洗う\n③ タイヤ・下回り�Eボディとスポンジを�Eける"
                     ],
                     [
                         'icon' => '✨',
-                        'title' => 'ガラス系コーティングのメリット',
-                        'desc' => "塗装表面に硬い被膜を形成し、紫外線や酸性雨、鳥フンによる劣化を防ぎます。\n水洗いで汚れがスルッと落ちるため日頃のお手入れが格段に楽になります。"
+                        'title' => 'ガラス系コーチE��ングのメリチE��',
+                        'desc' => "塗裁E��面に硬ぁE��膜を形成し、紫外線や酸性雨、E��フンによる劣化を防ぎます、En水洗いで汚れがスルチE��落ちるため日頁E�Eお手入れが格段に楽になります、E
                     ]
                 ],
-                'summary' => 'アップファーレンでは納車時のプロコーティング施工やボディケアのご相談も承っております！',
+                'summary' => 'アチE�Eファーレンでは納車時のプロコーチE��ング施工めE�EチE��ケアのご相諁E��承っております！E,
                 'action_btn' => [
-                    'label' => '🛠️ コーティング・洗車相談をする',
-                    'uri' => 'https://liff.line.me/2011335169-9x8ydjaV/mycar.html'
+                    'label' => '🛠�E�EコーチE��ング・洗車相諁E��する',
+                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
                 ]
             ];
             break;
 
         case 'winter_driving':
             $articleData = [
-                'badge' => '❄️ 冬道・降雪対策【⑮】',
+                'badge' => '❁E��E冬道�E降雪対策【⑮、E,
                 'badge_color' => '#0284c7',
-                'title' => '⑮ 雪道運転と冬タイヤの極意',
-                'subtitle' => '降雪地域の安心カーライフ！冬支度の鉄則',
+                'title' => '⑮ 雪道運転と冬タイヤの極愁E,
+                'subtitle' => '降雪地域�E安忁E��ーライフ！�E支度の鉁E��',
                 'sections' => [
                     [
                         'icon' => '🛞',
-                        'title' => 'スタッドレスタイヤの寿命基準',
-                        'desc' => "溝の深さが新品時の50%になると現れる【プラットホーム】が露出すると冬用タイヤとしては使用不可になります。\nまた製造から3〜4シーズンでゴムが硬化し氷上ブレーキ性能が低下します。"
+                        'title' => 'スタチE��レスタイヤの寿命基溁E,
+                        'desc' => "溝�E深さが新品時の50%になると現れる【�EラチE��ホ�Eム】が露出すると冬用タイヤとしては使用不可になります、Enまた製造から3、Eシーズンでゴムが硬化し氷上ブレーキ性能が低下します、E
                     ],
                     [
-                        'icon' => '🛡️',
-                        'title' => '下回りの防錆コーティング（塩害対策）',
-                        'desc' => "道路に撒かれる融雪剤（塩化カルシウム）は愛車の下回りを急速にサビさせます。\n冬前の下回り高圧洗浄と防錆アンダーコート塗装が愛車を守ります。"
+                        'icon' => '🛡�E�E,
+                        'title' => '下回り�E防錁E��ーチE��ング�E�塩害対策！E,
+                        'desc' => "道路に撒かれる融雪剤�E�塩化カルシウム�E��E愛車�E下回りを急速にサビさせます、En冬前�E下回り高圧洗流E��防錁E��ンダーコート塗裁E��愛車を守ります、E
                     ],
                     [
                         'icon' => '💧',
-                        'title' => '寒冷地用ウォッシャー液とワイパー',
-                        'desc' => "通常のウォッシャー液は寒さで凍結しタンク破損の原因になります。\n冬用（原液-30℃対応）への入れ替えと、凍りつかないスノーワイパーの装着が安心です。"
+                        'title' => '寒�E地用ウォチE��ャー液とワイパ�E',
+                        'desc' => "通常のウォチE��ャー液は寒さで凍結しタンク破損�E原因になります、En冬用�E�原液-30℁E��応）への入れ替えと、凍りつかなぁE��ノ�Eワイパ�Eの裁E��が安忁E��す、E
                     ]
                 ],
-                'summary' => 'アップファーレンでは冬タイヤの履き替え・下回り防錆点検も随時承っております！',
+                'summary' => 'アチE�Eファーレンでは冬タイヤの履き替え�E下回り防錁E��検も随時承っております！E,
                 'action_btn' => [
-                    'label' => '🛠️ タイヤ交換・冬点検を相談',
-                    'uri' => 'https://liff.line.me/2011335169-9x8ydjaV/mycar.html'
+                    'label' => '🛠�E�Eタイヤ交換�E冬点検を相諁E,
+                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
                 ]
             ];
             break;
 
         case 'warning_lights':
             $articleData = [
-                'badge' => '🚨 緊急・トラブル診断【⑯】',
+                'badge' => '🚨 緊急・トラブル診断【⑯、E,
                 'badge_color' => '#dc2626',
-                'title' => '⑯ 警告灯の意味と緊急時の対処法',
-                'subtitle' => '色でわかる危険度と初期対応マニュアル',
+                'title' => '⑯ 警告�Eの意味と緊急時�E対処況E,
+                'subtitle' => '色でわかる危険度と初期対応�Eニュアル',
                 'sections' => [
                     [
                         'icon' => '🔴',
-                        'title' => '赤色ランプ＝【直ちに安全な場所へ停車】',
-                        'desc' => "・油圧警告灯（オイル不足・油圧低下）：エンジン破損の危険\n・水温警告灯（オーバーヒート）：直ちに停車しエンジン冷却\n・ブレーキ警告灯（フルード漏れ・残量ゼロ）：ブレーキ不能の恐れ\n・充電警告灯（オルタネーター故障）：バッテリー走行となり近々停止"
+                        'title' => '赤色ランプ＝【直ちに安�Eな場所へ停車、E,
+                        'desc' => "・油圧警告�E�E�オイル不足・油圧低下）：エンジン破損�E危険\n・水温警告�E�E�オーバ�Eヒ�Eト）：直ちに停車しエンジン冷却\n・ブレーキ警告�E�E�フルード漏れ・残量ゼロ�E�：ブレーキ不�Eの恐れ\n・允E��警告�E�E�オルタネ�Eター敁E���E�：バチE��リー走行となり近、E��止"
                     ],
                     [
                         'icon' => '🟡',
-                        'title' => '黄色/オレンジ色ランプ＝【早めに整備工場へ】',
-                        'desc' => "・エンジン警告灯（センサー系・排気系の異常）\n・ABS警告灯（安全装置の不作動）\n・空気圧警告灯（パンクの疑い）"
+                        'title' => '黁E��/オレンジ色ランプ＝【早めに整備工場へ、E,
+                        'desc' => "・エンジン警告�E�E�センサー系・排気系の異常�E�\n・ABS警告�E�E�安�E裁E��の不作動�E�\n・空気圧警告�E�E�パンクの疑い�E�E
                     ],
                     [
                         'icon' => '🔊',
-                        'title' => '走行中の異音チェック',
-                        'desc' => "・ブレーキ時のキーキー音（パッド摩耗サイン）\n・段差でのコトコト音（サスペンションブッシュ摩耗）\n・加速時のゴー音（ハブベアリング寿命）"
+                        'title' => '走行中の異音チェチE��',
+                        'desc' => "・ブレーキ時�Eキーキー音�E�パチE��摩耗サイン�E�\n・段差でのコトコト音�E�サスペンションブッシュ摩耗）\n・加速時のゴー音�E�ハブ�Eアリング寿命�E�E
                     ]
                 ],
-                'summary' => '警告灯が点灯したり普段と違う異音を感じたら、無理に走行を続けずすぐにご連絡ください！',
+                'summary' => '警告�Eが点灯したり普段と違う異音を感じたら、無琁E��走行を続けずすぐにご連絡ください�E�E,
                 'action_btn' => [
-                    'label' => '🛠️ 異音・不具合の点検を相談',
-                    'uri' => 'https://liff.line.me/2011335169-9x8ydjaV/mycar.html'
+                    'label' => '🛠�E�E異音・不�E合�E点検を相諁E,
+                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
                 ]
             ];
             break;
 
         case 'rain_driving':
             $articleData = [
-                'badge' => '🌧️ 雨天・悪天候対策【⑰】',
+                'badge' => '🌧�E�E雨天・悪天候対策【⑰、E,
                 'badge_color' => '#2563eb',
-                'title' => '⑰ 雨の日の安全運転と冠水対策',
-                'subtitle' => 'スリップ防止＆大雨時の水没トラブル回避術',
+                'title' => '⑰ 雨の日の安�E運転と冠水対筁E,
+                'subtitle' => 'スリチE�E防止�E�E��雨時�E水没トラブル回避衁E,
                 'sections' => [
                     [
                         'icon' => '🌊',
-                        'title' => '冠水道路の走行限界（ドア下部まで）',
-                        'desc' => "水深がマフラーやエアクリーナー吸気口（グリルの高さ）を超えると、エンジン内部に水が吸い込まれ「ウォーターハンマー現象」でエンジンが全損・廃車になります。\n水たまりの深さが不明な場所は絶対に進入してはいけません。"
+                        'title' => '冠水道路の走行限界（ドア下部まで�E�E,
+                        'desc' => "水深が�EフラーめE��アクリーナ�E吸気口�E�グリルの高さ�E�を趁E��ると、エンジン冁E��に水が吸ぁE��まれ「ウォーターハンマ�E現象」でエンジンが�E損�E廁E��になります、En水たまり�E深さが不�Eな場所は絶対に進入してはぁE��ません、E
                     ],
                     [
                         'icon' => '🛞',
-                        'title' => 'ハイドロプレーニング現象の恐怖',
-                        'desc' => "溝の減ったタイヤで雨の高速道路を走ると、水膜の上に車が浮いてハンドルやブレーキが一切利かなくなります。\n雨天時は通常より時速10〜20km速度を落とすのが鉄則です。"
+                        'title' => 'ハイドロプレーニング現象の恐态E,
+                        'desc' => "溝�E減ったタイヤで雨の高速道路を走ると、水膜�E上に車が浮ぁE��ハンドルめE��レーキが一刁E��かなくなります、En雨天時�E通常より時送E0、E0km速度を落とす�Eが鉄剁E��す、E
                     ],
                     [
                         'icon' => '👀',
-                        'title' => '雨天のクリアな視界確保',
-                        'desc' => "フロントガラスの油膜取り＋撥水コーティング施工と、拭きムラのないワイパーゴムの定期交換（半年〜1年毎）が豪雨時の安全を左右します。"
+                        'title' => '雨天のクリアな視界確俁E,
+                        'desc' => "フロントガラスの油膜取り＋撥水コーチE��ング施工と、拭きムラのなぁE��イパ�Eゴムの定期交換（半年、E年毎）が豪雨時�E安�Eを左右します、E
                     ]
                 ],
-                'summary' => '雨天時の視界不良やスリップが気になる方は、ワイパー交換やガラス撥水施工をお気軽にご相談ください！',
+                'summary' => '雨天時�E視界不良めE��リチE�Eが気になる方は、ワイパ�E交換やガラス撥水施工をお気軽にご相諁E��ださい�E�E,
                 'action_btn' => [
-                    'label' => '🛠️ ワイパー・撥水コーティング相談',
-                    'uri' => 'https://liff.line.me/2011335169-9x8ydjaV/mycar.html'
+                    'label' => '🛠�E�Eワイパ�E・撥水コーチE��ング相諁E,
+                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
                 ]
             ];
             break;
 
         case 'accident_guide':
             $articleData = [
-                'badge' => '💥 緊急初動マニュアル【⑱】',
+                'badge' => '💥 緊急初動マニュアル【⑱、E,
                 'badge_color' => '#b91c1c',
-                'title' => '⑱ 事故・故障時の緊急対応手順',
-                'subtitle' => '焦らず行動！現場で絶対にやるべき4ステップ',
+                'title' => '⑱ 事故・敁E��時�E緊急対応手頁E,
+                'subtitle' => '焦らず行動�E�現場で絶対にめE��べぁEスチE��チE,
                 'sections' => [
                     [
-                        'icon' => '1️⃣',
-                        'title' => '二次災害の防止と安全確保',
-                        'desc' => "ハザードランプを点灯し、車を発煙筒や停止表示器材（三角板）で後続車に知らせます。\n高速道路では車内に残らず、ガードレールの外側など安全な場所に避難してください。"
+                        'icon' => '1�E�⃣',
+                        'title' => '二次災害の防止と安�E確俁E,
+                        'desc' => "ハザードランプを点灯し、車を発煙筒や停止表示器材（三角板�E�で後続車に知らせます、En高速道路では車�Eに残らず、ガードレールの外�Eなど安�Eな場所に避難してください、E
                     ],
                     [
-                        'icon' => '2️⃣',
-                        'title' => '負傷者の救護（119番通報）',
-                        'desc' => "けが人がいる場合は直ちに救急車を呼び、必要に応じて止血などの応急手当を行います。"
+                        'icon' => '2�E�⃣',
+                        'title' => '負傷老E�E救護�E�E19番通報�E�E,
+                        'desc' => "けが人がいる場合�E直ちに救急車を呼び、忁E��に応じて止血などの応急手当を行います、E
                     ],
                     [
-                        'icon' => '3️⃣',
-                        'title' => '警察への届出（110番通報・必須）',
-                        'desc' => "どんなに軽微な物損事故や自損事故でも、警察への届出は法律上の義務です。\n届出がないと「交通事故証明書」が発行されず、保険金が支払われません。"
+                        'icon' => '3�E�⃣',
+                        'title' => '警察への届�E�E�E10番通報・忁E��！E,
+                        'desc' => "どんなに軽微な物損事故めE�E損事故でも、警察への届�Eは法律上�E義務です、En届�EがなぁE��「交通事故証明書」が発行されず、保険金が支払われません、E
                     ],
                     [
-                        'icon' => '4️⃣',
-                        'title' => '相手の確認と保険会社・店舗への連絡',
-                        'desc' => "相手の氏名・電話番号・車のナンバー・保険会社をメモします。\nその場で示談や口約束はせず、ご加入の自動車保険会社と当店へすぐにご連絡ください。"
+                        'icon' => '4�E�⃣',
+                        'title' => '相手�E確認と保険会社・店�Eへの連絡',
+                        'desc' => "相手�E氏名・電話番号・車�Eナンバ�E・保険会社をメモします、Enそ�E場で示諁E��口紁E��はせず、ご加入の自動車保険会社と当店へすぐにご連絡ください、E
                     ]
                 ],
-                'summary' => '万が一の事故やお車のトラブル時は、アップファーレンへもお気軽にご相談ください。レッカー手配や修理見積もりをサポートいたします。',
+                'summary' => '丁E��一の事故めE��車�Eトラブル時�E、アチE�Eファーレンへもお気軽にご相諁E��ださい。レチE��ー手�EめE��琁E��積もりをサポ�Eトいたします、E,
                 'action_btn' => [
-                    'label' => '💬 店舗へLINEで連絡する',
+                    'label' => '💬 店�EへLINEで連絡する',
                     'data' => 'action=search_all'
                 ]
             ];
@@ -2516,35 +2516,35 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'fuel_economy':
             $articleData = [
-                'badge' => '⛽ 燃費＆節約術【⑲】',
+                'badge' => '⛽ 燁E���E�E��紁E��【⑲、E,
                 'badge_color' => '#059669',
-                'title' => '⑲ 燃費アップ＆愛車の節約術',
-                'subtitle' => 'ちょっとしたコツで年間数万円の節約に！',
+                'title' => '⑲ 燁E��アチE�E�E�E�E車�E節紁E��E,
+                'subtitle' => 'ちめE��としたコチE��年間数丁E�Eの節紁E���E�E,
                 'sections' => [
                     [
                         'icon' => '🟢',
-                        'title' => 'ふんわりアクセル「eスタート」',
-                        'desc' => "発進時の最初の5秒で時速20kmを目安にゆっくり踏み出すだけで、約10%燃費が向上します。\n車間距離に余裕を持った等速走行も効果的です。"
+                        'title' => 'ふんわりアクセル「eスタート、E,
+                        'desc' => "発進時�E最初�E5秒で時送E0kmを目安にめE��くり踏み出すだけで、紁E0%燁E��が向上します、En車間距離に余裕を持った等速走行も効果的です、E
                     ],
                     [
                         'icon' => '💨',
-                        'title' => 'タイヤ空気圧の定期点検',
-                        'desc' => "空気圧は走行しなくても自然に【1ヶ月で約5〜10%】低下します。\n空気圧が適正値より50kPa低いと燃費が約2〜4%悪化します。月1回の補充がおすすめです。"
+                        'title' => 'タイヤ空気圧の定期点椁E,
+                        'desc' => "空気圧は走行しなくても�E然に、Eヶ月で紁E、E0%】低下します、En空気圧が適正値より50kPa低いと燁E��が紁E、E%悪化します。月1回�E補�Eがおすすめです、E
                     ],
                     [
                         'icon' => '📦',
-                        'title' => '不要な積載物の降車',
-                        'desc' => "100kgの荷物を積むと燃費が約3%悪化します。\nトランクに乗せっぱなしのアウトドア用品や工具類は整理しましょう。"
+                        'title' => '不要な積載物の降軁E,
+                        'desc' => "100kgの荷物を積�Eと燁E��が紁E%悪化します、Enトランクに乗せっぱなし�Eアウトドア用品や工具類�E整琁E��ましょぁE��E
                     ],
                     [
-                        'icon' => '🛢️',
+                        'icon' => '🛢�E�E,
                         'title' => '低粘度オイルの活用',
-                        'desc' => "指定粘度（0W-20や0W-16など）の省燃費オイルを使用することで、エンジン内部の抵抗を減らし燃費を維持できます。"
+                        'desc' => "持E��粘度�E�EW-20めEW-16など�E��E省燃費オイルを使用することで、エンジン冁E��の抵抗を減らし燃費を維持できます、E
                     ]
                 ],
-                'summary' => '日頃の小さな意識と定期的な点検で、ガソリン代を賢く節約しましょう！',
+                'summary' => '日頁E�E小さな意識と定期皁E��点検で、ガソリン代を賢く節紁E��ましょぁE��E,
                 'action_btn' => [
-                    'label' => '🚗 燃費良好な在庫車両を見る',
+                    'label' => '🚗 燁E��良好な在庫車両を見る',
                     'data' => 'action=search_all'
                 ]
             ];
@@ -2552,28 +2552,28 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'beginner_driver':
             $articleData = [
-                'badge' => '🔰 安心ドライブ【⑳】',
+                'badge' => '🔰 安忁E��ライブ【⑳、E,
                 'badge_color' => '#16a34a',
-                'title' => '⑳ 初心者・ペーパードライバー安心術',
-                'subtitle' => '運転の不安を解消する基本テクニック',
+                'title' => '⑳ 初忁E��E�Eペ�Eパ�Eドライバ�E安忁E��E,
+                'subtitle' => '運転の不安を解消する基本チE��ニック',
                 'sections' => [
                     [
                         'icon' => '📐',
-                        'title' => '車幅感覚の掴み方',
-                        'desc' => "運転席から見て「道路の白線がフロントガラスのどこを通るか」を目印に覚えると、左寄りの感覚が簡単に掴めます。\nボンネットの見切りが良い車を選ぶのもポイントです。"
+                        'title' => '車幁E��覚�E掴み方',
+                        'desc' => "運転席から見て「道路の白線がフロントガラスのどこを通るか」を目印に覚えると、左寁E��の感覚が簡単に掴めます、Enボンネット�E見�Eりが良ぁE��を選ぶのも�Eイントです、E
                     ],
                     [
-                        'icon' => '🅿️',
-                        'title' => 'バック駐車のコツ',
-                        'desc' => "駐車枠に対して約45度に車体を傾けてからバックを開始し、サイドミラーで隣の車の角と自分の後輪の位置関係を確認しながらゆっくり下がると一発で収まります。"
+                        'icon' => '�E�E�E,
+                        'title' => 'バック駐車�EコチE,
+                        'desc' => "駐車枠に対して紁E5度に車体を傾けてからバックを開始し、サイドミラーで隣の車�E角と自刁E�E後輪の位置関係を確認しながらめE��くり下がると一発で収まります、E
                     ],
                     [
                         'icon' => '👀',
-                        'title' => '死角の確認と車間距離',
-                        'desc' => "ミラーだけでなく目視での死角確認が事故防止の鍵です。\n車間距離は「前の車が通過した地点を自分が2秒後に通過する」間隔を目安に保ちましょう。"
+                        'title' => '死角�E確認と車間距離',
+                        'desc' => "ミラーだけでなく目視での死角確認が事故防止の鍵です、En車間距離は「前の車が通過した地点を�E刁E��2秒後に通過する」間隔を目安に保ちましょぁE��E
                     ]
                 ],
-                'summary' => '見切りの良いコンパクトカーやバックカメラ付きの軽自動車など、運転しやすいお車を多数ご用意しております！',
+                'summary' => '見�Eり�E良ぁE��ンパクトカーめE��チE��カメラ付きの軽自動車など、E��転しやすいお車を多数ご用意しております！E,
                 'action_btn' => [
                     'label' => '🚘 運転しやすい軽・コンパクトを見る',
                     'data' => 'action=search_kei'
@@ -2583,128 +2583,128 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'car_accessories':
             $articleData = [
-                'badge' => '🔌 便利アイテム・装備【㉑】',
+                'badge' => '🔌 便利アイチE��・裁E��【㉑、E,
                 'badge_color' => '#7c3aed',
-                'title' => '㉑ ドラレコ・ETC・LED便利知識',
-                'subtitle' => '後付け・アップグレードで愛車がもっと快適に！',
+                'title' => '㉁Eドラレコ・ETC・LED便利知譁E,
+                'subtitle' => '後付け・アチE�Eグレードで愛車がもっと快適に�E�E,
                 'sections' => [
                     [
                         'icon' => '📷',
-                        'title' => 'ドライブレコーダー（前後2カメラ必須時代）',
-                        'desc' => "あおり運転や追突対策に「前方＋後方録画」が今や常識です。\n夜間も鮮明に映るSTARVIS（高感度センサー）搭載モデルや駐車監視機能付きがおすすめです。"
+                        'title' => 'ドライブレコーダー�E�前征Eカメラ忁E��時代�E�E,
+                        'desc' => "あおり運転めE��突対策に「前方�E�後方録画」が今や常識です、En夜間も鮮明に映るSTARVIS�E�高感度センサー�E�搭載モチE��めE��車監視機�E付きがおすすめです、E
                     ],
                     [
-                        'icon' => '🛣️',
-                        'title' => 'ETC2.0のメリットと活用法',
-                        'desc' => "圏央道などの高速料金割引（約2割引）や、一時退出（道の駅利用で高速を降りても料金据え置き）など、長距離ドライブでお得な機能が満載です。"
+                        'icon' => '🛣�E�E,
+                        'title' => 'ETC2.0のメリチE��と活用況E,
+                        'desc' => "圏央道などの高速料金割引（紁E割引）や、一時退出�E�道の駁E��用で高速を降りても料金据え置き）など、E��距離ドライブでお得な機�Eが満載です、E
                     ],
                     [
                         'icon' => '💡',
                         'title' => 'LEDヘッドライト化の注意点',
-                        'desc' => "暗いハロゲンランプから高輝度LEDへ交換すると夜間の視認性が劇的に向上します。\n車検対応のカットライン（配光性能）がしっかり出る高品質バルブを選ぶのが鉄則です。"
+                        'desc' => "暗いハロゲンランプから高輝度LEDへ交換すると夜間の視認性が劇皁E��向上します、En車検対応�EカチE��ライン�E��E光性能�E�がしっかり出る高品質バルブを選ぶのが鉄剁E��す、E
                     ]
                 ],
-                'summary' => 'アップファーレンでは持ち込みドラレコやETC・ナビ・LEDの取り付け・配線加工もプロが丁寧に行います！',
+                'summary' => 'アチE�Eファーレンでは持ち込みドラレコやETC・ナビ・LEDの取り付け・配線加工も�Eロが丁寧に行います！E,
                 'action_btn' => [
-                    'label' => '🛠️ パーツ取付・カスタム相談',
-                    'uri' => 'https://liff.line.me/2011335169-9x8ydjaV/mycar.html'
+                    'label' => '🛠�E�Eパ�EチE��付�Eカスタム相諁E,
+                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
                 ]
             ];
             break;
 
         case 'car_appraisal':
             $articleData = [
-                'badge' => '💴 愛車売却＆査定UP【㉒】',
+                'badge' => '💴 愛車売却�E�E��定UP【㉒、E,
                 'badge_color' => '#d97706',
-                'title' => '㉒ 愛車を高く売る・査定UP術',
-                'subtitle' => '手放す前に知っておきたい高価買取の4大鉄則',
+                'title' => '㉁E愛車を高く売る�E査定UP衁E,
+                'subtitle' => '手放す前に知っておきたい高価買取�E4大鉁E��',
                 'sections' => [
                     [
                         'icon' => '🧼',
-                        'title' => '査定前の洗車と車内消臭・清掃',
-                        'desc' => "第一印象は極めて重要です。タバコ・ペット・芳香剤の臭いを抜き、洗車と室内清掃をしておくだけで「大切に乗られてきた車」として査定士の評価が上がります。"
+                        'title' => '査定前の洗車と車�E消�E・渁E��',
+                        'desc' => "第一印象は極めて重要です。タバコ・ペット�E芳香剤の臭ぁE��抜き、洗車と室冁E��E��をしておくだけで「大刁E��乗られてきた車」として査定士の評価が上がります、E
                     ],
                     [
                         'icon' => '📦',
-                        'title' => '純正パーツ・取扱説明書・スペアキーの保管',
-                        'desc' => "社外アルミやナビに変えている場合も、純正品を揃えておくとプラス査定に。\n整備手帳（記録簿）とスペアキーの有無で数万円の差がつきます。"
+                        'title' => '純正パ�EチE�E取扱説明書・スペアキーの保管',
+                        'desc' => "社外アルミやナビに変えてぁE��場合も、純正品を揁E��ておくとプラス査定に、En整備手帳�E�記録簿�E�とスペアキーの有無で数丁E�Eの差がつきます、E
                     ],
                     [
-                        'icon' => '🛠️',
-                        'title' => '小さなキズは無理に直さない',
-                        'desc' => "自分でタッチペン補修をするとかえって目立ち減額になることがあります。\nプロの板金費用以上の査定アップは見込めないため、そのまま査定に出すのが鉄則です。"
+                        'icon' => '🛠�E�E,
+                        'title' => '小さなキズは無琁E��直さなぁE,
+                        'desc' => "自刁E��タチE��ペン補修をするとかえって目立ち減額になることがあります、Enプロの板金費用以上�E査定アチE�Eは見込めなぁE��め、そのまま査定に出す�Eが鉄剁E��す、E
                     ],
                     [
                         'icon' => '🗓',
-                        'title' => 'フルモデルチェンジ前・車検満了前に動く',
-                        'desc' => "新型が出ると相場が下落します。車検を通す前の1〜2ヶ月前に査定比較するのが一番得策です。"
+                        'title' => 'フルモチE��チェンジ前�E車検満亁E��に動く',
+                        'desc' => "新型が出ると相場が下落します。車検を通す前�E1、Eヶ月前に査定比輁E��る�Eが一番得策です、E
                     ]
                 ],
-                'summary' => 'アップファーレンでは愛車の無料出張査定・高価下取りをいつでも承っております！',
+                'summary' => 'アチE�Eファーレンでは愛車�E無料�E張査定�E高価下取りをぁE��でも承っております！E,
                 'action_btn' => [
-                    'label' => '💬 愛車の無料査定・相談をする',
-                    'uri' => 'https://liff.line.me/2011335169-9x8ydjaV/mycar.html'
+                    'label' => '💬 愛車�E無料査定�E相諁E��する',
+                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
                 ]
             ];
             break;
 
         case 'tire_rotation':
             $articleData = [
-                'badge' => '🛞 タイヤ長持ち・安全【㉓】',
+                'badge' => '🛞 タイヤ長持ち・安�E【㉓、E,
                 'badge_color' => '#0284c7',
-                'title' => '㉓ タイヤローテーションと偏摩耗',
-                'subtitle' => '寿命を1.5倍に延ばす位置交換の基本',
+                'title' => '㉁EタイヤローチE�Eションと偏摩老E,
+                'subtitle' => '寿命めE.5倍に延ばす位置交換�E基本',
                 'sections' => [
                     [
                         'icon' => '🔄',
-                        'title' => '前後のタイヤ摩耗差の正体',
-                        'desc' => "前輪駆動（FF車）はハンドル操作と駆動を同時に担うため、前輪が後輪の2〜3倍の速さで摩耗します。\n定期的に前後を入れ替えないと前輪だけが早期にツルツルになってしまいます。"
+                        'title' => '前後�Eタイヤ摩耗差の正佁E,
+                        'desc' => "前輪駁E���E�EF車）�Eハンドル操作と駁E��を同時に拁E��ため、前輪が後輪の2、E倍�E速さで摩耗します、En定期皁E��前後を入れ替えなぁE��前輪だけが早期にチE��チE��になってしまぁE��す、E
                     ],
                     [
                         'icon' => '⏱',
-                        'title' => '交換目安（走行5,000kmまたは半年）',
-                        'desc' => "オイル交換や季節ごとのタイヤ履き替え（スタッドレス↔夏タイヤ）のタイミングで前後を入れ替えるのが最も効率的です。"
+                        'title' => '交換目安（走衁E,000kmまた�E半年�E�E,
+                        'desc' => "オイル交換や季節ごとのタイヤ履き替え（スタチE��レス↔夏タイヤ�E��Eタイミングで前後を入れ替えるのが最も効玁E��です、E
                     ],
                     [
                         'icon' => '📐',
-                        'title' => '偏摩耗（片減り）の早期発見',
-                        'desc' => "内側や外側だけが極端に削れている場合、空気圧不足や足回りのアライメント狂いが原因です。走行中の直進安定性にも影響します。"
+                        'title' => '偏摩耗（片減り�E��E早期発要E,
+                        'desc' => "冁E�EめE���Eだけが極端に削れてぁE��場合、空気圧不足めE��回りのアライメント狂ぁE��原因です。走行中の直進安定性にも影響します、E
                     ]
                 ],
-                'summary' => 'タイヤの無料残溝チェックやローテーション作業もお気軽にご用命ください！',
+                'summary' => 'タイヤの無料残溝チェチE��めE��ーチE�Eション作業もお気軽にご用命ください�E�E,
                 'action_btn' => [
-                    'label' => '🛠️ タイヤ点検・交換を相談',
-                    'uri' => 'https://liff.line.me/2011335169-9x8ydjaV/mycar.html'
+                    'label' => '🛠�E�Eタイヤ点検�E交換を相諁E,
+                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
                 ]
             ];
             break;
 
         case 'disaster_car_stay':
             $articleData = [
-                'badge' => '🏕️ 防災・緊急車中泊【㉔】',
+                'badge' => '🏕�E�E防災・緊急車中泊【㉔、E,
                 'badge_color' => '#dc2626',
-                'title' => '㉔ 車の防災＆災害時車中泊マニュアル',
-                'subtitle' => '豪雪立ち往生や震災時に命を守る備え',
+                'title' => '㉁E車�E防災�E�E��害時車中泊�Eニュアル',
+                'subtitle' => '豪雪立ち往生や霁E��時に命を守る備え',
                 'sections' => [
                     [
-                        'icon' => '☠️',
+                        'icon' => '☠�E�E,
                         'title' => 'マフラー埋没による一酸化炭素中毒防止',
-                        'desc' => "大雪で立ち往生した際、排気口（マフラー）が雪で埋まると排ガスが車内に逆流し数十分で命の危険に！\nエンジンをかける時はマフラー周囲の除雪を欠かさず、風下側の窓を数センチ開けておきます。"
+                        'desc' => "大雪で立ち往生した際、排気口�E��Eフラー�E�が雪で埋まると排ガスが車�Eに送E��し数十�Eで命の危険に�E�\nエンジンをかける時�Eマフラー周囲の除雪を欠かさず、E��下�Eの窓を数センチE��けておきます、E
                     ],
                     [
                         'icon' => '🔨',
-                        'title' => '緊急脱出用ガラス割りハンマーの車載',
-                        'desc' => "冠水や事故でドアが開かなくなった際、水圧がかかった窓は手や足では絶対に割れません。手の届く運転席周りに専用ハンマーを備えましょう。"
+                        'title' => '緊急脱出用ガラス割りハンマ�Eの車輁E,
+                        'desc' => "冠水めE��故でドアが開かなくなった際、水圧がかかった窓�E手や足では絶対に割れません。手の届く運転席周りに専用ハンマ�Eを備えましょぁE��E
                     ],
                     [
                         'icon' => '🎒',
-                        'title' => '車載すべき防災7つ道具',
-                        'desc' => "①毛布・防寒アルミシート ②モバイルバッテリー ③非常食・飲料水 ④携帯トイレ ⑤スコップ・解氷スプレー ⑥牽引ロープ ⑦長靴・手袋。"
+                        'title' => '車載すべき防災7つ道�E',
+                        'desc' => "①毛币E�E防寒アルミシーチE②モバイルバッチE��ー ③非常食�E飲料水 ④携帯トイレ ⑤スコチE�E・解氷スプレー ⑥牽引ローチE⑦長靴・手袋、E
                     ]
                 ],
-                'summary' => '新潟の厳しい冬や突然の災害に備え、お車に防災グッズを常備しておきましょう！',
+                'summary' => '新潟�E厳しい冬めE��然の災害に備え、お車に防災グチE��を常備しておきましょぁE��E,
                 'action_btn' => [
-                    'label' => '🚗 在庫車両をチェックする',
+                    'label' => '🚗 在庫車両をチェチE��する',
                     'data' => 'action=search_all'
                 ]
             ];
@@ -2712,92 +2712,92 @@ function generateKnowledgeDetailMessage(string $topic): array {
 
         case 'headlight_yellowing':
             $articleData = [
-                'badge' => '✨ 美観＆夜間視界【㉕】',
+                'badge' => '✨ 美観�E�E��間視界【㉕、E,
                 'badge_color' => '#7c3aed',
-                'title' => '㉕ ヘッドライト黄ばみ除去と予防',
-                'subtitle' => '見た目の若返り＆車検の光量不足対策',
+                'title' => '㉁Eヘッドライト黁E�Eみ除去と予防',
+                'subtitle' => '見た目の若返り�E�E��検�E光量不足対筁E,
                 'sections' => [
                     [
-                        'icon' => '☀️',
-                        'title' => '黄ばみ・くすみの原因（ポリカーボネートの紫外線劣化）',
-                        'desc' => "現代のヘッドライトは樹脂製のため、日光の紫外線と経年熱で表面のクリア塗装が劣化し黄変・白濁します。"
+                        'icon' => '☀�E�E,
+                        'title' => '黁E�Eみ・くすみの原因�E��Eリカーボネート�E紫外線劣化！E,
+                        'desc' => "現代のヘッドライト�E樹脂製のため、日光�E紫外線と経年熱で表面のクリア塗裁E��劣化し黁E���E白濁します、E
                     ],
                     [
-                        'icon' => '⚠️',
-                        'title' => '放置すると車検落ち＆夜間危険！',
-                        'desc' => "黄ばみが進行すると光が拡散し、車検基準の「すれ違い用前照灯（ロービーム光度）」を満たせず車検に不合格になる事例が急増しています。"
+                        'icon' => '⚠�E�E,
+                        'title' => '放置すると車検落ち�E�E��間危険�E�E,
+                        'desc' => "黁E�Eみが進行すると光が拡散し、車検基準�E「すれ違ぁE��前�E灯�E�ロービ�Eム光度�E�」を満たせず車検に不合格になる事例が急増してぁE��す、E
                     ],
                     [
                         'icon' => '✨',
-                        'title' => '研磨クリーニング＆専用コーティング',
-                        'desc' => "黄ばんだ表層を耐水研磨で削り落とし、ガラス系またはウレタンクリアコートで再保護することで、新車時の透明感と照射光量が蘇ります。"
+                        'title' => '研磨クリーニング�E�E��用コーチE��ング',
+                        'desc' => "黁E�Eんだ表層を耐水研磨で削り落とし、ガラス系また�Eウレタンクリアコートで再保護することで、新車時の透�E感と照封E�E量が蘁E��ます、E
                     ]
                 ],
-                'summary' => 'アップファーレンではヘッドライトのクリーニング＆プロコーティングも施工可能です！',
+                'summary' => 'アチE�Eファーレンではヘッドライト�Eクリーニング�E�E�EロコーチE��ングも施工可能です！E,
                 'action_btn' => [
-                    'label' => '🛠️ ヘッドライト磨きを相談',
-                    'uri' => 'https://liff.line.me/2011335169-9x8ydjaV/mycar.html'
+                    'label' => '🛠�E�Eヘッドライト磨きを相諁E,
+                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
                 ]
             ];
             break;
 
         case 'smart_key_battery':
             $articleData = [
-                'badge' => '🔑 トラブル緊急脱出【㉖】',
+                'badge' => '🔑 トラブル緊急脱出【㉖、E,
                 'badge_color' => '#e11d48',
-                'title' => '㉖ スマートキー電池切れ時の始動法',
-                'subtitle' => '鍵が開かない・かからない時の完全手順',
+                'title' => '㉁Eスマ�Eトキー電池刁E��時�E始動況E,
+                'subtitle' => '鍵が開かなぁE�EかからなぁE��の完�E手頁E,
                 'sections' => [
                     [
-                        'icon' => '🗝️',
-                        'title' => '内蔵メカニカルキーでドアを解錠',
-                        'desc' => "スマートキー側面の解除ボタンをスライドさせると、物理キーが引き出せます。運転席ドアの鍵穴に差し込んで回せばドアが開きます。"
+                        'icon' => '🗝�E�E,
+                        'title' => '冁E��メカニカルキーでドアを解錠',
+                        'desc' => "スマ�Eトキー側面の解除ボタンをスライドさせると、物琁E��ーが引き出せます。運転席ドアの鍵穴に差し込んで回せばドアが開きます、E
                     ],
                     [
                         'icon' => '🔘',
-                        'title' => 'スタートボタンにスマートキーをタッチ！',
-                        'desc' => "ブレーキペダルを踏みながら、スマートキーの「エンブレム面」をプッシュスタートボタンに直接密着（タッチ）させると「ピッ」と音が鳴り、そのままボタンを押せばエンジンが始動します。"
+                        'title' => 'スタート�Eタンにスマ�EトキーをタチE���E�E,
+                        'desc' => "ブレーキペダルを踏みながら、スマ�Eトキーの「エンブレム面」をプッシュスタート�Eタンに直接寁E���E�タチE���E�させると「ピチE��と音が鳴り、そのままボタンを押せ�Eエンジンが始動します、E
                     ],
                     [
                         'icon' => '🔋',
-                        'title' => '電池寿命（約1〜2年）と交換用電池（CR2032等）',
-                        'desc' => "スマートキーは常に電波を受信しているため1〜2年で消耗します。ボタン電池（主にCR2032やCR1632など）はコンビニ等で購入でき、自分で簡単に交換可能です。"
+                        'title' => '電池寿命�E�紁E、E年�E�と交換用電池�E�ER2032等！E,
+                        'desc' => "スマ�Eトキーは常に電波を受信してぁE��ため1、E年で消耗します。�Eタン電池�E�主にCR2032やCR1632など�E��Eコンビニ等で購入でき、�E刁E��簡単に交換可能です、E
                     ]
                 ],
-                'summary' => 'スマートキーの電池交換も店頭で数十秒で対応いたしますのでお気軽にどうぞ！',
+                'summary' => 'スマ�Eトキーの電池交換も店頭で数十秒で対応いたします�Eでお気軽にどぁE���E�E,
                 'action_btn' => [
-                    'label' => '🛠️ 愛車の相談・点検予約',
-                    'uri' => 'https://liff.line.me/2011335169-9x8ydjaV/mycar.html'
+                    'label' => '🛠�E�E愛車�E相諁E�E点検予紁E,
+                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
                 ]
             ];
             break;
 
         case 'hybrid_battery_care':
             $articleData = [
-                'badge' => '🔋 HV・EVの賢い乗り方【㉗】',
+                'badge' => '🔋 HV・EVの賢ぁE��り方【㉗、E,
                 'badge_color' => '#059669',
-                'title' => '㉗ ハイブリッド車のバッテリー延命術',
-                'subtitle' => '駆動用バッテリー長持ち＆補機バッテリーの盲点',
+                'title' => '㉁EハイブリチE��車�EバッチE��ー延命衁E,
+                'subtitle' => '駁E��用バッチE��ー長持ち�E�E��機バチE��リーの盲点',
                 'sections' => [
                     [
-                        'icon' => '🌡️',
-                        'title' => '高温放置と急加速・急放電の回避',
-                        'desc' => "リチウムイオン/ニッケル水素バッテリーは熱に弱いです。炎天下での長時間駐車を避け、冷却ファンの吸気口（後部座席横）に荷物を置かないようにしましょう。"
+                        'icon' => '🌡�E�E,
+                        'title' => '高温放置と急加速�E急放電の回避',
+                        'desc' => "リチウムイオン/ニッケル水素バッチE��ーは熱に弱ぁE��す。炎天下での長時間駐車を避け、�E却ファンの吸気口�E�後部座席横�E�に荷物を置かなぁE��ぁE��しましょぁE��E
                     ],
                     [
                         'icon' => '⚡',
-                        'title' => '見落としがちな「補機バッテリー」の寿命（3年）',
-                        'desc' => "ハイブリッド車には走行用とは別に「システム起動用の12V補機バッテリー」が載っています。これが上がると大容量バッテリーが満タンでも車が起動できません！"
+                        'title' => '見落としがちな「補機バチE��リー」�E寿命�E�E年�E�E,
+                        'desc' => "ハイブリチE��車には走行用とは別に「シスチE��起動用の12V補機バチE��リー」が載ってぁE��す。これが上がると大容量バチE��リーが満タンでも車が起動できません�E�E
                     ],
                     [
                         'icon' => '📉',
-                        'title' => '定期的な走行で完全放電を防ぐ',
-                        'desc' => "数ヶ月放置すると自然放電で駆動用バッテリーの容量が低下します。月2〜3回はエンジンをかけて30分以上走行させましょう。"
+                        'title' => '定期皁E��走行で完�E放電を防ぁE,
+                        'desc' => "数ヶ月放置すると自然放電で駁E��用バッチE��ーの容量が低下します。月2、E回�Eエンジンをかけて30刁E��上走行させましょぁE��E
                     ]
                 ],
-                'summary' => 'アップファーレンでは良質なハイブリッド・低燃費エコカーを多数取り揃えております！',
+                'summary' => 'アチE�Eファーレンでは良質なハイブリチE��・低燃費エコカーを多数取り揁E��ております！E,
                 'action_btn' => [
-                    'label' => '🚗 ハイブリッド在庫車両を見る',
+                    'label' => '🚗 ハイブリチE��在庫車両を見る',
                     'data' => 'action=search_all'
                 ]
             ];
@@ -2806,36 +2806,36 @@ function generateKnowledgeDetailMessage(string $topic): array {
         case 'daily_car_check':
         default:
             $articleData = [
-                'badge' => '🔍 5分セルフ点検【㉘】',
+                'badge' => '🔍 5刁E��ルフ点検【㉘、E,
                 'badge_color' => '#2563eb',
-                'title' => '㉘ 日常点検「ぶ・た・は・と・う・み・ず」',
-                'subtitle' => 'プロ推奨！ドライブ前の簡単セルフチェック',
+                'title' => '㉁E日常点検「�E・た�Eは・と・ぁE�Eみ・ず、E,
+                'subtitle' => 'プロ推奨�E�ドライブ前の簡単セルフチェチE��',
                 'sections' => [
                     [
                         'icon' => '🛑',
-                        'title' => '【ぶ】ブレーキ＆ベルト',
-                        'desc' => "ブレーキペダルの踏みごたえ（床まで沈み込まないか）と、エンジン始動時のキュルキュル異音がないか。"
+                        'title' => '【�E】ブレーキ�E�E�EルチE,
+                        'desc' => "ブレーキペダルの踏みごたえ（床まで沈み込まなぁE���E�と、エンジン始動時�Eキュルキュル異音がなぁE��、E
                     ],
                     [
                         'icon' => '🛞',
                         'title' => '【た】タイヤ',
-                        'desc' => "空気圧の見た目（極端に潰れていないか）、溝の残り深さ、亀裂や釘刺さりがないか。"
+                        'desc' => "空気圧の見た目�E�極端に潰れてぁE��ぁE���E�、溝�E残り深さ、亀裂や釘刺さりがなぁE��、E
                     ],
                     [
                         'icon' => '💡',
-                        'title' => '【は・とう】バッテリー＆灯火類',
-                        'desc' => "セルモーターの始動音、ヘッドライト・ブレーキランプ・ウインカーの球切れがないか。"
+                        'title' => '【�E・とぁE��バチE��リー�E�E�E火顁E,
+                        'desc' => "セルモーターの始動音、�EチE��ライト�Eブレーキランプ�Eウインカーの琁E�EれがなぁE��、E
                     ],
                     [
                         'icon' => '💧',
-                        'title' => '【み・ず】オイル（みず）・冷却水・ウォッシャー液',
-                        'desc' => "エンジンオイル量、ラジエーター冷却水の量（リザーブタンク）、ウォッシャー液の残量をチェック。"
+                        'title' => '【み・ず】オイル�E�みず）�E冷却水・ウォチE��ャー液',
+                        'desc' => "エンジンオイル量、ラジエーター冷却水の量（リザーブタンク�E�、ウォチE��ャー液の残量をチェチE��、E
                     ]
                 ],
-                'summary' => 'お出かけ前の無料安心点検も店頭でいつでも承っております！お気軽にお立ち寄りください。',
+                'summary' => 'お�Eかけ前�E無料安忁E��検も店頭でぁE��でも承っております！お気軽にお立ち寁E��ください、E,
                 'action_btn' => [
-                    'label' => '🛠️ 店舗で無料点検を受ける',
-                    'uri' => 'https://liff.line.me/2011335169-9x8ydjaV/mycar.html'
+                    'label' => '🛠�E�E店�Eで無料点検を受けめE,
+                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
                 ]
             ];
             break;
@@ -2967,8 +2967,8 @@ function generateKnowledgeDetailMessage(string $topic): array {
                     'color' => '#f1f5f9',
                     'action' => [
                         'type' => 'uri',
-                        'label' => '👥 この豆知識を友だちにシェア',
-                        'uri' => 'https://liff.line.me/2011335169-9x8ydjaV/share.html?topic=' . urlencode($topic)
+                        'label' => '👥 こ�E豁E��識を友だちにシェア',
+                        'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/share.html?topic=' . urlencode($topic)
                     ]
                 ],
                 [
@@ -2977,7 +2977,7 @@ function generateKnowledgeDetailMessage(string $topic): array {
                     'height' => 'sm',
                     'action' => [
                         'type' => 'postback',
-                        'label' => '📚 豆知識ガイド一覧へ戻る',
+                        'label' => '📚 豁E��識ガイド一覧へ戻めE,
                         'data' => 'action=show_knowledge_menu'
                     ]
                 ]
@@ -2988,7 +2988,7 @@ function generateKnowledgeDetailMessage(string $topic): array {
     return [
         [
             'type' => 'flex',
-            'altText' => "【{$articleData['title']}】カーライフお役立ちガイド",
+            'altText' => "【{$articleData['title']}】カーライフお役立ちガイチE,
             'contents' => $detailBubble,
             'quickReply' => getQuickReplyItems()
         ]
@@ -3004,12 +3004,12 @@ function sendTypeMenuMessage(PDO $db, string $replyToken) {
 }
 
 /**
- * 車種・ボディタイプ選択メニュー（サイレントボタン式Flex カルーセル）生成
- * 現在の有効在庫（carsテーブル）から実在するボディタイプおよび人気車種を自動集計し、
- * 「該当台数（例: (10台)）」バッジ付きでカルーセル化（0件の車種は自動非表示）
+ * 車種・ボディタイプ選択メニュー�E�サイレント�Eタン式Flex カルーセル�E�生戁E
+ * 現在の有効在庫�E�EarsチE�Eブル�E�から実在するボディタイプおよ�E人気車種を�E動集計し、E
+ * 「該当台数�E�侁E (10台)�E�」バチE��付きでカルーセル化！E件の車種は自動非表示�E�E
  */
 function generateTypeMenuMessages(PDO $db): array {
-    // 1. 有効在庫の全データを取得
+    // 1. 有効在庫の全チE�Eタを取征E
     $stmt = $db->query("SELECT id, title, displacement, drive_type FROM cars WHERE is_active = 1");
     $cars = $stmt->fetchAll();
     $totalStock = count($cars);
@@ -3018,7 +3018,7 @@ function generateTypeMenuMessages(PDO $db): array {
         return [
             [
                 'type' => 'text',
-                'text' => "現在、展示中の在庫車両を準備中です。\n最新の入庫状況はお気軽にお問い合わせください！",
+                'text' => "現在、展示中の在庫車両を準備中です、En最新の入庫状況�Eお気軽にお問ぁE��わせください�E�E,
                 'quickReply' => getQuickReplyItems()
             ]
         ];
@@ -3027,24 +3027,24 @@ function generateTypeMenuMessages(PDO $db): array {
     // 2. ボディタイプ定義
     $bodyTypeDefs = [
         [
-            'name' => '軽自動車',
+            'name' => '軽自動軁E,
             'action' => 'search_kei',
             'param' => '',
             'check' => function($car) {
                 $disp = $car['displacement'] ?? '';
                 $title = $car['title'] ?? '';
-                return ($disp === '660cc' || str_starts_with($disp, '66') || str_contains($title, '軽自動車'));
+                return ($disp === '660cc' || str_starts_with($disp, '66') || str_contains($title, '軽自動軁E));
             }
         ],
         [
-            'name' => 'ｺﾝﾊﾟｸﾄｶｰ',
+            'name' => '�E��E�ﾊﾟｸ�E�E���E�',
             'action' => 'search_type',
-            'param' => 'keyword=' . urlencode('コンパクト'),
+            'param' => 'keyword=' . urlencode('コンパクチE),
             'check' => function($car) {
                 $disp = $car['displacement'] ?? '';
                 $title = $car['title'] ?? '';
                 if ($disp === '660cc' || str_starts_with($disp, '66')) return false;
-                $kws = ['コンパクト', 'フィット', 'アクア', 'ヤリス', 'ノート', 'パッソ', 'スイフト', 'ヴィッツ', 'デミオ', 'マーチ', 'ポロ', 'ゴルフ', 'ルーミー', 'ソリオ', 'タンク', 'FIT', 'AQUA', 'NOTE', 'SWIFT'];
+                $kws = ['コンパクチE, 'フィチE��', 'アクア', 'ヤリス', 'ノ�EチE, 'パッソ', 'スイフト', 'ヴィチE��', 'チE��オ', 'マ�EチE, 'ポロ', 'ゴルチE, 'ルーミ�E', 'ソリオ', 'タンク', 'FIT', 'AQUA', 'NOTE', 'SWIFT'];
                 foreach ($kws as $kw) {
                     if (stripos($title, $kw) !== false) return true;
                 }
@@ -3052,12 +3052,12 @@ function generateTypeMenuMessages(PDO $db): array {
             }
         ],
         [
-            'name' => 'ﾐﾆﾊﾞﾝ･ﾜｺﾞﾝ',
+            'name' => '�E�ﾁE��ﾞﾝ･�E�ｺ�E�ﾁE,
             'action' => 'search_type',
             'param' => 'keyword=' . urlencode('ワゴン'),
             'check' => function($car) {
                 $title = $car['title'] ?? '';
-                $kws = ['ワゴン', 'セレナ', 'ヴォクシー', 'ノア', 'ステップワゴン', 'フリード', 'シエンタ', 'アルファード', 'ヴェルファイア', 'デリカ', 'エスティマ', 'オデッセイ', 'SERENA', 'VOXY', 'NOAH'];
+                $kws = ['ワゴン', 'セレチE, 'ヴォクシー', 'ノア', 'スチE��プワゴン', 'フリーチE, 'シエンタ', 'アルファーチE, 'ヴェルファイア', 'チE��カ', 'エスチE��チE, 'オチE��セイ', 'SERENA', 'VOXY', 'NOAH'];
                 foreach ($kws as $kw) {
                     if (stripos($title, $kw) !== false) return true;
                 }
@@ -3065,19 +3065,19 @@ function generateTypeMenuMessages(PDO $db): array {
             }
         ],
         [
-            'name' => 'SUV･4WD',
+            'name' => 'SUV�E�4WD',
             'action' => 'search_type',
             'param' => 'keyword=' . urlencode('4WD'),
             'check' => function($car) {
                 $drive = $car['drive_type'] ?? '';
                 $title = $car['title'] ?? '';
-                if (stripos($drive, '4WD') !== false || stripos($drive, '４ＷＤ') !== false || stripos($drive, '四駆') !== false || stripos($drive, 'AWD') !== false || stripos($drive, 'ＡＷＤ') !== false) {
+                if (stripos($drive, '4WD') !== false || stripos($drive, '�E�Ｗ�E�') !== false || stripos($drive, '四駁E) !== false || stripos($drive, 'AWD') !== false || stripos($drive, '�E��E��E�') !== false) {
                     return true;
                 }
-                if (stripos($title, '4WD') !== false || stripos($title, '４ＷＤ') !== false || stripos($title, 'AWD') !== false || stripos($title, 'SUV') !== false || stripos($title, 'クロスオーバー') !== false || stripos($title, 'キャデラック') !== false || stripos($title, 'XT5') !== false) {
+                if (stripos($title, '4WD') !== false || stripos($title, '�E�Ｗ�E�') !== false || stripos($title, 'AWD') !== false || stripos($title, 'SUV') !== false || stripos($title, 'クロスオーバ�E') !== false || stripos($title, 'キャチE��チE��') !== false || stripos($title, 'XT5') !== false) {
                     return true;
                 }
-                $kws = ['ハスラー', 'ジムニー', 'ヴェゼル', 'ヤリスクロス', 'ライズ', 'ロッキー', 'エクストレイル', 'フォレスター', 'CX-', 'C-HR'];
+                $kws = ['ハスラー', 'ジムニ�E', 'ヴェゼル', 'ヤリスクロス', 'ライズ', 'ロチE��ー', 'エクストレイル', 'フォレスター', 'CX-', 'C-HR'];
                 foreach ($kws as $kw) {
                     if (stripos($title, $kw) !== false) return true;
                 }
@@ -3086,28 +3086,28 @@ function generateTypeMenuMessages(PDO $db): array {
         ]
     ];
 
-    // 3. 人気車種モデルマスター定義
+    // 3. 人気車種モチE��マスター定義
     $modelDefs = [
-        ['name' => 'N-BOX', 'keyword' => 'N-BOX', 'match' => ['N-BOX', 'Ｎ－ＢＯＸ', 'NBOX', 'エヌボックス']],
-        ['name' => 'ﾀﾝﾄ', 'keyword' => 'タント', 'match' => ['タント', 'ﾀﾝﾄ', 'TANTO']],
-        ['name' => 'ｽﾍﾟｰｼｱ', 'keyword' => 'スペーシア', 'match' => ['スペーシア', 'ｽﾍﾟｰｼｱ', 'SPACIA']],
-        ['name' => 'ﾜｺﾞﾝR', 'keyword' => 'ワゴンR', 'match' => ['ワゴンR', 'ワゴンＲ', 'ﾜｺﾞﾝR', 'WAGON R', 'スティングレー']],
-        ['name' => 'ﾃﾞｲｽﾞ/ﾙｰｸｽ', 'keyword' => 'デイズ', 'match' => ['デイズ', 'ﾃﾞｲｽﾞ', 'ルークス', 'ﾙｰｸｽ', 'DAYZ', 'ROOX']],
-        ['name' => 'ﾊｽﾗｰ', 'keyword' => 'ハスラー', 'match' => ['ハスラー', 'ﾊｽﾗｰ', 'HUSTLER']],
-        ['name' => 'ﾑｰｳﾞ', 'keyword' => 'ムーヴ', 'match' => ['ムーヴ', 'ﾑｰｳﾞ', 'キャンバス', 'MOVE']],
-        ['name' => 'ｱﾙﾄ', 'keyword' => 'アルト', 'match' => ['アルト', 'ｱﾙﾄ', 'ALTO', 'ラパン']],
-        ['name' => 'ﾐﾗ/ｲｰｽ', 'keyword' => 'ミラ', 'match' => ['ミライース', 'ミラ', 'ﾐﾗ', 'MIRA']],
+        ['name' => 'N-BOX', 'keyword' => 'N-BOX', 'match' => ['N-BOX', '�E��E�Ｂ�E��E�', 'NBOX', 'エヌ�EチE��ス']],
+        ['name' => '�E��E�ﾁE, 'keyword' => 'タンチE, 'match' => ['タンチE, '�E��E�ﾁE, 'TANTO']],
+        ['name' => '�E��E�ﾟｰ�E��E�', 'keyword' => 'スペ�Eシア', 'match' => ['スペ�Eシア', '�E��E�ﾟｰ�E��E�', 'SPACIA']],
+        ['name' => '�E�ｺ�E�ﾝR', 'keyword' => 'ワゴンR', 'match' => ['ワゴンR', 'ワゴン�E�', '�E�ｺ�E�ﾝR', 'WAGON R', 'スチE��ングレー']],
+        ['name' => '�E�E��ｲ�E��E�E�E�ｰ�E��E�', 'keyword' => 'チE��ズ', 'match' => ['チE��ズ', '�E�E��ｲ�E��E�E, 'ルークス', '�E�ｰ�E��E�', 'DAYZ', 'ROOX']],
+        ['name' => '�E�ｽ�E�ｰ', 'keyword' => 'ハスラー', 'match' => ['ハスラー', '�E�ｽ�E�ｰ', 'HUSTLER']],
+        ['name' => '�E�ｰ�E��E�E, 'keyword' => 'ムーヴ', 'match' => ['ムーヴ', '�E�ｰ�E��E�E, 'キャンバス', 'MOVE']],
+        ['name' => '�E��E�ﾁE, 'keyword' => 'アルチE, 'match' => ['アルチE, '�E��E�ﾁE, 'ALTO', 'ラパン']],
+        ['name' => '�E�ﾁE�E��E��E�', 'keyword' => 'ミラ', 'match' => ['ミライース', 'ミラ', '�E�ﾁE, 'MIRA']],
         ['name' => 'C-HR', 'keyword' => 'C-HR', 'match' => ['C-HR', 'CHR']],
-        ['name' => 'ﾌﾟﾘｳｽ', 'keyword' => 'プリウス', 'match' => ['プリウス', 'ﾌﾟﾘｳｽ', 'PRIUS']],
-        ['name' => 'ｱｸｱ', 'keyword' => 'アクア', 'match' => ['アクア', 'ｱｸｱ', 'AQUA']],
-        ['name' => 'ﾉｰﾄ', 'keyword' => 'ノート', 'match' => ['ノート', 'ﾉｰﾄ', 'NOTE']],
-        ['name' => 'ﾌｨｯﾄ', 'keyword' => 'フィット', 'match' => ['フィット', 'ﾌｨｯﾄ', 'FIT']],
-        ['name' => '輸入車/欧州車', 'keyword' => '輸入車', 'match' => ['ベンツ', 'BMW', 'フォルクスワーゲン', 'アウディ', 'キャデラック', 'MINI', 'ボルボ', 'Bクラス', 'B180', 'CTS']]
+        ['name' => '�E�ﾟﾘｳ�E�', 'keyword' => 'プリウス', 'match' => ['プリウス', '�E�ﾟﾘｳ�E�', 'PRIUS']],
+        ['name' => '�E��E��E�', 'keyword' => 'アクア', 'match' => ['アクア', '�E��E��E�', 'AQUA']],
+        ['name' => '�E�ｰ�E�E, 'keyword' => 'ノ�EチE, 'match' => ['ノ�EチE, '�E�ｰ�E�E, 'NOTE']],
+        ['name' => '�E�ｨ�E��E�E, 'keyword' => 'フィチE��', 'match' => ['フィチE��', '�E�ｨ�E��E�E, 'FIT']],
+        ['name' => '輸入軁E欧州軁E, 'keyword' => '輸入軁E, 'match' => ['ベンチE, 'BMW', 'フォルクスワーゲン', 'アウチE��', 'キャチE��チE��', 'MINI', 'ボルチE, 'Bクラス', 'B180', 'CTS']]
     ];
 
     $activeBubbles = [];
 
-    // --- カード①: 実在するボディタイプ ---
+    // --- カード①: 実在するボディタイチE---
     $typeButtons = [];
     foreach ($bodyTypeDefs as $bDef) {
         $count = 0;
@@ -3143,14 +3143,14 @@ function generateTypeMenuMessages(PDO $db): array {
                 'contents' => [
                     [
                         'type' => 'text',
-                        'text' => 'ﾎﾞﾃﾞｨﾀｲﾌﾟで探す',
+                        'text' => '�E�ﾞﾁE��ｨ�E��E��E�ﾟで探ぁE,
                         'weight' => 'bold',
                         'size' => 'md',
                         'color' => '#1e293b'
                     ],
                     [
                         'type' => 'text',
-                        'text' => '在庫に実在するタイプから選べます',
+                        'text' => '在庫に実在するタイプから選べまぁE,
                         'size' => 'xs',
                         'color' => '#64748b',
                         'margin' => 'xs'
@@ -3171,13 +3171,13 @@ function generateTypeMenuMessages(PDO $db): array {
         ];
     }
 
-    // --- カード②: 実在する人気車種モデル ---
+    // --- カード②: 実在する人気車種モチE�� ---
     $modelButtons = [];
     foreach ($modelDefs as $mDef) {
         $count = 0;
         foreach ($cars as $car) {
             $rawHaystack = ($car['title'] ?? '') . ' ' . ($car['displacement'] ?? '');
-            // 「ミラー」「プレミアム」など部分一致誤爆を防ぐ
+            // 「ミラー」「�Eレミアム」など部刁E��致誤爁E��防ぁE
             $haystack = str_replace(['ミラー', 'ミドル', 'プレミアム', 'ミラクル'], '', $rawHaystack);
 
             foreach ($mDef['match'] as $kw) {
@@ -3206,7 +3206,7 @@ function generateTypeMenuMessages(PDO $db): array {
     if (!empty($modelButtons)) {
         $modelChunks = array_chunk($modelButtons, 4);
         foreach ($modelChunks as $mIdx => $chunkBtns) {
-            $cardTitle = '人気車種で探す' . (count($modelChunks) > 1 ? " (" . ($mIdx + 1) . ")" : "");
+            $cardTitle = '人気車種で探ぁE . (count($modelChunks) > 1 ? " (" . ($mIdx + 1) . ")" : "");
             $activeBubbles[] = [
                 'type' => 'bubble',
                 'size' => 'kilo',
@@ -3224,7 +3224,7 @@ function generateTypeMenuMessages(PDO $db): array {
                         ],
                         [
                             'type' => 'text',
-                            'text' => '在庫に実在するモデルから選べます',
+                            'text' => '在庫に実在するモチE��から選べまぁE,
                             'size' => 'xs',
                             'color' => '#64748b',
                             'margin' => 'xs'
@@ -3250,7 +3250,7 @@ function generateTypeMenuMessages(PDO $db): array {
         return [
             [
                 'type' => 'text',
-                'text' => "現在、展示中の在庫車両を準備中です。",
+                'text' => "現在、展示中の在庫車両を準備中です、E,
                 'quickReply' => getQuickReplyItems()
             ]
         ];
@@ -3259,7 +3259,7 @@ function generateTypeMenuMessages(PDO $db): array {
     return [
         [
             'type' => 'flex',
-            'altText' => '車種・ボディタイプから探す',
+            'altText' => '車種・ボディタイプから探ぁE,
             'contents' => [
                 'type' => 'carousel',
                 'contents' => array_slice($activeBubbles, 0, 10)
@@ -3270,7 +3270,7 @@ function generateTypeMenuMessages(PDO $db): array {
 }
 
 /**
- * 装備・仕様選択メニュー送信
+ * 裁E��・仕様選択メニュー送信
  */
 function sendEquipmentMenuMessage(PDO $db, string $replyToken) {
     $messages = generateEquipmentMenuMessages($db);
@@ -3278,12 +3278,12 @@ function sendEquipmentMenuMessage(PDO $db, string $replyToken) {
 }
 
 /**
- * 装備・仕様選択メニュー（サイレントボタン式Flex カルーセル）生成
- * 現在の有効在庫（carsテーブル）からチェックがある装備だけを自動集計し、
- * 「該当台数（例: (10台)）」バッジ付きでカルーセル化（絵文字なしでスッキリ表示）
+ * 裁E��・仕様選択メニュー�E�サイレント�Eタン式Flex カルーセル�E�生戁E
+ * 現在の有効在庫�E�EarsチE�Eブル�E�からチェチE��がある裁E��だけを自動集計し、E
+ * 「該当台数�E�侁E (10台)�E�」バチE��付きでカルーセル化（絵斁E��なしでスチE��リ表示�E�E
  */
 function generateEquipmentMenuMessages(PDO $db): array {
-    // 1. 有効在庫の全データを取得
+    // 1. 有効在庫の全チE�Eタを取征E
     $stmt = $db->query("SELECT id, title, equipments, drive_type, repair_history, distance, distance_num, shaken FROM cars WHERE is_active = 1");
     $cars = $stmt->fetchAll();
     $totalStock = count($cars);
@@ -3292,49 +3292,49 @@ function generateEquipmentMenuMessages(PDO $db): array {
         return [
             [
                 'type' => 'text',
-                'text' => "現在、展示中の在庫車両を準備中です。\n最新の入庫状況はお気軽にお問い合わせください！",
+                'text' => "現在、展示中の在庫車両を準備中です、En最新の入庫状況�Eお気軽にお問ぁE��わせください�E�E,
                 'quickReply' => getQuickReplyItems()
             ]
         ];
     }
 
-    // 2. 装備マスター定義 (絵文字なし・短縮テキスト)
+    // 2. 裁E��マスター定義 (絵斁E��なし�E短縮チE��スチE
     $categoryDefs = [
         'navi_camera' => [
-            'title' => 'ﾅﾋﾞ･ｶﾒﾗ･快適装備',
+            'title' => '�E�E��ﾞ･�E��E�ﾗ･快適裁E��',
             'items' => [
-                ['name' => 'ｶｰﾅﾋﾞ/SDﾅﾋﾞ', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('ナビ'), 'match' => ['ナビ', 'メモリーナビ', 'ＳＤナビ', 'ディスプレイオーディオ']],
-                ['name' => '地ﾃﾞｼﾞTV', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('TV'), 'match' => ['地デジ', 'フルセグ', 'ワンセグ', 'ＴＶ', 'TV', 'テレビ']],
-                ['name' => 'ﾊﾞｯｸｶﾒﾗ', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('バックカメラ'), 'match' => ['バックカメラ', 'アラウンドビュー', '全方位カメラ', 'カメラ']],
-                ['name' => 'Bluetooth', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('Bluetooth'), 'match' => ['Bluetooth', 'Ｂｌｕｅｔｏｏｔｈ', 'ブルートゥース', 'カープレイ', 'carplay']],
-                ['name' => 'ETC車載器', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('ETC'), 'match' => ['ETC', 'ＥＴＣ', 'ETC2.0']],
-                ['name' => 'ﾄﾞﾗﾚｺ', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('ドラレコ'), 'match' => ['ドラレコ', 'ドライブレコーダー']],
+                ['name' => '�E��E��E�E��ﾁESD�E�E��ﾁE, 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('ナビ'), 'match' => ['ナビ', 'メモリーナビ', '�E��E�ナビ', 'チE��スプレイオーチE��オ']],
+                ['name' => '地�E�E��ｼ�E�TV', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('TV'), 'match' => ['地チE��', 'フルセグ', 'ワンセグ', '�E��E�', 'TV', 'チE��チE]],
+                ['name' => '�E�ﾞｯ�E��E��E�ﾁE, 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('バックカメラ'), 'match' => ['バックカメラ', 'アラウンドビュー', '全方位カメラ', 'カメラ']],
+                ['name' => 'Bluetooth', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('Bluetooth'), 'match' => ['Bluetooth', '�E��E�ｕａE��ｏｏｔａE, 'ブルートゥース', 'カープレイ', 'carplay']],
+                ['name' => 'ETC車載器', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('ETC'), 'match' => ['ETC', '�E��E��E�', 'ETC2.0']],
+                ['name' => '�E�E��ﾗﾚｺ', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('ドラレコ'), 'match' => ['ドラレコ', 'ドライブレコーダー']],
             ]
         ],
         'comfort_exterior' => [
-            'title' => 'ﾄﾞｱ･ｼｰﾄ･外装',
+            'title' => '�E�E��ｱ�E��E��E��E�E��外裁E,
             'items' => [
-                ['name' => 'ﾊﾟﾜｰｽﾗｲﾄﾞ', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('スライド'), 'match' => ['スライド', '両側電動', 'パワースライド']],
-                ['name' => 'ｽﾏｰﾄｷｰ', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('スマートキー'), 'match' => ['スマートキー', 'インテリジェントキー', 'プッシュスタート', 'キーレス']],
-                ['name' => 'ｼｰﾄﾋｰﾀｰ', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('シートヒーター'), 'match' => ['シートヒーター', '前席ヒーター']],
-                ['name' => 'LEDﾗｲﾄ', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('LED'), 'match' => ['LED', 'ＬＥＤ', 'HID', 'ＨＩＤ', 'オートライト']],
-                ['name' => 'ｱﾙﾐﾎｲｰﾙ', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('アルミ'), 'match' => ['アルミ', 'アルミホイール', '１５インチアルミ', '１４インチアルミ']],
-                ['name' => 'ﾚｻﾞｰｼｰﾄ', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('レザー'), 'match' => ['本革', 'レザー', 'ハーフレザー', '革調']],
+                ['name' => '�E�ﾟﾜｰ�E��E�ｲ�E�E��E, 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('スライチE), 'match' => ['スライチE, '両側電勁E, 'パワースライチE]],
+                ['name' => '�E��E�ｰ�E�E���E�', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('スマ�Eトキー'), 'match' => ['スマ�Eトキー', 'インチE��ジェントキー', 'プッシュスターチE, 'キーレス']],
+                ['name' => '�E��E��E�E��ｰ�E��E�', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('シートヒーター'), 'match' => ['シートヒーター', '前席ヒ�Eター']],
+                ['name' => 'LED�E�ｲ�E�E, 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('LED'), 'match' => ['LED', '�E��E��E�', 'HID', '�E��E��E�', 'オートライチE]],
+                ['name' => '�E��E�ﾐﾎｲ�E��E�E, 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('アルチE), 'match' => ['アルチE, 'アルミ�Eイール', '�E�５インチアルチE, '�E�４インチアルチE]],
+                ['name' => '�E�ｻ�E�ｰ�E��E��E�E, 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('レザー'), 'match' => ['本革', 'レザー', 'ハ�Eフレザー', '革調']],
             ]
         ],
         'safety_drive' => [
-            'title' => '安全･駆動･状態',
+            'title' => '安�E�E�駁E���E�状慁E,
             'items' => [
-                ['name' => '自動ﾌﾞﾚｰｷ', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('軽減'), 'match' => ['軽減', '安全', 'ブレーキ', 'センシング', 'スマートアシスト', 'セーフティ', 'プロパイロット']],
-                ['name' => '4WD/四駆', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('4WD'), 'match' => ['4WD', '４ＷＤ', '四駆', '4wd']],
-                ['name' => '修復歴なし', 'action' => 'search_repair_none', 'param' => '', 'match' => ['_repair_none_']],
-                ['name' => '未使用･低走行', 'action' => 'search_low_mileage', 'param' => '', 'match' => ['_low_mileage_']],
-                ['name' => 'ﾀｰﾎﾞ車', 'action' => 'search_type', 'param' => 'keyword=' . urlencode('ターボ'), 'match' => ['ターボ', 'TB', 'turbo']],
+                ['name' => '自動ﾌﾞﾚｰ�E�', 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('軽渁E), 'match' => ['軽渁E, '安�E', 'ブレーキ', 'センシング', 'スマ�EトアシスチE, 'セーフティ', 'プロパイロチE��']],
+                ['name' => '4WD/四駁E, 'action' => 'search_equip', 'param' => 'keyword=' . urlencode('4WD'), 'match' => ['4WD', '�E�Ｗ�E�', '四駁E, '4wd']],
+                ['name' => '修復歴なぁE, 'action' => 'search_repair_none', 'param' => '', 'match' => ['_repair_none_']],
+                ['name' => '未使用�E�低走衁E, 'action' => 'search_low_mileage', 'param' => '', 'match' => ['_low_mileage_']],
+                ['name' => '�E��E��E�ﾞ軁E, 'action' => 'search_type', 'param' => 'keyword=' . urlencode('ターチE), 'match' => ['ターチE, 'TB', 'turbo']],
             ]
         ]
     ];
 
-    // 3. 各アイテムの該当台数を集計
+    // 3. 吁E��イチE��の該当台数を集訁E
     $activeBubbles = [];
 
     foreach ($categoryDefs as $catKey => $cat) {
@@ -3348,7 +3348,7 @@ function generateEquipmentMenuMessages(PDO $db): array {
                 $haystack = ($car['title'] ?? '') . ' ' . ($car['equipments'] ?? '') . ' ' . ($car['drive_type'] ?? '');
 
                 if (in_array('_repair_none_', $item['match'])) {
-                    if (empty($car['repair_history']) || $car['repair_history'] === 'なし' || $car['repair_history'] === '-') {
+                    if (empty($car['repair_history']) || $car['repair_history'] === 'なぁE || $car['repair_history'] === '-') {
                         $isMatch = true;
                     }
                 } elseif (in_array('_low_mileage_', $item['match'])) {
@@ -3369,7 +3369,7 @@ function generateEquipmentMenuMessages(PDO $db): array {
                 }
             }
 
-            // 1台以上ある場合のみボタンを生成！
+            // 1台以上ある場合�Eみボタンを生成！E
             if ($count > 0) {
                 $btnLabel = "{$item['name']} ({$count}台)";
                 $postbackData = "action={$item['action']}" . (!empty($item['param']) ? "&{$item['param']}" : "");
@@ -3387,9 +3387,9 @@ function generateEquipmentMenuMessages(PDO $db): array {
             }
         }
 
-        // ボタンが1つ以上あるカテゴリのみバブルカードとして追加
+        // ボタンぁEつ以上あるカチE��リのみバブルカードとして追加
         if (!empty($buttons)) {
-            // 1バブルあたり最大4ボタンずつ分割
+            // 1バブルあたり最大4ボタンずつ刁E��
             $btnChunks = array_chunk($buttons, 4);
             foreach ($btnChunks as $cIdx => $cButtons) {
                 $cardTitle = $cat['title'] . (count($btnChunks) > 1 ? " (" . ($cIdx + 1) . ")" : "");
@@ -3410,7 +3410,7 @@ function generateEquipmentMenuMessages(PDO $db): array {
                             ],
                             [
                                 'type' => 'text',
-                                'text' => '在庫に実在する装備から選べます',
+                                'text' => '在庫に実在する裁E��から選べまぁE,
                                 'size' => 'xs',
                                 'color' => '#64748b',
                                 'margin' => 'xs'
@@ -3437,7 +3437,7 @@ function generateEquipmentMenuMessages(PDO $db): array {
         return [
             [
                 'type' => 'text',
-                'text' => "現在、該当する装備条件の在庫を更新中です。",
+                'text' => "現在、該当する裁E��条件の在庫を更新中です、E,
                 'quickReply' => getQuickReplyItems()
             ]
         ];
@@ -3446,10 +3446,10 @@ function generateEquipmentMenuMessages(PDO $db): array {
     return [
         [
             'type' => 'flex',
-            'altText' => '基本仕様・実在装備から探す',
+            'altText' => '基本仕様�E実在裁E��から探ぁE,
             'contents' => [
                 'type' => 'carousel',
-                'contents' => array_slice($activeBubbles, 0, 10) // LINE上限最大10枚
+                'contents' => array_slice($activeBubbles, 0, 10) // LINE上限最大10极E
             ],
             'quickReply' => getQuickReplyItems()
         ]
@@ -3457,7 +3457,7 @@ function generateEquipmentMenuMessages(PDO $db): array {
 }
 
 /**
- * クイックリプライボタン一覧（完全サイレントPostback方式）
+ * クイチE��リプライボタン一覧�E�完�EサイレンチEostback方式！E
  */
 function getQuickReplyItems(): array {
     return [
@@ -3466,15 +3466,15 @@ function getQuickReplyItems(): array {
                 'type' => 'action',
                 'action' => [
                     'type' => 'uri',
-                    'label' => '🛠️ 点検受付',
-                    'uri' => 'https://liff.line.me/2011335169-9x8ydjaV/mycar.html'
+                    'label' => '🛠�E�E点検受仁E,
+                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
                 ]
             ],
             [
                 'type' => 'action',
                 'action' => [
                     'type' => 'postback',
-                    'label' => '📚 豆知識ガイド',
+                    'label' => '📚 豁E��識ガイチE,
                     'data' => 'action=show_knowledge_menu'
                 ]
             ],
@@ -3490,7 +3490,7 @@ function getQuickReplyItems(): array {
                 'type' => 'action',
                 'action' => [
                     'type' => 'postback',
-                    'label' => '💰 価格で探す',
+                    'label' => '💰 価格で探ぁE,
                     'data' => 'action=show_price_menu'
                 ]
             ],
@@ -3498,7 +3498,7 @@ function getQuickReplyItems(): array {
                 'type' => 'action',
                 'action' => [
                     'type' => 'postback',
-                    'label' => '🚙 車種で探す',
+                    'label' => '🚙 車種で探ぁE,
                     'data' => 'action=show_type_menu'
                 ]
             ],
@@ -3506,7 +3506,7 @@ function getQuickReplyItems(): array {
                 'type' => 'action',
                 'action' => [
                     'type' => 'postback',
-                    'label' => '⚙️ 装備で探す',
+                    'label' => '⚙︁E裁E��で探ぁE,
                     'data' => 'action=show_equipment_menu'
                 ]
             ],
@@ -3514,7 +3514,7 @@ function getQuickReplyItems(): array {
                 'type' => 'action',
                 'action' => [
                     'type' => 'postback',
-                    'label' => '🛣️ 距離で探す',
+                    'label' => '🛣�E�E距離で探ぁE,
                     'data' => 'action=show_distance_menu'
                 ]
             ],
@@ -3522,7 +3522,7 @@ function getQuickReplyItems(): array {
                 'type' => 'action',
                 'action' => [
                     'type' => 'postback',
-                    'label' => '🚘 軽自動車',
+                    'label' => '🚘 軽自動軁E,
                     'data' => 'action=search_kei'
                 ]
             ],
@@ -3530,7 +3530,7 @@ function getQuickReplyItems(): array {
                 'type' => 'action',
                 'action' => [
                     'type' => 'postback',
-                    'label' => '💎 50万以下',
+                    'label' => '💎 50丁E��丁E,
                     'data' => 'action=search_price&max_price=50'
                 ]
             ]
@@ -3543,7 +3543,7 @@ function getQuickReplyItems(): array {
  */
 function sendReplyMessage(string $replyToken, array $messages) {
     if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
-        writeDebugLog("返信スキップ: LINE_CHANNEL_ACCESS_TOKEN が未設定です");
+        writeDebugLog("返信スキチE�E: LINE_CHANNEL_ACCESS_TOKEN が未設定でぁE);
         return;
     }
 
@@ -3575,3 +3575,4 @@ function sendReplyMessage(string $replyToken, array $messages) {
         'curlError' => $curlErr
     ]);
 }
+

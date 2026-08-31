@@ -8,10 +8,10 @@
 date_default_timezone_set('Asia/Tokyo');
 
 // --- LINE公式アカウント設定 ---
-define('LINE_CHANNEL_ACCESS_TOKEN', '7NAJ7hIbVKu7Zr+JsK+ddFBqPM9EBCkWhqUy3kTuHO1nepA3As1ZWYAB5GuAmx8dQZ1+dqR0Ws57gz+jyTSJk0OUodDA2ci9d6f0xPCtNOT5t0edC9mZGq2GlmuXkJeVx5y6e4ggHd4/DuHr07cAgAdB04t89/1O/w1cDnyilFU='); // チャネルアクセストークン (長期)
-define('LINE_CHANNEL_SECRET', '72b453597e968c1605852c809ee733e7');             // チャネルシークレット
-define('LINE_LIFF_ID', '2011335169-9x8ydjaV');                           // LIFF ID (例: 1234567890-AbcdEfgh)
-define('LIFF_ID', '2011335169-9x8ydjaV');                                // エイリアス用LIFF ID
+define('LINE_CHANNEL_ACCESS_TOKEN', 'JixCe0rnnP4omxlVgYbU3aC0As5sUV7mZtwmgLNULVePqlCEfdr85oAzjWoMacmU++aNCQmSNyDwR70g9JkOyZK9AU5M0gkdttBHYWCcXacUQxavZuw4ftsuDATXEHlN+lVPuxTEcDi0I8N5xYMsfQdB04t89/1O/w1cDnyilFU='); // チャネルアクセストークン (長期)
+define('LINE_CHANNEL_SECRET', 'a94b53929e0ab8e1c1f183b54a6cc695');             // チャネルシークレット
+define('LINE_LIFF_ID', '2011340718-OaRM8tV4');                           // LIFF ID (例: 1234567890-AbcdEfgh)
+define('LIFF_ID', '2011340718-OaRM8tV4');                                // エイリアス用LIFF ID
 
 // --- 新着車両の自動配信設定 ---
 define('ENABLE_NEW_CAR_BROADCAST', true); // 新着検知時にLINE公式アカウントの友だち全員へ自動一斉配信するか (true: 送信する, false: 送信しない)
