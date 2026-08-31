@@ -2485,6 +2485,14 @@ function getQuickReplyItems(): array {
                 'type' => 'action',
                 'action' => [
                     'type' => 'postback',
+                    'label' => '📚 豆知識ガイド',
+                    'data' => 'action=show_knowledge_menu'
+                ]
+            ],
+            [
+                'type' => 'action',
+                'action' => [
+                    'type' => 'postback',
                     'label' => '🚗 在庫全台',
                     'data' => 'action=search_all'
                 ]
@@ -2519,14 +2527,6 @@ function getQuickReplyItems(): array {
                     'type' => 'postback',
                     'label' => '🛣️ 距離で探す',
                     'data' => 'action=show_distance_menu'
-                ]
-            ],
-            [
-                'type' => 'action',
-                'action' => [
-                    'type' => 'postback',
-                    'label' => '📚 豆知識ガイド',
-                    'data' => 'action=show_knowledge_menu'
                 ]
             ],
             [

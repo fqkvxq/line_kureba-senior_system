@@ -17,12 +17,15 @@
         rel="stylesheet">
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- マイカー点検パスポート用 即時ルーティング -->
+    <!-- マイカー点検パスポート & 豆知識ガイド用 即時ルーティング -->
     <script>
         (function() {
             var params = new URLSearchParams(window.location.search);
-            if (params.get('page') === 'mycar' || params.get('page') === 'passport' || params.get('tab') === 'mycar') {
+            var page = params.get('page') || params.get('tab');
+            if (page === 'mycar' || page === 'passport') {
                 window.location.replace('mycar.html' + window.location.search);
+            } else if (page === 'knowledge' || page === 'guide') {
+                window.location.replace('trigger.html?action=show_knowledge_menu');
             }
         })();
     </script>
