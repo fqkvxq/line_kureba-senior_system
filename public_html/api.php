@@ -722,7 +722,7 @@ try {
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
-        // --- 6. 豆知識やPostbackのアクションをLINEトークへPush送信 ---
+        // --- 6. 豆知識・在庫検索等のPostbackアクションをLINEトークへPush送信 ---
         case 'trigger_postback':
             $userId = trim($_POST['uid'] ?? '');
             $postData = trim($_POST['data'] ?? '');
@@ -732,30 +732,17 @@ try {
                 break;
             }
 
-            parse_str($postData, $parsed);
-            $action = $parsed['action'] ?? '';
-            $topic = $parsed['topic'] ?? '';
-
             require_once __DIR__ . '/webhook.php';
 
-            if ($action === 'show_knowledge' && !empty($topic)) {
-                $messages = generateKnowledgeDetailMessage($topic);
-                try {
-                    sendLinePushMessage($userId, $messages);
+            try {
+                $res = executeSilentPostbackPush($db, $userId, $postData);
+                if ($res) {
                     echo json_encode(['success' => true, 'message' => 'LINEトークに送信しました']);
-                } catch (Exception $e) {
-                    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+                } else {
+                    echo json_encode(['success' => false, 'error' => '送信処理に失敗しました']);
                 }
-            } elseif ($action === 'show_knowledge_menu') {
-                $messages = generateKnowledgeMenuMessages();
-                try {
-                    sendLinePushMessage($userId, $messages);
-                    echo json_encode(['success' => true, 'message' => 'LINEトークに豆知識一覧を送信しました']);
-                } catch (Exception $e) {
-                    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-                }
-            } else {
-                echo json_encode(['success' => false, 'error' => '未対応のアクションです']);
+            } catch (Exception $e) {
+                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
             }
             break;
 
