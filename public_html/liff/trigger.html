@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -10,9 +10,8 @@
     <!-- LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            margin: 0;
-            padding: 0;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -21,35 +20,79 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             color: #64748b;
         }
+        .container {
+            text-align: center;
+            max-width: 90%;
+            padding: 20px;
+        }
         .spinner {
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             border: 3px solid #e2e8f0;
             border-top: 3px solid #06C755;
             border-radius: 50%;
             animation: spin 0.6s linear infinite;
+            margin: 0 auto 16px;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .btn-close {
+            display: none;
+            margin-top: 16px;
+            padding: 10px 24px;
+            background: #06C755;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .debug-box {
+            display: none;
+            margin-top: 14px;
+            padding: 10px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            font-size: 11px;
+            color: #b91c1c;
+            text-align: left;
+            word-break: break-all;
+        }
     </style>
 </head>
 <body>
-    <div style="text-align: center; max-width: 90%; margin: 0 auto;">
-        <div class="spinner" id="spinner" style="margin: 0 auto 14px;"></div>
-        <div id="statusText" style="font-size: 14px; font-weight: bold; color: #1e293b; margin-bottom: 6px;">お車情報を準備中...</div>
-        <div id="subText" style="font-size: 11px; color: #94a3b8;">LINEトークへお届けしています</div>
-        <div id="debugLog" style="display: none; margin-top: 14px; padding: 10px; background: #f1f5f9; border-radius: 8px; font-size: 11px; color: #ef4444; text-align: left; word-break: break-all;"></div>
+    <div class="container">
+        <div class="spinner" id="spinner"></div>
+        <div id="statusText" style="font-size: 15px; font-weight: bold; color: #1e293b; margin-bottom: 6px;">準備中...</div>
+        <div id="subText" style="font-size: 12px; color: #94a3b8;">LINEトークへお届けしています</div>
+        <button id="btnClose" class="btn-close" onclick="closeApp()">トーク画面に戻る</button>
+        <div id="debugLog" class="debug-box"></div>
     </div>
 
     <script>
         const LIFF_ID = '2011340718-OaRM8tV4';
 
+        function closeApp() {
+            try {
+                if (typeof liff !== 'undefined' && liff.isInClient()) {
+                    liff.closeWindow();
+                } else {
+                    window.close();
+                }
+            } catch(e) {
+                window.close();
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             const statusEl = document.getElementById('statusText');
             const subEl = document.getElementById('subText');
             const spinnerEl = document.getElementById('spinner');
+            const btnCloseEl = document.getElementById('btnClose');
             const debugEl = document.getElementById('debugLog');
 
             function showDebug(msg) {
@@ -57,9 +100,10 @@
                     debugEl.style.display = 'block';
                     debugEl.textContent = msg;
                 }
+                if (btnCloseEl) {
+                    btnCloseEl.style.display = 'inline-block';
+                }
             }
-
-            let shouldClose = true;
 
             try {
                 if (typeof liff === 'undefined') {
@@ -69,15 +113,8 @@
 
                 await liff.init({ liffId: LIFF_ID });
 
-                if (!liff.isLoggedIn()) {
-                    if (liff.isInClient()) {
-                        liff.login();
-                        return;
-                    }
-                }
-
                 let userId = '';
-                
+
                 // 1. LIFF Contextから取得
                 try {
                     const ctx = liff.getContext();
@@ -85,7 +122,7 @@
                 } catch(e) {}
 
                 // 2. ログインプロファイルから取得
-                if (!userId) {
+                if (!userId && liff.isLoggedIn()) {
                     try {
                         const profile = await liff.getProfile();
                         if (profile && profile.userId) userId = profile.userId;
@@ -93,7 +130,7 @@
                 }
 
                 // 3. IDトークンから取得
-                if (!userId) {
+                if (!userId && liff.isLoggedIn()) {
                     try {
                         const idToken = liff.getDecodedIDToken();
                         if (idToken && idToken.sub) userId = idToken.sub;
@@ -115,13 +152,14 @@
                     queryStr = urlParams.toString();
                 }
 
-                console.log('Executing silent trigger:', { userId, queryStr });
+                console.log('Triggering silent postback:', { userId, queryStr });
 
                 if (!userId) {
-                    shouldClose = false;
-                    statusEl.textContent = 'LINEユーザーIDを取得できませんでした';
+                    if (spinnerEl) spinnerEl.style.display = 'none';
+                    statusEl.textContent = '⚠️ LINEユーザーIDを取得できませんでした';
                     statusEl.style.color = '#ef4444';
-                    showDebug('userId is empty. Please open inside LINE app.');
+                    subEl.textContent = 'LINEアプリ内からご利用ください';
+                    showDebug('userId is empty. isInClient: ' + liff.isInClient());
                     return;
                 }
 
@@ -142,33 +180,26 @@
                 console.log('Trigger API response:', json);
 
                 if (json.success) {
-                    if (statusEl) statusEl.textContent = '✅ トークルームにお届けしました！';
-                    if (subEl) subEl.textContent = 'トーク画面をご確認ください';
+                    statusEl.textContent = '✅ トークルームにお届けしました！';
+                    subEl.textContent = 'トーク画面をご確認ください';
                     if (spinnerEl) spinnerEl.style.display = 'none';
+                    
+                    // 0.4秒後に自動クローズ
+                    setTimeout(() => {
+                        closeApp();
+                    }, 400);
                 } else {
-                    shouldClose = false;
                     if (spinnerEl) spinnerEl.style.display = 'none';
                     statusEl.textContent = '⚠️ 送信エラーが発生しました';
                     statusEl.style.color = '#ef4444';
                     showDebug('APIエラー: ' + (json.error || json.message || JSON.stringify(json)));
                 }
             } catch (e) {
-                shouldClose = false;
                 if (spinnerEl) spinnerEl.style.display = 'none';
                 console.error('Trigger error:', e);
                 statusEl.textContent = '⚠️ 処理中にエラーが発生しました';
                 statusEl.style.color = '#ef4444';
                 showDebug('Exception: ' + e.message);
-            } finally {
-                if (shouldClose) {
-                    setTimeout(() => {
-                        if (typeof liff !== 'undefined' && liff.isInClient()) {
-                            liff.closeWindow();
-                        } else {
-                            window.close();
-                        }
-                    }, 600);
-                }
             }
         });
     </script>
