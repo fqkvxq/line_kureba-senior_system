@@ -131,7 +131,8 @@
                     data: queryStr
                 });
 
-                const res = await fetch('../api.php', {
+                const apiUrl = new URL('../api.php', window.location.href).href;
+                const res = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: payload.toString()
@@ -146,12 +147,14 @@
                     if (spinnerEl) spinnerEl.style.display = 'none';
                 } else {
                     shouldClose = false;
+                    if (spinnerEl) spinnerEl.style.display = 'none';
                     statusEl.textContent = '⚠️ 送信エラーが発生しました';
                     statusEl.style.color = '#ef4444';
                     showDebug('APIエラー: ' + (json.error || json.message || JSON.stringify(json)));
                 }
             } catch (e) {
                 shouldClose = false;
+                if (spinnerEl) spinnerEl.style.display = 'none';
                 console.error('Trigger error:', e);
                 statusEl.textContent = '⚠️ 処理中にエラーが発生しました';
                 statusEl.style.color = '#ef4444';
@@ -164,7 +167,7 @@
                         } else {
                             window.close();
                         }
-                    }, 500);
+                    }, 600);
                 }
             }
         });

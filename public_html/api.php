@@ -736,10 +736,11 @@ try {
 
             try {
                 $res = executeSilentPostbackPush($db, $userId, $postData);
-                if ($res) {
+                if (is_array($res) && !empty($res['success'])) {
                     echo json_encode(['success' => true, 'message' => 'LINEトークに送信しました']);
                 } else {
-                    echo json_encode(['success' => false, 'error' => '送信処理に失敗しました']);
+                    $errMsg = is_array($res) ? ($res['error'] ?: ($res['response'] ?: 'LINE送信エラー')) : '送信処理に失敗しました';
+                    echo json_encode(['success' => false, 'error' => $errMsg, 'details' => $res]);
                 }
             } catch (Exception $e) {
                 echo json_encode(['success' => false, 'error' => $e->getMessage()]);
