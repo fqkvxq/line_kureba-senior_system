@@ -722,6 +722,43 @@ try {
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
+        // --- 6. 豆知識やPostbackのアクションをLINEトークへPush送信 ---
+        case 'trigger_postback':
+            $userId = trim($_POST['uid'] ?? '');
+            $postData = trim($_POST['data'] ?? '');
+
+            if (!$userId || !str_starts_with($userId, 'U')) {
+                echo json_encode(['success' => true, 'message' => 'ブラウザ環境のためPush送信をスキップしました']);
+                break;
+            }
+
+            parse_str($postData, $parsed);
+            $action = $parsed['action'] ?? '';
+            $topic = $parsed['topic'] ?? '';
+
+            require_once __DIR__ . '/webhook.php';
+
+            if ($action === 'show_knowledge' && !empty($topic)) {
+                $messages = generateKnowledgeDetailMessage($topic);
+                try {
+                    sendLinePushMessage($userId, $messages);
+                    echo json_encode(['success' => true, 'message' => 'LINEトークに送信しました']);
+                } catch (Exception $e) {
+                    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+                }
+            } elseif ($action === 'show_knowledge_menu') {
+                $messages = generateKnowledgeMenuMessages();
+                try {
+                    sendLinePushMessage($userId, $messages);
+                    echo json_encode(['success' => true, 'message' => 'LINEトークに豆知識一覧を送信しました']);
+                } catch (Exception $e) {
+                    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+                }
+            } else {
+                echo json_encode(['success' => false, 'error' => '未対応のアクションです']);
+            }
+            break;
+
         // --- 7. 店舗管理者用: 顧客一覧取得 ---
         case 'admin_list_customers':
             $authPass = $_POST['password'] ?? ($_GET['password'] ?? '');

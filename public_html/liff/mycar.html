@@ -697,9 +697,40 @@
         </div>
     </div>
 
+    <!-- 📚 豆知識ガイド 詳細ポップアップモーダル -->
+    <div class="modal-backdrop" id="knowledgeDetailModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 9999; justify-content: center; align-items: flex-end; padding: 0;">
+        <div style="background: #fff; width: 100%; max-width: 480px; max-height: 85vh; border-radius: 20px 20px 0 0; padding: 20px 20px 24px; box-sizing: border-box; animation: slideUp 0.25s ease-out; overflow-y: auto; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <div>
+                    <span id="kModalBadge" style="display: inline-block; font-size: 11px; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 3px 8px; border-radius: 6px; margin-bottom: 4px;">🚗 車選びの極意【①】</span>
+                    <h3 id="kModalTitle" style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0; line-height: 1.3;">タイトル</h3>
+                </div>
+                <button id="closeKnowledgeModalBtn" style="border: none; background: #f1f5f9; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #64748b; cursor: pointer; font-size: 15px;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <p id="kModalSubtitle" style="font-size: 12px; color: #64748b; margin: 0 0 12px; font-weight: 600;"></p>
+
+            <div id="kModalSections" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+                <!-- セクションがJSで動的挿入される -->
+            </div>
+
+            <div style="background: #f8fafc; border-left: 3px solid #3b82f6; padding: 10px 12px; border-radius: 0 8px 8px 0; margin-bottom: 16px;">
+                <p id="kModalSummary" style="font-size: 12px; color: #334155; margin: 0; line-height: 1.4; font-weight: 600;"></p>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button id="sendKnowledgeToLineBtn" class="btn-save-cust" style="background: #06C755; margin-top: 0;">
+                    <i class="fa-brands fa-line"></i> LINEトークにもこの解説を送る
+                </button>
+                <button id="closeKnowledgeBottomBtn" style="width: 100%; height: 36px; border: 1px solid #e2e8f0; background: #fff; border-radius: 10px; color: #64748b; font-size: 12px; font-weight: 700; cursor: pointer;">閉じる</button>
+            </div>
+        </div>
+    </div>
+
     <!-- トースト通知 -->
     <div class="toast" id="appToast"></div>
 
-    <script src="mycar.js?v=20260831_6"></script>
+    <script src="mycar.js?v=20260831_7"></script>
 </body>
 </html>
