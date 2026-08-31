@@ -79,6 +79,76 @@ const elements = {
 
 // 初期化
 document.addEventListener('DOMContentLoaded', async () => {
+    // 1. URLパラメータからアクション（サイレントトリガー）をチェック
+    let queryStr = '';
+    const urlParams = new URLSearchParams(window.location.search);
+    const liffState = urlParams.get('liff.state');
+    if (liffState) {
+        const cleanState = liffState.startsWith('?') ? liffState.substring(1) : liffState;
+        queryStr = cleanState;
+    } else {
+        queryStr = window.location.search.startsWith('?') ? window.location.search.substring(1) : window.location.search;
+    }
+
+    const stateParams = new URLSearchParams(queryStr);
+    const triggerAction = stateParams.get('action');
+
+    // サイレントトリガー（在庫検索カルーセルや豆知識のPush送信）が指定されている場合
+    if (triggerAction && triggerAction !== 'open_app') {
+        // 画面をローディングオーバーレイで覆う
+        document.body.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: -apple-system, sans-serif; text-align: center; color: #1e293b; padding: 20px;">
+                <div style="width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top: 3px solid #06C755; border-radius: 50%; animation: spin 0.6s linear infinite; margin-bottom: 16px;"></div>
+                <div style="font-size: 15px; font-weight: bold; margin-bottom: 4px;">お車情報を準備中...</div>
+                <div style="font-size: 12px; color: #94a3b8;">LINEトークへお届けしています</div>
+                <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+            </div>
+        `;
+
+        try {
+            if (typeof liff !== 'undefined') {
+                await liff.init({ liffId: LIFF_ID });
+                let userId = '';
+                try {
+                    const ctx = liff.getContext();
+                    if (ctx && ctx.userId) userId = ctx.userId;
+                } catch(e) {}
+
+                if (!userId && liff.isLoggedIn()) {
+                    try {
+                        const profile = await liff.getProfile();
+                        if (profile && profile.userId) userId = profile.userId;
+                    } catch(e) {}
+                }
+
+                if (userId) {
+                    const payload = new URLSearchParams({
+                        action: 'trigger_postback',
+                        uid: userId,
+                        data: queryStr
+                    });
+                    const apiUrl = new URL('../api.php', window.location.href).href;
+                    await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: payload.toString()
+                    });
+                }
+            }
+        } catch(e) {
+            console.warn('Silent trigger error:', e);
+        } finally {
+            setTimeout(() => {
+                if (typeof liff !== 'undefined' && liff.isInClient()) {
+                    liff.closeWindow();
+                } else {
+                    window.close();
+                }
+            }, 300);
+        }
+        return;
+    }
+
     await initLiff();
     initEventListeners();
     await fetchCarData();
