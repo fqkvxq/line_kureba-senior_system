@@ -476,23 +476,29 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bo
         try {
             if (count($messages) > 5) {
                 $chunks = array_chunk($messages, 5);
+                $lastRes = [];
                 foreach ($chunks as $chunk) {
-                    $res = sendLinePushMessage($userId, $chunk);
-                    writeDebugLog("Push分割送信結果", ['userId' => $userId, 'success' => $res['success'] ?? false, 'response' => $res['response'] ?? '']);
+                    $lastRes = sendLinePushMessage($userId, $chunk);
+                    writeDebugLog("Push分割送信結果", ['userId' => $userId, 'success' => $lastRes['success'] ?? false, 'response' => $lastRes['response'] ?? '']);
                 }
-                return true;
+                return ['success' => true, 'response' => $lastRes['response'] ?? ''];
             } else {
                 $res = sendLinePushMessage($userId, $messages);
                 writeDebugLog("Push送信結果", ['userId' => $userId, 'success' => $res['success'] ?? false, 'response' => $res['response'] ?? '']);
-                return !empty($res['success']);
+                return [
+                    'success' => !empty($res['success']),
+                    'httpCode' => $res['httpCode'] ?? 0,
+                    'response' => $res['response'] ?? '',
+                    'error' => $res['error'] ?? ''
+                ];
             }
         } catch (Exception $e) {
             writeDebugLog("Silent Postback Push送信例外: " . $e->getMessage());
-            return false;
+            return ['success' => false, 'error' => $e->getMessage()];
         }
     }
 
-    return false;
+    return ['success' => false, 'error' => '送信メッセージの生成に失敗しました'];
 }
 
 /**
