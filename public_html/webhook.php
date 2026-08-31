@@ -3159,6 +3159,14 @@ function getQuickReplyItems(): array {
             [
                 'type' => 'action',
                 'action' => [
+                    'type' => 'uri',
+                    'label' => '🛠️ 点検受付',
+                    'uri' => 'https://liff.line.me/2011335169-9x8ydjaV/mycar.html'
+                ]
+            ],
+            [
+                'type' => 'action',
+                'action' => [
                     'type' => 'postback',
                     'label' => '📚 豆知識ガイド',
                     'data' => 'action=show_knowledge_menu'
