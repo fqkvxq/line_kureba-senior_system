@@ -179,7 +179,7 @@ function initEventListeners() {
     const kModal = getEl('knowledgeDetailModal');
     const closeKModalBtn = getEl('closeKnowledgeModalBtn');
     const closeKBottomBtn = getEl('closeKnowledgeBottomBtn');
-    const sendKToLineBtn = getEl('sendKnowledgeToLineBtn');
+    const shareKBtn = getEl('shareKnowledgeBtn');
     let currentKnowledgeTopic = '';
 
     function closeKModal() {
@@ -192,44 +192,181 @@ function initEventListeners() {
         if (e.target === kModal) closeKModal();
     });
 
-    sendKToLineBtn?.addEventListener('click', async () => {
+    shareKBtn?.addEventListener('click', async () => {
         if (!currentKnowledgeTopic) return;
-        showToast('📖 LINEトークに豆知識ガイドを送信中...');
-        await sendKnowledgePush(currentKnowledgeTopic);
-        showToast('✅ LINEトークに解説を送信しました！');
+        await shareKnowledgeToFriends(currentKnowledgeTopic);
     });
 
-    // 豆知識ガイドボタン（タップで即座にモーダル表示＆LINEにも送信）
+    // 豆知識ガイドボタン（タップで即座にモーダル表示のみ。自動トーク送信はなし）
     document.querySelectorAll('.btn-knowledge-item').forEach(btn => {
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', () => {
             const topic = btn.getAttribute('data-topic');
             currentKnowledgeTopic = topic;
             openKnowledgeDetailModal(topic);
-            // バックグラウンドでLINEトークにも送信（LINEユーザーの場合）
-            sendKnowledgePush(topic);
         });
     });
 }
 
 /**
- * 豆知識をLINEトークにPush送信
+ * 友だちにLINEで豆知識をシェア（バイラル拡散用 Flex Message）
  */
-async function sendKnowledgePush(topic) {
-    if (!state.userId || !state.userId.startsWith('U')) return;
-    try {
-        const payload = new URLSearchParams({
-            action: 'trigger_postback',
-            uid: state.userId,
-            data: `action=show_knowledge&topic=${encodeURIComponent(topic)}`
-        });
-        await fetch('../api.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: payload.toString()
-        });
-    } catch (e) {
-        console.warn('Knowledge push error:', e);
+async function shareKnowledgeToFriends(topic) {
+    const data = KNOWLEDGE_ARTICLES[topic] || KNOWLEDGE_ARTICLES['used_car'];
+    
+    // シェア用 Flex Message の生成
+    const sectionContents = data.sections.map(s => ({
+        type: 'box',
+        layout: 'vertical',
+        margin: 'sm',
+        backgroundColor: '#f8fafc',
+        paddingAll: '8px',
+        cornerRadius: 'md',
+        contents: [
+            {
+                type: 'text',
+                text: `${s.icon} ${s.title}`,
+                weight: 'bold',
+                size: 'xs',
+                color: '#1e293b'
+            },
+            {
+                type: 'text',
+                text: s.desc,
+                size: 'xxs',
+                color: '#475569',
+                wrap: true,
+                margin: 'xs'
+            }
+        ]
+    }));
+
+    const shareFlexMessage = {
+        type: 'flex',
+        altText: `【クルマの豆知識】${data.title}`,
+        contents: {
+            type: 'bubble',
+            size: 'mega',
+            body: {
+                type: 'box',
+                layout: 'vertical',
+                paddingAll: '16px',
+                contents: [
+                    {
+                        type: 'text',
+                        text: '📢 友だちからのお役立ちクルマ情報！',
+                        weight: 'bold',
+                        size: 'xxs',
+                        color: '#06C755'
+                    },
+                    {
+                        type: 'text',
+                        text: data.badge,
+                        weight: 'bold',
+                        size: 'xs',
+                        color: '#3b82f6',
+                        margin: 'xs'
+                    },
+                    {
+                        type: 'text',
+                        text: data.title,
+                        weight: 'bold',
+                        size: 'md',
+                        color: '#1e293b',
+                        margin: 'xs',
+                        wrap: true
+                    },
+                    {
+                        type: 'text',
+                        text: data.subtitle,
+                        size: 'xs',
+                        color: '#64748b',
+                        margin: 'xs'
+                    },
+                    {
+                        type: 'separator',
+                        margin: 'md'
+                    },
+                    {
+                        type: 'box',
+                        layout: 'vertical',
+                        margin: 'sm',
+                        contents: sectionContents
+                    },
+                    {
+                        type: 'separator',
+                        margin: 'md'
+                    },
+                    {
+                        type: 'text',
+                        text: `💡 ${data.summary}`,
+                        size: 'xxs',
+                        color: '#334155',
+                        wrap: true,
+                        margin: 'sm'
+                    }
+                ]
+            },
+            footer: {
+                type: 'box',
+                layout: 'vertical',
+                spacing: 'sm',
+                paddingAll: '12px',
+                contents: [
+                    {
+                        type: 'button',
+                        style: 'primary',
+                        color: '#06C755',
+                        height: 'sm',
+                        action: {
+                            type: 'uri',
+                            label: '📚 他の豆知識ガイドも見る',
+                            uri: 'https://liff.line.me/2011335169-9x8ydjaV/trigger.html?action=show_knowledge_menu'
+                        }
+                    },
+                    {
+                        type: 'button',
+                        style: 'secondary',
+                        height: 'sm',
+                        action: {
+                            type: 'uri',
+                            label: '🚗 アップファーレンの在庫を見る',
+                            uri: 'https://liff.line.me/2011335169-9x8ydjaV/index.html'
+                        }
+                    }
+                ]
+            }
+        }
+    };
+
+    // 1. LIFF shareTargetPicker を試行（LINEアプリ内の友だち選択ピッカー起動）
+    if (typeof liff !== 'undefined' && liff.isApiAvailable('shareTargetPicker')) {
+        try {
+            const res = await liff.shareTargetPicker([shareFlexMessage]);
+            if (res) {
+                showToast('✅ 友だちに豆知識をシェアしました！');
+            }
+            return;
+        } catch (err) {
+            console.warn('shareTargetPicker error:', err);
+        }
     }
+
+    // 2. ブラウザや未対応環境時のフォールバック (LINE URLスキーム共有)
+    const shareText = `【クルマのお役立ち豆知識】\n${data.title}\n\n${data.subtitle}\n\n▼豆知識ガイド一覧はこちら\nhttps://liff.line.me/2011335169-9x8ydjaV/trigger.html?action=show_knowledge_menu\n\n▼アップファーレンの展示在庫を見る\nhttps://liff.line.me/2011335169-9x8ydjaV/index.html`;
+    const lineShareUrl = `https://line.me/R/msg/text/?${encodeURIComponent(shareText)}`;
+    
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: data.title,
+                text: shareText
+            });
+            showToast('✅ シェアしました！');
+            return;
+        } catch (e) {}
+    }
+    
+    window.open(lineShareUrl, '_blank');
 }
 
 /**
