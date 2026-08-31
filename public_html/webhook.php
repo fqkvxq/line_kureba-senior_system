@@ -2669,6 +2669,17 @@ function generateKnowledgeDetailMessage(string $topic): array {
                     'type' => 'button',
                     'style' => 'secondary',
                     'height' => 'sm',
+                    'color' => '#f1f5f9',
+                    'action' => [
+                        'type' => 'uri',
+                        'label' => '👥 この豆知識を友だちにシェア',
+                        'uri' => 'https://liff.line.me/2011335169-9x8ydjaV/mycar.html?share=' . urlencode($topic)
+                    ]
+                ],
+                [
+                    'type' => 'button',
+                    'style' => 'secondary',
+                    'height' => 'sm',
                     'action' => [
                         'type' => 'postback',
                         'label' => '📚 豆知識ガイド一覧へ戻る',

@@ -20,6 +20,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (state.userId) {
         await fetchCustomerData();
     }
+
+    // URLパラメータでシェアが指定されている場合、即座に友だち選択ピッカーを起動
+    const urlParams = new URLSearchParams(window.location.search);
+    const shareTopic = urlParams.get('share') || urlParams.get('share_topic');
+    if (shareTopic) {
+        setTimeout(async () => {
+            await shareKnowledgeToFriends(shareTopic);
+        }, 200);
+    }
 });
 
 const LIFF_ID = '2011335169-9x8ydjaV';
@@ -344,6 +353,11 @@ async function shareKnowledgeToFriends(topic) {
             const res = await liff.shareTargetPicker([shareFlexMessage]);
             if (res) {
                 showToast('✅ 友だちに豆知識をシェアしました！');
+                setTimeout(() => {
+                    if (liff.isInClient()) {
+                        liff.closeWindow();
+                    }
+                }, 800);
             }
             return;
         } catch (err) {
