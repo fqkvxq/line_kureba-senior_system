@@ -253,6 +253,11 @@ try {
 
                 writeDebugLog("店舗初期連携完了", ['uid' => $userId, 'name' => $userName, 'car_id' => $newCarId]);
 
+                // Discordに新規ユーザー登録を通知
+                if (function_exists('sendDiscordNewCustomerNotification')) {
+                    sendDiscordNewCustomerNotification($userId, $userName);
+                }
+
                 // LINEメッセージで連携完了を通知
                 if (str_starts_with($userId, 'U')) {
                     $displayName = $userName ?: 'お客様';
