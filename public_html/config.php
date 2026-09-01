@@ -625,6 +625,46 @@ function sendDiscordReminderReport(int $oilCount, int $periodicCount, int $shake
 }
 
 /**
+ * マイカー点検パスポートを開いた新規ユーザーの Discord 通知
+ */
+function sendDiscordNewCustomerNotification(string $userId, string $userName) {
+    if (empty(DISCORD_WEBHOOK_URL) || DISCORD_WEBHOOK_URL === 'YOUR_DISCORD_WEBHOOK_URL_HERE') {
+        return;
+    }
+
+    $displayName = $userName ?: '名称未設定のお客様';
+
+    $embed = [
+        'title' => "🆕 新規ユーザー追加: マイカー点検パスポート開始",
+        'description' => "**{$displayName}** 様がマイカー点検パスポートを開き、LINE連携が完了しました。\n管理画面からこのお客様の車両情報や車検日を入力できるようになりました。",
+        'color' => 0x10B981, // Green
+        'fields' => [
+            ['name' => 'ユーザー名', 'value' => $displayName, 'inline' => true],
+            ['name' => 'LINE ID', 'value' => "`{$userId}`", 'inline' => true]
+        ],
+        'footer' => ['text' => 'アップファーレン 顧客管理システム'],
+        'timestamp' => date('c')
+    ];
+
+    $payload = [
+        'username' => '顧客管理・新着通知',
+        'avatar_url' => 'https://img.goo-net.com/common_v2/img/idcars/icon_idlogo.png',
+        'embeds' => [$embed]
+    ];
+
+    $ch = curl_init(DISCORD_WEBHOOK_URL);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 4,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json; charset=utf-8'],
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE)
+    ]);
+    curl_exec($ch);
+    curl_close($ch);
+}
+
+/**
  * デバッグログの出力
  */
 function writeDebugLog(string $message, array $context = []) {
