@@ -1427,7 +1427,7 @@ function generateMyCarMenuMessages(PDO $db, string $userId = ''): array {
                 'margin' => 'sm',
                 'action' => [
                     'type' => 'uri',
-                    'label' => '📱 マイカー点検パスポートを開く',
+                    'label' => '📱 ﾏｲｶｰ管理画面',
                     'uri' => $liffUrl
                 ]
             ]
