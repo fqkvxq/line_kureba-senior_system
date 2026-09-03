@@ -195,6 +195,12 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
         return;
     }
 
+    // 2-3. 価格帯メニューのテキスト判定
+    if (preg_match('/^(価格で探す|価格帯|予算で探す|価格|予算|値段)$/u', trim($text))) {
+        sendPriceMenuMessage($db, $replyToken);
+        return;
+    }
+
     // 3. 特殊キーワードの判定
     if (in_array($text, ['在庫一覧', '車を探す', 'メニュー', '在庫', '車', '全台'])) {
         searchCarsAndReply($db, $replyToken, [], '現在の在庫車両一覧', $userId);
@@ -271,7 +277,7 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
 
         // --- 6. サイレント検索: 価格帯メニュー表示 ---
         case 'show_price_menu':
-            sendPriceMenuMessage($replyToken);
+            sendPriceMenuMessage($db, $replyToken);
             break;
 
         // --- 7. サイレント検索: 車種・ボディタイプメニュー表示 ---
@@ -305,11 +311,18 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             $maxPrice = (float)($params['max_price'] ?? 0);
             $minPrice = (float)($params['min_price'] ?? 0);
             $criteria = [];
-            $title = "支払総額 {$maxPrice}万円以下の車両";
-            if ($maxPrice > 0) $criteria['max_price'] = $maxPrice;
-            if ($minPrice > 0) {
+            if ($maxPrice > 0 && $minPrice > 0) {
                 $criteria['min_price'] = $minPrice;
+                $criteria['max_price'] = $maxPrice;
                 $title = "支払総額 {$minPrice}万〜{$maxPrice}万円の車両";
+            } elseif ($maxPrice > 0) {
+                $criteria['max_price'] = $maxPrice;
+                $title = "支払総額 {$maxPrice}万円以下の車両";
+            } elseif ($minPrice > 0) {
+                $criteria['min_price'] = $minPrice;
+                $title = "支払総額 {$minPrice}万円以上の車両";
+            } else {
+                $title = "全在庫車両";
             }
             searchCarsAndReply($db, $replyToken, $criteria, $title, $userId);
             break;
@@ -394,7 +407,7 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bo
             break;
 
         case 'show_price_menu':
-            $messages = generatePriceMenuMessages();
+            $messages = generatePriceMenuMessages($db);
             break;
 
         case 'show_type_menu':
@@ -422,11 +435,18 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bo
             $maxPrice = (float)($params['max_price'] ?? 0);
             $minPrice = (float)($params['min_price'] ?? 0);
             $criteria = [];
-            $title = "支払総額 {$maxPrice}万円以下の車両";
-            if ($maxPrice > 0) $criteria['max_price'] = $maxPrice;
-            if ($minPrice > 0) {
+            if ($maxPrice > 0 && $minPrice > 0) {
                 $criteria['min_price'] = $minPrice;
+                $criteria['max_price'] = $maxPrice;
                 $title = "支払総額 {$minPrice}万〜{$maxPrice}万円の車両";
+            } elseif ($maxPrice > 0) {
+                $criteria['max_price'] = $maxPrice;
+                $title = "支払総額 {$maxPrice}万円以下の車両";
+            } elseif ($minPrice > 0) {
+                $criteria['min_price'] = $minPrice;
+                $title = "支払総額 {$minPrice}万円以上の車両";
+            } else {
+                $title = "全在庫車両";
             }
             $messages = generateCarSearchMessages($db, $criteria, $title, $userId);
             break;
@@ -1241,157 +1261,231 @@ function handleSubmitMaintenanceBooking(string $replyToken, string $bookingType,
 /**
  * 価格帯選択メニュー送信
  */
-function sendPriceMenuMessage(string $replyToken) {
-    $messages = generatePriceMenuMessages();
+function sendPriceMenuMessage(PDO $db, string $replyToken) {
+    $messages = generatePriceMenuMessages($db);
     sendReplyMessage($replyToken, $messages);
 }
 
 /**
- * 価格帯選択メニュー（サイレントボタン式Flex Message）生成
+ * 価格帯選択メニュー（サイレントボタン式Flex Message）生成 - 動的在庫集計型
+ * 現在の有効在庫（carsテーブル）から実在する価格帯を自動集計し、
+ * 「該当台数（例: 〜50万円 (3台)）」バッジ付きで表示（0件の選択肢は自動非表示）
  */
-function generatePriceMenuMessages(): array {
-    $priceBubble = [
-        'type' => 'bubble',
-        'size' => 'kilo',
-        'body' => [
-            'type' => 'box',
-            'layout' => 'vertical',
-            'paddingAll' => '16px',
-            'contents' => [
-                [
-                    'type' => 'text',
-                    'text' => '💰 ご予算・支払総額から探す',
-                    'weight' => 'bold',
-                    'size' => 'md',
-                    'color' => '#1e293b'
-                ],
-                [
-                    'type' => 'text',
-                    'text' => 'ご希望の価格帯をタップしてください。',
-                    'size' => 'xs',
-                    'color' => '#64748b',
-                    'margin' => 'xs'
-                ],
-                [
-                    'type' => 'separator',
-                    'margin' => 'md'
-                ],
-                [
+function generatePriceMenuMessages(PDO $db): array {
+    $cars = [];
+    try {
+        $stmt = $db->query("SELECT id, title, total_price_num, total_price_text FROM cars WHERE is_active = 1");
+        $cars = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        writeDebugLog("価格メニュー 在庫取得エラー: " . $e->getMessage());
+    }
+
+    $totalStock = count($cars);
+    if (empty($cars)) {
+        return [
+            [
+                'type' => 'text',
+                'text' => "現在、展示中の在庫車両を準備中です。\n最新の入庫状況はお気軽にお問い合わせください！",
+                'quickReply' => getQuickReplyItems()
+            ]
+        ];
+    }
+
+    // 価格帯のマスター定義
+    $priceDefs = [
+        [
+            'name' => '〜30万円',
+            'action' => 'search_price',
+            'param' => 'max_price=30',
+            'check' => function($car) {
+                return (isset($car['total_price_num']) && $car['total_price_num'] !== null && (float)$car['total_price_num'] > 0 && (float)$car['total_price_num'] <= 30);
+            }
+        ],
+        [
+            'name' => '〜50万円',
+            'action' => 'search_price',
+            'param' => 'max_price=50',
+            'check' => function($car) {
+                return (isset($car['total_price_num']) && $car['total_price_num'] !== null && (float)$car['total_price_num'] > 0 && (float)$car['total_price_num'] <= 50);
+            }
+        ],
+        [
+            'name' => '〜70万円',
+            'action' => 'search_price',
+            'param' => 'max_price=70',
+            'check' => function($car) {
+                return (isset($car['total_price_num']) && $car['total_price_num'] !== null && (float)$car['total_price_num'] > 0 && (float)$car['total_price_num'] <= 70);
+            }
+        ],
+        [
+            'name' => '〜100万円',
+            'action' => 'search_price',
+            'param' => 'max_price=100',
+            'check' => function($car) {
+                return (isset($car['total_price_num']) && $car['total_price_num'] !== null && (float)$car['total_price_num'] > 0 && (float)$car['total_price_num'] <= 100);
+            }
+        ],
+        [
+            'name' => '〜150万円',
+            'action' => 'search_price',
+            'param' => 'max_price=150',
+            'check' => function($car) {
+                return (isset($car['total_price_num']) && $car['total_price_num'] !== null && (float)$car['total_price_num'] > 0 && (float)$car['total_price_num'] <= 150);
+            }
+        ],
+        [
+            'name' => '〜200万円',
+            'action' => 'search_price',
+            'param' => 'max_price=200',
+            'check' => function($car) {
+                return (isset($car['total_price_num']) && $car['total_price_num'] !== null && (float)$car['total_price_num'] > 0 && (float)$car['total_price_num'] <= 200);
+            }
+        ],
+        [
+            'name' => '200万円以上',
+            'action' => 'search_price',
+            'param' => 'min_price=200',
+            'check' => function($car) {
+                return (isset($car['total_price_num']) && $car['total_price_num'] !== null && (float)$car['total_price_num'] >= 200);
+            }
+        ]
+    ];
+
+    $buttons = [];
+    foreach ($priceDefs as $pDef) {
+        $count = 0;
+        foreach ($cars as $car) {
+            if ($pDef['check']($car)) {
+                $count++;
+            }
+        }
+        if ($count > 0) {
+            $btnLabel = "{$pDef['name']} ({$count}台)";
+            $postbackData = "action={$pDef['action']}" . (!empty($pDef['param']) ? "&{$pDef['param']}" : "");
+            $buttons[] = [
+                'type' => 'button',
+                'style' => 'secondary',
+                'height' => 'sm',
+                'action' => [
+                    'type' => 'postback',
+                    'label' => $btnLabel,
+                    'data' => $postbackData
+                ]
+            ];
+        }
+    }
+
+    // すべての在庫を見るボタン
+    $allButton = [
+        'type' => 'button',
+        'style' => 'primary',
+        'color' => '#06C755',
+        'height' => 'sm',
+        'margin' => 'sm',
+        'action' => [
+            'type' => 'postback',
+            'label' => "すべての在庫を見る ({$totalStock}台)",
+            'data' => 'action=search_all'
+        ]
+    ];
+
+    $activeBubbles = [];
+    if (!empty($buttons)) {
+        // ボタンが多数ある場合は6個ずつチャンクしてカルーセル化
+        $btnChunks = array_chunk($buttons, 6);
+        foreach ($btnChunks as $idx => $chunk) {
+            $titleSuffix = count($btnChunks) > 1 ? " (" . ($idx + 1) . ")" : "";
+            $contents = $chunk;
+            // 最後のBubbleに全在庫ボタンを追加
+            if ($idx === count($btnChunks) - 1) {
+                $contents[] = $allButton;
+            }
+
+            $activeBubbles[] = [
+                'type' => 'bubble',
+                'size' => 'kilo',
+                'body' => [
                     'type' => 'box',
                     'layout' => 'vertical',
-                    'margin' => 'md',
-                    'spacing' => 'sm',
+                    'paddingAll' => '16px',
                     'contents' => [
                         [
-                            'type' => 'box',
-                            'layout' => 'horizontal',
-                            'spacing' => 'sm',
-                            'contents' => [
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => '〜30万円',
-                                        'data' => 'action=search_price&max_price=30'
-                                    ]
-                                ],
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => '〜50万円',
-                                        'data' => 'action=search_price&max_price=50'
-                                    ]
-                                ]
-                            ]
+                            'type' => 'text',
+                            'text' => '💰 ご予算・支払総額から探す' . $titleSuffix,
+                            'weight' => 'bold',
+                            'size' => 'md',
+                            'color' => '#1e293b'
+                        ],
+                        [
+                            'type' => 'text',
+                            'text' => '在庫に実在する価格帯から選べます',
+                            'size' => 'xs',
+                            'color' => '#64748b',
+                            'margin' => 'xs'
+                        ],
+                        [
+                            'type' => 'separator',
+                            'margin' => 'sm'
                         ],
                         [
                             'type' => 'box',
-                            'layout' => 'horizontal',
+                            'layout' => 'vertical',
+                            'margin' => 'md',
                             'spacing' => 'sm',
-                            'contents' => [
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => '〜70万円',
-                                        'data' => 'action=search_price&max_price=70'
-                                    ]
-                                ],
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => '〜100万円',
-                                        'data' => 'action=search_price&max_price=100'
-                                    ]
-                                ]
-                            ]
-                        ],
-                        [
-                            'type' => 'box',
-                            'layout' => 'horizontal',
-                            'spacing' => 'sm',
-                            'contents' => [
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => '〜150万円',
-                                        'data' => 'action=search_price&max_price=150'
-                                    ]
-                                ],
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
-                                    'height' => 'sm',
-                                    'flex' => 1,
-                                    'action' => [
-                                        'type' => 'postback',
-                                        'label' => '〜200万円',
-                                        'data' => 'action=search_price&max_price=200'
-                                    ]
-                                ]
-                            ]
-                        ],
-                        [
-                            'type' => 'button',
-                            'style' => 'primary',
-                            'color' => '#06C755',
-                            'height' => 'sm',
-                            'margin' => 'sm',
-                            'action' => [
-                                'type' => 'postback',
-                                'label' => 'すべての在庫を見る',
-                                'data' => 'action=search_all'
-                            ]
+                            'contents' => $contents
                         ]
                     ]
                 ]
+            ];
+        }
+    } else {
+        // 万が一価格設定された車両がない場合でも全在庫を見るボタンを表示
+        $activeBubbles[] = [
+            'type' => 'bubble',
+            'size' => 'kilo',
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'paddingAll' => '16px',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => '💰 ご予算・支払総額から探す',
+                        'weight' => 'bold',
+                        'size' => 'md',
+                        'color' => '#1e293b'
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => '最新の在庫車両一覧からご覧いただけます',
+                        'size' => 'xs',
+                        'color' => '#64748b',
+                        'margin' => 'xs'
+                    ],
+                    [
+                        'type' => 'separator',
+                        'margin' => 'sm'
+                    ],
+                    [
+                        'type' => 'box',
+                        'layout' => 'vertical',
+                        'margin' => 'md',
+                        'spacing' => 'sm',
+                        'contents' => [$allButton]
+                    ]
+                ]
             ]
-        ]
-    ];
+        ];
+    }
 
     return [
         [
             'type' => 'flex',
             'altText' => 'ご予算・支払総額から探す',
-            'contents' => $priceBubble,
+            'contents' => count($activeBubbles) === 1 ? $activeBubbles[0] : [
+                'type' => 'carousel',
+                'contents' => $activeBubbles
+            ],
             'quickReply' => getQuickReplyItems()
         ]
     ];
