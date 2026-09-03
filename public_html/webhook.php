@@ -1337,7 +1337,7 @@ function generateMyCarMenuMessages(PDO $db, string $userId = ''): array {
                 'type' => 'box',
                 'layout' => 'baseline',
                 'contents' => [
-                    ['type' => 'text', 'text' => '🚗 ご登録愛車', 'color' => '#64748b', 'size' => 'xs', 'flex' => 4],
+                    ['type' => 'text', 'text' => '🚗 愛車', 'color' => '#64748b', 'size' => 'xs', 'flex' => 4],
                     ['type' => 'text', 'text' => $carModel, 'size' => 'xs', 'weight' => 'bold', 'color' => '#1e293b', 'flex' => 6]
                 ]
             ]
