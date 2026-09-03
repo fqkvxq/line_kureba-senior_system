@@ -156,6 +156,11 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
     }
 
     // 2. オイル交換・定期点検・車検・メンテナンス関連のキーワード判定 (在庫検索の誤爆防止)
+    if (preg_match('/^(点検受付|マイカー|マイカー点検|点検メニュー)$/u', trim($text))) {
+        sendMyCarMenuMessage($db, $replyToken, $userId);
+        return;
+    }
+
     if (preg_match('/^(オイル|オイル交換|車検|点検|12ヶ月|12ヶ月点検|法定点検|メンテナンス)$/u', trim($text))) {
         // 顧客の登録愛車を取得
         $carModel = '愛車';
@@ -272,7 +277,7 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
 
         // --- 5-2. 点検受付メニュー表示 ---
         case 'open_mycar':
-            sendMyCarMenuMessage($replyToken);
+            sendMyCarMenuMessage($db, $replyToken, $userId);
             break;
 
         // --- 6. サイレント検索: 価格帯メニュー表示 ---
@@ -403,7 +408,7 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bo
 
     switch ($action) {
         case 'open_mycar':
-            $messages = generateMyCarMenuMessages();
+            $messages = generateMyCarMenuMessages($db, $userId);
             break;
 
         case 'show_price_menu':
@@ -1256,6 +1261,198 @@ function handleSubmitMaintenanceBooking(string $replyToken, string $bookingType,
     ];
 
     sendReplyMessage($replyToken, $messages);
+}
+
+/**
+ * 点検受付・マイカーメニュー送信
+ */
+function sendMyCarMenuMessage(PDO $db, string $replyToken, string $userId = '') {
+    $messages = generateMyCarMenuMessages($db, $userId);
+    sendReplyMessage($replyToken, $messages);
+}
+
+/**
+ * 点検受付・マイカーメニュー（Flex Message）生成
+ */
+function generateMyCarMenuMessages(PDO $db, string $userId = ''): array {
+    // 顧客の登録愛車情報を取得
+    $carModel = '愛車';
+    $oilDate = '近日中';
+    $periodicDate = '近日中';
+    $inspDate = '未定';
+    $hasCustInfo = false;
+
+    if (!empty($userId)) {
+        try {
+            $stmt = $db->prepare("SELECT * FROM customer_cars WHERE user_id = :uid ORDER BY updated_at DESC LIMIT 1");
+            $stmt->execute([':uid' => $userId]);
+            $cust = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($cust) {
+                if (!empty($cust['car_model']) && !str_contains($cust['car_model'], '未登録')) {
+                    $carModel = $cust['car_model'];
+                    $hasCustInfo = true;
+                }
+                if (!empty($cust['oil_next_date'])) {
+                    $oilDate = $cust['oil_next_date'];
+                    $hasCustInfo = true;
+                }
+                if (!empty($cust['periodic_insp_next_date'])) {
+                    $periodicDate = $cust['periodic_insp_next_date'];
+                    $hasCustInfo = true;
+                }
+                if (!empty($cust['inspection_next_date'])) {
+                    $inspDate = $cust['inspection_next_date'];
+                    $hasCustInfo = true;
+                }
+            }
+        } catch (Exception $e) {
+            writeDebugLog("マイカーメニュー 愛車情報取得エラー: " . $e->getMessage());
+        }
+    }
+
+    $liffId = defined('LIFF_ID') ? LIFF_ID : (defined('LINE_LIFF_ID') ? LINE_LIFF_ID : '2011340718-OaRM8tV4');
+    $liffUrl = "https://liff.line.me/{$liffId}/mycar.html";
+
+    $bodyContents = [
+        [
+            'type' => 'text',
+            'text' => '🛠️ 点検・メンテナンス受付',
+            'weight' => 'bold',
+            'size' => 'md',
+            'color' => '#1e293b'
+        ],
+        [
+            'type' => 'text',
+            'text' => "愛車の車検・定期点検・オイル交換など、\nメンテナンスのご相談をいつでも承ります！",
+            'size' => 'xs',
+            'color' => '#64748b',
+            'margin' => 'xs',
+            'wrap' => true
+        ]
+    ];
+
+    if ($hasCustInfo) {
+        $infoRows = [
+            [
+                'type' => 'box',
+                'layout' => 'baseline',
+                'contents' => [
+                    ['type' => 'text', 'text' => '🚗 ご登録愛車', 'color' => '#64748b', 'size' => 'xs', 'flex' => 4],
+                    ['type' => 'text', 'text' => $carModel, 'size' => 'xs', 'weight' => 'bold', 'color' => '#1e293b', 'flex' => 6]
+                ]
+            ]
+        ];
+        if ($inspDate !== '未定') {
+            $infoRows[] = [
+                'type' => 'box',
+                'layout' => 'baseline',
+                'contents' => [
+                    ['type' => 'text', 'text' => '次回車検日', 'color' => '#64748b', 'size' => 'xs', 'flex' => 4],
+                    ['type' => 'text', 'text' => $inspDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#e02424', 'flex' => 6]
+                ]
+            ];
+        }
+        if ($oilDate !== '近日中') {
+            $infoRows[] = [
+                'type' => 'box',
+                'layout' => 'baseline',
+                'contents' => [
+                    ['type' => 'text', 'text' => '次回オイル', 'color' => '#64748b', 'size' => 'xs', 'flex' => 4],
+                    ['type' => 'text', 'text' => $oilDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#1e293b', 'flex' => 6]
+                ]
+            ];
+        }
+
+        $bodyContents[] = [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'margin' => 'md',
+            'spacing' => 'xs',
+            'backgroundColor' => '#f8fafc',
+            'paddingAll' => '12px',
+            'cornerRadius' => 'md',
+            'contents' => $infoRows
+        ];
+    }
+
+    $bodyContents[] = [
+        'type' => 'separator',
+        'margin' => 'md'
+    ];
+
+    $bodyContents[] = [
+        'type' => 'box',
+        'layout' => 'vertical',
+        'margin' => 'md',
+        'spacing' => 'sm',
+        'contents' => [
+            [
+                'type' => 'button',
+                'style' => 'secondary',
+                'height' => 'sm',
+                'action' => [
+                    'type' => 'postback',
+                    'label' => '🛢️ オイル交換の予約',
+                    'data' => 'action=ask_maintenance&type=oil&car=' . urlencode($carModel) . '&date=' . urlencode($oilDate),
+                    'displayText' => "オイル交換の予約相談をしたいです"
+                ]
+            ],
+            [
+                'type' => 'button',
+                'style' => 'secondary',
+                'height' => 'sm',
+                'action' => [
+                    'type' => 'postback',
+                    'label' => '📋 12ヶ月定期点検の予約',
+                    'data' => 'action=ask_maintenance&type=periodic&car=' . urlencode($carModel) . '&date=' . urlencode($periodicDate),
+                    'displayText' => "12ヶ月定期点検の予約相談をしたいです"
+                ]
+            ],
+            [
+                'type' => 'button',
+                'style' => 'secondary',
+                'height' => 'sm',
+                'action' => [
+                    'type' => 'postback',
+                    'label' => '🚗 車検の来店予約',
+                    'data' => 'action=ask_maintenance&type=inspection&car=' . urlencode($carModel) . '&date=' . urlencode($inspDate),
+                    'displayText' => "車検の予約相談をしたいです"
+                ]
+            ],
+            [
+                'type' => 'button',
+                'style' => 'primary',
+                'color' => '#06C755',
+                'height' => 'sm',
+                'margin' => 'sm',
+                'action' => [
+                    'type' => 'uri',
+                    'label' => '📱 マイカー点検パスポートを開く',
+                    'uri' => $liffUrl
+                ]
+            ]
+        ]
+    ];
+
+    $menuBubble = [
+        'type' => 'bubble',
+        'size' => 'kilo',
+        'body' => [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'paddingAll' => '16px',
+            'contents' => $bodyContents
+        ]
+    ];
+
+    return [
+        [
+            'type' => 'flex',
+            'altText' => '🛠️ 点検・メンテナンス受付',
+            'contents' => $menuBubble,
+            'quickReply' => getQuickReplyItems()
+        ]
+    ];
 }
 
 /**
