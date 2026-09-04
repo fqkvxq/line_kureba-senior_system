@@ -115,6 +115,7 @@ function getDbConnection(): PDO {
     try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN custom_line_menu_id TEXT DEFAULT ''"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN custom_menu_text TEXT DEFAULT ''"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN custom_menu_set_at DATETIME"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN picture_url TEXT DEFAULT ''"); } catch (Exception $e) {}
 
     // リッチメニュー履歴管理テーブルの初期化
     $pdo->exec("
@@ -288,13 +289,18 @@ function ensureCustomerExists(PDO $db, string $userId): ?array {
         $existing = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($existing) {
-            // 名前が空または仮名のままならプロフィール取得して更新
-            if (empty($existing['user_name']) || in_array($existing['user_name'], ['新規お客様', 'お客様', 'LINE友だち', ''])) {
+            // 名前が仮名またはアイコンが未登録ならプロフィール取得して更新
+            $needUpdateName = empty($existing['user_name']) || in_array($existing['user_name'], ['新規お客様', 'お客様', 'LINE友だち', '']);
+            $needUpdatePic = empty($existing['picture_url']);
+            if ($needUpdateName || $needUpdatePic) {
                 $prof = getLineUserProfile($userId);
-                if (!empty($prof['displayName'])) {
-                    $upStmt = $db->prepare("UPDATE customer_cars SET user_name = :uname, updated_at = CURRENT_TIMESTAMP WHERE id = :id");
-                    $upStmt->execute([':uname' => $prof['displayName'], ':id' => $existing['id']]);
-                    $existing['user_name'] = $prof['displayName'];
+                if ($prof) {
+                    $upName = (!empty($prof['displayName']) && $needUpdateName) ? $prof['displayName'] : $existing['user_name'];
+                    $upPic = !empty($prof['pictureUrl']) ? $prof['pictureUrl'] : ($existing['picture_url'] ?? '');
+                    $upStmt = $db->prepare("UPDATE customer_cars SET user_name = :uname, picture_url = :pic, updated_at = CURRENT_TIMESTAMP WHERE id = :id");
+                    $upStmt->execute([':uname' => $upName, ':pic' => $upPic, ':id' => $existing['id']]);
+                    $existing['user_name'] = $upName;
+                    $existing['picture_url'] = $upPic;
                 }
             }
             return $existing;
@@ -303,27 +309,30 @@ function ensureCustomerExists(PDO $db, string $userId): ?array {
         // 新規登録
         $prof = getLineUserProfile($userId);
         $displayName = !empty($prof['displayName']) ? $prof['displayName'] : 'お客様';
+        $pictureUrl = !empty($prof['pictureUrl']) ? $prof['pictureUrl'] : '';
 
         $insertStmt = $db->prepare("
             INSERT INTO customer_cars (
-                user_id, user_name, car_model, car_number,
+                user_id, user_name, picture_url, car_model, car_number,
                 created_at, updated_at
             ) VALUES (
-                :uid, :uname, '【未登録】愛車登録待ち', '',
+                :uid, :uname, :pic, '【未登録】愛車登録待ち', '',
                 CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
             )
         ");
         $insertStmt->execute([
             ':uid' => $userId,
-            ':uname' => $displayName
+            ':uname' => $displayName,
+            ':pic' => $pictureUrl
         ]);
         $newId = (int)$db->lastInsertId();
-        writeDebugLog("LINEユーザー自動顧客登録完了", ['uid' => $userId, 'name' => $displayName, 'id' => $newId]);
+        writeDebugLog("LINEユーザー自動顧客登録完了", ['uid' => $userId, 'name' => $displayName, 'pic' => $pictureUrl, 'id' => $newId]);
 
         return [
             'id' => $newId,
             'user_id' => $userId,
             'user_name' => $displayName,
+            'picture_url' => $pictureUrl,
             'car_model' => '【未登録】愛車登録待ち'
         ];
     } catch (Throwable $e) {

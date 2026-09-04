@@ -918,37 +918,48 @@ try {
             $updatedCount = 0;
 
             foreach ($allUserIds as $uid) {
-                $checkStmt = $db->prepare("SELECT id, user_name FROM customer_cars WHERE user_id = :uid LIMIT 1");
+                $checkStmt = $db->prepare("SELECT id, user_name, picture_url FROM customer_cars WHERE user_id = :uid LIMIT 1");
                 $checkStmt->execute([':uid' => $uid]);
                 $existing = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
+                $prof = getLineUserProfile($uid);
+                $displayName = !empty($prof['displayName']) ? $prof['displayName'] : 'LINE友だち';
+                $pictureUrl = !empty($prof['pictureUrl']) ? $prof['pictureUrl'] : '';
+
                 if (!$existing) {
-                    $prof = getLineUserProfile($uid);
-                    $displayName = !empty($prof['displayName']) ? $prof['displayName'] : 'LINE友だち';
                     $insertStmt = $db->prepare("
                         INSERT INTO customer_cars (
-                            user_id, user_name, car_model, car_number,
+                            user_id, user_name, picture_url, car_model, car_number,
                             created_at, updated_at
                         ) VALUES (
-                            :uid, :uname, '【未登録】愛車登録待ち', '',
+                            :uid, :uname, :pic, '【未登録】愛車登録待ち', '',
                             CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                         )
                     ");
                     $insertStmt->execute([
                         ':uid' => $uid,
-                        ':uname' => $displayName
+                        ':uname' => $displayName,
+                        ':pic' => $pictureUrl
                     ]);
                     $importedCount++;
                 } else {
-                    // 仮名（新規お客様、お客様、空など）なら最新名前に同期
-                    if (empty($existing['user_name']) || in_array($existing['user_name'], ['新規お客様', 'お客様', 'LINE友だち', ''])) {
-                        $prof = getLineUserProfile($uid);
-                        if (!empty($prof['displayName'])) {
-                            $db->prepare("UPDATE customer_cars SET user_name = :uname, updated_at = CURRENT_TIMESTAMP WHERE id = :id")
-                               ->execute([':uname' => $prof['displayName'], ':id' => $existing['id']]);
-                            $updatedCount++;
-                        }
-                    }
+                    // 既存顧客: アイコン画像を最新化し、仮名なら名前も最新表示名に同期
+                    $isPlaceholderName = empty($existing['user_name']) || in_array($existing['user_name'], ['新規お客様', 'お客様', 'LINE友だち', '']);
+                    $currentName = $isPlaceholderName ? $displayName : $existing['user_name'];
+                    $currentPic = !empty($pictureUrl) ? $pictureUrl : ($existing['picture_url'] ?? '');
+
+                    $db->prepare("
+                        UPDATE customer_cars SET
+                            user_name = :uname,
+                            picture_url = :pic,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = :id
+                    ")->execute([
+                        ':uname' => $currentName,
+                        ':pic' => $currentPic,
+                        ':id' => $existing['id']
+                    ]);
+                    $updatedCount++;
                 }
             }
 
@@ -963,7 +974,7 @@ try {
                 'total_followers' => count($allUserIds),
                 'imported_count' => $importedCount,
                 'updated_count' => $updatedCount,
-                'message' => "LINE友だち全" . count($allUserIds) . "名を同期しました！（新規追加: {$importedCount}名、名前更新: {$updatedCount}名）"
+                'message' => "LINE友だち全" . count($allUserIds) . "名を同期しました！（新規追加: {$importedCount}名、名前・アイコン同期: {$updatedCount}名）"
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 

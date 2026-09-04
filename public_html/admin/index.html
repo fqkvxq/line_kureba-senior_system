@@ -222,15 +222,18 @@
             </div>
             <div class="modal-body">
                 <!-- 顧客サマリー -->
-                <div class="user-summary-box">
-                    <div class="user-summary-header">
-                        <span class="user-summary-name" id="modalCustName">山田 太郎 様</span>
-                        <span class="user-summary-car" id="modalCustCar">ワゴンR (静岡580 あ 12-34)</span>
-                    </div>
-                    <div class="user-dates-pill-row">
-                        <span class="user-date-pill" id="pillOil">次回オイル: <strong>未定</strong></span>
-                        <span class="user-date-pill" id="pillPeriodic">12ヶ月点検: <strong>未定</strong></span>
-                        <span class="user-date-pill" id="pillInsp">車検満了: <strong>未定</strong></span>
+                <div class="user-summary-box" style="display: flex; align-items: center; gap: 14px;">
+                    <div id="modalCustAvatarWrap" style="flex-shrink: 0;"></div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div class="user-summary-header">
+                            <span class="user-summary-name" id="modalCustName">山田 太郎 様</span>
+                            <span class="user-summary-car" id="modalCustCar">ワゴンR (静岡580 あ 12-34)</span>
+                        </div>
+                        <div class="user-dates-pill-row">
+                            <span class="user-date-pill" id="pillOil">次回オイル: <strong>未定</strong></span>
+                            <span class="user-date-pill" id="pillPeriodic">12ヶ月点検: <strong>未定</strong></span>
+                            <span class="user-date-pill" id="pillInsp">車検満了: <strong>未定</strong></span>
+                        </div>
                     </div>
                 </div>
 
@@ -398,6 +401,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260904_custom_menu_v7"></script>
+    <script src="admin.js?v=20260904_custom_menu_v8"></script>
 </body>
 </html>

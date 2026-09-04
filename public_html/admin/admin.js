@@ -407,9 +407,23 @@ function renderTable() {
         return `
             <tr data-index="${idx}">
                 <td>
-                    <div class="cust-name">${escapeHtml(c.user_name || '名前なし')}</div>
-                    <div class="cust-uid">${escapeHtml(c.user_id || '')}</div>
-                    ${hasCustomMenu ? `<div class="badge-custom-menu-active" title="専用メッセージ: ${escapeHtml(c.custom_menu_text || '')}"><i class="fa-solid fa-bolt"></i> 専用メニュー中</div>` : ''}
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        ${c.picture_url ? `
+                            <img src="${escapeHtml(c.picture_url)}" alt="" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1.5px solid #e2e8f0; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08);" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                            <div style="display: none; width: 38px; height: 38px; border-radius: 50%; background: #e2e8f0; color: #64748b; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                        ` : `
+                            <div style="width: 38px; height: 38px; border-radius: 50%; background: #e2e8f0; color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                        `}
+                        <div style="min-width: 0;">
+                            <div class="cust-name">${escapeHtml(c.user_name || '名前なし')}</div>
+                            <div class="cust-uid">${escapeHtml(c.user_id || '')}</div>
+                            ${hasCustomMenu ? `<div class="badge-custom-menu-active" title="専用メッセージ: ${escapeHtml(c.custom_menu_text || '')}"><i class="fa-solid fa-bolt"></i> 専用メニュー中</div>` : ''}
+                        </div>
+                    </div>
                 </td>
                 <td>
                     <div class="car-tag">${escapeHtml(c.car_model || '-')}</div>
@@ -708,6 +722,15 @@ async function openUserRichMenuModal(cust) {
     elements.userMenuModalTitle.innerHTML = `<i class="fa-solid fa-table-cells-large"></i> 【${escapeHtml(cust.user_name || 'お客様')} 様】専用リッチメニュー設定`;
     elements.modalCustName.textContent = `${cust.user_name || 'お客様'} 様`;
     elements.modalCustCar.textContent = `${cust.car_model || '-'} (${cust.car_number || 'ナンバー未登録'})`;
+
+    const avatarWrap = document.getElementById('modalCustAvatarWrap');
+    if (avatarWrap) {
+        if (cust.picture_url) {
+            avatarWrap.innerHTML = `<img src="${escapeHtml(cust.picture_url)}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.15);" alt="">`;
+        } else {
+            avatarWrap.innerHTML = `<div style="width: 48px; height: 48px; border-radius: 50%; background: #e2e8f0; color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 18px;"><i class="fa-solid fa-user"></i></div>`;
+        }
+    }
 
     elements.pillOil.innerHTML = `次回オイル: <strong>${cust.oil_next_date || '未定'}</strong>`;
     elements.pillPeriodic.innerHTML = `12ヶ月点検: <strong>${cust.periodic_insp_next_date || '未定'}</strong>`;
