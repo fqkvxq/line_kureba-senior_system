@@ -232,6 +232,107 @@ function getLineUserProfile(string $userId): ?array {
 }
 
 /**
+ * LINE Messaging API: 全フォロワー（友だち）の User ID 一覧を取得
+ * GET https://api.line.me/v2/bot/followers/ids
+ */
+function getLineFollowerUserIds(?string $start = null): array {
+    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+        return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
+    }
+
+    $url = "https://api.line.me/v2/bot/followers/ids?limit=1000";
+    if (!empty($start)) {
+        $url .= "&start=" . urlencode($start);
+    }
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 15,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+        ]
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    if ($httpCode === 200 && !empty($res)) {
+        $data = json_decode($res, true);
+        return [
+            'success' => true,
+            'userIds' => $data['userIds'] ?? [],
+            'next' => $data['next'] ?? null
+        ];
+    }
+
+    return [
+        'success' => false,
+        'httpCode' => $httpCode,
+        'error' => $curlErr ?: $res
+    ];
+}
+
+/**
+ * LINEユーザー（友だち）を customer_cars に自動登録・名前同期する共通関数
+ */
+function ensureCustomerExists(PDO $db, string $userId): ?array {
+    if (empty($userId) || !str_starts_with($userId, 'U')) {
+        return null;
+    }
+
+    try {
+        $stmt = $db->prepare("SELECT * FROM customer_cars WHERE user_id = :uid ORDER BY id ASC LIMIT 1");
+        $stmt->execute([':uid' => $userId]);
+        $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($existing) {
+            // 名前が空または仮名のままならプロフィール取得して更新
+            if (empty($existing['user_name']) || in_array($existing['user_name'], ['新規お客様', 'お客様', 'LINE友だち', ''])) {
+                $prof = getLineUserProfile($userId);
+                if (!empty($prof['displayName'])) {
+                    $upStmt = $db->prepare("UPDATE customer_cars SET user_name = :uname, updated_at = CURRENT_TIMESTAMP WHERE id = :id");
+                    $upStmt->execute([':uname' => $prof['displayName'], ':id' => $existing['id']]);
+                    $existing['user_name'] = $prof['displayName'];
+                }
+            }
+            return $existing;
+        }
+
+        // 新規登録
+        $prof = getLineUserProfile($userId);
+        $displayName = !empty($prof['displayName']) ? $prof['displayName'] : 'お客様';
+
+        $insertStmt = $db->prepare("
+            INSERT INTO customer_cars (
+                user_id, user_name, car_model, car_number,
+                created_at, updated_at
+            ) VALUES (
+                :uid, :uname, '【未登録】愛車登録待ち', '',
+                CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            )
+        ");
+        $insertStmt->execute([
+            ':uid' => $userId,
+            ':uname' => $displayName
+        ]);
+        $newId = (int)$db->lastInsertId();
+        writeDebugLog("LINEユーザー自動顧客登録完了", ['uid' => $userId, 'name' => $displayName, 'id' => $newId]);
+
+        return [
+            'id' => $newId,
+            'user_id' => $userId,
+            'user_name' => $displayName,
+            'car_model' => '【未登録】愛車登録待ち'
+        ];
+    } catch (Throwable $e) {
+        writeDebugLog("ensureCustomerExists 例外", ['error' => $e->getMessage()]);
+        return null;
+    }
+}
+
+/**
  * 特定のユーザーへ個別プッシュ送信 (Push Message API)
  */
 function sendLinePushMessage(string $userId, array $messages): array {

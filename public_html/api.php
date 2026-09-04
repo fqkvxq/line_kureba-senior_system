@@ -885,6 +885,88 @@ try {
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
+        // --- 8-2. 店舗管理者用: LINE既存友だちの一括同期・自動取り込み ---
+        case 'admin_sync_line_followers':
+            $authPass = $_POST['password'] ?? ($_GET['password'] ?? '');
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
+                exit;
+            }
+
+            // LINE公式アカウントの全フォロワー（友だち）のIDをページングしながら全件取得
+            $allUserIds = [];
+            $next = null;
+            $maxPages = 10; // 最大10,000人まで
+            $page = 0;
+
+            do {
+                $page++;
+                $res = getLineFollowerUserIds($next);
+                if (!$res['success']) {
+                    writeDebugLog("フォロワー一覧取得エラー", ['error' => $res['error'] ?? '']);
+                    break;
+                }
+                $ids = $res['userIds'] ?? [];
+                $allUserIds = array_merge($allUserIds, $ids);
+                $next = $res['next'] ?? null;
+            } while (!empty($next) && $page < $maxPages);
+
+            $allUserIds = array_values(array_unique($allUserIds));
+
+            $importedCount = 0;
+            $updatedCount = 0;
+
+            foreach ($allUserIds as $uid) {
+                $checkStmt = $db->prepare("SELECT id, user_name FROM customer_cars WHERE user_id = :uid LIMIT 1");
+                $checkStmt->execute([':uid' => $uid]);
+                $existing = $checkStmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$existing) {
+                    $prof = getLineUserProfile($uid);
+                    $displayName = !empty($prof['displayName']) ? $prof['displayName'] : 'LINE友だち';
+                    $insertStmt = $db->prepare("
+                        INSERT INTO customer_cars (
+                            user_id, user_name, car_model, car_number,
+                            created_at, updated_at
+                        ) VALUES (
+                            :uid, :uname, '【未登録】愛車登録待ち', '',
+                            CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                        )
+                    ");
+                    $insertStmt->execute([
+                        ':uid' => $uid,
+                        ':uname' => $displayName
+                    ]);
+                    $importedCount++;
+                } else {
+                    // 仮名（新規お客様、お客様、空など）なら最新名前に同期
+                    if (empty($existing['user_name']) || in_array($existing['user_name'], ['新規お客様', 'お客様', 'LINE友だち', ''])) {
+                        $prof = getLineUserProfile($uid);
+                        if (!empty($prof['displayName'])) {
+                            $db->prepare("UPDATE customer_cars SET user_name = :uname, updated_at = CURRENT_TIMESTAMP WHERE id = :id")
+                               ->execute([':uname' => $prof['displayName'], ':id' => $existing['id']]);
+                            $updatedCount++;
+                        }
+                    }
+                }
+            }
+
+            writeDebugLog("LINE既存友だち一括同期完了", [
+                'totalFollowers' => count($allUserIds),
+                'newImported' => $importedCount,
+                'updated' => $updatedCount
+            ]);
+
+            echo json_encode([
+                'success' => true,
+                'total_followers' => count($allUserIds),
+                'imported_count' => $importedCount,
+                'updated_count' => $updatedCount,
+                'message' => "LINE友だち全" . count($allUserIds) . "名を同期しました！（新規追加: {$importedCount}名、名前更新: {$updatedCount}名）"
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
         // --- 9. 店舗管理者用: 顧客・車両削除 ---
         case 'admin_delete_customer':
             $authPass = $_POST['password'] ?? '';

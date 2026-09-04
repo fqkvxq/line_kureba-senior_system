@@ -108,6 +108,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
         writeDebugLog("イベント処理開始", ['type' => $type, 'userId' => $userId]);
 
         try {
+            // 友だち追加・ボタン操作・メッセージ送信時に自動で顧客管理へ登録＆名前同期
+            if (!empty($userId) && str_starts_with($userId, 'U')) {
+                ensureCustomerExists($db, $userId);
+            }
+
             if ($type === 'message' && ($event['message']['type'] ?? '') === 'text') {
                 $userText = trim($event['message']['text'] ?? '');
                 writeDebugLog("テキスト受信", ['text' => $userText, 'userId' => $userId]);
@@ -118,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
                 handlePostback($db, $replyToken, $postbackData, $userId);
             } elseif ($type === 'follow') {
                 writeDebugLog("友だち追加イベント", ['userId' => $userId]);
-                handleFollow($replyToken);
+                handleFollow($replyToken, $userId);
             }
         } catch (Throwable $e) {
             writeDebugLog("イベント処理例外エラー", [
@@ -530,7 +535,7 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): ar
 /**
  * 友だち追加時のあいさつメッセージ
  */
-function handleFollow(string $replyToken) {
+function handleFollow(string $replyToken, string $userId = '') {
     $messages = [
         [
             'type' => 'text',
@@ -538,7 +543,7 @@ function handleFollow(string $replyToken) {
             'quickReply' => getQuickReplyItems()
         ]
     ];
-    sendReplyMessage($replyToken, $messages);
+    sendReplyMessage($replyToken, $messages, $userId);
 }
 
 /**

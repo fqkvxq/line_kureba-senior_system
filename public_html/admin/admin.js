@@ -85,6 +85,7 @@ const elements = {
     userMenuFontSizeInput: document.getElementById('userMenuFontSizeInput'),
     userMenuFontSizeVal: document.getElementById('userMenuFontSizeVal'),
     userMenuBannerHeightSelect: document.getElementById('userMenuBannerHeightSelect'),
+    syncLineFollowersBtn: document.getElementById('syncLineFollowersBtn'),
 
     toast: document.getElementById('adminToast')
 };
@@ -191,6 +192,11 @@ function initEventListeners() {
             loadAndRenderUserMenuBaseImage();
         });
     }
+
+    // LINE友だち一括同期
+    if (elements.syncLineFollowersBtn) {
+        elements.syncLineFollowersBtn.addEventListener('click', syncLineFollowers);
+    }
 }
 
 async function attemptLogin() {
@@ -249,6 +255,39 @@ async function fetchCustomers() {
         }
     } catch (e) {
         console.error('Fetch error:', e);
+    }
+}
+
+async function syncLineFollowers() {
+    if (!confirm("LINE公式アカウントの全友だち一覧を取得し、まだ顧客一覧にいない友だちを一括登録・最新の名前に同期しますか？\n\n※友だち数が多い場合、数十秒ほどかかる場合があります。")) {
+        return;
+    }
+
+    const btn = elements.syncLineFollowersBtn;
+    const originalHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 同期中...';
+    }
+
+    try {
+        const res = await fetch(`../api.php?action=admin_sync_line_followers&password=${encodeURIComponent(state.password)}`);
+        const data = await res.json();
+
+        if (data.success) {
+            showToast(`✅ ${data.message}`);
+            await fetchCustomers();
+        } else {
+            alert(data.error || '同期処理に失敗しました');
+        }
+    } catch (e) {
+        console.error('Sync followers error:', e);
+        alert('通信エラーが発生しました: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
     }
 }
 
