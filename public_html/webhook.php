@@ -164,86 +164,12 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
         return;
     }
 
-    // 1-2. お知らせ・最新情報（📢 お知らせ などの絵文字や表記揺れも確実に捕捉）
-    if (preg_match('/(お知らせ|最新情報|新着情報|インフォメーション|notice)/ui', $text)) {
-        handleShowNoticeMenu($replyToken, $userId);
-        return;
-    }
-
-    // 1-3. お知らせを閉じる（通常メニューへ戻る）
-    if (preg_match('/(OK|ok|閉じる|もどる|戻る|通常メニュー|通常メニューに戻す|終了)/ui', $text)) {
-        handleCloseNoticeMenu($replyToken, $userId);
-        return;
-    }
-
-    // 2. オイル交換・定期点検・車検・メンテナンス関連のキーワード判定 (在庫検索の誤爆防止)
-    if (preg_match('/(点検受付|点検・来店予約|来店予約|点検予約|車検予約|オイル予約|マイカー|マイカー点検|点検メニュー|メンテナンス予約|点検相談)/u', trim($text))) {
-        sendMyCarMenuMessage($db, $replyToken, $userId);
-        return;
-    }
-
-    if (preg_match('/^(オイル|オイル交換|車検|点検|12ヶ月|12ヶ月点検|法定点検|メンテナンス)$/u', trim($text))) {
-        // 顧客の登録愛車を取得
-        $carModel = '愛車';
-        $oilDate = '近日中';
-        $periodicDate = '近日中';
-        $inspDate = '未定';
-        if (!empty($userId)) {
-            $stmt = $db->prepare("SELECT * FROM customer_cars WHERE user_id = :uid ORDER BY updated_at DESC LIMIT 1");
-            $stmt->execute([':uid' => $userId]);
-            $cust = $stmt->fetch();
-            if ($cust) {
-                if (!empty($cust['car_model'])) $carModel = $cust['car_model'];
-                if (!empty($cust['oil_next_date'])) $oilDate = $cust['oil_next_date'];
-                if (!empty($cust['periodic_insp_next_date'])) $periodicDate = $cust['periodic_insp_next_date'];
-                if (!empty($cust['inspection_next_date'])) $inspDate = $cust['inspection_next_date'];
-            }
-        }
-
-        if (preg_match('/(点検|12ヶ月|法定)/u', $text)) {
-            $type = 'periodic';
-            $targetDate = $periodicDate;
-        } elseif (preg_match('/(オイル)/u', $text)) {
-            $type = 'oil';
-            $targetDate = $oilDate;
-        } else {
-            $type = 'inspection';
-            $targetDate = $inspDate;
-        }
-        
-        sendMaintenanceBookingConfirmMessage($replyToken, $type, $carModel, $targetDate, $userId);
-        return;
-    }
-
-    // 2-2. カーライフ豆知識・お役立ちガイドの判定
-    if (preg_match('/(豆知識|お役立ち|ガイド|選び方|中古車の選び方|知識|コラム|マガジン|ノウハウ)/u', $text)) {
-        sendKnowledgeMenuMessage($replyToken);
-        return;
-    }
-
-    // 2-3. 価格帯メニューのテキスト判定
-    if (preg_match('/^(価格で探す|価格帯|予算で探す|価格|予算|値段)$/u', trim($text))) {
-        sendPriceMenuMessage($db, $replyToken);
-        return;
-    }
-
-    // 3. 在庫一覧・全台キーワードの判定 (表記揺れ・displayTextの全網羅)
-    if (preg_match('/(在庫|全台|車を探す|中古車|展示車|在庫車両|在庫全台|在庫一覧|在庫車両一覧|おすすめ在庫|クルマ)/u', trim($text))) {
-        searchCarsAndReply($db, $replyToken, [], '現在の在庫車両一覧', $userId);
-        return;
-    }
-
-    // 3. 価格帯キーワードの判定 (例: 50万以下, 100万円以下, 50万円)
-    if (preg_match('/([0-9\.]+)\s*(万|万円)?\s*(以下|未満)?/u', $text, $matches)) {
-        $price = (float)$matches[1];
-        if ($price > 0 && $price < 2000) {
-            searchCarsAndReply($db, $replyToken, ['max_price' => $price], "支払総額 {$price}万円以下の車両", $userId);
-            return;
-        }
-    }
-
-    // 4. フリーワード検索 (車名など)
-    searchCarsAndReply($db, $replyToken, ['keyword' => $text], "「{$text}」の検索結果", $userId);
+    // --- キーワード自動応答の停止 ---
+    // ※管理者側の通知・チャット妨害防止のため、テキストメッセージに対するボット自動応答（在庫検索、点検、価格帯等）は一切行わず、
+    //   通常のスタッフとの1対1チャットに任せてサイレント終了します。
+    //   （リッチメニューのボタン操作はサイレントPostbackで通常通り動作します）
+    writeDebugLog("テキスト受信（キーワード自動応答停止中につきサイレント終了）", ['text' => $text, 'userId' => $userId]);
+    return;
 }
 
 /**

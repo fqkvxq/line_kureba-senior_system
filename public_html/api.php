@@ -1520,28 +1520,10 @@ try {
                 if ($actionType === 'uri') {
                     $action['uri'] = trim($a['action']['uri'] ?? 'https://www.goo-net.com');
                 } elseif ($actionType === 'postback') {
-                    $data = trim($a['action']['data'] ?? 'action=search_all');
-                    $action['data'] = $data;
-                    $disp = trim($a['action']['displayText'] ?? '');
-                    if (empty($disp)) {
-                        if (str_contains($data, 'search_all')) {
-                            $disp = '在庫車両一覧';
-                        } elseif (str_contains($data, 'open_mycar')) {
-                            $disp = '点検・来店予約';
-                        } elseif (str_contains($data, 'show_price_menu')) {
-                            $disp = '価格で探す';
-                        } elseif (str_contains($data, 'show_type_menu')) {
-                            $disp = '車種で探す';
-                        } elseif (str_contains($data, 'show_equipment_menu')) {
-                            $disp = '装備で探す';
-                        } elseif (str_contains($data, 'show_distance_menu')) {
-                            $disp = '距離で探す';
-                        } elseif (str_contains($data, 'show_notice_menu')) {
-                            $disp = 'お知らせを見る';
-                        }
-                    }
-                    if (!empty($disp)) {
-                        $action['displayText'] = $disp;
+                    $action['data'] = trim($a['action']['data'] ?? 'action=search_all');
+                    // 管理者側通知防止のため、明示的に指定された場合のみ displayText をセット（自動補完は行わない）
+                    if (!empty($a['action']['displayText']) && trim($a['action']['displayText']) !== '') {
+                        $action['displayText'] = trim($a['action']['displayText']);
                     }
                 } elseif ($actionType === 'message') {
                     $action['text'] = trim($a['action']['text'] ?? 'メニュー');
@@ -2030,27 +2012,9 @@ try {
                     if (empty($data)) $data = 'action=search_all';
                     $cleanAction['data'] = $data;
 
-                    // displayText の自動補完（空の場合でもLINEトーク上に吹き出しを表示させタップ反応を即座に明示）
-                    $disp = trim($act['displayText'] ?? '');
-                    if (empty($disp)) {
-                        if (str_contains($data, 'search_all')) {
-                            $disp = '在庫車両一覧';
-                        } elseif (str_contains($data, 'open_mycar')) {
-                            $disp = '点検・来店予約';
-                        } elseif (str_contains($data, 'show_price_menu')) {
-                            $disp = '価格で探す';
-                        } elseif (str_contains($data, 'show_type_menu')) {
-                            $disp = '車種で探す';
-                        } elseif (str_contains($data, 'show_equipment_menu')) {
-                            $disp = '装備で探す';
-                        } elseif (str_contains($data, 'show_distance_menu')) {
-                            $disp = '距離で探す';
-                        } elseif (str_contains($data, 'show_notice_menu')) {
-                            $disp = 'お知らせを見る';
-                        }
-                    }
-                    if (!empty($disp)) {
-                        $cleanAction['displayText'] = $disp;
+                    // 管理者側通知防止のため、元データに明示的に存在する場合のみ displayText を引き継ぐ（自動付与は行わない）
+                    if (!empty($act['displayText']) && trim($act['displayText']) !== '') {
+                        $cleanAction['displayText'] = trim($act['displayText']);
                     }
                     if (!empty($act['label'])) $cleanAction['label'] = $act['label'];
                 } elseif ($actionType === 'message') {
@@ -2062,7 +2026,7 @@ try {
                         $cleanAction['richMenuAliasId'] = $alias;
                         $cleanAction['data'] = trim($act['data'] ?? 'action=richmenu_switched');
                     } else {
-                        $cleanAction = ['type' => 'postback', 'data' => 'action=search_all', 'displayText' => '在庫車両一覧'];
+                        $cleanAction = ['type' => 'postback', 'data' => 'action=search_all'];
                     }
                 } else {
                     $cleanAction = $act;
