@@ -120,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
             } elseif ($type === 'postback') {
                 $postbackData = $event['postback']['data'] ?? '';
                 writeDebugLog("ポストバック受信", ['data' => $postbackData, 'userId' => $userId]);
-                handlePostback($db, $replyToken, $postbackData, $userId);
+                handlePostback($db, $replyToken, $postbackData, $userId, $event['postback']['params'] ?? []);
             } elseif ($type === 'follow') {
                 writeDebugLog("友だち追加イベント", ['userId' => $userId]);
                 handleFollow($replyToken, $userId);
@@ -180,7 +180,7 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
 /**
  * ポストバックイベントの処理
  */
-function handlePostback(PDO $db, string $replyToken, string $dataStr, string $userId = '') {
+function handlePostback(PDO $db, string $replyToken, string $dataStr, string $userId = '', array $postbackParams = []) {
     $cleanData = ltrim(trim($dataStr), '?');
     parse_str($cleanData, $params);
     $action = trim($params['action'] ?? '');
@@ -242,7 +242,7 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
         case 'close_notice':
         case 'close_notice_menu':
         case 'back_normal':
-            handleCloseNoticeMenu($replyToken, $userId);
+            handleCloseNoticeMenu($db, $replyToken, $userId);
             break;
 
         // --- 5-2. 点検受付メニュー表示 ---
@@ -352,11 +352,34 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             }
             break;
 
-        // --- 9-6. リッチメニュー切替アクション (サイレント終了) ---
+        // --- 9-6. リッチメニュー切替アクション (タブ切替等) ---
         case 'richmenu_switched':
         case 'richmenu_switch':
         case 'none':
-            writeDebugLog("リッチメニュー切替通知受信(サイレント)", ['action' => $action, 'userId' => $userId]);
+            $targetAlias = trim($params['to_alias'] ?? ($params['alias'] ?? ($postbackParams['newRichMenuAliasId'] ?? '')));
+            writeDebugLog("リッチメニュー切替通知受信(サイレント)", [
+                'action' => $action,
+                'targetAlias' => $targetAlias,
+                'userId' => $userId,
+                'params' => $postbackParams
+            ]);
+
+            // 切替先がお知らせメニューではない（＝メインメニュー等へ戻った）場合、
+            // かつユーザーが専用リッチメニューを持っていれば専用メニューを即座に再リンク復帰！
+            if (!empty($userId)) {
+                $isNotice = isNoticeMenu($db, $targetAlias);
+                if (!$isNotice) {
+                    $customMenuId = getUserCustomRichMenuId($db, $userId);
+                    if (!empty($customMenuId)) {
+                        $relinkRes = lineLinkUserRichMenu($userId, $customMenuId);
+                        writeDebugLog("タブ切替からメイン復帰: 専用リッチメニュー再リンク実行", [
+                            'userId' => $userId,
+                            'customMenuId' => $customMenuId,
+                            'res' => $relinkRes
+                        ]);
+                    }
+                }
+            }
             break;
 
         // --- 10. サイレント検索: 在庫全台一覧 ---
@@ -486,10 +509,27 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): ar
             }
             break;
 
+        // --- お知らせを閉じる（通常メニューへ戻る） ---
+        case 'close_notice':
+        case 'close_notice_menu':
+        case 'back_normal':
+            handleCloseNoticeMenu($db, '', $userId);
+            return ['success' => true, 'message' => 'お知らせ終了・メニュー復帰完了'];
+
         case 'richmenu_switched':
         case 'richmenu_switch':
         case 'none':
-            // リッチメニュー切り替え完了通知等（サイレント・メッセージ送信なし）
+            // リッチメニュー切り替え完了通知等（サイレント）
+            $targetAlias = trim($params['to_alias'] ?? ($params['alias'] ?? ''));
+            if (!empty($userId)) {
+                $isNotice = isNoticeMenu($db, $targetAlias);
+                if (!$isNotice) {
+                    $customMenuId = getUserCustomRichMenuId($db, $userId);
+                    if (!empty($customMenuId)) {
+                        lineLinkUserRichMenu($userId, $customMenuId);
+                    }
+                }
+            }
             writeDebugLog("リッチメニュー切替/サイレントPostback受信", ['action' => $action, 'userId' => $userId]);
             return ['success' => true, 'message' => 'サイレント処理完了'];
 
@@ -3789,20 +3829,34 @@ function handleShowNoticeMenu(string $replyToken, string $userId): void {
 }
 
 /**
- * ユーザーのお知らせリッチメニューを解除して通常メニューに戻す（サイレント切り替え: タイムラインを流さないためメッセージ送信なし）
+ * ユーザーのお知らせリッチメニューを解除して元のメニュー（専用メニューまたは全体デフォルトメニュー）に戻す（サイレント切り替え: タイムラインを流さないためメッセージ送信なし）
  */
-function handleCloseNoticeMenu(string $replyToken, string $userId): void {
-    // 1. 個別紐付けを解除（LINE公式アカウント全体のデフォルトリッチメニューに自動復帰）
-    $unlinkRes = lineUnlinkUserRichMenu($userId);
-    writeDebugLog("お知らせリッチメニュー解除実行(サイレント)", [
-        'userId' => $userId,
-        'res' => $unlinkRes
-    ]);
+function handleCloseNoticeMenu(?PDO $db, string $replyToken, string $userId): void {
+    if (empty($userId)) return;
 
-    // ※以前はここで lineLinkUserRichMenu を呼んでいたためユーザーに個別紐付けが固定され、
-    //   管理画面で全体本番を切り替えても古いメニューが表示され続ける原因となっていました。
-    //   個別紐付けを解除（DELETE /v2/bot/user/{userId}/richmenu）することで、
-    //   LINE公式アカウントの全体デフォルトメニューに即座に合流・同期されます。
+    if (!$db) {
+        $db = getDB();
+    }
+
+    // ユーザーに専用リッチメニューが設定されているか確認
+    $customMenuId = getUserCustomRichMenuId($db, $userId);
+
+    if (!empty($customMenuId)) {
+        // 専用リッチメニューを設定されているお客様なら、専用リッチメニューを再リンクして復帰！
+        $linkRes = lineLinkUserRichMenu($userId, $customMenuId);
+        writeDebugLog("お知らせ終了: 専用リッチメニュー復帰実行(サイレント)", [
+            'userId' => $userId,
+            'customMenuId' => $customMenuId,
+            'res' => $linkRes
+        ]);
+    } else {
+        // 通常ユーザーは個別紐付けを解除（LINE公式アカウント全体のデフォルトリッチメニューに自動復帰）
+        $unlinkRes = lineUnlinkUserRichMenu($userId);
+        writeDebugLog("お知らせ終了: 全体デフォルトメニュー復帰実行(unlink)", [
+            'userId' => $userId,
+            'res' => $unlinkRes
+        ]);
+    }
 }
 
 /**

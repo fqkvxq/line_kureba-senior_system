@@ -1161,8 +1161,9 @@ function syncCurrentAreaFromForm() {
     } else if (selectedType === 'message') {
         area.action.text = elements.messageTextInput.value.trim() || 'メニュー';
     } else if (selectedType === 'richmenuswitch') {
-        area.action.richMenuAliasId = (elements.switchMenuSelect ? elements.switchMenuSelect.value : '') || '';
-        area.action.data = 'action=richmenu_switched';
+        const swAlias = (elements.switchMenuSelect ? elements.switchMenuSelect.value : '') || '';
+        area.action.richMenuAliasId = swAlias;
+        area.action.data = swAlias ? `action=richmenu_switched&to_alias=${encodeURIComponent(swAlias)}` : 'action=richmenu_switched';
     }
 
     updateAreaBadgeAndPill(area);
@@ -1614,9 +1615,10 @@ function renderTextOverlayControls() {
         const actionSwitchSelect = card.querySelector('.overlay-action-switch-select');
         if (actionSwitchSelect) {
             actionSwitchSelect.addEventListener('change', () => {
+                const swAlias = actionSwitchSelect.value || '';
                 overlay.action = overlay.action || {};
-                overlay.action.richMenuAliasId = actionSwitchSelect.value;
-                overlay.action.data = 'action=richmenu_switched';
+                overlay.action.richMenuAliasId = swAlias;
+                overlay.action.data = swAlias ? `action=richmenu_switched&to_alias=${encodeURIComponent(swAlias)}` : 'action=richmenu_switched';
                 renderTextOverlays();
             });
         }
@@ -2018,8 +2020,9 @@ async function saveRichMenu(publish, asCopy = false) {
                 } else if (ov.action.type === 'message') {
                     actionObj.text = ov.action.text || ov.text || 'メニュー';
                 } else if (ov.action.type === 'richmenuswitch') {
-                    actionObj.richMenuAliasId = ov.action.richMenuAliasId || '';
-                    actionObj.data = ov.action.data || 'action=richmenu_switched';
+                    const swAlias = ov.action.richMenuAliasId || '';
+                    actionObj.richMenuAliasId = swAlias;
+                    actionObj.data = ov.action.data || (swAlias ? `action=richmenu_switched&to_alias=${encodeURIComponent(swAlias)}` : 'action=richmenu_switched');
                 }
 
                 overlayAreas.push({

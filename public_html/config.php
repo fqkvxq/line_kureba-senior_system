@@ -333,6 +333,50 @@ function ensureCustomerExists(PDO $db, string $userId): ?array {
 }
 
 /**
+ * ユーザーが専用リッチメニューを持っているか確認してそのLINEメニューIDを返す
+ */
+function getUserCustomRichMenuId(?PDO $db, string $userId): ?string {
+    if (empty($userId) || !str_starts_with($userId, 'U')) {
+        return null;
+    }
+    if (!$db) {
+        $db = getDbConnection();
+    }
+    try {
+        $stmt = $db->prepare("SELECT custom_line_menu_id FROM customer_cars WHERE user_id = :uid LIMIT 1");
+        $stmt->execute([':uid' => $userId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!empty($row['custom_line_menu_id'])) {
+            return trim($row['custom_line_menu_id']);
+        }
+    } catch (Throwable $e) {
+        writeDebugLog("getUserCustomRichMenuId例外", ['error' => $e->getMessage()]);
+    }
+    return null;
+}
+
+/**
+ * 指定されたエイリアスIDまたはメニューIDがお知らせメニューかどうか判定
+ */
+function isNoticeMenu(?PDO $db, string $aliasOrMenuId): bool {
+    if (empty($aliasOrMenuId)) return false;
+    if (!$db) {
+        $db = getDbConnection();
+    }
+    try {
+        $stmt = $db->prepare("SELECT is_notice FROM rich_menus WHERE alias_id = :aid OR line_menu_id = :mid LIMIT 1");
+        $stmt->execute([':aid' => $aliasOrMenuId, ':mid' => $aliasOrMenuId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row && (int)$row['is_notice'] === 1) {
+            return true;
+        }
+    } catch (Throwable $e) {
+        writeDebugLog("isNoticeMenu例外", ['error' => $e->getMessage()]);
+    }
+    return false;
+}
+
+/**
  * 特定のユーザーへ個別プッシュ送信 (Push Message API)
  */
 function sendLinePushMessage(string $userId, array $messages): array {

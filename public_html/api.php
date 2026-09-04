@@ -1610,8 +1610,14 @@ try {
                 } elseif ($actionType === 'message') {
                     $action['text'] = trim($a['action']['text'] ?? 'メニュー');
                 } elseif ($actionType === 'richmenuswitch') {
-                    $action['richMenuAliasId'] = trim($a['action']['richMenuAliasId'] ?? '');
-                    $action['data'] = trim($a['action']['data'] ?? 'action=richmenu_switched');
+                    $aliasId = trim($a['action']['richMenuAliasId'] ?? '');
+                    $action['richMenuAliasId'] = $aliasId;
+                    $dataVal = trim($a['action']['data'] ?? '');
+                    if (empty($dataVal) || $dataVal === 'action=richmenu_switched') {
+                        $action['data'] = !empty($aliasId) ? 'action=richmenu_switched&to_alias=' . urlencode($aliasId) : 'action=richmenu_switched';
+                    } else {
+                        $action['data'] = $dataVal;
+                    }
                 }
 
                 $lineAreas[] = [
@@ -2106,7 +2112,12 @@ try {
                     $alias = trim($act['richMenuAliasId'] ?? '');
                     if (!empty($alias)) {
                         $cleanAction['richMenuAliasId'] = $alias;
-                        $cleanAction['data'] = trim($act['data'] ?? 'action=richmenu_switched');
+                        $dataVal = trim($act['data'] ?? '');
+                        if (empty($dataVal) || $dataVal === 'action=richmenu_switched') {
+                            $cleanAction['data'] = 'action=richmenu_switched&to_alias=' . urlencode($alias);
+                        } else {
+                            $cleanAction['data'] = $dataVal;
+                        }
                     } else {
                         $cleanAction = ['type' => 'postback', 'data' => 'action=search_all'];
                     }
