@@ -1202,6 +1202,353 @@ try {
             }
             break;
 
+        // --- 11. リッチメニュー管理: 一覧取得 ---
+        case 'admin_list_richmenus':
+            $authPass = $_POST['password'] ?? ($_GET['password'] ?? '');
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
+                exit;
+            }
+
+            // LINE公式アカウントの現在のデフォルトリッチメニューIDを取得
+            $currentLineDefaultId = lineGetDefaultRichMenuId();
+
+            // 履歴一覧取得
+            $stmt = $db->query("SELECT * FROM rich_menus ORDER BY id DESC");
+            $menus = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // 現在のLINE設定と同期
+            foreach ($menus as &$m) {
+                $m['areas'] = json_decode($m['areas_json'], true) ?: [];
+                $m['is_line_default'] = (!empty($m['line_menu_id']) && $m['line_menu_id'] === $currentLineDefaultId);
+                // DBのis_activeとLINE実状態の整合性を取る
+                if ($m['is_line_default'] && !$m['is_active']) {
+                    $db->prepare("UPDATE rich_menus SET is_active = 1 WHERE id = :id")->execute([':id' => $m['id']]);
+                    $m['is_active'] = 1;
+                } elseif (!$m['is_line_default'] && $m['is_active'] && !empty($currentLineDefaultId)) {
+                    $db->prepare("UPDATE rich_menus SET is_active = 0 WHERE id = :id")->execute([':id' => $m['id']]);
+                    $m['is_active'] = 0;
+                }
+            }
+            unset($m);
+
+            echo json_encode([
+                'success' => true,
+                'menus' => $menus,
+                'current_default_id' => $currentLineDefaultId
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
+        // --- 12. リッチメニュー管理: 作成 & 公開 ---
+        case 'admin_save_richmenu':
+            $authPass = $_POST['password'] ?? '';
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
+                exit;
+            }
+
+            $title = trim($_POST['title'] ?? '');
+            if (empty($title)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'メニュー名（管理名）を入力してください']);
+                exit;
+            }
+
+            $chatBarText = trim($_POST['chat_bar_text'] ?? 'メニュー');
+            if (empty($chatBarText)) $chatBarText = 'メニュー';
+            $chatBarText = mb_substr($chatBarText, 0, 14);
+
+            $width = (int)($_POST['width'] ?? 2500);
+            $height = (int)($_POST['height'] ?? 1686);
+            if ($height !== 843 && $height !== 1686) $height = 1686;
+
+            $areasJson = $_POST['areas'] ?? '[]';
+            $areas = json_decode($areasJson, true);
+            if (!is_array($areas) || empty($areas)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'タップ領域（エリア）が設定されていません']);
+                exit;
+            }
+
+            $publish = (!empty($_POST['publish']) && $_POST['publish'] === '1');
+
+            // 画像処理
+            $uploadedFile = $_FILES['image'] ?? null;
+            $existingImageUrl = trim($_POST['existing_image_url'] ?? '');
+            $targetFilePath = '';
+            $contentType = 'image/jpeg';
+
+            if (!empty($uploadedFile) && $uploadedFile['error'] === UPLOAD_ERR_OK) {
+                // 画像検証
+                $ext = strtolower(pathinfo($uploadedFile['name'], PATHINFO_EXTENSION));
+                if (!in_array($ext, ['jpg', 'jpeg', 'png'])) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'error' => '画像形式はJPGまたはPNGのみ対応しています']);
+                    exit;
+                }
+                $contentType = ($ext === 'png') ? 'image/png' : 'image/jpeg';
+
+                // ファイルサイズ確認 (1MB上限)
+                if ($uploadedFile['size'] > 1048576 * 5) { // 5MB超は拒否
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'error' => '画像サイズが大きすぎます (最大5MB)']);
+                    exit;
+                }
+
+                $fileName = 'rm_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . ($ext === 'png' ? 'png' : 'jpg');
+                $targetFilePath = RICHMENU_UPLOAD_DIR . '/' . $fileName;
+
+                // GDでリサイズまたはそのまま保存
+                $resized = false;
+                if (function_exists('imagecreatefromstring') && function_exists('imagecopyresampled')) {
+                    $srcData = file_get_contents($uploadedFile['tmp_name']);
+                    $srcImg = @imagecreatefromstring($srcData);
+                    if ($srcImg !== false) {
+                        $origW = imagesx($srcImg);
+                        $origH = imagesy($srcImg);
+                        $dstImg = imagecreatetruecolor($width, $height);
+                        if ($contentType === 'image/png') {
+                            imagealphablending($dstImg, false);
+                            imagesavealpha($dstImg, true);
+                        }
+                        imagecopyresampled($dstImg, $srcImg, 0, 0, 0, 0, $width, $height, $origW, $origH);
+                        if ($contentType === 'image/png') {
+                            imagepng($dstImg, $targetFilePath);
+                        } else {
+                            imagejpeg($dstImg, $targetFilePath, 90);
+                        }
+                        imagedestroy($srcImg);
+                        imagedestroy($dstImg);
+                        $resized = true;
+                    }
+                }
+                if (!$resized) {
+                    if (!move_uploaded_file($uploadedFile['tmp_name'], $targetFilePath)) {
+                        http_response_code(500);
+                        echo json_encode(['success' => false, 'error' => '画像ファイルの保存に失敗しました']);
+                        exit;
+                    }
+                }
+            } elseif (!empty($existingImageUrl)) {
+                // 既存画像の流用
+                $relPath = parse_url($existingImageUrl, PHP_URL_PATH);
+                $localBase = basename($relPath);
+                $candidatePath = RICHMENU_UPLOAD_DIR . '/' . $localBase;
+                if (file_exists($candidatePath)) {
+                    $targetFilePath = $candidatePath;
+                    $ext = strtolower(pathinfo($candidatePath, PATHINFO_EXTENSION));
+                    $contentType = ($ext === 'png') ? 'image/png' : 'image/jpeg';
+                } else {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'error' => '指定された元画像が見つかりません']);
+                    exit;
+                }
+            } else {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'メニュー画像ファイルをアップロードしてください']);
+                exit;
+            }
+
+            // Web表示用URL
+            $savedFileName = basename($targetFilePath);
+            $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://{$_SERVER['HTTP_HOST']}";
+            $imageUrl = $baseUrl . dirname($_SERVER['SCRIPT_NAME']) . '/uploads/richmenu/' . $savedFileName;
+
+            // 1. LINE API用メタデータ成形
+            $lineAreas = [];
+            foreach ($areas as $a) {
+                $bounds = [
+                    'x' => max(0, (int)($a['bounds']['x'] ?? 0)),
+                    'y' => max(0, (int)($a['bounds']['y'] ?? 0)),
+                    'width' => max(1, (int)($a['bounds']['width'] ?? 100)),
+                    'height' => max(1, (int)($a['bounds']['height'] ?? 100))
+                ];
+                // 境界オーバー防止
+                if ($bounds['x'] + $bounds['width'] > $width) {
+                    $bounds['width'] = $width - $bounds['x'];
+                }
+                if ($bounds['y'] + $bounds['height'] > $height) {
+                    $bounds['height'] = $height - $bounds['y'];
+                }
+
+                $actionType = $a['action']['type'] ?? 'uri';
+                $action = ['type' => $actionType];
+                if ($actionType === 'uri') {
+                    $action['uri'] = trim($a['action']['uri'] ?? 'https://www.goo-net.com');
+                } elseif ($actionType === 'postback') {
+                    $action['data'] = trim($a['action']['data'] ?? 'action=search_all');
+                    if (!empty($a['action']['displayText'])) {
+                        $action['displayText'] = trim($a['action']['displayText']);
+                    }
+                } elseif ($actionType === 'message') {
+                    $action['text'] = trim($a['action']['text'] ?? 'メニュー');
+                }
+                $lineAreas[] = [
+                    'bounds' => $bounds,
+                    'action' => $action
+                ];
+            }
+
+            $lineMenuData = [
+                'size' => [
+                    'width' => $width,
+                    'height' => $height
+                ],
+                'selected' => true,
+                'name' => mb_substr($title, 0, 300),
+                'chatBarText' => $chatBarText,
+                'areas' => $lineAreas
+            ];
+
+            // 2. LINE API: リッチメニュー作成
+            $createRes = lineCreateRichMenu($lineMenuData);
+            if (!$createRes['success'] || empty($createRes['richMenuId'])) {
+                http_response_code(500);
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'LINEリッチメニュー作成失敗: ' . ($createRes['error'] ?? '不明なエラー'),
+                    'detail' => $createRes['raw'] ?? ''
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+            $lineMenuId = $createRes['richMenuId'];
+
+            // 3. LINE API: 画像アップロード
+            $uploadRes = lineUploadRichMenuImage($lineMenuId, $targetFilePath, $contentType);
+            if (!$uploadRes['success']) {
+                // ロールバック: 作成したリッチメニューを削除
+                lineDeleteRichMenu($lineMenuId);
+                http_response_code(500);
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'LINEリッチメニュー画像アップロード失敗: ' . ($uploadRes['error'] ?? '不明なエラー')
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // 4. LINE API: 本番適用 (publishフラグが真の場合)
+            $isActive = 0;
+            if ($publish) {
+                $setDefRes = lineSetDefaultRichMenu($lineMenuId);
+                if ($setDefRes['success']) {
+                    $isActive = 1;
+                    // 他のメニューのis_activeを0に更新
+                    $db->exec("UPDATE rich_menus SET is_active = 0");
+                }
+            }
+
+            // 5. DBに保存
+            $stmt = $db->prepare("
+                INSERT INTO rich_menus (
+                    line_menu_id, title, chat_bar_text, image_url, areas_json,
+                    width, height, is_active, created_at, updated_at
+                ) VALUES (
+                    :line_menu_id, :title, :chat_bar_text, :image_url, :areas_json,
+                    :width, :height, :is_active, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                )
+            ");
+            $stmt->execute([
+                ':line_menu_id' => $lineMenuId,
+                ':title' => $title,
+                ':chat_bar_text' => $chatBarText,
+                ':image_url' => $imageUrl,
+                ':areas_json' => json_encode($lineAreas, JSON_UNESCAPED_UNICODE),
+                ':width' => $width,
+                ':height' => $height,
+                ':is_active' => $isActive
+            ]);
+            $newId = (int)$db->lastInsertId();
+
+            echo json_encode([
+                'success' => true,
+                'id' => $newId,
+                'line_menu_id' => $lineMenuId,
+                'is_active' => $isActive,
+                'image_url' => $imageUrl,
+                'message' => $publish ? 'リッチメニューを登録し、LINE本番アカウントに即時適用しました！' : 'リッチメニューを下書きとして保存しました！'
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
+        // --- 13. リッチメニュー管理: 本番適用切り替え ---
+        case 'admin_apply_richmenu':
+            $authPass = $_POST['password'] ?? '';
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
+                exit;
+            }
+
+            $id = (int)($_POST['id'] ?? 0);
+            $stmt = $db->prepare("SELECT * FROM rich_menus WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+            $menu = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$menu || empty($menu['line_menu_id'])) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'error' => '対象のリッチメニューが見つかりません']);
+                exit;
+            }
+
+            $setRes = lineSetDefaultRichMenu($menu['line_menu_id']);
+            if (!$setRes['success']) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => 'LINEデフォルト設定エラー: ' . ($setRes['error'] ?? '')]);
+                exit;
+            }
+
+            // DB更新
+            $db->exec("UPDATE rich_menus SET is_active = 0");
+            $db->prepare("UPDATE rich_menus SET is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = :id")->execute([':id' => $id]);
+
+            echo json_encode([
+                'success' => true,
+                'message' => "「{$menu['title']}」をLINE公式アカウントの本番リッチメニューに適用しました！"
+            ], JSON_UNESCAPED_UNICODE);
+            break;
+
+        // --- 14. リッチメニュー管理: 削除 ---
+        case 'admin_delete_richmenu':
+            $authPass = $_POST['password'] ?? '';
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
+                exit;
+            }
+
+            $id = (int)($_POST['id'] ?? 0);
+            $stmt = $db->prepare("SELECT * FROM rich_menus WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+            $menu = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$menu) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'error' => '対象のリッチメニューが見つかりません']);
+                exit;
+            }
+
+            // LINE側から削除
+            if (!empty($menu['line_menu_id'])) {
+                lineDeleteRichMenu($menu['line_menu_id']);
+            }
+
+            // 画像ファイルの削除
+            if (!empty($menu['image_url'])) {
+                $baseName = basename(parse_url($menu['image_url'], PHP_URL_PATH));
+                $localPath = RICHMENU_UPLOAD_DIR . '/' . $baseName;
+                if (file_exists($localPath)) {
+                    @unlink($localPath);
+                }
+            }
+
+            // DBから削除
+            $db->prepare("DELETE FROM rich_menus WHERE id = :id")->execute([':id' => $id]);
+
+            echo json_encode([
+                'success' => true,
+                'message' => "リッチメニュー「{$menu['title']}」を削除しました。"
+            ], JSON_UNESCAPED_UNICODE);
+            break;
+
         default:
             http_response_code(400);
             echo json_encode(['success' => false, 'error' => '無効なアクションです。']);

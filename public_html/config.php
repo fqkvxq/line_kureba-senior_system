@@ -28,6 +28,12 @@ define('SHOP_CODE', '0601492');
 define('SHOP_NAME', 'アップファーレン');
 define('SHOP_GOO_URL', 'https://www.goo-net.com/usedcar_shop/0601492/stock.html');
 
+// --- リッチメニュー画像保存ディレクトリ ---
+define('RICHMENU_UPLOAD_DIR', __DIR__ . '/uploads/richmenu');
+if (!is_dir(RICHMENU_UPLOAD_DIR)) {
+    @mkdir(RICHMENU_UPLOAD_DIR, 0777, true);
+}
+
 /**
  * データベースファイルのパスを自動検出
  */
@@ -105,6 +111,24 @@ function getDbConnection(): PDO {
     try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_oil_next ON customer_cars(oil_next_date)"); } catch (Exception $e) {}
     try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_periodic_next ON customer_cars(periodic_insp_next_date)"); } catch (Exception $e) {}
     try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_inspection_next ON customer_cars(inspection_next_date)"); } catch (Exception $e) {}
+
+    // リッチメニュー履歴管理テーブルの初期化
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS rich_menus (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            line_menu_id TEXT,
+            title TEXT NOT NULL,
+            chat_bar_text TEXT DEFAULT 'メニュー',
+            image_url TEXT NOT NULL,
+            areas_json TEXT NOT NULL,
+            width INTEGER DEFAULT 2500,
+            height INTEGER DEFAULT 1686,
+            is_active INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ");
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_rich_menus_active ON rich_menus(is_active)"); } catch (Exception $e) {}
 
     // 既存 customers テーブルからのデータ移行（初回1回のみ）
     try {
@@ -281,6 +305,196 @@ function sendLineBroadcastMessage(array $messages): array {
         'success' => ($httpCode === 200),
         'httpCode' => $httpCode,
         'response' => $res,
+        'error' => $curlErr
+    ];
+}
+
+/**
+ * LINE Messaging API: リッチメニュー作成 (メタデータ)
+ */
+function lineCreateRichMenu(array $menuData): array {
+    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+        return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
+    }
+
+    $url = 'https://api.line.me/v2/bot/richmenu';
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json; charset=utf-8',
+            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+        ],
+        CURLOPT_POSTFIELDS => json_encode($menuData, JSON_UNESCAPED_UNICODE)
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    $json = json_decode($res, true);
+    return [
+        'success' => ($httpCode === 200 && !empty($json['richMenuId'])),
+        'httpCode' => $httpCode,
+        'richMenuId' => $json['richMenuId'] ?? null,
+        'error' => $json['message'] ?? $curlErr,
+        'raw' => $res
+    ];
+}
+
+/**
+ * LINE Messaging API: リッチメニュー画像アップロード
+ */
+function lineUploadRichMenuImage(string $richMenuId, string $imageFilePath, string $contentType): array {
+    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+        return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
+    }
+
+    $url = "https://api-data.line.me/v2/bot/richmenu/{$richMenuId}/content";
+    $imageData = file_get_contents($imageFilePath);
+    if ($imageData === false) {
+        return ['success' => false, 'error' => '画像ファイル読み込み失敗'];
+    }
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 20,
+        CURLOPT_HTTPHEADER => [
+            "Content-Type: {$contentType}",
+            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+        ],
+        CURLOPT_POSTFIELDS => $imageData
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    return [
+        'success' => ($httpCode === 200),
+        'httpCode' => $httpCode,
+        'error' => $curlErr ?: ($httpCode !== 200 ? $res : null)
+    ];
+}
+
+/**
+ * LINE Messaging API: デフォルトリッチメニュー設定 (友だち全員に適用)
+ */
+function lineSetDefaultRichMenu(string $richMenuId): array {
+    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+        return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
+    }
+
+    $url = "https://api.line.me/v2/bot/user/all/richmenu/{$richMenuId}";
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+        ]
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    return [
+        'success' => ($httpCode === 200),
+        'httpCode' => $httpCode,
+        'error' => $curlErr ?: ($httpCode !== 200 ? $res : null)
+    ];
+}
+
+/**
+ * LINE Messaging API: デフォルトリッチメニュー解除
+ */
+function lineCancelDefaultRichMenu(): array {
+    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+        return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
+    }
+
+    $url = "https://api.line.me/v2/bot/user/all/richmenu";
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_CUSTOMREQUEST => 'DELETE',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+        ]
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    return [
+        'success' => ($httpCode === 200),
+        'httpCode' => $httpCode,
+        'error' => $curlErr
+    ];
+}
+
+/**
+ * LINE Messaging API: 現在のデフォルトリッチメニューID取得
+ */
+function lineGetDefaultRichMenuId(): ?string {
+    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+        return null;
+    }
+
+    $url = "https://api.line.me/v2/bot/user/all/richmenu";
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+        ]
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode === 200) {
+        $json = json_decode($res, true);
+        return $json['richMenuId'] ?? null;
+    }
+    return null;
+}
+
+/**
+ * LINE Messaging API: リッチメニュー削除
+ */
+function lineDeleteRichMenu(string $richMenuId): array {
+    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+        return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
+    }
+
+    $url = "https://api.line.me/v2/bot/richmenu/{$richMenuId}";
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_CUSTOMREQUEST => 'DELETE',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+        ]
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    return [
+        'success' => ($httpCode === 200),
+        'httpCode' => $httpCode,
         'error' => $curlErr
     ];
 }
