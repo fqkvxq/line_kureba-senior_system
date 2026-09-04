@@ -155,14 +155,14 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
         return;
     }
 
-    // 1-2. お知らせ・最新情報
-    if (preg_match('/^(お知らせ|最新情報|新着情報|インフォメーション|notice)$/ui', trim($text))) {
+    // 1-2. お知らせ・最新情報（📢 お知らせ などの絵文字や表記揺れも確実に捕捉）
+    if (preg_match('/(お知らせ|最新情報|新着情報|インフォメーション|notice)/ui', $text)) {
         handleShowNoticeMenu($replyToken, $userId);
         return;
     }
 
     // 1-3. お知らせを閉じる（通常メニューへ戻る）
-    if (preg_match('/^(OK|ok|閉じる|もどる|戻る|通常メニュー|通常メニューに戻す|終了)$/ui', trim($text))) {
+    if (preg_match('/(OK|ok|閉じる|もどる|戻る|通常メニュー|通常メニューに戻す|終了)/ui', $text)) {
         handleCloseNoticeMenu($replyToken, $userId);
         return;
     }
@@ -289,11 +289,16 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
 
         // --- 5-1. お知らせリッチメニュー表示 ---
         case 'show_notice_menu':
+        case 'show_notice':
+        case 'notice':
+        case 'open_notice':
             handleShowNoticeMenu($replyToken, $userId);
             break;
 
         // --- 5-1-2. お知らせを閉じる（通常メニューへ戻る） ---
         case 'close_notice':
+        case 'close_notice_menu':
+        case 'back_normal':
             handleCloseNoticeMenu($replyToken, $userId);
             break;
 
@@ -522,10 +527,21 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bo
             }
             break;
 
+        case 'richmenu_switched':
+        case 'richmenu_switch':
+        case 'none':
+            // リッチメニュー切り替え完了通知等（サイレント・メッセージ送信なし）
+            writeDebugLog("リッチメニュー切替/サイレントPostback受信", ['action' => $action, 'userId' => $userId]);
+            return;
+
         case 'search_all':
-        default:
             $messages = generateCarSearchMessages($db, [], '現在の在庫車両一覧', $userId);
             break;
+
+        default:
+            // 未知または明示的にハンドリングされていないPostbackアクションではカルーセルを誤送信せずサイレント終了
+            writeDebugLog("未処理のPostbackアクション（サイレント無視）", ['action' => $action, 'data' => $dataStr, 'userId' => $userId]);
+            return;
     }
 
     if (!empty($messages)) {
