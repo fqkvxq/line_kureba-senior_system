@@ -1007,7 +1007,7 @@
     inset: 0;
     pointer-events: none;
     overflow: hidden;
-    z-index: 5;
+    z-index: 15; /* stage-overlay(z-index: 10)より手前に配置して直接文字を掴んでドラッグ移動可能に */
 }
 
 .overlay-text-item {
@@ -1022,9 +1022,27 @@
     justify-content: center;
     text-align: center;
     pointer-events: auto;
-    cursor: default;
-    transition: box-shadow 0.15s, transform 0.15s;
+    cursor: grab;
+    touch-action: none;
+    transition: box-shadow 0.15s, transform 0.15s, outline 0.15s;
     user-select: none;
+}
+
+.overlay-text-item:hover {
+    outline: 2px dashed rgba(255, 255, 255, 0.85);
+    outline-offset: 2px;
+    filter: brightness(1.05);
+}
+
+.overlay-text-item:active,
+.overlay-text-item.dragging {
+    cursor: grabbing !important;
+    transform: scale(1.04);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45) !important;
+    outline: 2px solid #06C755 !important;
+    outline-offset: 3px;
+    z-index: 50 !important;
+    transition: none !important;
 }
 
 .overlay-text-item.banner-top {
@@ -1149,10 +1167,17 @@
     padding: 10px;
     margin-bottom: 10px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .text-overlay-card:hover {
     border-color: #cbd5e1;
+}
+
+.text-overlay-card.highlighted {
+    border-color: #06C755;
+    box-shadow: 0 0 0 2px rgba(6, 199, 85, 0.2);
+    background: #f0fdf4;
 }
 
 .card-header-row {

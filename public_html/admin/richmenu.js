@@ -30,7 +30,11 @@ const state = {
     currentLineDefaultId: null,
 
     // 装飾テキスト・お知らせバナー
-    textOverlays: []
+    textOverlays: [],
+    isOverlayDragging: false,
+    dragOverlayItem: null,
+    dragOverlayEl: null,
+    overlayDragStart: null
 };
 
 const elements = {
@@ -769,6 +773,36 @@ function initCanvasInteractions() {
     });
 
     window.addEventListener('mousemove', (e) => {
+        // 1. 装飾テキストのドラッグ移動
+        if (state.isOverlayDragging && state.dragOverlayItem && state.overlayDragStart && state.dragOverlayEl) {
+            const dx = e.clientX - state.overlayDragStart.pointerX;
+            const dy = e.clientY - state.overlayDragStart.pointerY;
+
+            const origW = Number(state.width) || 2500;
+            const origH = Number(state.height) || 1686;
+
+            const scaleX = origW / state.overlayDragStart.stageW;
+            const scaleY = origH / state.overlayDragStart.stageH;
+
+            let newX = Math.round(state.overlayDragStart.initX + dx * scaleX);
+            let newY = Math.round(state.overlayDragStart.initY + dy * scaleY);
+
+            // リッチメニュー画像領域内に収まるよう制限
+            newX = Math.max(0, Math.min(origW - 60, newX));
+            newY = Math.max(0, Math.min(origH - 40, newY));
+
+            state.dragOverlayItem.x = newX;
+            state.dragOverlayItem.y = newY;
+
+            // DOMスタイルをパーセントで即座に同期
+            state.dragOverlayEl.style.left = ((newX / origW) * 100) + '%';
+            state.dragOverlayEl.style.top = ((newY / origH) * 100) + '%';
+
+            // 右側パネルのX/Y入力欄にリアルタイム反映
+            syncOverlayInputs(state.dragOverlayItem.id, newX, newY);
+            return;
+        }
+
         if (!state.isDragging && !state.isResizing) return;
 
         const rect = overlay.getBoundingClientRect();
@@ -834,6 +868,16 @@ function initCanvasInteractions() {
     });
 
     window.addEventListener('mouseup', () => {
+        if (state.isOverlayDragging) {
+            state.isOverlayDragging = false;
+            if (state.dragOverlayEl) {
+                state.dragOverlayEl.classList.remove('dragging');
+            }
+            state.dragOverlayItem = null;
+            state.dragOverlayEl = null;
+            state.overlayDragStart = null;
+        }
+
         if (state.isDragging || state.isResizing) {
             const finishedAction = state.dragAction;
             const targetArea = state.dragTargetArea;
@@ -1082,12 +1126,80 @@ function renderTextOverlays() {
             el.style.left = leftPercent + '%';
             el.style.top = topPercent + '%';
             el.style.padding = `${Math.round(previewFontSize * 0.25)}px ${Math.round(previewFontSize * 0.5)}px`;
-            el.style.borderRadius = `${Math.max(4, Math.round(previewFontSize * 0.15))}px`;
-        }
-
         el.textContent = text;
+
+        // 掴んで自由に移動するためのドラッグイベントリスナー
+        el.addEventListener('pointerdown', (e) => {
+            e.stopPropagation(); // 下層のステージ枠選択や枠作成を防止
+            e.preventDefault();
+
+            const stageRect = elements.canvasStage.getBoundingClientRect();
+            if (stageRect.width === 0 || stageRect.height === 0) return;
+
+            state.isOverlayDragging = true;
+            state.dragOverlayItem = overlay;
+            state.dragOverlayEl = el;
+            el.classList.add('dragging');
+
+            const origW = Number(state.width) || 2500;
+            const origH = Number(state.height) || 1686;
+
+            // もし上部帯や下部帯だった場合、掴んで動かしたら自動的に「自由配置(free)」に昇格して任意位置へ移動可能にする
+            if (overlay.type === 'banner_top' || overlay.type === 'banner_bottom') {
+                overlay.type = 'free';
+                const elRect = el.getBoundingClientRect();
+                const relX = ((elRect.left - stageRect.left) / stageRect.width) * origW;
+                const relY = ((elRect.top - stageRect.top) / stageRect.height) * origH;
+                overlay.x = Math.round(Math.max(10, Math.min(origW - 200, relX)));
+                overlay.y = Math.round(Math.max(10, Math.min(origH - 100, relY)));
+                el.className = `overlay-text-item free overlay-theme-${overlay.theme || 'red'} dragging`;
+                el.style.width = 'auto';
+                el.style.height = 'auto';
+                el.style.lineHeight = 'normal';
+                renderTextOverlayControls(); // カード側も自由配置に切り替え
+            }
+
+            const currentX = Number(overlay.x || 60);
+            const currentY = Number(overlay.y || 60);
+
+            state.overlayDragStart = {
+                pointerX: e.clientX,
+                pointerY: e.clientY,
+                initX: currentX,
+                initY: currentY,
+                stageW: stageRect.width,
+                stageH: stageRect.height
+            };
+
+            // 右側カードのハイライト＆自動スクロール
+            highlightOverlayCard(overlay.id);
+        });
+
         elements.textOverlaysStage.appendChild(el);
     });
+}
+
+function highlightOverlayCard(overlayId) {
+    if (!elements.textOverlayList) return;
+    const cards = elements.textOverlayList.querySelectorAll('.text-overlay-card');
+    cards.forEach(c => {
+        if (Number(c.dataset.id) === Number(overlayId)) {
+            c.classList.add('highlighted');
+            c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+            c.classList.remove('highlighted');
+        }
+    });
+}
+
+function syncOverlayInputs(overlayId, x, y) {
+    if (!elements.textOverlayList) return;
+    const card = elements.textOverlayList.querySelector(`.text-overlay-card[data-id="${overlayId}"]`);
+    if (!card) return;
+    const posXInput = card.querySelector('.overlay-pos-x');
+    const posYInput = card.querySelector('.overlay-pos-y');
+    if (posXInput) posXInput.value = Math.round(x);
+    if (posYInput) posYInput.value = Math.round(y);
 }
 
 function renderTextOverlayControls() {
@@ -1170,14 +1282,17 @@ function renderTextOverlayControls() {
                     </select>
                 </div>
                 ${(overlay.type === 'badge' || overlay.type === 'free') ? `
-                <div style="display: flex; gap: 6px; align-items: flex-end;">
+                <div style="display: flex; gap: 6px; align-items: flex-end; flex-wrap: wrap;">
                     <div>
                         <span class="option-group-label">X:</span>
-                        <input type="number" class="coord-field-xs overlay-pos-x" value="${Math.round(overlay.x || 60)}" style="width: 55px; font-size: 11px; padding: 3px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                        <input type="number" class="coord-field-xs overlay-pos-x" value="${Math.round(overlay.x || 60)}" style="width: 52px; font-size: 11px; padding: 3px; border: 1px solid #cbd5e1; border-radius: 4px;">
                     </div>
                     <div>
                         <span class="option-group-label">Y:</span>
-                        <input type="number" class="coord-field-xs overlay-pos-y" value="${Math.round(overlay.y || 60)}" style="width: 55px; font-size: 11px; padding: 3px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                        <input type="number" class="coord-field-xs overlay-pos-y" value="${Math.round(overlay.y || 60)}" style="width: 52px; font-size: 11px; padding: 3px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                    </div>
+                    <div style="font-size: 10px; color: #06C755; font-weight: 700; padding-bottom: 4px;" title="プレビュー上の文字を直接ドラッグして移動できます">
+                        <i class="fa-solid fa-arrows-up-down-left-right"></i> 直接ドラッグ可
                     </div>
                 </div>
                 ` : ''}
