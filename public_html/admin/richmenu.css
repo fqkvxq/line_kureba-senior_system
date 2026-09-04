@@ -1341,3 +1341,51 @@
     border-radius: 4px;
     background: #fff;
 }
+
+/* 装飾テキスト用 アクション設定エリア */
+.overlay-action-section {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed #e2e8f0;
+}
+
+.action-active-badge {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+.action-active-badge.active {
+    background: #dcfce7;
+    color: #15803d;
+    border-color: #86efac;
+}
+
+.overlay-action-indicator {
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    background: #06C755;
+    color: #ffffff;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+    z-index: 10;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    text-shadow: none;
+}
+
+.overlay-text-item.has-action {
+    cursor: pointer;
+}
+

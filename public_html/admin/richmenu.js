@@ -1152,6 +1152,18 @@ function renderTextOverlays() {
         }
         el.textContent = text;
 
+        // タップ時アクションが設定されている場合の視覚的インジケータ表示
+        if (overlay.action && overlay.action.type && overlay.action.type !== 'none') {
+            el.classList.add('has-action');
+            const ind = document.createElement('span');
+            ind.className = 'overlay-action-indicator';
+            let actionLabel = 'URL';
+            if (overlay.action.type === 'postback') actionLabel = 'ポストバック';
+            if (overlay.action.type === 'message') actionLabel = 'メッセージ';
+            ind.innerHTML = `<i class="fa-solid fa-bolt"></i> ${actionLabel}`;
+            el.appendChild(ind);
+        }
+
         // 掴んで自由に移動するためのドラッグイベントリスナー
         el.addEventListener('pointerdown', (e) => {
             e.stopPropagation(); // 下層のステージ枠選択や枠作成を防止
@@ -1272,6 +1284,10 @@ function renderTextOverlayControls() {
             free: '自由'
         };
 
+        const action = overlay.action || { type: 'none', uri: '', data: '', displayText: '', text: '' };
+        overlay.action = action;
+        const actionType = action.type || 'none';
+
         card.innerHTML = `
             <div class="card-header-row">
                 <span class="overlay-card-title">
@@ -1344,6 +1360,49 @@ function renderTextOverlayControls() {
                 </div>
                 ` : ''}
             </div>
+
+            <!-- タップ時アクション設定エリア -->
+            <div class="overlay-action-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <span class="option-group-label" style="margin-bottom: 0;">
+                        <i class="fa-solid fa-hand-pointer" style="color: #06C755;"></i> タップ時のアクション:
+                    </span>
+                    <span class="action-active-badge ${actionType !== 'none' ? 'active' : ''}">
+                        ${actionType === 'none' ? 'なし（下層枠が反応）' : (actionType === 'uri' ? '🔗 URL' : (actionType === 'postback' ? '⚡ ポストバック' : '💬 メッセージ'))}
+                    </span>
+                </div>
+                <div class="type-buttons-group overlay-action-type-group">
+                    <button type="button" class="btn-type-pill btn-action-type ${actionType === 'none' ? 'active' : ''}" data-atype="none">なし</button>
+                    <button type="button" class="btn-type-pill btn-action-type ${actionType === 'uri' ? 'active' : ''}" data-atype="uri">URL</button>
+                    <button type="button" class="btn-type-pill btn-action-type ${actionType === 'postback' ? 'active' : ''}" data-atype="postback">ポストバック</button>
+                    <button type="button" class="btn-type-pill btn-action-type ${actionType === 'message' ? 'active' : ''}" data-atype="message">メッセージ</button>
+                </div>
+
+                <!-- URI 入力 -->
+                <div class="overlay-action-field-group atype-field-uri" style="display: ${actionType === 'uri' ? 'block' : 'none'}; margin-top: 6px;">
+                    <input type="url" class="overlay-action-uri-input" value="${escapeHtml(action.uri || '')}" placeholder="https://example.com" style="width: 100%; box-sizing: border-box; font-size: 11px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                    <div class="phrase-chips-row" style="margin-top: 4px; margin-bottom: 0;">
+                        <button type="button" class="phrase-chip overlay-action-chip" data-atype="uri" data-val="https://www.goo-net.com/usedcar_shop/0205244/stock.html">Goo-net在庫</button>
+                        <button type="button" class="phrase-chip overlay-action-chip" data-atype="uri" data-stamp="1">🎫 スタンプカード</button>
+                    </div>
+                </div>
+
+                <!-- Postback 入力 -->
+                <div class="overlay-action-field-group atype-field-postback" style="display: ${actionType === 'postback' ? 'block' : 'none'}; margin-top: 6px;">
+                    <input type="text" class="overlay-action-data-input" value="${escapeHtml(action.data || '')}" placeholder="action=search_all" style="width: 100%; box-sizing: border-box; font-size: 11px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                    <div class="phrase-chips-row" style="margin-top: 4px; margin-bottom: 0;">
+                        <button type="button" class="phrase-chip overlay-action-chip" data-atype="postback" data-val="action=search_all">在庫全台</button>
+                        <button type="button" class="phrase-chip overlay-action-chip" data-atype="postback" data-val="action=open_mycar">点検WEB予約</button>
+                        <button type="button" class="phrase-chip overlay-action-chip" data-atype="postback" data-val="action=show_price_menu">価格別</button>
+                        <button type="button" class="phrase-chip overlay-action-chip" data-atype="postback" data-val="action=show_type_menu">車種別</button>
+                    </div>
+                </div>
+
+                <!-- Message 入力 -->
+                <div class="overlay-action-field-group atype-field-message" style="display: ${actionType === 'message' ? 'block' : 'none'}; margin-top: 6px;">
+                    <input type="text" class="overlay-action-text-input" value="${escapeHtml(action.text || '')}" placeholder="タップ時に送信するメッセージ" style="width: 100%; box-sizing: border-box; font-size: 11px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                </div>
+            </div>
         `;
 
         // イベント: 文字入力
@@ -1354,7 +1413,7 @@ function renderTextOverlayControls() {
         });
 
         // イベント: 定型文チップクリック
-        card.querySelectorAll('.phrase-chip').forEach(chip => {
+        card.querySelectorAll('.phrase-chip:not(.overlay-action-chip)').forEach(chip => {
             chip.addEventListener('click', () => {
                 overlay.text = chip.dataset.phrase;
                 textInput.value = overlay.text;
@@ -1363,7 +1422,7 @@ function renderTextOverlayControls() {
         });
 
         // イベント: 配置タイプ切り替え
-        card.querySelectorAll('.btn-type-pill').forEach(btn => {
+        card.querySelectorAll('.type-buttons-group:not(.overlay-action-type-group) .btn-type-pill').forEach(btn => {
             btn.addEventListener('click', () => {
                 overlay.type = btn.dataset.type;
                 renderTextOverlayControls();
@@ -1403,6 +1462,85 @@ function renderTextOverlayControls() {
             });
         }
 
+        // イベント: アクションタイプ切り替え
+        card.querySelectorAll('.btn-action-type').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const atype = btn.dataset.atype;
+                overlay.action = overlay.action || {};
+                overlay.action.type = atype;
+                if (atype === 'uri' && !overlay.action.uri) {
+                    overlay.action.uri = 'https://www.goo-net.com/usedcar_shop/0205244/stock.html';
+                } else if (atype === 'postback' && !overlay.action.data) {
+                    overlay.action.data = 'action=search_all';
+                }
+                renderTextOverlayControls();
+                renderTextOverlays();
+            });
+        });
+
+        // イベント: アクション入力同期
+        const actionUriInput = card.querySelector('.overlay-action-uri-input');
+        if (actionUriInput) {
+            actionUriInput.addEventListener('input', () => {
+                overlay.action = overlay.action || {};
+                overlay.action.uri = actionUriInput.value.trim();
+                renderTextOverlays();
+            });
+        }
+        const actionDataInput = card.querySelector('.overlay-action-data-input');
+        if (actionDataInput) {
+            actionDataInput.addEventListener('input', () => {
+                overlay.action = overlay.action || {};
+                overlay.action.data = actionDataInput.value.trim();
+                renderTextOverlays();
+            });
+        }
+        const actionTextInput = card.querySelector('.overlay-action-text-input');
+        if (actionTextInput) {
+            actionTextInput.addEventListener('input', () => {
+                overlay.action = overlay.action || {};
+                overlay.action.text = actionTextInput.value.trim();
+                renderTextOverlays();
+            });
+        }
+
+        // イベント: アクションクイックチップクリック
+        card.querySelectorAll('.overlay-action-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                overlay.action = overlay.action || {};
+                if (chip.dataset.stamp === '1') {
+                    const savedUrl = localStorage.getItem('line_shopcard_url') || '';
+                    if (savedUrl) {
+                        overlay.action.uri = savedUrl;
+                        if (actionUriInput) actionUriInput.value = savedUrl;
+                        renderTextOverlays();
+                        showToast('保存済みのLINEスタンプカードURLを設定しました', 'success');
+                    } else {
+                        const inputUrl = prompt('【LINE公式スタンプカードURL設定】\nスタンプカードURLを入力してください:');
+                        if (inputUrl && inputUrl.trim()) {
+                            const clean = inputUrl.trim();
+                            localStorage.setItem('line_shopcard_url', clean);
+                            overlay.action.uri = clean;
+                            if (actionUriInput) actionUriInput.value = clean;
+                            renderTextOverlays();
+                            showToast('スタンプカードURLを設定しました！', 'success');
+                        }
+                    }
+                    return;
+                }
+
+                if (chip.dataset.atype === 'uri' && chip.dataset.val) {
+                    overlay.action.uri = chip.dataset.val;
+                    if (actionUriInput) actionUriInput.value = chip.dataset.val;
+                    renderTextOverlays();
+                } else if (chip.dataset.atype === 'postback' && chip.dataset.val) {
+                    overlay.action.data = chip.dataset.val;
+                    if (actionDataInput) actionDataInput.value = chip.dataset.val;
+                    renderTextOverlays();
+                }
+            });
+        });
+
         // イベント: 削除
         card.querySelector('.btn-delete-card-xs').addEventListener('click', () => {
             deleteTextOverlay(overlay.id);
@@ -1421,7 +1559,8 @@ function addTextOverlay(data = {}) {
         theme: data.theme || (state.textOverlays.length === 0 ? 'red' : 'green'),
         size: data.size || 'md',
         x: data.x || 60,
-        y: data.y || 60
+        y: data.y || 60,
+        action: data.action || { type: 'none', uri: '', data: '', displayText: '', text: '' }
     };
     state.textOverlays.push(item);
     renderTextOverlayControls();
@@ -1513,6 +1652,7 @@ async function compositeRichMenuImage() {
             lines.forEach((line, lIdx) => {
                 ctx.fillText(line, W / 2, startY + lIdx * lineHeight);
             });
+            overlay.exactBounds = { x: 0, y: 0, width: W, height: Math.min(H, bannerH) };
         } else if (type === 'banner_bottom') {
             const paddingY = Math.round(fontSize * 0.45);
             const bannerH = lineCount * lineHeight + paddingY * 2;
@@ -1529,6 +1669,7 @@ async function compositeRichMenuImage() {
             lines.forEach((line, lIdx) => {
                 ctx.fillText(line, W / 2, startY + lIdx * lineHeight);
             });
+            overlay.exactBounds = { x: 0, y: Math.max(0, bannerY), width: W, height: Math.min(H, bannerH) };
         } else if (type === 'badge') {
             let maxLineW = 0;
             lines.forEach(l => {
@@ -1565,6 +1706,12 @@ async function compositeRichMenuImage() {
             lines.forEach((line, lIdx) => {
                 ctx.fillText(line, posX + badgeW / 2, startY + lIdx * lineHeight);
             });
+            overlay.exactBounds = {
+                x: Math.max(0, posX),
+                y: Math.max(0, posY),
+                width: Math.min(W - Math.max(0, posX), badgeW),
+                height: Math.min(H - Math.max(0, posY), badgeH)
+            };
         } else if (type === 'free') {
             let maxLineW = 0;
             lines.forEach(l => {
@@ -1600,6 +1747,12 @@ async function compositeRichMenuImage() {
             lines.forEach((line, lIdx) => {
                 ctx.fillText(line, posX + boxW / 2, startY + lIdx * lineHeight);
             });
+            overlay.exactBounds = {
+                x: Math.max(0, posX),
+                y: Math.max(0, posY),
+                width: Math.min(W - Math.max(0, posX), boxW),
+                height: Math.min(H - Math.max(0, posY), boxH)
+            };
         }
 
         ctx.restore();
@@ -1614,6 +1767,50 @@ async function compositeRichMenuImage() {
             }
         }, 'image/jpeg', 0.92);
     });
+}
+
+function getOverlayBounds(overlay) {
+    if (overlay.exactBounds) {
+        return overlay.exactBounds;
+    }
+    const W = Number(state.width) || 2500;
+    const H = Number(state.height) || 1686;
+    const canvasScale = W / 2500;
+    const baseFontSize = OVERLAY_FONT_SIZES[overlay.size] || OVERLAY_FONT_SIZES.md;
+    const fontSize = Math.round(baseFontSize * canvasScale);
+    const text = (overlay.text || '').trim();
+    const lines = text.split('\n');
+    const lineCount = lines.length;
+    const lineHeight = Math.round(fontSize * 1.35);
+    const type = overlay.type || 'banner_top';
+
+    if (type === 'banner_top') {
+        const paddingY = Math.round(fontSize * 0.45);
+        const bannerH = lineCount * lineHeight + paddingY * 2;
+        return { x: 0, y: 0, width: W, height: Math.min(H, bannerH) };
+    } else if (type === 'banner_bottom') {
+        const paddingY = Math.round(fontSize * 0.45);
+        const bannerH = lineCount * lineHeight + paddingY * 2;
+        const bannerY = Math.max(0, H - bannerH);
+        return { x: 0, y: bannerY, width: W, height: Math.min(H, bannerH) };
+    } else if (type === 'badge' || type === 'free') {
+        let maxLineLen = 0;
+        lines.forEach(l => { if (l.length > maxLineLen) maxLineLen = l.length; });
+        const approxTextW = maxLineLen * fontSize * 0.95;
+        const paddingX = Math.round(fontSize * (type === 'badge' ? 0.7 : 0.5));
+        const paddingY = Math.round(fontSize * (type === 'badge' ? 0.35 : 0.3));
+        const boxW = Math.round(approxTextW + paddingX * 2);
+        const boxH = Math.round(lineCount * lineHeight + paddingY * 2);
+        const posX = Math.round(overlay.x || 60);
+        const posY = Math.round(overlay.y || 60);
+
+        const safeX = Math.max(0, Math.min(W - 10, posX));
+        const safeY = Math.max(0, Math.min(H - 10, posY));
+        const safeW = Math.max(10, Math.min(W - safeX, boxW));
+        const safeH = Math.max(10, Math.min(H - safeY, boxH));
+        return { x: safeX, y: safeY, width: safeW, height: safeH };
+    }
+    return { x: 0, y: 0, width: W, height: 100 };
 }
 
 function drawCanvasRoundRect(ctx, x, y, width, height, radius) {
@@ -1676,6 +1873,39 @@ async function saveRichMenu(publish) {
             compositedImageFile = await compositeRichMenuImage();
         }
 
+        // アクションが設定された装飾テキストを抽出して overlayAreas を生成
+        const overlayAreas = [];
+        (state.textOverlays || []).forEach(ov => {
+            if (ov.action && ov.action.type && ov.action.type !== 'none') {
+                const b = getOverlayBounds(ov);
+                const safeX = Math.max(0, Math.round(b.x));
+                const safeY = Math.max(0, Math.round(b.y));
+                const safeW = Math.max(1, Math.min(state.width - safeX, Math.round(b.width)));
+                const safeH = Math.max(1, Math.min(state.height - safeY, Math.round(b.height)));
+
+                const actionObj = { type: ov.action.type };
+                if (ov.action.type === 'uri') {
+                    actionObj.uri = ov.action.uri || 'https://www.goo-net.com/usedcar_shop/0205244/stock.html';
+                } else if (ov.action.type === 'postback') {
+                    actionObj.data = ov.action.data || 'action=search_all';
+                    if (ov.action.displayText) actionObj.displayText = ov.action.displayText;
+                } else if (ov.action.type === 'message') {
+                    actionObj.text = ov.action.text || ov.text || 'メニュー';
+                }
+
+                overlayAreas.push({
+                    id: 'overlay_' + ov.id,
+                    is_overlay: true,
+                    bounds: { x: safeX, y: safeY, width: safeW, height: safeH },
+                    action: actionObj
+                });
+            }
+        });
+
+        // LINE API は配列の前にあるエリアを優先判定するため、装飾テキストのタップ領域を先頭に配置
+        // LINEのリッチメニュー仕様上限（20エリア）を超えないよう slice(0, 20)
+        const combinedAreas = [...overlayAreas, ...state.areas].slice(0, 20);
+
         const formData = new FormData();
         formData.append('password', state.password);
         formData.append('title', title);
@@ -1683,7 +1913,7 @@ async function saveRichMenu(publish) {
         formData.append('width', state.width);
         formData.append('height', state.height);
         formData.append('publish', publish ? '1' : '0');
-        formData.append('areas', JSON.stringify(state.areas));
+        formData.append('areas', JSON.stringify(combinedAreas));
         formData.append('text_overlays', JSON.stringify(state.textOverlays || []));
 
         if (hasOverlays && compositedImageFile) {
@@ -1912,27 +2142,29 @@ function loadMenuIntoEditor(item) {
     state.imageSrc = cleanImageUrl;
     state.baseImageSrc = cleanImageUrl;
 
-    // 2. エリア配列のIDと数値を安全に再構築 (ID欠落によるクリック不可バグを完全解消)
-    state.areas = (item.areas || []).map((a, idx) => ({
-        id: a.id ? parseInt(a.id, 10) : (idx + 1),
-        bounds: {
-            x: Math.round(Number(a.bounds?.x || 0)),
-            y: Math.round(Number(a.bounds?.y || 0)),
-            width: Math.round(Number(a.bounds?.width || 100)),
-            height: Math.round(Number(a.bounds?.height || 100))
-        },
-        action: {
-            type: a.action?.type || 'postback',
-            data: a.action?.data || '',
-            displayText: a.action?.displayText || '',
-            uri: a.action?.uri || '',
-            text: a.action?.text || ''
-        }
-    }));
+    // 2. エリア配列のIDと数値を安全に再構築 (装飾文字合成用の一時エリアを除外)
+    state.areas = (item.areas || [])
+        .filter(a => !a.is_overlay && !String(a.id || '').startsWith('overlay_'))
+        .map((a, idx) => ({
+            id: a.id ? parseInt(a.id, 10) : (idx + 1),
+            bounds: {
+                x: Math.round(Number(a.bounds?.x || 0)),
+                y: Math.round(Number(a.bounds?.y || 0)),
+                width: Math.round(Number(a.bounds?.width || 100)),
+                height: Math.round(Number(a.bounds?.height || 100))
+            },
+            action: {
+                type: a.action?.type || 'postback',
+                data: a.action?.data || '',
+                displayText: a.action?.displayText || '',
+                uri: a.action?.uri || '',
+                text: a.action?.text || ''
+            }
+        }));
 
     state.selectedAreaId = state.areas.length > 0 ? state.areas[0].id : null;
 
-    // 3. 装飾テキストの復元
+    // 3. 装飾テキストの復元（アクション設定も復元）
     state.textOverlays = (item.text_overlays || []).map((o, idx) => ({
         id: o.id ? parseInt(o.id, 10) : (idx + 1),
         text: o.text || '',
@@ -1940,7 +2172,8 @@ function loadMenuIntoEditor(item) {
         theme: o.theme || 'red',
         size: o.size || 'md',
         x: Number(o.x || 60),
-        y: Number(o.y || 60)
+        y: Number(o.y || 60),
+        action: o.action || { type: 'none', uri: '', data: '', displayText: '', text: '' }
     }));
     renderTextOverlays();
     renderTextOverlayControls();

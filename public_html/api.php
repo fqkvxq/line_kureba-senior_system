@@ -1414,7 +1414,7 @@ try {
             $lineAreas = [];
             $dbAreas = [];
             foreach ($areas as $idx => $a) {
-                $areaId = !empty($a['id']) ? (int)$a['id'] : ($idx + 1);
+                $areaId = !empty($a['id']) ? $a['id'] : ($idx + 1);
                 $bounds = [
                     'x' => max(0, (int)($a['bounds']['x'] ?? 0)),
                     'y' => max(0, (int)($a['bounds']['y'] ?? 0)),
@@ -1448,6 +1448,7 @@ try {
                 ];
                 $dbAreas[] = [
                     'id' => $areaId,
+                    'is_overlay' => !empty($a['is_overlay']),
                     'bounds' => $bounds,
                     'action' => $action
                 ];
