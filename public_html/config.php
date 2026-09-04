@@ -33,6 +33,7 @@ define('RICHMENU_UPLOAD_DIR', __DIR__ . '/uploads/richmenu');
 if (!is_dir(RICHMENU_UPLOAD_DIR)) {
     @mkdir(RICHMENU_UPLOAD_DIR, 0777, true);
 }
+@chmod(RICHMENU_UPLOAD_DIR, 0777);
 
 /**
  * データベースファイルのパスを自動検出
@@ -645,6 +646,34 @@ function lineGetRichMenuAliasList(): array {
         return ['success' => true, 'aliases' => $json['aliases'] ?? []];
     }
     return ['success' => false, 'aliases' => []];
+}
+
+/**
+ * LINE Messaging API: リッチメニューの画像バイナリを取得
+ * GET https://api-data.line.me/v2/bot/richmenu/{richMenuId}/content
+ */
+function lineGetRichMenuImage(string $richMenuId): ?string {
+    if (empty($richMenuId) || LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+        return null;
+    }
+
+    $url = "https://api-data.line.me/v2/bot/richmenu/{$richMenuId}/content";
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 15,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+        ]
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode === 200 && !empty($res)) {
+        return $res;
+    }
+    return null;
 }
 
 /**

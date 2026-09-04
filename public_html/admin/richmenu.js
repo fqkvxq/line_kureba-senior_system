@@ -2158,7 +2158,7 @@ function renderHistoryList() {
 
         card.innerHTML = `
             <div class="history-thumb-wrap">
-                <img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.title)}" loading="lazy">
+                <img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.title)}" loading="lazy" onerror="if(this.dataset.retry!=='1'){this.dataset.retry='1';this.src='../api.php?action=richmenu_image&id=${item.id}';}">
                 ${isLive ? '<span class="badge-live-now"><i class="fa-solid fa-circle-check"></i> 全体本番中</span>' : ''}
                 ${isNotice ? '<span class="badge-notice-tag"><i class="fa-solid fa-bullhorn"></i> お知らせ専用</span>' : ''}
                 ${isActiveNotice ? '<span class="badge-notice-live"><i class="fa-solid fa-bolt"></i> クイックリプライ連携中</span>' : ''}

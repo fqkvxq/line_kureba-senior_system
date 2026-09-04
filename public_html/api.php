@@ -1202,6 +1202,58 @@ try {
             }
             break;
 
+        // --- 11-2. リッチメニュー画像配信 & LINE自動リカバリ ---
+        case 'richmenu_image':
+            $id = (int)($_GET['id'] ?? 0);
+            $stmt = $db->prepare("SELECT * FROM rich_menus WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+            $menu = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$menu) {
+                http_response_code(404);
+                exit('Rich menu not found');
+            }
+
+            // ローカルファイル名を取得
+            $imgFileName = basename(parse_url($menu['image_url'], PHP_URL_PATH) ?? '');
+            if (empty($imgFileName) || !preg_match('/^[a-zA-Z0-9_\-\.]+$/', $imgFileName)) {
+                $imgFileName = "rm_{$menu['id']}.jpg";
+            }
+            $localFilePath = RICHMENU_UPLOAD_DIR . '/' . $imgFileName;
+
+            // 1. ローカルに画像ファイルが存在し中身があれば即座に配信
+            if (file_exists($localFilePath) && filesize($localFilePath) > 0) {
+                $ext = strtolower(pathinfo($localFilePath, PATHINFO_EXTENSION));
+                $mime = ($ext === 'png') ? 'image/png' : 'image/jpeg';
+                header("Content-Type: {$mime}");
+                header("Content-Length: " . filesize($localFilePath));
+                header("Cache-Control: public, max-age=86400");
+                readfile($localFilePath);
+                exit;
+            }
+
+            // 2. ローカルにない場合、LINE Messaging API から画像バイナリを自動取得・キャッシュ復元
+            if (!empty($menu['line_menu_id'])) {
+                $imgBinary = lineGetRichMenuImage($menu['line_menu_id']);
+                if (!empty($imgBinary)) {
+                    if (!is_dir(RICHMENU_UPLOAD_DIR)) {
+                        @mkdir(RICHMENU_UPLOAD_DIR, 0777, true);
+                    }
+                    @file_put_contents($localFilePath, $imgBinary);
+                    @chmod($localFilePath, 0666);
+
+                    header("Content-Type: image/jpeg");
+                    header("Content-Length: " . strlen($imgBinary));
+                    header("Cache-Control: public, max-age=86400");
+                    echo $imgBinary;
+                    exit;
+                }
+            }
+
+            // 3. LINE側にもない場合のフォールバック（SVGプレースホルダー）
+            header("Content-Type: image/svg+xml");
+            echo '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="540" viewBox="0 0 800 540"><rect width="800" height="540" fill="#f1f5f9"/><text x="400" y="270" font-family="sans-serif" font-size="28" fill="#94a3b8" text-anchor="middle" dominant-baseline="central">画像準備中</text></svg>';
+            exit;
+
         // --- 11. リッチメニュー管理: 一覧取得 ---
         case 'admin_list_richmenus':
             $authPass = $_POST['password'] ?? ($_GET['password'] ?? '');
@@ -1247,6 +1299,23 @@ try {
                     }
                 }
                 $m['is_notice'] = (int)($m['is_notice'] ?? 0);
+
+                // ローカル画像ファイルの存在チェック & 存在しなければLINE自動復元URLにフォールバック
+                $localFileName = basename(parse_url($m['image_url'], PHP_URL_PATH) ?? '');
+                $localFilePath = RICHMENU_UPLOAD_DIR . '/' . $localFileName;
+                if (empty($localFileName) || !file_exists($localFilePath) || filesize($localFilePath) === 0) {
+                    $m['image_url'] = '../api.php?action=richmenu_image&id=' . $m['id'];
+                }
+
+                if (!empty($m['base_image_url'])) {
+                    $baseFileName = basename(parse_url($m['base_image_url'], PHP_URL_PATH) ?? '');
+                    $baseFilePath = RICHMENU_UPLOAD_DIR . '/' . $baseFileName;
+                    if (empty($baseFileName) || !file_exists($baseFilePath) || filesize($baseFilePath) === 0) {
+                        $m['base_image_url'] = $m['image_url'];
+                    }
+                } else {
+                    $m['base_image_url'] = $m['image_url'];
+                }
             }
             unset($m);
 
