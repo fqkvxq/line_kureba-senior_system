@@ -2183,11 +2183,9 @@ function renderHistoryList() {
                     ${item.alias_id ? `<span><i class="fa-solid fa-tag"></i> エイリアス: <code>${escapeHtml(item.alias_id)}</code></span>` : ''}
                 </div>
                 <div class="history-actions">
-                    ${isNotice ? `
-                        <button class="btn-set-active-notice ${isActiveNotice ? 'is-active' : ''}" data-id="${item.id}" ${isActiveNotice ? 'disabled' : ''}>
-                            ${isActiveNotice ? '<i class="fa-solid fa-check"></i> クイックリプライ連携中' : '<i class="fa-solid fa-bolt"></i> クイックリプライ連携に設定'}
-                        </button>
-                    ` : ''}
+                    <button class="btn-set-active-notice ${isActiveNotice ? 'is-active' : ''}" data-id="${item.id}" ${isActiveNotice ? 'disabled' : ''} title="LINEのクイックリプライ「📢 お知らせ」を押した時にこのメニューを表示する">
+                        ${isActiveNotice ? '<i class="fa-solid fa-check"></i> お知らせ連携中' : '<i class="fa-solid fa-bullhorn"></i> お知らせ連携に設定'}
+                    </button>
                     <button class="btn-apply-card ${isLive ? 'disabled' : ''}" data-id="${item.id}" ${isLive ? 'disabled' : ''} title="LINE公式アカウント全体のデフォルトリッチメニューに設定">
                         ${isLive ? '<i class="fa-solid fa-check"></i> 全体本番公開中' : '<i class="fa-solid fa-paper-plane"></i> 全体本番に適用'}
                     </button>

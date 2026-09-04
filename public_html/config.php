@@ -773,10 +773,25 @@ function getActiveNoticeRichMenu(?PDO $pdo = null): ?array {
         $menu = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($menu) return $menu;
 
-        // 2. なければ最新の is_notice = 1 のメニュー
+        // 2. 最新の is_notice = 1 のメニュー
         $stmt2 = $pdo->query("SELECT * FROM rich_menus WHERE is_notice = 1 ORDER BY id DESC LIMIT 1");
         $menu2 = $stmt2->fetch(PDO::FETCH_ASSOC);
         if ($menu2) return $menu2;
+
+        // 3. タイトルまたはchat_bar_textに「お知らせ」「案内」「キャンペーン」「イベント」が含まれるメニュー
+        $stmt3 = $pdo->query("SELECT * FROM rich_menus WHERE (title LIKE '%お知らせ%' OR chat_bar_text LIKE '%お知らせ%' OR title LIKE '%案内%' OR chat_bar_text LIKE '%案内%' OR title LIKE '%キャンペーン%' OR title LIKE '%イベント%') ORDER BY id DESC LIMIT 1");
+        $menu3 = $stmt3->fetch(PDO::FETCH_ASSOC);
+        if ($menu3) return $menu3;
+
+        // 4. 全体本番（is_active=1）以外の最新メニュー（サブメニュー候補）
+        $stmt4 = $pdo->query("SELECT * FROM rich_menus WHERE is_active = 0 ORDER BY id DESC LIMIT 1");
+        $menu4 = $stmt4->fetch(PDO::FETCH_ASSOC);
+        if ($menu4) return $menu4;
+
+        // 5. 登録されている最新のメニュー
+        $stmt5 = $pdo->query("SELECT * FROM rich_menus ORDER BY id DESC LIMIT 1");
+        $menu5 = $stmt5->fetch(PDO::FETCH_ASSOC);
+        if ($menu5) return $menu5;
     } catch (Throwable $e) {
         writeDebugLog("getActiveNoticeRichMenuエラー: " . $e->getMessage());
     }

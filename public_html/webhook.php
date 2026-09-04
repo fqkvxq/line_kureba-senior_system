@@ -3792,14 +3792,48 @@ function generateEquipmentMenuMessages(PDO $db): array {
 function handleShowNoticeMenu(string $replyToken, string $userId): void {
     $noticeMenu = getActiveNoticeRichMenu();
     if ($noticeMenu && !empty($noticeMenu['line_menu_id'])) {
-        // ユーザーに個別紐付け
-        lineLinkUserRichMenu($userId, $noticeMenu['line_menu_id']);
+        // ユーザーに個別紐付け (トーク画面下部のリッチメニューをお知らせメニューに切り替え)
+        $linkRes = lineLinkUserRichMenu($userId, $noticeMenu['line_menu_id']);
+        writeDebugLog("お知らせリッチメニュー紐付け実行", [
+            'userId' => $userId,
+            'richMenuId' => $noticeMenu['line_menu_id'],
+            'res' => $linkRes
+        ]);
+
         $menuTitle = $noticeMenu['title'] ?? 'お知らせ';
+
         $messages = [
             [
                 'type' => 'text',
-                'text' => "📢 {$menuTitle}\n\n下部のメニューにお知らせを表示しました。\n「OK」または「閉じる」をタップすると、通常のメニューに戻ります。",
-                'quickReply' => getQuickReplyItems()
+                'text' => "📢 {$menuTitle}\n\n下部のメニューにお知らせを表示しました👇\n（閉じる場合は、メニュー内の「OK」または「閉じる」をタップすると通常メニューに戻ります）",
+                'quickReply' => [
+                    'items' => [
+                        [
+                            'type' => 'action',
+                            'action' => [
+                                'type' => 'postback',
+                                'label' => '✕ 通常メニューに戻す',
+                                'data' => 'action=close_notice'
+                            ]
+                        ],
+                        [
+                            'type' => 'action',
+                            'action' => [
+                                'type' => 'postback',
+                                'label' => '🚗 在庫全台',
+                                'data' => 'action=search_all'
+                            ]
+                        ],
+                        [
+                            'type' => 'action',
+                            'action' => [
+                                'type' => 'postback',
+                                'label' => '🛠️ 点検受付',
+                                'data' => 'action=open_mycar'
+                            ]
+                        ]
+                    ]
+                ]
             ]
         ];
         sendReplyMessage($replyToken, $messages);
@@ -3819,7 +3853,11 @@ function handleShowNoticeMenu(string $replyToken, string $userId): void {
  * ユーザーのお知らせリッチメニューを解除して通常メニューに戻す
  */
 function handleCloseNoticeMenu(string $replyToken, string $userId): void {
-    lineUnlinkUserRichMenu($userId);
+    $unlinkRes = lineUnlinkUserRichMenu($userId);
+    writeDebugLog("お知らせリッチメニュー解除実行", [
+        'userId' => $userId,
+        'res' => $unlinkRes
+    ]);
     $messages = [
         [
             'type' => 'text',

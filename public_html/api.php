@@ -1669,18 +1669,18 @@ try {
             }
 
             $id = (int)($_POST['id'] ?? ($_GET['id'] ?? 0));
-            $stmt = $db->prepare("SELECT * FROM rich_menus WHERE id = :id AND is_notice = 1");
+            $stmt = $db->prepare("SELECT * FROM rich_menus WHERE id = :id");
             $stmt->execute([':id' => $id]);
             $menu = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$menu) {
                 http_response_code(404);
-                echo json_encode(['success' => false, 'error' => '指定されたお知らせメニューが見つかりません']);
+                echo json_encode(['success' => false, 'error' => '指定されたメニューが見つかりません']);
                 exit;
             }
 
-            // 他のお知らせメニューのis_activeを0にして、このメニューを1にする
+            // 他のお知らせメニューのis_activeを0にして、このメニューをis_notice=1 & is_active=1にする
             $db->exec("UPDATE rich_menus SET is_active = 0 WHERE is_notice = 1");
-            $db->prepare("UPDATE rich_menus SET is_active = 1 WHERE id = :id")->execute([':id' => $id]);
+            $db->prepare("UPDATE rich_menus SET is_notice = 1, is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = :id")->execute([':id' => $id]);
 
             echo json_encode([
                 'success' => true,
