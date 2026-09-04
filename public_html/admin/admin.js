@@ -6,7 +6,10 @@ const state = {
     password: '',
     allCustomers: [],
     currentFilter: 'all',
-    searchQuery: ''
+    searchQuery: '',
+    richMenus: [],
+    activeUserMenuCust: null,
+    loadedBaseImg: null
 };
 
 const elements = {
@@ -35,7 +38,7 @@ const elements = {
     customerTableBody: document.getElementById('customerTableBody'),
     emptyTablePlaceholder: document.getElementById('emptyTablePlaceholder'),
 
-    // モーダル
+    // 顧客登録・編集モーダル
     customerEditModal: document.getElementById('customerEditModal'),
     openAddCustomerModalBtn: document.getElementById('openAddCustomerModalBtn'),
     closeEditModalBtn: document.getElementById('closeEditModalBtn'),
@@ -43,7 +46,7 @@ const elements = {
     saveCustomerBtn: document.getElementById('saveCustomerBtn'),
     modalTitle: document.getElementById('modalTitle'),
     
-    // フォーム
+    // 顧客フォーム
     editUserId: document.getElementById('editUserId'),
     editUserUid: document.getElementById('editUserUid'),
     editUserName: document.getElementById('editUserName'),
@@ -54,6 +57,30 @@ const elements = {
     editPeriodicNextDate: document.getElementById('editPeriodicNextDate'),
     editInspectionNextDate: document.getElementById('editInspectionNextDate'),
     editStaffMemo: document.getElementById('editStaffMemo'),
+
+    // 特定ユーザー向け専用リッチメニュー設定モーダル
+    userRichMenuModal: document.getElementById('userRichMenuModal'),
+    userMenuModalTitle: document.getElementById('userMenuModalTitle'),
+    closeUserMenuModalBtn: document.getElementById('closeUserMenuModalBtn'),
+    cancelUserMenuBtn: document.getElementById('cancelUserMenuBtn'),
+    applyUserMenuBtn: document.getElementById('applyUserMenuBtn'),
+    btnUnlinkMenuBtn: document.getElementById('btnUnlinkMenuBtn'),
+    modalCustName: document.getElementById('modalCustName'),
+    modalCustCar: document.getElementById('modalCustCar'),
+    pillOil: document.getElementById('pillOil'),
+    pillPeriodic: document.getElementById('pillPeriodic'),
+    pillInsp: document.getElementById('pillInsp'),
+    userMenuStatusAlert: document.getElementById('userMenuStatusAlert'),
+    currentCustomText: document.getElementById('currentCustomText'),
+    userMenuBaseSelect: document.getElementById('userMenuBaseSelect'),
+    userMenuTextInput: document.getElementById('userMenuTextInput'),
+    userMenuThemeSelect: document.getElementById('userMenuThemeSelect'),
+    userMenuPosSelect: document.getElementById('userMenuPosSelect'),
+    userMenuPreviewCanvas: document.getElementById('userMenuPreviewCanvas'),
+    chipCustInsp: document.getElementById('chipCustInsp'),
+    chipCustOil: document.getElementById('chipCustOil'),
+    chipCustPeriodic: document.getElementById('chipCustPeriodic'),
+    chipCustNotice: document.getElementById('chipCustNotice'),
 
     toast: document.getElementById('adminToast')
 };
@@ -118,11 +145,29 @@ function initEventListeners() {
         });
     });
 
-    // モーダル開閉
+    // 顧客登録・編集モーダル開閉
     elements.openAddCustomerModalBtn.addEventListener('click', () => openEditModal(null));
     elements.closeEditModalBtn.addEventListener('click', () => closeEditModal());
     elements.cancelEditBtn.addEventListener('click', () => closeEditModal());
     elements.saveCustomerBtn.addEventListener('click', () => saveCustomer());
+
+    // 特定ユーザー向け専用リッチメニュー設定モーダル開閉 & 操作
+    if (elements.closeUserMenuModalBtn) elements.closeUserMenuModalBtn.addEventListener('click', closeUserRichMenuModal);
+    if (elements.cancelUserMenuBtn) elements.cancelUserMenuBtn.addEventListener('click', closeUserRichMenuModal);
+    if (elements.applyUserMenuBtn) elements.applyUserMenuBtn.addEventListener('click', applyUserRichMenu);
+    if (elements.btnUnlinkMenuBtn) elements.btnUnlinkMenuBtn.addEventListener('click', unlinkUserRichMenu);
+
+    // 定型文チップ
+    if (elements.chipCustInsp) elements.chipCustInsp.addEventListener('click', () => insertCustomPhrase('insp'));
+    if (elements.chipCustOil) elements.chipCustOil.addEventListener('click', () => insertCustomPhrase('oil'));
+    if (elements.chipCustPeriodic) elements.chipCustPeriodic.addEventListener('click', () => insertCustomPhrase('periodic'));
+    if (elements.chipCustNotice) elements.chipCustNotice.addEventListener('click', () => insertCustomPhrase('notice'));
+
+    // プレビュー変更トリガー
+    if (elements.userMenuTextInput) elements.userMenuTextInput.addEventListener('input', renderUserMenuPreview);
+    if (elements.userMenuThemeSelect) elements.userMenuThemeSelect.addEventListener('change', renderUserMenuPreview);
+    if (elements.userMenuPosSelect) elements.userMenuPosSelect.addEventListener('change', renderUserMenuPreview);
+    if (elements.userMenuBaseSelect) elements.userMenuBaseSelect.addEventListener('change', () => loadAndRenderUserMenuBaseImage());
 }
 
 async function attemptLogin() {
@@ -148,6 +193,7 @@ async function attemptLogin() {
             state.allCustomers = data.customers || [];
             updateStats();
             renderTable();
+            loadRichMenus();
         } else {
             elements.loginErrorMsg.textContent = data.error || 'パスワードが違います';
         }
@@ -162,7 +208,7 @@ async function attemptLogin() {
 async function loadDashboard() {
     elements.loginModal.style.display = 'none';
     elements.adminApp.style.display = 'block';
-    await fetchCustomers();
+    await Promise.all([fetchCustomers(), loadRichMenus()]);
 }
 
 async function fetchCustomers() {
@@ -270,12 +316,14 @@ function renderTable() {
         const updated = (c.updated_at || '').substring(0, 10);
         const carId = c.id || '';
         const userId = c.user_id || '';
+        const hasCustomMenu = Boolean(c.custom_line_menu_id);
 
         return `
             <tr data-index="${idx}">
                 <td>
                     <div class="cust-name">${escapeHtml(c.user_name || '名前なし')}</div>
                     <div class="cust-uid">${escapeHtml(c.user_id || '')}</div>
+                    ${hasCustomMenu ? `<div class="badge-custom-menu-active" title="専用メッセージ: ${escapeHtml(c.custom_menu_text || '')}"><i class="fa-solid fa-bolt"></i> 専用メニュー中</div>` : ''}
                 </td>
                 <td>
                     <div class="car-tag">${escapeHtml(c.car_model || '-')}</div>
@@ -288,6 +336,9 @@ function renderTable() {
                 <td style="font-size: 11px; color: #64748b;">${updated}</td>
                 <td>
                     <div class="action-btns">
+                        <button class="btn-user-richmenu ${hasCustomMenu ? 'is-active' : ''}" data-action="custom-menu" data-idx="${idx}" title="専用メッセージ付きリッチメニューを設定">
+                            <i class="fa-solid fa-table-cells-large"></i> 専用メニュー
+                        </button>
                         <button class="btn-remind-oil" data-action="remind-oil" data-idx="${idx}" title="オイル交換リマインドをLINE送信">
                             <i class="fa-solid fa-oil-can"></i> オイル
                         </button>
@@ -318,7 +369,9 @@ function renderTable() {
             const cust = filtered[idx];
             if (!cust) return;
 
-            if (action === 'remind-oil') {
+            if (action === 'custom-menu') {
+                openUserRichMenuModal(cust);
+            } else if (action === 'remind-oil') {
                 sendManualReminder(cust.id, cust.user_id, 'oil', cust.user_name, cust.car_model);
             } else if (action === 'remind-periodic') {
                 sendManualReminder(cust.id, cust.user_id, 'periodic', cust.user_name, cust.car_model);
@@ -520,4 +573,331 @@ function showToast(msg) {
 function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ==========================================================================
+// 特定ユーザー向け専用リッチメニュー管理
+// ==========================================================================
+async function loadRichMenus() {
+    try {
+        const res = await fetch(`../api.php?action=admin_list_richmenus&password=${encodeURIComponent(state.password)}`);
+        const data = await res.json();
+        if (data.success) {
+            state.richMenus = data.rich_menus || [];
+            updateBaseMenuSelect();
+        }
+    } catch (e) {
+        console.error('Failed to load richmenus:', e);
+    }
+}
+
+function updateBaseMenuSelect() {
+    if (!elements.userMenuBaseSelect) return;
+    elements.userMenuBaseSelect.innerHTML = '';
+
+    if (!state.richMenus || state.richMenus.length === 0) {
+        elements.userMenuBaseSelect.innerHTML = '<option value="">（リッチメニューがありません）</option>';
+        return;
+    }
+
+    state.richMenus.forEach(m => {
+        const isLive = (m.is_active == 1);
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = (isLive ? '★ [本番公開中] ' : '') + m.title;
+        if (isLive) opt.selected = true;
+        elements.userMenuBaseSelect.appendChild(opt);
+    });
+}
+
+function openUserRichMenuModal(cust) {
+    if (!cust.user_id || cust.user_id.startsWith('MANUAL_')) {
+        alert('この顧客は手動登録（LINE未連携）のため、専用リッチメニューを適用できません。\n友だち登録連携後のお客様のみご利用いただけます。');
+        return;
+    }
+
+    state.activeUserMenuCust = cust;
+
+    // ヘッダー・サマリー更新
+    elements.userMenuModalTitle.innerHTML = `<i class="fa-solid fa-table-cells-large"></i> 【${escapeHtml(cust.user_name || 'お客様')} 様】専用リッチメニュー設定`;
+    elements.modalCustName.textContent = `${cust.user_name || 'お客様'} 様`;
+    elements.modalCustCar.textContent = `${cust.car_model || '-'} (${cust.car_number || 'ナンバー未登録'})`;
+
+    elements.pillOil.innerHTML = `次回オイル: <strong>${cust.oil_next_date || '未定'}</strong>`;
+    elements.pillPeriodic.innerHTML = `12ヶ月点検: <strong>${cust.periodic_insp_next_date || '未定'}</strong>`;
+    elements.pillInsp.innerHTML = `車検満了: <strong>${cust.inspection_next_date || '未定'}</strong>`;
+
+    // 適用中ステータス
+    if (cust.custom_line_menu_id) {
+        elements.userMenuStatusAlert.style.display = 'flex';
+        elements.currentCustomText.textContent = cust.custom_menu_text || '専用メニュー適用中';
+    } else {
+        elements.userMenuStatusAlert.style.display = 'none';
+    }
+
+    // メッセージ入力の初期値
+    elements.userMenuTextInput.value = cust.custom_menu_text || getDefaultCustomPhrase(cust, 'insp');
+
+    updateBaseMenuSelect();
+    elements.userRichMenuModal.classList.add('active');
+
+    loadAndRenderUserMenuBaseImage();
+}
+
+function closeUserRichMenuModal() {
+    elements.userRichMenuModal.classList.remove('active');
+    state.activeUserMenuCust = null;
+    state.loadedBaseImg = null;
+}
+
+function getDefaultCustomPhrase(cust, type) {
+    const name = cust.user_name || 'お客様';
+    if (type === 'insp') {
+        const d = cust.inspection_next_date || '近日';
+        return `${name}様 次回車検は【${d}】です！ご予約はお早めに🚗`;
+    } else if (type === 'oil') {
+        const d = cust.oil_next_date || '近日';
+        return `${name}様 次回オイル交換の目安は【${d}】です🛢️`;
+    } else if (type === 'periodic') {
+        const d = cust.periodic_insp_next_date || '近日';
+        return `${name}様 【${d}】は12ヶ月定期点検の時期です📋`;
+    } else if (type === 'notice') {
+        return `${name}様 いつもありがとうございます！愛車の点検はお気軽にご相談ください✨`;
+    }
+    return `${name}様 点検・車検のご相談はお気軽にどうぞ！`;
+}
+
+function insertCustomPhrase(type) {
+    if (!state.activeUserMenuCust) return;
+    elements.userMenuTextInput.value = getDefaultCustomPhrase(state.activeUserMenuCust, type);
+    renderUserMenuPreview();
+}
+
+function getSelectedBaseMenu() {
+    const baseId = elements.userMenuBaseSelect ? elements.userMenuBaseSelect.value : '';
+    if (!baseId && state.richMenus.length > 0) return state.richMenus[0];
+    return state.richMenus.find(m => String(m.id) === String(baseId)) || state.richMenus[0] || null;
+}
+
+function loadAndRenderUserMenuBaseImage() {
+    const base = getSelectedBaseMenu();
+    if (!base || !base.image_url) {
+        renderUserMenuPreview();
+        return;
+    }
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+        state.loadedBaseImg = img;
+        renderUserMenuPreview();
+    };
+    img.onerror = () => {
+        state.loadedBaseImg = null;
+        renderUserMenuPreview();
+    };
+    img.src = base.base_image_url || base.image_url;
+}
+
+function renderUserMenuPreview() {
+    const canvas = elements.userMenuPreviewCanvas;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    const base = getSelectedBaseMenu();
+    const w = base ? (parseInt(base.width, 10) || 2500) : 2500;
+    const h = base ? (parseInt(base.height, 10) || 1686) : 1686;
+    canvas.width = w;
+    canvas.height = h;
+
+    // 1. ベース画像の描画
+    if (state.loadedBaseImg) {
+        ctx.drawImage(state.loadedBaseImg, 0, 0, w, h);
+    } else {
+        // 画像未読み込み時は上品なプレースホルダー背景
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#64748b';
+        ctx.font = 'bold 50px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('リッチメニュー読み込み中...', w / 2, h / 2);
+    }
+
+    // 2. メッセージテロップ帯の描画
+    const text = elements.userMenuTextInput.value.trim();
+    if (!text) return;
+
+    const theme = elements.userMenuThemeSelect ? elements.userMenuThemeSelect.value : 'red';
+    const pos = elements.userMenuPosSelect ? elements.userMenuPosSelect.value : 'top';
+
+    const bannerH = Math.round(h * 0.11); // 高さ約 180px
+    const bannerY = (pos === 'top') ? 0 : (h - bannerH);
+
+    // テーマカラー設定
+    let bgGrad;
+    let accentBorder = 'rgba(255, 255, 255, 0.3)';
+    if (theme === 'red') {
+        bgGrad = ctx.createLinearGradient(0, bannerY, w, bannerY);
+        bgGrad.addColorStop(0, '#e11d48');
+        bgGrad.addColorStop(1, '#be123c');
+    } else if (theme === 'blue') {
+        bgGrad = ctx.createLinearGradient(0, bannerY, w, bannerY);
+        bgGrad.addColorStop(0, '#2563eb');
+        bgGrad.addColorStop(1, '#1d4ed8');
+    } else if (theme === 'green') {
+        bgGrad = ctx.createLinearGradient(0, bannerY, w, bannerY);
+        bgGrad.addColorStop(0, '#059669');
+        bgGrad.addColorStop(1, '#047857');
+    } else if (theme === 'gold') {
+        bgGrad = ctx.createLinearGradient(0, bannerY, w, bannerY);
+        bgGrad.addColorStop(0, '#d97706');
+        bgGrad.addColorStop(1, '#b45309');
+    } else {
+        // dark
+        bgGrad = ctx.createLinearGradient(0, bannerY, w, bannerY);
+        bgGrad.addColorStop(0, '#0f172a');
+        bgGrad.addColorStop(1, '#1e293b');
+    }
+
+    // 背景ドロップシャドウ & 帯の描画
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    ctx.shadowBlur = 20;
+    ctx.shadowOffsetY = (pos === 'top') ? 6 : -6;
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, bannerY, w, bannerH);
+    ctx.restore();
+
+    // 縁取りライン
+    ctx.strokeStyle = accentBorder;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    if (pos === 'top') {
+        ctx.moveTo(0, bannerY + bannerH);
+        ctx.lineTo(w, bannerY + bannerH);
+    } else {
+        ctx.moveTo(0, bannerY);
+        ctx.lineTo(w, bannerY);
+    }
+    ctx.stroke();
+
+    // テキスト描画
+    ctx.save();
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 2;
+
+    const fontSize = Math.round(bannerH * 0.38); // 約 65px
+    ctx.font = `bold ${fontSize}px "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif`;
+
+    const textCenterY = bannerY + (bannerH / 2);
+    ctx.fillText(text, w / 2, textCenterY, w - 100);
+    ctx.restore();
+}
+
+async function applyUserRichMenu() {
+    const cust = state.activeUserMenuCust;
+    if (!cust || !cust.user_id) return;
+
+    const text = elements.userMenuTextInput.value.trim();
+    if (!text) {
+        alert('表示するメッセージを入力してください');
+        elements.userMenuTextInput.focus();
+        return;
+    }
+
+    const base = getSelectedBaseMenu();
+    if (!base) {
+        alert('ベースリッチメニューを選択してください');
+        return;
+    }
+
+    if (!confirm(`【${cust.user_name || 'お客様'} 様】へ、この専用メッセージ付きリッチメニューを適用しますか？\n（${cust.user_name} 様のLINE画面下部が即座に切り替わります）`)) {
+        return;
+    }
+
+    elements.applyUserMenuBtn.disabled = true;
+    elements.applyUserMenuBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> LINEに適用中...';
+
+    const canvas = elements.userMenuPreviewCanvas;
+    canvas.toBlob(async (blob) => {
+        if (!blob) {
+            elements.applyUserMenuBtn.disabled = false;
+            elements.applyUserMenuBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> 専用リッチメニューをLINEに適用';
+            alert('画像生成に失敗しました');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('password', state.password);
+        formData.append('uid', cust.user_id);
+        formData.append('base_menu_id', base.id);
+        formData.append('custom_text', text);
+        formData.append('image', blob, 'custom_menu.jpg');
+
+        try {
+            const res = await fetch('../api.php?action=admin_set_user_custom_richmenu', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            elements.applyUserMenuBtn.disabled = false;
+            elements.applyUserMenuBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> 専用リッチメニューをLINEに適用';
+
+            if (data.success) {
+                showToast(data.message || '専用リッチメニューをLINEに適用しました！');
+                closeUserRichMenuModal();
+                await fetchCustomers();
+            } else {
+                alert(data.error || '適用に失敗しました');
+            }
+        } catch (e) {
+            elements.applyUserMenuBtn.disabled = false;
+            elements.applyUserMenuBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> 専用リッチメニューをLINEに適用';
+            alert('通信エラーが発生しました: ' + e.message);
+        }
+    }, 'image/jpeg', 0.92);
+}
+
+async function unlinkUserRichMenu() {
+    const cust = state.activeUserMenuCust;
+    if (!cust || !cust.user_id) return;
+
+    if (!confirm(`【${cust.user_name || 'お客様'} 様】の専用リッチメニューを解除し、全体共通メニューに戻しますか？`)) {
+        return;
+    }
+
+    elements.btnUnlinkMenuBtn.disabled = true;
+    elements.btnUnlinkMenuBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 解除中...';
+
+    const formData = new FormData();
+    formData.append('password', state.password);
+    formData.append('uid', cust.user_id);
+
+    try {
+        const res = await fetch('../api.php?action=admin_unlink_user_richmenu', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        elements.btnUnlinkMenuBtn.disabled = false;
+        elements.btnUnlinkMenuBtn.innerHTML = '<i class="fa-solid fa-arrow-rotate-left"></i> 全体共通に戻す';
+
+        if (data.success) {
+            showToast(data.message || '全体共通メニューに戻しました！');
+            elements.userMenuStatusAlert.style.display = 'none';
+            if (cust) cust.custom_line_menu_id = '';
+            await fetchCustomers();
+        } else {
+            alert(data.error || '解除に失敗しました');
+        }
+    } catch (e) {
+        elements.btnUnlinkMenuBtn.disabled = false;
+        elements.btnUnlinkMenuBtn.innerHTML = '<i class="fa-solid fa-arrow-rotate-left"></i> 全体共通に戻す';
+        alert('通信エラーが発生しました: ' + e.message);
+    }
 }

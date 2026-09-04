@@ -210,9 +210,124 @@
         </div>
     </div>
 
+    <!-- 特定顧客向け専用リッチメニュー設定モーダル -->
+    <div class="modal-overlay" id="userRichMenuModal">
+        <div class="modal-card modal-card-wide">
+            <div class="modal-header">
+                <h3 id="userMenuModalTitle"><i class="fa-solid fa-table-cells-large"></i> 【〇〇様】専用リッチメニュー設定</h3>
+                <button class="modal-close" id="closeUserMenuModalBtn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <!-- 顧客サマリー -->
+                <div class="user-summary-box">
+                    <div class="user-summary-header">
+                        <span class="user-summary-name" id="modalCustName">山田 太郎 様</span>
+                        <span class="user-summary-car" id="modalCustCar">ワゴンR (静岡580 あ 12-34)</span>
+                    </div>
+                    <div class="user-dates-pill-row">
+                        <span class="user-date-pill" id="pillOil">次回オイル: <strong>未定</strong></span>
+                        <span class="user-date-pill" id="pillPeriodic">12ヶ月点検: <strong>未定</strong></span>
+                        <span class="user-date-pill" id="pillInsp">車検満了: <strong>未定</strong></span>
+                    </div>
+                </div>
+
+                <!-- 現在の適用状態 -->
+                <div id="userMenuStatusAlert" class="status-active-alert" style="display: none;">
+                    <div>
+                        <i class="fa-solid fa-circle-check"></i> <strong>専用メニュー適用中</strong>: <span id="currentCustomText">次回車検...</span>
+                    </div>
+                    <button type="button" class="btn-unlink-action" id="btnUnlinkMenuBtn">
+                        <i class="fa-solid fa-arrow-rotate-left"></i> 全体共通に戻す
+                    </button>
+                </div>
+
+                <div class="user-menu-grid">
+                    <!-- 左: 入力コントロール -->
+                    <div class="menu-config-col">
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">
+                                ベースとなるリッチメニュー
+                            </label>
+                            <select id="userMenuBaseSelect" class="form-select" style="width: 100%; padding: 7px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                <!-- JSで動的生成 -->
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">
+                                ワンクリック定型文（点検日を自動挿入）:
+                            </label>
+                            <div class="phrase-chips-grid">
+                                <button type="button" class="btn-phrase-chip" id="chipCustInsp">
+                                    <i class="fa-solid fa-shield-halved" style="color: #e11d48;"></i> 次回車検
+                                </button>
+                                <button type="button" class="btn-phrase-chip" id="chipCustOil">
+                                    <i class="fa-solid fa-oil-can" style="color: #f59e0b;"></i> 次回オイル
+                                </button>
+                                <button type="button" class="btn-phrase-chip" id="chipCustPeriodic">
+                                    <i class="fa-solid fa-clipboard-check" style="color: #059669;"></i> 12ヶ月点検
+                                </button>
+                                <button type="button" class="btn-phrase-chip" id="chipCustNotice">
+                                    <i class="fa-solid fa-bullhorn" style="color: #2563eb;"></i> 感謝お知らせ
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">
+                                表示メッセージ本文 (メニュー画像上に焼き込み)
+                            </label>
+                            <textarea id="userMenuTextInput" rows="3" placeholder="例: 山田様 次回車検は2026/10/20です！ご予約受付中" style="width: 100%; box-sizing: border-box; padding: 8px; font-size: 12.5px; border: 1px solid #cbd5e1; border-radius: 6px;"></textarea>
+                        </div>
+
+                        <div class="form-row" style="display: flex; gap: 10px; margin-bottom: 0;">
+                            <div style="flex: 1;">
+                                <label style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">バナー色</label>
+                                <select id="userMenuThemeSelect" style="width: 100%; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                    <option value="red">赤 (急ぎ・重要)</option>
+                                    <option value="blue">青 (スマート)</option>
+                                    <option value="green">緑 (LINE定番)</option>
+                                    <option value="gold">金 (プレミアム)</option>
+                                    <option value="dark">黒 (シック)</option>
+                                </select>
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">配置位置</label>
+                                <select id="userMenuPosSelect" style="width: 100%; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                    <option value="top">上部テロップ帯</option>
+                                    <option value="bottom">下部テロップ帯</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右: リアルタイムプレビュー -->
+                    <div class="preview-pane-card">
+                        <div class="preview-pane-header">
+                            <span><i class="fa-solid fa-eye"></i> メニュー反映プレビュー</span>
+                            <span style="font-size: 11px; color: #06C755;"><i class="fa-solid fa-mobile-screen"></i> LINEトーク画面</span>
+                        </div>
+                        <div class="preview-canvas-wrap">
+                            <canvas id="userMenuPreviewCanvas" width="2500" height="1686"></canvas>
+                        </div>
+                        <div class="preview-hint">
+                            <i class="fa-solid fa-circle-info"></i> お客様がLINEを開いた際、このデザインのメニューが下部にパーソナライズ表示されます。タップ枠はベースメニューと同じように機能します。
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="cancelUserMenuBtn">閉じる</button>
+                <button class="btn-save" id="applyUserMenuBtn" style="background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);">
+                    <i class="fa-solid fa-paper-plane"></i> 専用リッチメニューをLINEに適用
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260831_2"></script>
+    <script src="admin.js?v=20260831_3"></script>
 </body>
 </html>

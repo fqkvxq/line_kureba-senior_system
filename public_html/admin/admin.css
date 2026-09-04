@@ -746,3 +746,214 @@ body {
     color: #f87171;
 }
 
+/* ==========================================================================
+   特定ユーザー向け専用リッチメニュー設定スタイル
+   ========================================================================== */
+.btn-user-richmenu {
+    background: #e0e7ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    transition: all 0.15s;
+}
+
+.btn-user-richmenu:hover {
+    background: #4338ca;
+    color: #fff;
+    border-color: #4338ca;
+}
+
+.btn-user-richmenu.is-active {
+    background: #4f46e5;
+    color: #fff;
+    border-color: #4338ca;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.35);
+}
+
+.badge-custom-menu-active {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 10.5px;
+    font-weight: 800;
+    margin-top: 4px;
+}
+
+/* モーダルカードの拡張 (プレビュー付きで横幅を広げる) */
+.modal-card-wide {
+    max-width: 860px !important;
+}
+
+.user-menu-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.1fr;
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .user-menu-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.user-summary-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    margin-bottom: 14px;
+}
+
+.user-summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.user-summary-name {
+    font-size: 15px;
+    font-weight: 800;
+    color: #1e293b;
+}
+
+.user-summary-car {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.user-dates-pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.user-date-pill {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+}
+
+.user-date-pill strong {
+    color: #0f172a;
+}
+
+/* クイック定型文チップ */
+.phrase-chips-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.btn-phrase-chip {
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+    padding: 5px 9px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-phrase-chip:hover {
+    background: #eff6ff;
+    border-color: #3b82f6;
+    color: #1d4ed8;
+}
+
+.btn-phrase-chip i {
+    font-size: 11px;
+}
+
+/* リアルタイムプレビューコンテナ */
+.preview-pane-card {
+    background: #0f172a;
+    border-radius: var(--radius-md);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-pane-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.preview-canvas-wrap {
+    width: 100%;
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #1e293b;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.preview-canvas-wrap canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.preview-hint {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 10px;
+    line-height: 1.4;
+}
+
+.status-active-alert {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn-unlink-action {
+    background: #fff;
+    border: 1px solid #fca5a5;
+    color: #dc2626;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn-unlink-action:hover {
+    background: #fee2e2;
+}

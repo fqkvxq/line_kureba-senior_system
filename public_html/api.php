@@ -1874,6 +1874,209 @@ try {
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
+        // --- 16. 特定ユーザー向け個別リッチメニュー適用 ---
+        case 'admin_set_user_custom_richmenu':
+            $authPass = $_POST['password'] ?? '';
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
+                exit;
+            }
+
+            $userId = trim($_POST['uid'] ?? '');
+            if (empty($userId) || str_starts_with($userId, 'MANUAL_')) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'LINE未連携の顧客にはリッチメニューを適用できません（友だち追加後のUIDが必要です）']);
+                exit;
+            }
+
+            $customText = trim($_POST['custom_text'] ?? '');
+            $baseMenuId = (int)($_POST['base_menu_id'] ?? 0);
+
+            // ベースとなるリッチメニューを取得
+            $baseMenu = null;
+            if ($baseMenuId > 0) {
+                $stmt = $db->prepare("SELECT * FROM rich_menus WHERE id = :id");
+                $stmt->execute([':id' => $baseMenuId]);
+                $baseMenu = $stmt->fetch(PDO::FETCH_ASSOC);
+            }
+            if (!$baseMenu) {
+                // デフォルトとして現在本番中の通常メニューを取得
+                $stmt = $db->query("SELECT * FROM rich_menus WHERE is_active = 1 AND is_notice = 0 ORDER BY id DESC LIMIT 1");
+                $baseMenu = $stmt->fetch(PDO::FETCH_ASSOC);
+            }
+            if (!$baseMenu) {
+                // さらに無ければ最新メニューを取得
+                $stmt = $db->query("SELECT * FROM rich_menus ORDER BY id DESC LIMIT 1");
+                $baseMenu = $stmt->fetch(PDO::FETCH_ASSOC);
+            }
+            if (!$baseMenu) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'ベースとなるリッチメニューが存在しません。先にリッチメニューを作成してください。']);
+                exit;
+            }
+
+            // 合成画像の受信・保存
+            $uploadedFile = $_FILES['image'] ?? null;
+            if (empty($uploadedFile) || $uploadedFile['error'] !== UPLOAD_ERR_OK) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => '合成画像のアップロードに失敗しました']);
+                exit;
+            }
+
+            $ext = strtolower(pathinfo($uploadedFile['name'], PATHINFO_EXTENSION));
+            if (!in_array($ext, ['jpg', 'jpeg', 'png'])) {
+                $ext = 'jpg';
+            }
+            $contentType = ($ext === 'png') ? 'image/png' : 'image/jpeg';
+            $fileName = 'custom_' . substr(md5($userId), 0, 10) . '_' . date('Ymd_His') . '.' . $ext;
+            $targetFilePath = RICHMENU_UPLOAD_DIR . '/' . $fileName;
+
+            if (!move_uploaded_file($uploadedFile['tmp_name'], $targetFilePath)) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => '画像ファイルの保存に失敗しました']);
+                exit;
+            }
+
+            // ベースメニューのエリア設定を引き継ぐ
+            $rawAreas = json_decode($baseMenu['areas_json'] ?? '[]', true) ?: [];
+            $lineAreas = [];
+            $width = (int)($baseMenu['width'] ?? 2500);
+            $height = (int)($baseMenu['height'] ?? 1686);
+
+            foreach ($rawAreas as $a) {
+                if (empty($a['bounds']) || empty($a['action'])) continue;
+                $lineAreas[] = [
+                    'bounds' => [
+                        'x' => (int)$a['bounds']['x'],
+                        'y' => (int)$a['bounds']['y'],
+                        'width' => (int)$a['bounds']['width'],
+                        'height' => (int)$a['bounds']['height']
+                    ],
+                    'action' => $a['action']
+                ];
+            }
+
+            // 顧客名を取得
+            $stmtCust = $db->prepare("SELECT user_name, custom_line_menu_id FROM customer_cars WHERE user_id = :uid LIMIT 1");
+            $stmtCust->execute([':uid' => $userId]);
+            $custRow = $stmtCust->fetch(PDO::FETCH_ASSOC);
+            $custName = $custRow['user_name'] ?? 'お客様';
+            $oldLineMenuId = $custRow['custom_line_menu_id'] ?? '';
+
+            // LINE API: 個別リッチメニュー作成
+            $lineMenuData = [
+                'size' => [
+                    'width' => $width,
+                    'height' => $height
+                ],
+                'selected' => true,
+                'name' => mb_substr("【専用】{$custName}様 " . date('m/d H:i'), 0, 300),
+                'chatBarText' => mb_substr($baseMenu['chat_bar_text'] ?: 'メニュー', 0, 14),
+                'areas' => $lineAreas
+            ];
+
+            $createRes = lineCreateRichMenu($lineMenuData);
+            if (!$createRes['success'] || empty($createRes['richMenuId'])) {
+                @unlink($targetFilePath);
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => 'LINEリッチメニュー作成失敗: ' . ($createRes['error'] ?? '')]);
+                exit;
+            }
+            $newLineMenuId = $createRes['richMenuId'];
+
+            // LINE API: 画像アップロード
+            $uploadRes = lineUploadRichMenuImage($newLineMenuId, $targetFilePath, $contentType);
+            if (!$uploadRes['success']) {
+                lineDeleteRichMenu($newLineMenuId);
+                @unlink($targetFilePath);
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => 'LINE画像アップロード失敗: ' . ($uploadRes['error'] ?? '')]);
+                exit;
+            }
+
+            // LINE API: ユーザーへ個別リンク実行！
+            $linkRes = lineLinkUserRichMenu($userId, $newLineMenuId);
+            if (!$linkRes['success']) {
+                lineDeleteRichMenu($newLineMenuId);
+                @unlink($targetFilePath);
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => 'ユーザーへの個別メニュー割当失敗: ' . ($linkRes['error'] ?? '')]);
+                exit;
+            }
+
+            // 以前の古い個別メニューがあれば削除
+            if (!empty($oldLineMenuId) && $oldLineMenuId !== $newLineMenuId) {
+                lineDeleteRichMenu($oldLineMenuId);
+            }
+
+            // DB更新
+            $db->prepare("
+                UPDATE customer_cars SET
+                    custom_line_menu_id = :lmid,
+                    custom_menu_text = :txt,
+                    custom_menu_set_at = CURRENT_TIMESTAMP
+                WHERE user_id = :uid
+            ")->execute([
+                ':lmid' => $newLineMenuId,
+                ':txt' => $customText,
+                ':uid' => $userId
+            ]);
+
+            echo json_encode([
+                'success' => true,
+                'message' => "「{$custName}」様に専用メッセージ付きリッチメニューを適用しました！",
+                'custom_line_menu_id' => $newLineMenuId,
+                'custom_menu_text' => $customText
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
+        // --- 17. 特定ユーザーの個別リッチメニュー解除（全体共通メニューへ戻す） ---
+        case 'admin_unlink_user_richmenu':
+            $authPass = $_POST['password'] ?? '';
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
+                exit;
+            }
+
+            $userId = trim($_POST['uid'] ?? '');
+            if (empty($userId)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'ユーザーIDが必要です']);
+                exit;
+            }
+
+            // 既存の個別メニューIDを取得
+            $stmtCust = $db->prepare("SELECT user_name, custom_line_menu_id FROM customer_cars WHERE user_id = :uid LIMIT 1");
+            $stmtCust->execute([':uid' => $userId]);
+            $custRow = $stmtCust->fetch(PDO::FETCH_ASSOC);
+            $custName = $custRow['user_name'] ?? 'お客様';
+            $oldLineMenuId = $custRow['custom_line_menu_id'] ?? '';
+
+            // LINE API: 個別紐付け解除
+            $unlinkRes = lineUnlinkUserRichMenu($userId);
+
+            // 古いLINEメニューを削除
+            if (!empty($oldLineMenuId)) {
+                lineDeleteRichMenu($oldLineMenuId);
+            }
+
+            // DB更新
+            $db->prepare("
+                UPDATE customer_cars SET
+                    custom_line_menu_id = '',
+                    custom_menu_text = '',
+                    custom_menu_set_at = NULL
+                WHERE user_id = :uid
+            ")->execute([':uid' => $userId]);
+
+            echo json_encode([
+                'success' => true,
+                'message' => "「{$custName}」様の個別リッチメニューを解除し、全体共通メニューに戻しました！"
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
         default:
             http_response_code(400);
             echo json_encode(['success' => false, 'error' => '無効なアクションです。']);
