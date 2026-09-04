@@ -1251,7 +1251,7 @@ try {
             unset($m);
 
             // 現在有効なお知らせメニューを取得
-            $activeNotice = getActiveNoticeRichMenu();
+            $activeNotice = getActiveNoticeRichMenu($db);
             $activeNoticeId = $activeNotice ? (int)$activeNotice['id'] : null;
 
             echo json_encode([

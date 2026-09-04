@@ -725,11 +725,20 @@ function lineUnlinkUserRichMenu(string $userId): array {
 }
 
 /**
+ * データベース接続オブジェクト (PDO) を取得（getDbConnectionのエイリアス）
+ */
+function getDB(): PDO {
+    return getDbConnection();
+}
+
+/**
  * 現在有効なお知らせリッチメニューを取得
  */
-function getActiveNoticeRichMenu(): ?array {
+function getActiveNoticeRichMenu(?PDO $pdo = null): ?array {
     try {
-        $pdo = getDB();
+        if (!$pdo) {
+            $pdo = getDbConnection();
+        }
         // 1. is_notice = 1 かつ is_active = 1 のメニュー（明示的アクティブ）
         $stmt = $pdo->query("SELECT * FROM rich_menus WHERE is_notice = 1 AND is_active = 1 ORDER BY id DESC LIMIT 1");
         $menu = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -739,7 +748,9 @@ function getActiveNoticeRichMenu(): ?array {
         $stmt2 = $pdo->query("SELECT * FROM rich_menus WHERE is_notice = 1 ORDER BY id DESC LIMIT 1");
         $menu2 = $stmt2->fetch(PDO::FETCH_ASSOC);
         if ($menu2) return $menu2;
-    } catch (Exception $e) {}
+    } catch (Throwable $e) {
+        writeDebugLog("getActiveNoticeRichMenuエラー: " . $e->getMessage());
+    }
     return null;
 }
 

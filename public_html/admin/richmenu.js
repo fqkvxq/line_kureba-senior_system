@@ -2081,8 +2081,17 @@ async function saveRichMenu(publish) {
 
 // ================= 履歴管理 =================
 function loadHistoryList() {
-    fetch('../api.php?action=admin_list_richmenus&password=' + encodeURIComponent(state.password))
-        .then(res => res.json())
+    const pass = state.password || sessionStorage.getItem('admin_pass') || '';
+    if (!state.password && pass) {
+        state.password = pass;
+    }
+    fetch('../api.php?action=admin_list_richmenus&password=' + encodeURIComponent(pass))
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`HTTPエラー ${res.status}: ${res.statusText}`);
+            }
+            return res.json();
+        })
         .then(data => {
             if (data.success) {
                 state.historyList = data.menus || [];
@@ -2090,10 +2099,14 @@ function loadHistoryList() {
                 state.activeNoticeId = data.active_notice_id || null;
                 renderHistoryList();
                 updateLiveStatusBadge();
+            } else {
+                console.error('履歴データ取得失敗:', data.error);
+                showToast(data.error || 'リッチメニュー履歴の取得に失敗しました', 'error');
             }
         })
         .catch(err => {
-            console.warn('履歴読み込みエラー:', err);
+            console.error('履歴読み込みエラー:', err);
+            showToast('リッチメニュー履歴の読み込みに失敗しました: ' + err.message, 'error');
         });
 }
 
