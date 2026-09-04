@@ -3081,15 +3081,19 @@ function publishNoticeMenu() {
             });
         }
 
+        const currentPass = state.password || sessionStorage.getItem('admin_pass') || '';
+
         const formData = new FormData();
+        formData.append('password', currentPass);
         formData.append('title', '【お知らせ】' + title);
         formData.append('chat_bar_text', '📢 お知らせ・ご案内');
-        formData.append('menu_size', noticeState.size);
+        formData.append('width', '2500');
+        formData.append('height', (noticeState.size === 'large') ? '1686' : '843');
         formData.append('publish', '1'); // 一斉公開（LINE全体デフォルト適用）
         formData.append('areas', JSON.stringify(areas));
         formData.append('image', blob, 'notice_menu.png');
 
-        fetch('../api.php?action=admin_save_richmenu&password=' + encodeURIComponent(state.password), {
+        fetch('../api.php?action=admin_save_richmenu&password=' + encodeURIComponent(currentPass), {
             method: 'POST',
             body: formData
         })

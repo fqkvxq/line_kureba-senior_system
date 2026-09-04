@@ -1258,7 +1258,7 @@ try {
 
         // --- 12. リッチメニュー管理: 作成 & 公開 ---
         case 'admin_save_richmenu':
-            $authPass = $_POST['password'] ?? '';
+            $authPass = $_POST['password'] ?? $_GET['password'] ?? '';
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
