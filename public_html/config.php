@@ -134,6 +134,8 @@ function getDbConnection(): PDO {
     try { $pdo->exec("ALTER TABLE rich_menus ADD COLUMN text_overlays_json TEXT DEFAULT '[]'"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE rich_menus ADD COLUMN base_image_url TEXT DEFAULT ''"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE rich_menus ADD COLUMN alias_id TEXT DEFAULT ''"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE rich_menus ADD COLUMN is_notice INTEGER DEFAULT 0"); } catch (Exception $e) {}
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_rich_menus_notice ON rich_menus(is_notice)"); } catch (Exception $e) {}
 
     // 既存 customers テーブルからのデータ移行（初回1回のみ）
     try {
@@ -643,6 +645,102 @@ function lineGetRichMenuAliasList(): array {
         return ['success' => true, 'aliases' => $json['aliases'] ?? []];
     }
     return ['success' => false, 'aliases' => []];
+}
+
+/**
+ * LINE Messaging API: ユーザーに個別リッチメニューを紐付け
+ * POST https://api.line.me/v2/bot/user/{userId}/richmenu/{richMenuId}
+ */
+function lineLinkUserRichMenu(string $userId, string $richMenuId): array {
+    if (empty($userId) || empty($richMenuId) || LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+        return ['success' => false, 'error' => '無効なパラメータまたはアクセストークン未設定'];
+    }
+
+    $url = "https://api.line.me/v2/bot/user/{$userId}/richmenu/{$richMenuId}";
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => '',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN,
+            'Content-Length: 0'
+        ]
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    writeDebugLog("lineLinkUserRichMenu結果", [
+        'userId' => $userId,
+        'richMenuId' => $richMenuId,
+        'httpCode' => $httpCode,
+        'response' => $res
+    ]);
+
+    return [
+        'success' => ($httpCode === 200),
+        'httpCode' => $httpCode,
+        'error' => $curlErr ?: ($httpCode !== 200 ? $res : null)
+    ];
+}
+
+/**
+ * LINE Messaging API: ユーザーの個別リッチメニュー紐付けを解除（全体デフォルトメニューに戻す）
+ * DELETE https://api.line.me/v2/bot/user/{userId}/richmenu
+ */
+function lineUnlinkUserRichMenu(string $userId): array {
+    if (empty($userId) || LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+        return ['success' => false, 'error' => '無効なパラメータまたはアクセストークン未設定'];
+    }
+
+    $url = "https://api.line.me/v2/bot/user/{$userId}/richmenu";
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_CUSTOMREQUEST => 'DELETE',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+        ]
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    writeDebugLog("lineUnlinkUserRichMenu結果", [
+        'userId' => $userId,
+        'httpCode' => $httpCode,
+        'response' => $res
+    ]);
+
+    return [
+        'success' => ($httpCode === 200),
+        'httpCode' => $httpCode,
+        'error' => $curlErr ?: ($httpCode !== 200 ? $res : null)
+    ];
+}
+
+/**
+ * 現在有効なお知らせリッチメニューを取得
+ */
+function getActiveNoticeRichMenu(): ?array {
+    try {
+        $pdo = getDB();
+        // 1. is_notice = 1 かつ is_active = 1 のメニュー（明示的アクティブ）
+        $stmt = $pdo->query("SELECT * FROM rich_menus WHERE is_notice = 1 AND is_active = 1 ORDER BY id DESC LIMIT 1");
+        $menu = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($menu) return $menu;
+
+        // 2. なければ最新の is_notice = 1 のメニュー
+        $stmt2 = $pdo->query("SELECT * FROM rich_menus WHERE is_notice = 1 ORDER BY id DESC LIMIT 1");
+        $menu2 = $stmt2->fetch(PDO::FETCH_ASSOC);
+        if ($menu2) return $menu2;
+    } catch (Exception $e) {}
+    return null;
 }
 
 /**

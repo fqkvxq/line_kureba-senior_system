@@ -155,6 +155,12 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
         return;
     }
 
+    // 1-2. お知らせ・最新情報
+    if (preg_match('/^(お知らせ|最新情報|新着情報|インフォメーション|notice)$/ui', trim($text))) {
+        handleShowNoticeMenu($replyToken, $userId);
+        return;
+    }
+
     // 2. オイル交換・定期点検・車検・メンテナンス関連のキーワード判定 (在庫検索の誤爆防止)
     if (preg_match('/^(点検受付|マイカー|マイカー点検|点検メニュー)$/u', trim($text))) {
         sendMyCarMenuMessage($db, $replyToken, $userId);
@@ -273,6 +279,16 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
                 ]
             ];
             sendReplyMessage($replyToken, $messages);
+            break;
+
+        // --- 5-1. お知らせリッチメニュー表示 ---
+        case 'show_notice_menu':
+            handleShowNoticeMenu($replyToken, $userId);
+            break;
+
+        // --- 5-1-2. お知らせを閉じる（通常メニューへ戻る） ---
+        case 'close_notice':
+            handleCloseNoticeMenu($replyToken, $userId);
             break;
 
         // --- 5-2. 点検受付メニュー表示 ---
@@ -3771,11 +3787,63 @@ function generateEquipmentMenuMessages(PDO $db): array {
 }
 
 /**
+ * ユーザーへお知らせリッチメニューを表示
+ */
+function handleShowNoticeMenu(string $replyToken, string $userId): void {
+    $noticeMenu = getActiveNoticeRichMenu();
+    if ($noticeMenu && !empty($noticeMenu['line_menu_id'])) {
+        // ユーザーに個別紐付け
+        lineLinkUserRichMenu($userId, $noticeMenu['line_menu_id']);
+        $menuTitle = $noticeMenu['title'] ?? 'お知らせ';
+        $messages = [
+            [
+                'type' => 'text',
+                'text' => "📢 {$menuTitle}\n\n下部のメニューにお知らせを表示しました。\n「OK」または「閉じる」をタップすると、通常のメニューに戻ります。",
+                'quickReply' => getQuickReplyItems()
+            ]
+        ];
+        sendReplyMessage($replyToken, $messages);
+    } else {
+        $messages = [
+            [
+                'type' => 'text',
+                'text' => "📢 現在、特別なお知らせはございません。\n最新の入庫車両やメンテナンス受付は下のメニューよりお気軽にご利用ください🚗",
+                'quickReply' => getQuickReplyItems()
+            ]
+        ];
+        sendReplyMessage($replyToken, $messages);
+    }
+}
+
+/**
+ * ユーザーのお知らせリッチメニューを解除して通常メニューに戻す
+ */
+function handleCloseNoticeMenu(string $replyToken, string $userId): void {
+    lineUnlinkUserRichMenu($userId);
+    $messages = [
+        [
+            'type' => 'text',
+            'text' => "通常メニューに戻りました。\nご用件は下のメニューまたはメッセージよりお気軽にどうぞ！",
+            'quickReply' => getQuickReplyItems()
+        ]
+    ];
+    sendReplyMessage($replyToken, $messages);
+}
+
+/**
  * クイックリプライボタン一覧（LINE Messaging API 完全準拠: postbackのみ）
  */
 function getQuickReplyItems(): array {
     return [
         'items' => [
+            [
+                'type' => 'action',
+                'action' => [
+                    'type' => 'postback',
+                    'label' => '📢 お知らせ',
+                    'data' => 'action=show_notice_menu'
+                ]
+            ],
             [
                 'type' => 'action',
                 'action' => [

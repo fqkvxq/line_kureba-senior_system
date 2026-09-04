@@ -13,8 +13,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260904_notice_v3">
-    <link rel="stylesheet" href="richmenu.css?v=20260904_notice_v3">
+    <link rel="stylesheet" href="admin.css?v=20260904_notice_v4">
+    <link rel="stylesheet" href="richmenu.css?v=20260904_notice_v4">
 </head>
 <body>
     <!-- ログインモーダル -->
@@ -314,11 +314,20 @@
                 <div class="history-toolbar">
                     <div>
                         <h2><i class="fa-solid fa-clock-rotate-left"></i> リッチメニュー保存履歴</h2>
-                        <p>過去に作成・公開したメニュー一覧です。ワンクリックでLINE本番アカウントに再適用できます。</p>
+                        <p>過去に作成したメニュー一覧です。通常メニューとお知らせ用メニューを切り替えて管理できます。</p>
                     </div>
                     <button class="btn-primary-sm" id="historyCreateNewBtn">
                         <i class="fa-solid fa-plus"></i> 新規メニュー作成
                     </button>
+                </div>
+
+                <!-- フィルタータブ (すべて / 通常メニュー / 📢 お知らせ専用メニュー) -->
+                <div class="history-filter-bar">
+                    <div class="history-filter-tabs">
+                        <button type="button" class="btn-filter-tab active" data-filter="all">すべて (<span id="countFilterAll">0</span>)</button>
+                        <button type="button" class="btn-filter-tab" data-filter="normal">通常メニュー (<span id="countFilterNormal">0</span>)</button>
+                        <button type="button" class="btn-filter-tab" data-filter="notice"><i class="fa-solid fa-bullhorn"></i> お知らせ専用メニュー (<span id="countFilterNotice">0</span>)</button>
+                    </div>
                 </div>
 
                 <div class="history-grid" id="historyGrid">
@@ -502,12 +511,15 @@
 
             <div class="notice-wizard-footer">
                 <div class="wizard-footer-info">
-                    <i class="fa-solid fa-circle-info"></i> 「今すぐ一斉公開」を押すと、LINE公式アカウントの全体メニューが即座にお知らせに切り替わります。
+                    <label class="notice-publish-mode-opt" style="cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--gray-700);">
+                        <input type="checkbox" id="noticePublishToAllCheckbox">
+                        <span>🚀 LINE公式の全体デフォルトメニューとしても今すぐ一斉公開する</span>
+                    </label>
                 </div>
                 <div class="wizard-footer-actions">
                     <button type="button" class="btn-secondary" id="btnCancelNoticeWizard">キャンセル</button>
                     <button type="button" class="btn-publish-notice-main" id="btnSubmitNoticePublish">
-                        <i class="fa-solid fa-paper-plane"></i> LINE公式アカウントに今すぐ一斉公開
+                        <i class="fa-solid fa-paper-plane"></i> お知らせメニューを保存・有効化
                     </button>
                 </div>
             </div>
@@ -523,6 +535,6 @@
     <!-- トースト通知 -->
     <div class="toast-notification" id="adminToast"></div>
 
-    <script src="richmenu.js?v=20260904_notice_v3"></script>
+    <script src="richmenu.js?v=20260904_notice_v4"></script>
 </body>
 </html>

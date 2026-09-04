@@ -1246,13 +1246,19 @@ try {
                         $m['alias_id'] = $genAlias;
                     }
                 }
+                $m['is_notice'] = (int)($m['is_notice'] ?? 0);
             }
             unset($m);
+
+            // 現在有効なお知らせメニューを取得
+            $activeNotice = getActiveNoticeRichMenu();
+            $activeNoticeId = $activeNotice ? (int)$activeNotice['id'] : null;
 
             echo json_encode([
                 'success' => true,
                 'menus' => $menus,
-                'current_default_id' => $currentLineDefaultId
+                'current_default_id' => $currentLineDefaultId,
+                'active_notice_id' => $activeNoticeId
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
@@ -1508,17 +1514,26 @@ try {
             lineCreateOrUpdateRichMenuAlias($lineMenuId, $aliasId);
 
             // 4. LINE API: 本番適用 (publishフラグが真の場合)
+            $isNotice = (!empty($_POST['is_notice']) && $_POST['is_notice'] === '1') ? 1 : 0;
             $isActive = 0;
             $applyError = null;
+
             if ($publish) {
                 $setDefRes = lineSetDefaultRichMenu($lineMenuId);
                 if ($setDefRes['success']) {
                     $isActive = 1;
-                    // 他のメニューのis_activeを0に更新
-                    $db->exec("UPDATE rich_menus SET is_active = 0");
+                    if ($isNotice) {
+                        $db->exec("UPDATE rich_menus SET is_active = 0 WHERE is_notice = 1");
+                    } else {
+                        $db->exec("UPDATE rich_menus SET is_active = 0 WHERE is_notice = 0");
+                    }
                 } else {
                     $applyError = $setDefRes['error'] ?? '不明なエラー';
                 }
+            } elseif ($isNotice) {
+                // お知らせ専用メニューとして保存された場合、アクティブお知らせとしてマーク
+                $isActive = 1;
+                $db->exec("UPDATE rich_menus SET is_active = 0 WHERE is_notice = 1");
             }
 
             $textOverlaysJson = $_POST['text_overlays'] ?? '[]';
@@ -1529,10 +1544,10 @@ try {
             $stmt = $db->prepare("
                 INSERT INTO rich_menus (
                     line_menu_id, alias_id, title, chat_bar_text, image_url, base_image_url, areas_json, text_overlays_json,
-                    width, height, is_active, created_at, updated_at
+                    width, height, is_active, is_notice, created_at, updated_at
                 ) VALUES (
                     :line_menu_id, :alias_id, :title, :chat_bar_text, :image_url, :base_image_url, :areas_json, :text_overlays_json,
-                    :width, :height, :is_active, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                    :width, :height, :is_active, :is_notice, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                 )
             ");
             $stmt->execute([
@@ -1546,7 +1561,8 @@ try {
                 ':text_overlays_json' => json_encode($textOverlays, JSON_UNESCAPED_UNICODE),
                 ':width' => $width,
                 ':height' => $height,
-                ':is_active' => $isActive
+                ':is_active' => $isActive,
+                ':is_notice' => $isNotice
             ]);
             $newId = (int)$db->lastInsertId();
 
@@ -1557,16 +1573,49 @@ try {
                 } else {
                     $msg = "リッチメニューは保存されましたが、LINE本番適用でエラーが発生しました: {$applyError}";
                 }
+            } elseif ($isNotice) {
+                $msg = 'お知らせ専用メニューを登録し、クイックリプライ「📢 お知らせ」のアクティブ対象に設定しました！';
             }
 
             echo json_encode([
                 'success' => true,
                 'id' => $newId,
                 'line_menu_id' => $lineMenuId,
-                'is_active' => $isActive,
+                'alias_id' => $aliasId,
                 'image_url' => $imageUrl,
                 'base_image_url' => $baseImageUrl,
+                'is_active' => $isActive,
+                'is_notice' => $isNotice,
                 'message' => $msg
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
+        // --- 12-2. リッチメニュー管理: お知らせ専用メニューのアクティブ切り替え ---
+        case 'admin_set_active_notice':
+            $authPass = $_POST['password'] ?? ($_GET['password'] ?? '');
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
+                exit;
+            }
+
+            $id = (int)($_POST['id'] ?? ($_GET['id'] ?? 0));
+            $stmt = $db->prepare("SELECT * FROM rich_menus WHERE id = :id AND is_notice = 1");
+            $stmt->execute([':id' => $id]);
+            $menu = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$menu) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'error' => '指定されたお知らせメニューが見つかりません']);
+                exit;
+            }
+
+            // 他のお知らせメニューのis_activeを0にして、このメニューを1にする
+            $db->exec("UPDATE rich_menus SET is_active = 0 WHERE is_notice = 1");
+            $db->prepare("UPDATE rich_menus SET is_active = 1 WHERE id = :id")->execute([':id' => $id]);
+
+            echo json_encode([
+                'success' => true,
+                'message' => "「{$menu['title']}」を現在のアクティブなお知らせメニューに設定しました！LINEのクイックリプライ「📢 お知らせ」を押すとこのメニューが表示されます。"
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 

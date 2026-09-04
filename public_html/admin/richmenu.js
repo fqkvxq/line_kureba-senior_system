@@ -30,6 +30,8 @@ const state = {
     // 履歴
     historyList: [],
     currentLineDefaultId: null,
+    historyFilter: 'all', // 'all' | 'normal' | 'notice'
+    activeNoticeId: null,
 
     // 装飾テキスト・お知らせバナー
     textOverlays: [],
@@ -127,6 +129,7 @@ const elements = {
     noticeCloseBtnTextInput: document.getElementById('noticeCloseBtnTextInput'),
     noticeLinkUrlInput: document.getElementById('noticeLinkUrlInput'),
     noticeCanvasPreview: document.getElementById('noticeCanvasPreview'),
+    noticePublishToAllCheckbox: document.getElementById('noticePublishToAllCheckbox'),
 
     // ボタン
     publishMenuBtn: document.getElementById('publishMenuBtn'),
@@ -137,6 +140,10 @@ const elements = {
     historyEmpty: document.getElementById('historyEmpty'),
     historyCreateNewBtn: document.getElementById('historyCreateNewBtn'),
     emptyCreateBtn: document.getElementById('emptyCreateBtn'),
+    countFilterAll: document.getElementById('countFilterAll'),
+    countFilterNormal: document.getElementById('countFilterNormal'),
+    countFilterNotice: document.getElementById('countFilterNotice'),
+    filterTabs: document.querySelectorAll('.btn-filter-tab'),
 
     // ローディング & トースト
     loadingOverlay: document.getElementById('loadingOverlay'),
@@ -224,6 +231,18 @@ function initEventListeners() {
         resetEditorForm();
         switchView('editor');
     });
+
+    // 履歴フィルタータブ (すべて / 通常メニュー / 📢 お知らせ専用メニュー)
+    if (elements.filterTabs) {
+        elements.filterTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                elements.filterTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                state.historyFilter = tab.dataset.filter || 'all';
+                renderHistoryList();
+            });
+        });
+    }
 
     // サイズトグル
     elements.sizeToggleBtns.forEach(btn => {
@@ -2068,6 +2087,7 @@ function loadHistoryList() {
             if (data.success) {
                 state.historyList = data.menus || [];
                 state.currentLineDefaultId = data.current_default_id;
+                state.activeNoticeId = data.active_notice_id || null;
                 renderHistoryList();
                 updateLiveStatusBadge();
             }
@@ -2090,15 +2110,33 @@ function updateLiveStatusBadge() {
 function renderHistoryList() {
     elements.historyGrid.innerHTML = '';
 
-    if (state.historyList.length === 0) {
+    const totalCount = state.historyList.length;
+    const normalCount = state.historyList.filter(m => !m.is_notice || m.is_notice == 0).length;
+    const noticeCount = state.historyList.filter(m => m.is_notice == 1).length;
+
+    if (elements.countFilterAll) elements.countFilterAll.textContent = totalCount;
+    if (elements.countFilterNormal) elements.countFilterNormal.textContent = normalCount;
+    if (elements.countFilterNotice) elements.countFilterNotice.textContent = noticeCount;
+
+    let filteredList = state.historyList;
+    if (state.historyFilter === 'normal') {
+        filteredList = state.historyList.filter(m => !m.is_notice || m.is_notice == 0);
+    } else if (state.historyFilter === 'notice') {
+        filteredList = state.historyList.filter(m => m.is_notice == 1);
+    }
+
+    if (filteredList.length === 0) {
         elements.historyEmpty.style.display = 'block';
         return;
     }
 
     elements.historyEmpty.style.display = 'none';
 
-    state.historyList.forEach(item => {
+    filteredList.forEach(item => {
         const isLive = (item.is_active == 1 || (item.line_menu_id && item.line_menu_id === state.currentLineDefaultId));
+        const isNotice = (item.is_notice == 1);
+        const isActiveNotice = (isNotice && state.activeNoticeId && item.id == state.activeNoticeId);
+
         const card = document.createElement('div');
         card.className = 'history-card' + (isLive ? ' active-live' : '');
 
@@ -2108,7 +2146,9 @@ function renderHistoryList() {
         card.innerHTML = `
             <div class="history-thumb-wrap">
                 <img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.title)}" loading="lazy">
-                ${isLive ? '<span class="badge-live-now"><i class="fa-solid fa-circle-check"></i> 本番適用中</span>' : ''}
+                ${isLive ? '<span class="badge-live-now"><i class="fa-solid fa-circle-check"></i> 全体本番中</span>' : ''}
+                ${isNotice ? '<span class="badge-notice-tag"><i class="fa-solid fa-bullhorn"></i> お知らせ専用</span>' : ''}
+                ${isActiveNotice ? '<span class="badge-notice-live"><i class="fa-solid fa-bolt"></i> クイックリプライ連携中</span>' : ''}
                 <span class="badge-size">${sizeLabel}</span>
             </div>
             <div class="history-body">
@@ -2127,10 +2167,16 @@ function renderHistoryList() {
                     <span><i class="fa-solid fa-clock"></i> 登録日時: ${escapeHtml(item.created_at || '-')}</span>
                     <span><i class="fa-solid fa-table-cells"></i> 設定エリア数: ${areaCount}枠</span>
                     <span><i class="fa-solid fa-comment-dots"></i> 下部バー表示: 「${escapeHtml(item.chat_bar_text || 'メニュー')}」</span>
+                    ${item.alias_id ? `<span><i class="fa-solid fa-tag"></i> エイリアス: <code>${escapeHtml(item.alias_id)}</code></span>` : ''}
                 </div>
                 <div class="history-actions">
-                    <button class="btn-apply-card ${isLive ? 'disabled' : ''}" data-id="${item.id}" ${isLive ? 'disabled' : ''}>
-                        ${isLive ? '<i class="fa-solid fa-check"></i> 本番公開中' : '<i class="fa-solid fa-bolt"></i> 本番に適用'}
+                    ${isNotice ? `
+                        <button class="btn-set-active-notice ${isActiveNotice ? 'is-active' : ''}" data-id="${item.id}" ${isActiveNotice ? 'disabled' : ''}>
+                            ${isActiveNotice ? '<i class="fa-solid fa-check"></i> クイックリプライ連携中' : '<i class="fa-solid fa-bolt"></i> クイックリプライ連携に設定'}
+                        </button>
+                    ` : ''}
+                    <button class="btn-apply-card ${isLive ? 'disabled' : ''}" data-id="${item.id}" ${isLive ? 'disabled' : ''} title="LINE公式アカウント全体のデフォルトリッチメニューに設定">
+                        ${isLive ? '<i class="fa-solid fa-check"></i> 全体本番公開中' : '<i class="fa-solid fa-paper-plane"></i> 全体本番に適用'}
                     </button>
                     <button class="btn-edit-card" data-id="${item.id}" title="エディタに読み込んで編集・複製">
                         <i class="fa-solid fa-pen-to-square"></i> 編集
@@ -2224,6 +2270,12 @@ function renderHistoryList() {
             }
         });
 
+        // クイックリプライ連携ボタン (お知らせメニューのみ)
+        const activeNoticeBtn = card.querySelector('.btn-set-active-notice');
+        if (activeNoticeBtn && !isActiveNotice) {
+            activeNoticeBtn.addEventListener('click', () => setActiveNotice(item.id, item.title));
+        }
+
         // 本番適用ボタン
         const applyBtn = card.querySelector('.btn-apply-card');
         if (!isLive) {
@@ -2269,6 +2321,32 @@ function applyMenuToLive(id, title) {
         hideLoading();
         showToast('通信エラーが発生しました: ' + err.message, 'error');
     });
+}
+
+async function setActiveNotice(id, title) {
+    if (!id) return;
+    showLoading('クイックリプライ連携を設定中...');
+    const formData = new FormData();
+    formData.append('password', state.password || sessionStorage.getItem('admin_pass') || '');
+    formData.append('id', String(id));
+
+    try {
+        const res = await fetch('../api.php?action=admin_set_active_notice', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        hideLoading();
+        if (data.success) {
+            showToast(data.message || 'お知らせメニューをクイックリプライ連携に設定しました！', 'success');
+            loadHistoryList();
+        } else {
+            showToast(data.error || '設定に失敗しました', 'error');
+        }
+    } catch (err) {
+        hideLoading();
+        showToast('通信エラーが発生しました: ' + err.message, 'error');
+    }
 }
 
 function deleteHistoryMenu(id, title) {
@@ -3041,15 +3119,21 @@ function publishNoticeMenu() {
         returnAliasId = 'rm_' + (targetMenu.line_menu_id ? targetMenu.line_menu_id.replace(/[^a-zA-Z0-9_-]/g, '').slice(-20) : targetMenu.id);
     }
 
-    const confirmMsg = 
-        `【お知らせリッチメニューを一斉公開しますか？】\n\n` +
-        `・友だち全員のLINEトーク画面にこのお知らせが表示されます。\n` +
+    const publishToAll = elements.noticePublishToAllCheckbox ? elements.noticePublishToAllCheckbox.checked : false;
+
+    const confirmMsg = publishToAll ?
+        `【お知らせリッチメニューを友だち全員に一斉公開しますか？】\n\n` +
+        `・LINE公式アカウントの全体メニューがこのお知らせに切り替わります。\n` +
         `・「閉じる/確認」をタップすると、指定した「${targetMenu ? targetMenu.title : '通常メニュー'}」へ瞬時に切り替わります。\n\n` +
-        `今すぐ公開してよろしいですか？`;
+        `今すぐ公開してよろしいですか？` :
+        `【お知らせ専用メニューを登録・有効化しますか？】\n\n` +
+        `・LINEのクイックリプライ「📢 お知らせ」を押したお客様にこのお知らせリッチメニューが表示されます。\n` +
+        `・全体メニューは変更されず、通常メニューを維持したまま安全に設定できます。\n\n` +
+        `登録してよろしいですか？`;
 
     if (!confirm(confirmMsg)) return;
 
-    showLoading('お知らせ画像を合成してLINE公式に公開中...');
+    showLoading(publishToAll ? 'お知らせ画像を合成してLINE公式に全体公開中...' : 'お知らせ画像を合成してクイックリプライ連携に設定中...');
 
     // Canvasから画像Blobを生成
     elements.noticeCanvasPreview.toBlob((blob) => {
@@ -3089,7 +3173,8 @@ function publishNoticeMenu() {
         formData.append('chat_bar_text', '📢 お知らせ・ご案内');
         formData.append('width', '2500');
         formData.append('height', (noticeState.size === 'large') ? '1686' : '843');
-        formData.append('publish', '1'); // 一斉公開（LINE全体デフォルト適用）
+        formData.append('is_notice', '1');
+        formData.append('publish', publishToAll ? '1' : '0');
         formData.append('areas', JSON.stringify(areas));
         formData.append('image', blob, 'notice_menu.png');
 
@@ -3101,12 +3186,15 @@ function publishNoticeMenu() {
         .then(data => {
             hideLoading();
             if (data.success) {
-                showToast('🎉 お知らせリッチメニューを一斉公開しました！友だち全員に表示されます', 'success');
+                const toastMsg = publishToAll ?
+                    '🎉 お知らせリッチメニューを一斉公開しました！友だち全員に表示されます' :
+                    '🎉 お知らせ専用メニューを保存し、クイックリプライ「📢 お知らせ」の連携対象に設定しました！';
+                showToast(toastMsg, 'success');
                 closeNoticeWizard();
                 switchView('history');
                 loadHistoryList();
             } else {
-                showToast(data.error || 'お知らせの公開に失敗しました', 'error');
+                showToast(data.error || 'お知らせの保存に失敗しました', 'error');
             }
         })
         .catch(err => {
