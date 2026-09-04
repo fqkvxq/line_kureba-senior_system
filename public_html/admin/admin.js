@@ -81,6 +81,10 @@ const elements = {
     chipCustOil: document.getElementById('chipCustOil'),
     chipCustPeriodic: document.getElementById('chipCustPeriodic'),
     chipCustNotice: document.getElementById('chipCustNotice'),
+    btnReloadBaseMenus: document.getElementById('btnReloadBaseMenus'),
+    userMenuFontSizeInput: document.getElementById('userMenuFontSizeInput'),
+    userMenuFontSizeVal: document.getElementById('userMenuFontSizeVal'),
+    userMenuBannerHeightSelect: document.getElementById('userMenuBannerHeightSelect'),
 
     toast: document.getElementById('adminToast')
 };
@@ -168,6 +172,25 @@ function initEventListeners() {
     if (elements.userMenuThemeSelect) elements.userMenuThemeSelect.addEventListener('change', renderUserMenuPreview);
     if (elements.userMenuPosSelect) elements.userMenuPosSelect.addEventListener('change', renderUserMenuPreview);
     if (elements.userMenuBaseSelect) elements.userMenuBaseSelect.addEventListener('change', () => loadAndRenderUserMenuBaseImage());
+
+    // 文字サイズ & 帯の高さ & リッチメニュー再読み込み
+    if (elements.userMenuFontSizeInput) {
+        elements.userMenuFontSizeInput.addEventListener('input', (e) => {
+            if (elements.userMenuFontSizeVal) elements.userMenuFontSizeVal.textContent = e.target.value + 'px';
+            renderUserMenuPreview();
+        });
+    }
+    if (elements.userMenuBannerHeightSelect) {
+        elements.userMenuBannerHeightSelect.addEventListener('change', renderUserMenuPreview);
+    }
+    if (elements.btnReloadBaseMenus) {
+        elements.btnReloadBaseMenus.addEventListener('click', async () => {
+            elements.btnReloadBaseMenus.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            await loadRichMenus();
+            elements.btnReloadBaseMenus.innerHTML = '<i class="fa-solid fa-rotate-right"></i> 更新';
+            loadAndRenderUserMenuBaseImage();
+        });
+    }
 }
 
 async function attemptLogin() {
@@ -583,7 +606,7 @@ async function loadRichMenus() {
         const res = await fetch(`../api.php?action=admin_list_richmenus&password=${encodeURIComponent(state.password)}`);
         const data = await res.json();
         if (data.success) {
-            state.richMenus = data.rich_menus || [];
+            state.richMenus = data.menus || data.rich_menus || [];
             updateBaseMenuSelect();
         }
     } catch (e) {
@@ -610,7 +633,7 @@ function updateBaseMenuSelect() {
     });
 }
 
-function openUserRichMenuModal(cust) {
+async function openUserRichMenuModal(cust) {
     if (!cust.user_id || cust.user_id.startsWith('MANUAL_')) {
         alert('この顧客は手動登録（LINE未連携）のため、専用リッチメニューを適用できません。\n友だち登録連携後のお客様のみご利用いただけます。');
         return;
@@ -638,7 +661,13 @@ function openUserRichMenuModal(cust) {
     // メッセージ入力の初期値
     elements.userMenuTextInput.value = cust.custom_menu_text || getDefaultCustomPhrase(cust, 'insp');
 
-    updateBaseMenuSelect();
+    // リッチメニュー一覧が未取得なら取得
+    if (!state.richMenus || state.richMenus.length === 0) {
+        await loadRichMenus();
+    } else {
+        updateBaseMenuSelect();
+    }
+
     elements.userRichMenuModal.classList.add('active');
 
     loadAndRenderUserMenuBaseImage();
@@ -725,18 +754,38 @@ function renderUserMenuPreview() {
     }
 
     // 2. メッセージテロップ帯の描画
-    const text = elements.userMenuTextInput.value.trim();
-    if (!text) return;
+    const rawText = elements.userMenuTextInput.value.trim();
+    if (!rawText) return;
 
     const theme = elements.userMenuThemeSelect ? elements.userMenuThemeSelect.value : 'red';
     const pos = elements.userMenuPosSelect ? elements.userMenuPosSelect.value : 'top';
+    const fontSize = elements.userMenuFontSizeInput ? parseInt(elements.userMenuFontSizeInput.value, 10) : 65;
+    const heightSetting = elements.userMenuBannerHeightSelect ? elements.userMenuBannerHeightSelect.value : 'auto';
 
-    const bannerH = Math.round(h * 0.11); // 高さ約 180px
+    // 複数行テキストの分解
+    const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length === 0) return;
+
+    // 帯の高さ計算（文字サイズ・行数・帯の太さ設定を考慮）
+    let bannerH;
+    if (heightSetting === 'compact') {
+        bannerH = Math.max(Math.round(fontSize * 1.5), 140);
+    } else if (heightSetting === 'standard') {
+        bannerH = Math.max(Math.round(fontSize * 1.8), 185);
+    } else if (heightSetting === 'wide') {
+        bannerH = Math.max(Math.round(fontSize * 2.2), 240);
+    } else {
+        // auto: 行数とフォントサイズに応じて余白を最適化
+        const lineSpacing = fontSize * 1.32;
+        const textBlockH = (lines.length * lineSpacing);
+        bannerH = Math.max(150, Math.round(textBlockH + (fontSize * 0.95)));
+    }
+
     const bannerY = (pos === 'top') ? 0 : (h - bannerH);
 
     // テーマカラー設定
     let bgGrad;
-    let accentBorder = 'rgba(255, 255, 255, 0.3)';
+    let accentBorder = 'rgba(255, 255, 255, 0.35)';
     if (theme === 'red') {
         bgGrad = ctx.createLinearGradient(0, bannerY, w, bannerY);
         bgGrad.addColorStop(0, '#e11d48');
@@ -762,16 +811,16 @@ function renderUserMenuPreview() {
 
     // 背景ドロップシャドウ & 帯の描画
     ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-    ctx.shadowBlur = 20;
-    ctx.shadowOffsetY = (pos === 'top') ? 6 : -6;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+    ctx.shadowBlur = 24;
+    ctx.shadowOffsetY = (pos === 'top') ? 8 : -8;
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, bannerY, w, bannerH);
     ctx.restore();
 
     // 縁取りライン
     ctx.strokeStyle = accentBorder;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 3.5;
     ctx.beginPath();
     if (pos === 'top') {
         ctx.moveTo(0, bannerY + bannerH);
@@ -787,15 +836,21 @@ function renderUserMenuPreview() {
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-    ctx.shadowBlur = 10;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+    ctx.shadowBlur = 12;
     ctx.shadowOffsetY = 2;
 
-    const fontSize = Math.round(bannerH * 0.38); // 約 65px
     ctx.font = `bold ${fontSize}px "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif`;
 
-    const textCenterY = bannerY + (bannerH / 2);
-    ctx.fillText(text, w / 2, textCenterY, w - 100);
+    const lineSpacing = fontSize * 1.32;
+    const totalTextH = (lines.length - 1) * lineSpacing;
+    const startY = (bannerY + bannerH / 2) - (totalTextH / 2);
+
+    lines.forEach((line, idx) => {
+        const lineY = startY + (idx * lineSpacing);
+        ctx.fillText(line, w / 2, lineY, w - 120);
+    });
+
     ctx.restore();
 }
 

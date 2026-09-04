@@ -1326,6 +1326,7 @@ try {
             echo json_encode([
                 'success' => true,
                 'menus' => $menus,
+                'rich_menus' => $menus,
                 'current_default_id' => $currentLineDefaultId,
                 'active_notice_id' => $activeNoticeId
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
