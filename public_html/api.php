@@ -1430,12 +1430,15 @@ try {
 
             // 4. LINE API: 本番適用 (publishフラグが真の場合)
             $isActive = 0;
+            $applyError = null;
             if ($publish) {
                 $setDefRes = lineSetDefaultRichMenu($lineMenuId);
                 if ($setDefRes['success']) {
                     $isActive = 1;
                     // 他のメニューのis_activeを0に更新
                     $db->exec("UPDATE rich_menus SET is_active = 0");
+                } else {
+                    $applyError = $setDefRes['error'] ?? '不明なエラー';
                 }
             }
 
@@ -1461,13 +1464,22 @@ try {
             ]);
             $newId = (int)$db->lastInsertId();
 
+            $msg = 'リッチメニューを下書きとして保存しました！';
+            if ($publish) {
+                if ($isActive) {
+                    $msg = 'リッチメニューを登録し、LINE本番アカウントに即時適用しました！';
+                } else {
+                    $msg = "リッチメニューは保存されましたが、LINE本番適用でエラーが発生しました: {$applyError}";
+                }
+            }
+
             echo json_encode([
                 'success' => true,
                 'id' => $newId,
                 'line_menu_id' => $lineMenuId,
                 'is_active' => $isActive,
                 'image_url' => $imageUrl,
-                'message' => $publish ? 'リッチメニューを登録し、LINE本番アカウントに即時適用しました！' : 'リッチメニューを下書きとして保存しました！'
+                'message' => $msg
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 

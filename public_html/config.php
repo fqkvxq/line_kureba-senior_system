@@ -393,16 +393,25 @@ function lineSetDefaultRichMenu(string $richMenuId): array {
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => '',
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 10,
         CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN,
+            'Content-Length: 0'
         ]
     ]);
     $res = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlErr = curl_error($ch);
     curl_close($ch);
+
+    writeDebugLog("lineSetDefaultRichMenu結果", [
+        'richMenuId' => $richMenuId,
+        'httpCode' => $httpCode,
+        'response' => $res,
+        'curlErr' => $curlErr
+    ]);
 
     return [
         'success' => ($httpCode === 200),
@@ -434,10 +443,16 @@ function lineCancelDefaultRichMenu(): array {
     $curlErr = curl_error($ch);
     curl_close($ch);
 
+    writeDebugLog("lineCancelDefaultRichMenu結果", [
+        'httpCode' => $httpCode,
+        'response' => $res,
+        'curlErr' => $curlErr
+    ]);
+
     return [
         'success' => ($httpCode === 200),
         'httpCode' => $httpCode,
-        'error' => $curlErr
+        'error' => $curlErr ?: ($httpCode !== 200 ? $res : null)
     ];
 }
 
@@ -492,10 +507,17 @@ function lineDeleteRichMenu(string $richMenuId): array {
     $curlErr = curl_error($ch);
     curl_close($ch);
 
+    writeDebugLog("lineDeleteRichMenu結果", [
+        'richMenuId' => $richMenuId,
+        'httpCode' => $httpCode,
+        'response' => $res,
+        'curlErr' => $curlErr
+    ]);
+
     return [
         'success' => ($httpCode === 200),
         'httpCode' => $httpCode,
-        'error' => $curlErr
+        'error' => $curlErr ?: ($httpCode !== 200 ? $res : null)
     ];
 }
 
