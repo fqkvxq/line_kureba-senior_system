@@ -13,8 +13,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260904_notice_v1">
-    <link rel="stylesheet" href="richmenu.css?v=20260904_notice_v1">
+    <link rel="stylesheet" href="admin.css?v=20260904_notice_v2">
+    <link rel="stylesheet" href="richmenu.css?v=20260904_notice_v2">
 </head>
 <body>
     <!-- ログインモーダル -->
@@ -354,6 +354,31 @@
                     <div class="form-group">
                         <label for="noticeTitleInput">お知らせタイトル (大見出し) <span class="required-star">*</span></label>
                         <input type="text" id="noticeTitleInput" placeholder="例: 🎉 秋の大感謝祭セール開催！" value="🎉 秋の大感謝祭セール開催！" maxlength="60">
+                        <div class="notice-text-styling-row">
+                            <div class="styling-item">
+                                <label for="noticeTitleSizeInput"><i class="fa-solid fa-text-height"></i> サイズ</label>
+                                <select id="noticeTitleSizeInput" class="select-xs">
+                                    <option value="60">小 (60px)</option>
+                                    <option value="76" selected>標準 (76px)</option>
+                                    <option value="90">大 (90px)</option>
+                                    <option value="105">特大 (105px)</option>
+                                </select>
+                            </div>
+                            <div class="styling-item">
+                                <label for="noticeTitleColorInput"><i class="fa-solid fa-palette"></i> 文字色</label>
+                                <div class="color-picker-compact">
+                                    <input type="color" id="noticeTitleColorInput" value="#0f172a">
+                                    <span class="color-code" id="noticeTitleColorCode">#0f172a</span>
+                                </div>
+                            </div>
+                            <div class="styling-item">
+                                <label for="noticeTitleAlignSelect"><i class="fa-solid fa-align-left"></i> 配置</label>
+                                <select id="noticeTitleAlignSelect" class="select-xs">
+                                    <option value="left" selected>左寄せ</option>
+                                    <option value="center">中央揃え</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -361,32 +386,63 @@
                         <textarea id="noticeBodyInput" rows="4" placeholder="お知らせ本文を入力してください">9/10(水)〜9/25(木)まで秋の特別商談会を開催！
 期間中にご来店・ご成約のお客様に豪華特典をご用意しております。
 点検・オイル交換のご相談もお気軽にどうぞ！</textarea>
+                        <div class="notice-text-styling-row">
+                            <div class="styling-item">
+                                <label for="noticeBodySizeInput"><i class="fa-solid fa-text-height"></i> サイズ</label>
+                                <select id="noticeBodySizeInput" class="select-xs">
+                                    <option value="38">極小 (38px)</option>
+                                    <option value="44">小 (44px)</option>
+                                    <option value="50" selected>標準 (50px)</option>
+                                    <option value="58">大 (58px)</option>
+                                    <option value="68">特大 (68px)</option>
+                                </select>
+                            </div>
+                            <div class="styling-item">
+                                <label for="noticeBodyColorInput"><i class="fa-solid fa-palette"></i> 文字色</label>
+                                <div class="color-picker-compact">
+                                    <input type="color" id="noticeBodyColorInput" value="#334155">
+                                    <span class="color-code" id="noticeBodyColorCode">#334155</span>
+                                </div>
+                            </div>
+                            <div class="styling-item">
+                                <label for="noticeBodyAlignSelect"><i class="fa-solid fa-align-left"></i> 配置</label>
+                                <select id="noticeBodyAlignSelect" class="select-xs">
+                                    <option value="left" selected>左寄せ</option>
+                                    <option value="center">中央揃え</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label>デザインカラーテーマ</label>
+                        <div class="section-label-with-action">
+                            <label>デザインカラーテーマ</label>
+                            <button type="button" class="btn-text-action" id="btnResetThemeColors" title="文字色をテーマの標準色にリセット">
+                                <i class="fa-solid fa-arrow-rotate-left"></i> 文字色をテーマ推奨にリセット
+                            </button>
+                        </div>
                         <div class="notice-theme-picker">
-                            <label class="notice-theme-opt opt-red active">
+                            <label class="notice-theme-opt opt-red active" data-theme="red">
                                 <input type="radio" name="noticeTheme" value="red" checked>
                                 <span class="theme-color-dot" style="background: #dc2626;"></span>
                                 <span class="theme-label">赤 (注目・セール)</span>
                             </label>
-                            <label class="notice-theme-opt opt-green">
+                            <label class="notice-theme-opt opt-green" data-theme="green">
                                 <input type="radio" name="noticeTheme" value="green">
                                 <span class="theme-color-dot" style="background: #06C755;"></span>
                                 <span class="theme-label">緑 (LINE・新着)</span>
                             </label>
-                            <label class="notice-theme-opt opt-dark">
+                            <label class="notice-theme-opt opt-dark" data-theme="dark">
                                 <input type="radio" name="noticeTheme" value="dark">
                                 <span class="theme-color-dot" style="background: #0f172a;"></span>
                                 <span class="theme-label">黒 (シック・高級)</span>
                             </label>
-                            <label class="notice-theme-opt opt-blue">
+                            <label class="notice-theme-opt opt-blue" data-theme="blue">
                                 <input type="radio" name="noticeTheme" value="blue">
                                 <span class="theme-color-dot" style="background: #2563eb;"></span>
                                 <span class="theme-label">青 (安心・案内)</span>
                             </label>
-                            <label class="notice-theme-opt opt-yellow">
+                            <label class="notice-theme-opt opt-yellow" data-theme="yellow">
                                 <input type="radio" name="noticeTheme" value="yellow">
                                 <span class="theme-color-dot" style="background: #f59e0b;"></span>
                                 <span class="theme-label">黄 (元気・お得)</span>
@@ -467,6 +523,6 @@
     <!-- トースト通知 -->
     <div class="toast-notification" id="adminToast"></div>
 
-    <script src="richmenu.js?v=20260904_notice_v1"></script>
+    <script src="richmenu.js?v=20260904_notice_v2"></script>
 </body>
 </html>

@@ -111,7 +111,16 @@ const elements = {
     btnCancelNoticeWizard: document.getElementById('btnCancelNoticeWizard'),
     btnSubmitNoticePublish: document.getElementById('btnSubmitNoticePublish'),
     noticeTitleInput: document.getElementById('noticeTitleInput'),
+    noticeTitleSizeInput: document.getElementById('noticeTitleSizeInput'),
+    noticeTitleColorInput: document.getElementById('noticeTitleColorInput'),
+    noticeTitleColorCode: document.getElementById('noticeTitleColorCode'),
+    noticeTitleAlignSelect: document.getElementById('noticeTitleAlignSelect'),
     noticeBodyInput: document.getElementById('noticeBodyInput'),
+    noticeBodySizeInput: document.getElementById('noticeBodySizeInput'),
+    noticeBodyColorInput: document.getElementById('noticeBodyColorInput'),
+    noticeBodyColorCode: document.getElementById('noticeBodyColorCode'),
+    noticeBodyAlignSelect: document.getElementById('noticeBodyAlignSelect'),
+    btnResetThemeColors: document.getElementById('btnResetThemeColors'),
     btnNoticeSizeLarge: document.getElementById('btnNoticeSizeLarge'),
     btnNoticeSizeSmall: document.getElementById('btnNoticeSizeSmall'),
     noticeReturnMenuSelect: document.getElementById('noticeReturnMenuSelect'),
@@ -2426,155 +2435,20 @@ function escapeHtml(str) {
 const noticeState = {
     theme: 'red',
     size: 'large',
+    titleSize: 76,
+    titleColor: '#0f172a',
+    titleAlign: 'left',
+    bodySize: 50,
+    bodyColor: '#334155',
+    bodyAlign: 'left',
+    customTitleColor: false,
+    customBodyColor: false,
     okBounds: null,
     linkBounds: null
 };
 
-function initNoticeWizardEvents() {
-    if (!elements.btnOpenNoticeModal) return;
-
-    // 開く・閉じる
-    elements.btnOpenNoticeModal.addEventListener('click', openNoticeWizard);
-    if (elements.btnCloseNoticeWizard) {
-        elements.btnCloseNoticeWizard.addEventListener('click', closeNoticeWizard);
-    }
-    if (elements.btnCancelNoticeWizard) {
-        elements.btnCancelNoticeWizard.addEventListener('click', closeNoticeWizard);
-    }
-    if (elements.noticeWizardModal) {
-        elements.noticeWizardModal.addEventListener('click', (e) => {
-            if (e.target === elements.noticeWizardModal) {
-                closeNoticeWizard();
-            }
-        });
-    }
-
-    // サイズ切替
-    if (elements.btnNoticeSizeLarge && elements.btnNoticeSizeSmall) {
-        elements.btnNoticeSizeLarge.addEventListener('click', () => {
-            elements.btnNoticeSizeLarge.classList.add('active');
-            elements.btnNoticeSizeSmall.classList.remove('active');
-            noticeState.size = 'large';
-            drawNoticePreview();
-        });
-        elements.btnNoticeSizeSmall.addEventListener('click', () => {
-            elements.btnNoticeSizeSmall.classList.add('active');
-            elements.btnNoticeSizeLarge.classList.remove('active');
-            noticeState.size = 'small';
-            drawNoticePreview();
-        });
-    }
-
-    // テーマ選択
-    document.querySelectorAll('.theme-choice').forEach(choice => {
-        choice.addEventListener('click', () => {
-            document.querySelectorAll('.theme-choice').forEach(c => c.classList.remove('active'));
-            choice.classList.add('active');
-            const radio = choice.querySelector('input[type="radio"]');
-            if (radio) radio.checked = true;
-            noticeState.theme = choice.dataset.theme || 'red';
-            drawNoticePreview();
-        });
-    });
-
-    // フォーム入力で即座にプレビュー再描画
-    if (elements.noticeTitleInput) {
-        elements.noticeTitleInput.addEventListener('input', drawNoticePreview);
-    }
-    if (elements.noticeBodyInput) {
-        elements.noticeBodyInput.addEventListener('input', drawNoticePreview);
-    }
-    if (elements.noticeCloseBtnTextInput) {
-        elements.noticeCloseBtnTextInput.addEventListener('input', drawNoticePreview);
-    }
-    if (elements.noticeLinkUrlInput) {
-        elements.noticeLinkUrlInput.addEventListener('input', drawNoticePreview);
-    }
-
-    // 公開ボタン
-    if (elements.btnSubmitNoticePublish) {
-        elements.btnSubmitNoticePublish.addEventListener('click', publishNoticeMenu);
-    }
-}
-
-function openNoticeWizard() {
-    if (!elements.noticeWizardModal) return;
-
-    // 戻り先リッチメニューの選択肢を構築
-    populateNoticeReturnMenuOptions();
-
-    // デフォルト値が未入力ならセット
-    if (elements.noticeTitleInput && !elements.noticeTitleInput.value.trim()) {
-        elements.noticeTitleInput.value = '【重要なお知らせ】最新フェア開催中！';
-    }
-    if (elements.noticeBodyInput && !elements.noticeBodyInput.value.trim()) {
-        elements.noticeBodyInput.value = 'いつも当店をご利用いただき誠にありがとうございます！\nただいま期間限定の特別フェアを開催しております。\n最新の展示車両やお得なキャンペーンをぜひチェックしてください。';
-    }
-    if (elements.noticeCloseBtnTextInput && !elements.noticeCloseBtnTextInput.value.trim()) {
-        elements.noticeCloseBtnTextInput.value = '✔ 確認しました（メニューに戻る）';
-    }
-
-    elements.noticeWizardModal.style.display = 'flex';
-    drawNoticePreview();
-}
-
-function closeNoticeWizard() {
-    if (!elements.noticeWizardModal) return;
-    elements.noticeWizardModal.style.display = 'none';
-}
-
-function populateNoticeReturnMenuOptions() {
-    if (!elements.noticeReturnMenuSelect) return;
-    elements.noticeReturnMenuSelect.innerHTML = '';
-
-    if (!state.historyList || state.historyList.length === 0) {
-        const opt = document.createElement('option');
-        opt.value = '';
-        opt.textContent = '保存済みリッチメニューがありません';
-        elements.noticeReturnMenuSelect.appendChild(opt);
-        return;
-    }
-
-    // 現在本番中（isLive）のものを優先して初期選択
-    let selectedId = '';
-    const liveMenu = state.historyList.find(m => m.is_active == 1 || (m.line_menu_id && m.line_menu_id === state.currentLineDefaultId));
-    if (liveMenu) {
-        selectedId = liveMenu.alias_id || liveMenu.id;
-    }
-
-    state.historyList.forEach(m => {
-        const opt = document.createElement('option');
-        const aliasOrId = m.alias_id || m.id;
-        opt.value = aliasOrId;
-        const isCurrent = (m.is_active == 1 || (m.line_menu_id && m.line_menu_id === state.currentLineDefaultId));
-        opt.textContent = (isCurrent ? '★本番適用中: ' : '') + m.title + (m.alias_id ? ` [${m.alias_id}]` : '');
-        if (isCurrent || (!selectedId && !opt.selected)) {
-            opt.selected = true;
-            selectedId = aliasOrId;
-        }
-        elements.noticeReturnMenuSelect.appendChild(opt);
-    });
-}
-
-function drawNoticePreview() {
-    const canvas = elements.noticeCanvasPreview;
-    if (!canvas) return;
-
-    const isLarge = (noticeState.size === 'large');
-    const width = 2500;
-    const height = isLarge ? 1686 : 843;
-
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-
-    const title = (elements.noticeTitleInput ? elements.noticeTitleInput.value.trim() : '') || 'お知らせタイトル';
-    const body = (elements.noticeBodyInput ? elements.noticeBodyInput.value.trim() : '') || 'お知らせ本文を入力してください。';
-    const closeBtnText = (elements.noticeCloseBtnTextInput ? elements.noticeCloseBtnTextInput.value.trim() : '') || '✔ 確認しました（閉じる）';
-    const linkUrl = (elements.noticeLinkUrlInput ? elements.noticeLinkUrlInput.value.trim() : '');
-
-    // テーマ設定
-    const themes = {
+function getNoticeThemeDefaults(themeName) {
+    const defaults = {
         red: {
             bgGrad: ['#7f1d1d', '#991b1b', '#b91c1c'],
             cardBg: '#ffffff',
@@ -2652,8 +2526,240 @@ function drawNoticePreview() {
             btnLinkBorder: '#fde68a'
         }
     };
+    return defaults[themeName] || defaults.red;
+}
 
-    const t = themes[noticeState.theme] || themes.red;
+function applyNoticeTheme(themeName, forceResetColors = false) {
+    noticeState.theme = themeName;
+
+    // UIのactive切り替え
+    document.querySelectorAll('.notice-theme-opt').forEach(opt => {
+        const isTarget = (opt.dataset.theme === themeName);
+        opt.classList.toggle('active', isTarget);
+        const radio = opt.querySelector('input[type="radio"]');
+        if (radio) radio.checked = isTarget;
+    });
+
+    // 推奨カラーの反映 (カスタムされていなければ、またはリセット要求時)
+    const t = getNoticeThemeDefaults(themeName);
+    if (!noticeState.customTitleColor || forceResetColors) {
+        noticeState.titleColor = t.titleColor;
+        if (elements.noticeTitleColorInput) elements.noticeTitleColorInput.value = t.titleColor;
+        if (elements.noticeTitleColorCode) elements.noticeTitleColorCode.textContent = t.titleColor;
+        noticeState.customTitleColor = false;
+    }
+    if (!noticeState.customBodyColor || forceResetColors) {
+        noticeState.bodyColor = t.bodyColor;
+        if (elements.noticeBodyColorInput) elements.noticeBodyColorInput.value = t.bodyColor;
+        if (elements.noticeBodyColorCode) elements.noticeBodyColorCode.textContent = t.bodyColor;
+        noticeState.customBodyColor = false;
+    }
+
+    drawNoticePreview();
+}
+
+function initNoticeWizardEvents() {
+    if (!elements.btnOpenNoticeModal) return;
+
+    // 開く・閉じる
+    elements.btnOpenNoticeModal.addEventListener('click', openNoticeWizard);
+    if (elements.btnCloseNoticeWizard) {
+        elements.btnCloseNoticeWizard.addEventListener('click', closeNoticeWizard);
+    }
+    if (elements.btnCancelNoticeWizard) {
+        elements.btnCancelNoticeWizard.addEventListener('click', closeNoticeWizard);
+    }
+    if (elements.noticeWizardModal) {
+        elements.noticeWizardModal.addEventListener('click', (e) => {
+            if (e.target === elements.noticeWizardModal) {
+                closeNoticeWizard();
+            }
+        });
+    }
+
+    // サイズ切替
+    if (elements.btnNoticeSizeLarge && elements.btnNoticeSizeSmall) {
+        elements.btnNoticeSizeLarge.addEventListener('click', () => {
+            elements.btnNoticeSizeLarge.classList.add('active');
+            elements.btnNoticeSizeSmall.classList.remove('active');
+            noticeState.size = 'large';
+            drawNoticePreview();
+        });
+        elements.btnNoticeSizeSmall.addEventListener('click', () => {
+            elements.btnNoticeSizeSmall.classList.add('active');
+            elements.btnNoticeSizeLarge.classList.remove('active');
+            noticeState.size = 'small';
+            drawNoticePreview();
+        });
+    }
+
+    // デザインカラーテーマ選択 (クリック & ラジオ変更)
+    document.querySelectorAll('.notice-theme-opt').forEach(opt => {
+        opt.addEventListener('click', (e) => {
+            const theme = opt.dataset.theme || (opt.querySelector('input[type="radio"]') ? opt.querySelector('input[type="radio"]').value : 'red');
+            applyNoticeTheme(theme, false);
+        });
+    });
+
+    // タイトル文字サイズ・文字色・配置
+    if (elements.noticeTitleInput) {
+        elements.noticeTitleInput.addEventListener('input', drawNoticePreview);
+    }
+    if (elements.noticeTitleSizeInput) {
+        elements.noticeTitleSizeInput.addEventListener('change', () => {
+            noticeState.titleSize = parseInt(elements.noticeTitleSizeInput.value, 10) || 76;
+            drawNoticePreview();
+        });
+    }
+    if (elements.noticeTitleColorInput) {
+        elements.noticeTitleColorInput.addEventListener('input', () => {
+            noticeState.titleColor = elements.noticeTitleColorInput.value;
+            if (elements.noticeTitleColorCode) elements.noticeTitleColorCode.textContent = elements.noticeTitleColorInput.value;
+            noticeState.customTitleColor = true;
+            drawNoticePreview();
+        });
+    }
+    if (elements.noticeTitleAlignSelect) {
+        elements.noticeTitleAlignSelect.addEventListener('change', () => {
+            noticeState.titleAlign = elements.noticeTitleAlignSelect.value || 'left';
+            drawNoticePreview();
+        });
+    }
+
+    // 本文文字サイズ・文字色・配置
+    if (elements.noticeBodyInput) {
+        elements.noticeBodyInput.addEventListener('input', drawNoticePreview);
+    }
+    if (elements.noticeBodySizeInput) {
+        elements.noticeBodySizeInput.addEventListener('change', () => {
+            noticeState.bodySize = parseInt(elements.noticeBodySizeInput.value, 10) || 50;
+            drawNoticePreview();
+        });
+    }
+    if (elements.noticeBodyColorInput) {
+        elements.noticeBodyColorInput.addEventListener('input', () => {
+            noticeState.bodyColor = elements.noticeBodyColorInput.value;
+            if (elements.noticeBodyColorCode) elements.noticeBodyColorCode.textContent = elements.noticeBodyColorInput.value;
+            noticeState.customBodyColor = true;
+            drawNoticePreview();
+        });
+    }
+    if (elements.noticeBodyAlignSelect) {
+        elements.noticeBodyAlignSelect.addEventListener('change', () => {
+            noticeState.bodyAlign = elements.noticeBodyAlignSelect.value || 'left';
+            drawNoticePreview();
+        });
+    }
+
+    // 文字色リセットボタン
+    if (elements.btnResetThemeColors) {
+        elements.btnResetThemeColors.addEventListener('click', () => {
+            applyNoticeTheme(noticeState.theme, true);
+            showToast('文字色をテーマの標準色にリセットしました', 'info');
+        });
+    }
+
+    if (elements.noticeCloseBtnTextInput) {
+        elements.noticeCloseBtnTextInput.addEventListener('input', drawNoticePreview);
+    }
+    if (elements.noticeLinkUrlInput) {
+        elements.noticeLinkUrlInput.addEventListener('input', drawNoticePreview);
+    }
+
+    // 公開ボタン
+    if (elements.btnSubmitNoticePublish) {
+        elements.btnSubmitNoticePublish.addEventListener('click', publishNoticeMenu);
+    }
+}
+
+function openNoticeWizard() {
+    if (!elements.noticeWizardModal) return;
+
+    // 戻り先リッチメニューの選択肢を構築
+    populateNoticeReturnMenuOptions();
+
+    // デフォルト値が未入力ならセット
+    if (elements.noticeTitleInput && !elements.noticeTitleInput.value.trim()) {
+        elements.noticeTitleInput.value = '🎉 秋の大感謝祭セール開催！';
+    }
+    if (elements.noticeBodyInput && !elements.noticeBodyInput.value.trim()) {
+        elements.noticeBodyInput.value = '9/10(水)〜9/25(木)まで秋の特別商談会を開催！\n期間中にご来店・ご成約のお客様に豪華特典をご用意しております。\n点検・オイル交換のご相談もお気軽にどうぞ！';
+    }
+    if (elements.noticeCloseBtnTextInput && !elements.noticeCloseBtnTextInput.value.trim()) {
+        elements.noticeCloseBtnTextInput.value = '✓ OK (通常メニューへ)';
+    }
+
+    // フォームコントロールの値を state と同期
+    if (elements.noticeTitleSizeInput) elements.noticeTitleSizeInput.value = String(noticeState.titleSize);
+    if (elements.noticeTitleColorInput) elements.noticeTitleColorInput.value = noticeState.titleColor;
+    if (elements.noticeTitleColorCode) elements.noticeTitleColorCode.textContent = noticeState.titleColor;
+    if (elements.noticeTitleAlignSelect) elements.noticeTitleAlignSelect.value = noticeState.titleAlign;
+
+    if (elements.noticeBodySizeInput) elements.noticeBodySizeInput.value = String(noticeState.bodySize);
+    if (elements.noticeBodyColorInput) elements.noticeBodyColorInput.value = noticeState.bodyColor;
+    if (elements.noticeBodyColorCode) elements.noticeBodyColorCode.textContent = noticeState.bodyColor;
+    if (elements.noticeBodyAlignSelect) elements.noticeBodyAlignSelect.value = noticeState.bodyAlign;
+
+    elements.noticeWizardModal.style.display = 'flex';
+    drawNoticePreview();
+}
+
+function closeNoticeWizard() {
+    if (!elements.noticeWizardModal) return;
+    elements.noticeWizardModal.style.display = 'none';
+}
+
+function populateNoticeReturnMenuOptions() {
+    if (!elements.noticeReturnMenuSelect) return;
+    elements.noticeReturnMenuSelect.innerHTML = '';
+
+    if (!state.historyList || state.historyList.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = '保存済みリッチメニューがありません';
+        elements.noticeReturnMenuSelect.appendChild(opt);
+        return;
+    }
+
+    // 現在本番中（isLive）のものを優先して初期選択
+    let selectedId = '';
+    const liveMenu = state.historyList.find(m => m.is_active == 1 || (m.line_menu_id && m.line_menu_id === state.currentLineDefaultId));
+    if (liveMenu) {
+        selectedId = liveMenu.alias_id || liveMenu.id;
+    }
+
+    state.historyList.forEach(m => {
+        const opt = document.createElement('option');
+        const aliasOrId = m.alias_id || m.id;
+        opt.value = aliasOrId;
+        const isCurrent = (m.is_active == 1 || (m.line_menu_id && m.line_menu_id === state.currentLineDefaultId));
+        opt.textContent = (isCurrent ? '★本番適用中: ' : '') + m.title + (m.alias_id ? ` [${m.alias_id}]` : '');
+        if (isCurrent || (!selectedId && !opt.selected)) {
+            opt.selected = true;
+            selectedId = aliasOrId;
+        }
+        elements.noticeReturnMenuSelect.appendChild(opt);
+    });
+}
+
+function drawNoticePreview() {
+    const canvas = elements.noticeCanvasPreview;
+    if (!canvas) return;
+
+    const isLarge = (noticeState.size === 'large');
+    const width = 2500;
+    const height = isLarge ? 1686 : 843;
+
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+
+    const title = (elements.noticeTitleInput ? elements.noticeTitleInput.value.trim() : '') || 'お知らせタイトル';
+    const body = (elements.noticeBodyInput ? elements.noticeBodyInput.value.trim() : '') || 'お知らせ本文を入力してください。';
+    const closeBtnText = (elements.noticeCloseBtnTextInput ? elements.noticeCloseBtnTextInput.value.trim() : '') || '✓ OK (通常メニューへ)';
+    const linkUrl = (elements.noticeLinkUrlInput ? elements.noticeLinkUrlInput.value.trim() : '');
+
+    const t = getNoticeThemeDefaults(noticeState.theme);
 
     // 1. 背景グラデーション描画
     const grad = ctx.createLinearGradient(0, 0, width, height);
@@ -2665,7 +2771,7 @@ function drawNoticePreview() {
 
     // 背景の微細なサークル装飾
     ctx.save();
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.035)';
     ctx.beginPath();
     ctx.arc(width * 0.85, height * 0.2, 380, 0, Math.PI * 2);
     ctx.fill();
@@ -2702,46 +2808,50 @@ function drawNoticePreview() {
     }
 
     // 3. バッジ描画
-    const badgeX = padX + 80;
-    const badgeY = padY + (isLarge ? 70 : 45);
-    const badgeH = isLarge ? 64 : 52;
+    const badgeX = (noticeState.titleAlign === 'center') ? (padX + cardW / 2) : (padX + 80);
+    const badgeY = padY + (isLarge ? 65 : 42);
+    const badgeH = isLarge ? 64 : 50;
     const badgePadX = 36;
 
     ctx.font = `bold ${isLarge ? 34 : 28}px "Outfit", "Noto Sans JP", sans-serif`;
     const badgeTextWidth = ctx.measureText(t.badgeLabel).width;
     const badgeW = badgeTextWidth + (badgePadX * 2);
+    const badgeDrawX = (noticeState.titleAlign === 'center') ? (badgeX - badgeW / 2) : badgeX;
 
     ctx.save();
-    drawRoundedRect(ctx, badgeX, badgeY, badgeW, badgeH, badgeH / 2);
+    drawRoundedRect(ctx, badgeDrawX, badgeY, badgeW, badgeH, badgeH / 2);
     ctx.fillStyle = t.badgeBg;
     ctx.fill();
     ctx.fillStyle = t.badgeText;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(t.badgeLabel, badgeX + badgeW / 2, badgeY + badgeH / 2);
+    ctx.fillText(t.badgeLabel, badgeDrawX + badgeW / 2, badgeY + badgeH / 2);
     ctx.restore();
 
-    // 4. タイトル描画
-    const titleX = padX + 80;
-    const titleY = badgeY + badgeH + (isLarge ? 50 : 35);
-    const titleFontSize = isLarge ? 76 : 56;
+    // 4. タイトル描画 (ユーザー設定のフォントサイズ・文字色・配置)
+    const titleBaseFontSize = noticeState.titleSize || 76;
+    const titleFontSize = isLarge ? titleBaseFontSize : Math.round(titleBaseFontSize * 0.75);
+    const titleLineH = Math.round(titleFontSize * 1.25);
+    const titleY = badgeY + badgeH + (isLarge ? 45 : 30);
+
     ctx.save();
     ctx.font = `900 ${titleFontSize}px "Outfit", "Noto Sans JP", sans-serif`;
-    ctx.fillStyle = t.titleColor;
-    ctx.textAlign = 'left';
+    ctx.fillStyle = noticeState.titleColor || t.titleColor;
+    ctx.textAlign = noticeState.titleAlign || 'left';
     ctx.textBaseline = 'top';
 
     const maxTextW = cardW - 160;
     const titleLines = getWrappedLines(ctx, title, maxTextW);
-    const titleLineH = isLarge ? 94 : 70;
     const renderTitleLines = titleLines.slice(0, 2);
+    const titleDrawX = (noticeState.titleAlign === 'center') ? (padX + cardW / 2) : (padX + 80);
+
     renderTitleLines.forEach((line, idx) => {
-        ctx.fillText(line, titleX, titleY + (idx * titleLineH));
+        ctx.fillText(line, titleDrawX, titleY + (idx * titleLineH));
     });
     ctx.restore();
 
     // 5. 区切り線描画
-    const dividerY = titleY + (renderTitleLines.length * titleLineH) + (isLarge ? 30 : 20);
+    const dividerY = titleY + (renderTitleLines.length * titleLineH) + (isLarge ? 28 : 18);
     ctx.save();
     ctx.strokeStyle = t.divider;
     ctx.lineWidth = 2;
@@ -2751,16 +2861,16 @@ function drawNoticePreview() {
     ctx.stroke();
     ctx.restore();
 
-    // 6. 本文テキスト描画
-    const bodyX = padX + 80;
-    const bodyY = dividerY + (isLarge ? 40 : 25);
-    const bodyFontSize = isLarge ? 50 : 38;
-    const bodyLineH = isLarge ? 78 : 56;
+    // 6. 本文テキスト描画 (ユーザー設定のフォントサイズ・文字色・配置)
+    const bodyBaseFontSize = noticeState.bodySize || 50;
+    const bodyFontSize = isLarge ? bodyBaseFontSize : Math.round(bodyBaseFontSize * 0.75);
+    const bodyLineH = Math.round(bodyFontSize * 1.55);
+    const bodyY = dividerY + (isLarge ? 36 : 22);
 
     ctx.save();
     ctx.font = `500 ${bodyFontSize}px "Noto Sans JP", sans-serif`;
-    ctx.fillStyle = t.bodyColor;
-    ctx.textAlign = 'left';
+    ctx.fillStyle = noticeState.bodyColor || t.bodyColor;
+    ctx.textAlign = noticeState.bodyAlign || 'left';
     ctx.textBaseline = 'top';
 
     // 本文の最大行数計算（ボタン領域の手前まで）
@@ -2780,8 +2890,9 @@ function drawNoticePreview() {
         displayBodyLines[displayBodyLines.length - 1] += '...';
     }
 
+    const bodyDrawX = (noticeState.bodyAlign === 'center') ? (padX + cardW / 2) : (padX + 80);
     displayBodyLines.forEach((line, idx) => {
-        ctx.fillText(line, bodyX, bodyY + (idx * bodyLineH));
+        ctx.fillText(line, bodyDrawX, bodyY + (idx * bodyLineH));
     });
     ctx.restore();
 
