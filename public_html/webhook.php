@@ -161,6 +161,12 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
         return;
     }
 
+    // 1-3. お知らせを閉じる（通常メニューへ戻る）
+    if (preg_match('/^(OK|ok|閉じる|もどる|戻る|通常メニュー|通常メニューに戻す|終了)$/ui', trim($text))) {
+        handleCloseNoticeMenu($replyToken, $userId);
+        return;
+    }
+
     // 2. オイル交換・定期点検・車検・メンテナンス関連のキーワード判定 (在庫検索の誤爆防止)
     if (preg_match('/^(点検受付|マイカー|マイカー点検|点検メニュー)$/u', trim($text))) {
         sendMyCarMenuMessage($db, $replyToken, $userId);
@@ -3853,15 +3859,72 @@ function handleShowNoticeMenu(string $replyToken, string $userId): void {
  * ユーザーのお知らせリッチメニューを解除して通常メニューに戻す
  */
 function handleCloseNoticeMenu(string $replyToken, string $userId): void {
+    // 1. 個別紐付けを解除（LINE標準の全体デフォルトに戻す試行）
     $unlinkRes = lineUnlinkUserRichMenu($userId);
     writeDebugLog("お知らせリッチメニュー解除実行", [
         'userId' => $userId,
         'res' => $unlinkRes
     ]);
+
+    // 2. 全体デフォルトが設定されていない場合やキャッシュ残り対策として、
+    //    DBに登録されている最新の「通常メニュー（is_notice = 0）」を明示的にユーザーへ再紐付け！
+    try {
+        $pdo = getDbConnection();
+        $normalLineMenuId = null;
+
+        // A. LINE側の全体デフォルトIDを取得
+        $defaultLineId = lineGetDefaultRichMenuId();
+
+        // B. LINE全体デフォルトと合致する通常メニュー（is_notice = 0）
+        if (!empty($defaultLineId)) {
+            $stmt = $pdo->prepare("SELECT * FROM rich_menus WHERE line_menu_id = :lmid AND is_notice = 0 LIMIT 1");
+            $stmt->execute([':lmid' => $defaultLineId]);
+            $menu = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($menu) {
+                $normalLineMenuId = $menu['line_menu_id'];
+            }
+        }
+
+        // C. is_active = 1 かつ is_notice = 0 の通常本番メニュー
+        if (empty($normalLineMenuId)) {
+            $stmt2 = $pdo->query("SELECT * FROM rich_menus WHERE is_notice = 0 AND is_active = 1 ORDER BY id DESC LIMIT 1");
+            $menu2 = $stmt2->fetch(PDO::FETCH_ASSOC);
+            if ($menu2 && !empty($menu2['line_menu_id'])) {
+                $normalLineMenuId = $menu2['line_menu_id'];
+            }
+        }
+
+        // D. is_notice = 0 の最新メニュー
+        if (empty($normalLineMenuId)) {
+            $stmt3 = $pdo->query("SELECT * FROM rich_menus WHERE is_notice = 0 ORDER BY id DESC LIMIT 1");
+            $menu3 = $stmt3->fetch(PDO::FETCH_ASSOC);
+            if ($menu3 && !empty($menu3['line_menu_id'])) {
+                $normalLineMenuId = $menu3['line_menu_id'];
+            }
+        }
+
+        // E. 最後の手段: LINEデフォルトID
+        if (empty($normalLineMenuId) && !empty($defaultLineId)) {
+            $normalLineMenuId = $defaultLineId;
+        }
+
+        // 通常メニューを明示的に紐付け！
+        if (!empty($normalLineMenuId)) {
+            $linkRes = lineLinkUserRichMenu($userId, $normalLineMenuId);
+            writeDebugLog("通常メニュー明示的再紐付け実行", [
+                'userId' => $userId,
+                'richMenuId' => $normalLineMenuId,
+                'res' => $linkRes
+            ]);
+        }
+    } catch (Throwable $e) {
+        writeDebugLog("通常メニュー再紐付け例外: " . $e->getMessage());
+    }
+
     $messages = [
         [
             'type' => 'text',
-            'text' => "通常メニューに戻りました。\nご用件は下のメニューまたはメッセージよりお気軽にどうぞ！",
+            'text' => "通常メニューに戻りました🚗\nご用件は下のメニューまたはメッセージよりお気軽にどうぞ！",
             'quickReply' => getQuickReplyItems()
         ]
     ];
