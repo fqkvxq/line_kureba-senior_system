@@ -27,7 +27,10 @@ const state = {
 
     // 履歴
     historyList: [],
-    currentLineDefaultId: null
+    currentLineDefaultId: null,
+
+    // 装飾テキスト・お知らせバナー
+    textOverlays: []
 };
 
 const elements = {
@@ -56,12 +59,18 @@ const elements = {
     canvasStage: document.getElementById('canvasStage'),
     stageImage: document.getElementById('stageImage'),
     stageOverlay: document.getElementById('stageOverlay'),
+    textOverlaysStage: document.getElementById('textOverlaysStage'),
     changeImageBtn: document.getElementById('changeImageBtn'),
     clearAreasBtn: document.getElementById('clearAreasBtn'),
 
     // ツールバー
     sizeToggleBtns: document.querySelectorAll('.btn-toggle'),
     presetBtns: document.querySelectorAll('.btn-preset'),
+
+    // 装飾テキスト・お知らせバナー
+    addTextOverlayBtn: document.getElementById('addTextOverlayBtn'),
+    textOverlayList: document.getElementById('textOverlayList'),
+    textOverlayEmptyMsg: document.getElementById('textOverlayEmptyMsg'),
 
     // プロパティパネル
     menuTitleInput: document.getElementById('menuTitleInput'),
@@ -123,6 +132,7 @@ function initAuth() {
 function showApp() {
     elements.loginModal.style.display = 'none';
     elements.adminApp.style.display = 'block';
+    renderTextOverlayControls();
     loadHistoryList();
 }
 
@@ -312,6 +322,13 @@ function initEventListeners() {
         }
     });
 
+    // 装飾テキスト追加ボタン
+    if (elements.addTextOverlayBtn) {
+        elements.addTextOverlayBtn.addEventListener('click', () => {
+            addTextOverlay();
+        });
+    }
+
     // 保存・公開ボタン
     elements.publishMenuBtn.addEventListener('click', () => saveRichMenu(true));
     elements.saveDraftBtn.addEventListener('click', () => saveRichMenu(false));
@@ -394,6 +411,8 @@ function displayLoadedImage(src) {
 
     elements.stageImage.onload = () => {
         renderAreas();
+        renderTextOverlays();
+        renderTextOverlayControls();
         updateAreaConfigForm();
     };
     elements.stageImage.src = src;
@@ -403,6 +422,8 @@ function displayLoadedImage(src) {
         applyPreset(state.menuSize === 'large' ? 'grid6' : 'grid3');
     } else {
         renderAreas();
+        renderTextOverlays();
+        renderTextOverlayControls();
         updateAreaConfigForm();
     }
 }
@@ -994,8 +1015,409 @@ function syncCurrentAreaFromForm() {
     updateAreaBadgeAndPill(area);
 }
 
+// ================= 装飾テキスト・お知らせバナー管理 =================
+function renderTextOverlays() {
+    if (!elements.textOverlaysStage) return;
+    elements.textOverlaysStage.innerHTML = '';
+
+    const fontSizesRatio = {
+        sm: 1.35,
+        md: 1.85,
+        lg: 2.45,
+        xl: 3.1
+    };
+
+    state.textOverlays.forEach((overlay) => {
+        const text = (overlay.text || '').trim();
+        if (!text) return;
+
+        const el = document.createElement('div');
+        const type = overlay.type || 'banner_top';
+        const theme = overlay.theme || 'red';
+        const sizeKey = overlay.size || 'md';
+
+        el.className = `overlay-text-item ${type} overlay-theme-${theme}`;
+        el.dataset.id = String(overlay.id);
+
+        // コンテナの幅に応じたフォントサイズ自動スケーリング
+        el.style.fontSize = `clamp(10px, ${fontSizesRatio[sizeKey] || 1.85}cqi, 34px)`;
+
+        if (type === 'banner_top') {
+            el.style.left = '0';
+            el.style.top = '0';
+            el.style.width = '100%';
+        } else if (type === 'banner_bottom') {
+            el.style.left = '0';
+            el.style.bottom = '0';
+            el.style.width = '100%';
+        } else if (type === 'badge' || type === 'free') {
+            const leftPercent = ((overlay.x || 60) / state.width) * 100;
+            const topPercent = ((overlay.y || 60) / state.height) * 100;
+            el.style.left = leftPercent + '%';
+            el.style.top = topPercent + '%';
+        }
+
+        el.textContent = text;
+        elements.textOverlaysStage.appendChild(el);
+    });
+}
+
+function renderTextOverlayControls() {
+    if (!elements.textOverlayList) return;
+    elements.textOverlayList.innerHTML = '';
+
+    if (!state.textOverlays || state.textOverlays.length === 0) {
+        if (elements.textOverlayEmptyMsg) elements.textOverlayEmptyMsg.style.display = 'flex';
+        return;
+    }
+
+    if (elements.textOverlayEmptyMsg) elements.textOverlayEmptyMsg.style.display = 'none';
+
+    state.textOverlays.forEach((overlay, idx) => {
+        const card = document.createElement('div');
+        card.className = 'text-overlay-card';
+        card.dataset.id = String(overlay.id);
+
+        const typeLabels = {
+            banner_top: '上部帯',
+            banner_bottom: '下部帯',
+            badge: 'バッジ',
+            free: '自由'
+        };
+
+        card.innerHTML = `
+            <div class="card-header-row">
+                <span class="overlay-card-title">
+                    <i class="fa-solid fa-tag"></i> テキスト ${idx + 1}
+                    <span class="badge-opt">${typeLabels[overlay.type] || '上部帯'}</span>
+                </span>
+                <button type="button" class="btn-delete-card-xs" data-id="${overlay.id}" title="削除">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+
+            <input type="text" class="overlay-text-input" value="${escapeHtml(overlay.text)}" placeholder="お知らせ文言を入力 (例: 🎉 秋の大感謝祭開催中！)">
+
+            <div class="phrase-chips-row">
+                <button type="button" class="phrase-chip" data-phrase="📢 臨時休業のお知らせ">📢 臨時休業</button>
+                <button type="button" class="phrase-chip" data-phrase="🎉 秋の大感謝祭 開催中！">🎉 セール開催</button>
+                <button type="button" class="phrase-chip" data-phrase="🚗 今週の新着特選車 5台入庫！">🚗 新着入庫</button>
+                <button type="button" class="phrase-chip" data-phrase="✨ おすすめ特選目玉車！">✨ おすすめ</button>
+                <button type="button" class="phrase-chip" data-phrase="🔥 月末限定 Special Price！">🔥 限定特価</button>
+                <button type="button" class="phrase-chip" data-phrase="🛠️ 車検・点検 24時間WEB受付中">🛠️ 点検受付</button>
+            </div>
+
+            <div class="overlay-options-grid">
+                <div>
+                    <span class="option-group-label">配置タイプ:</span>
+                    <div class="type-buttons-group">
+                        <button type="button" class="btn-type-pill ${overlay.type === 'banner_top' ? 'active' : ''}" data-type="banner_top">上部帯</button>
+                        <button type="button" class="btn-type-pill ${overlay.type === 'banner_bottom' ? 'active' : ''}" data-type="banner_bottom">下部帯</button>
+                        <button type="button" class="btn-type-pill ${overlay.type === 'badge' ? 'active' : ''}" data-type="badge">バッジ</button>
+                        <button type="button" class="btn-type-pill ${overlay.type === 'free' ? 'active' : ''}" data-type="free">自由</button>
+                    </div>
+                </div>
+
+                <div>
+                    <span class="option-group-label">カラーテーマ:</span>
+                    <div class="color-chips-group">
+                        <button type="button" class="color-chip-btn theme-red ${overlay.theme === 'red' ? 'active' : ''}" data-theme="red" title="赤 (注目・緊急)"></button>
+                        <button type="button" class="color-chip-btn theme-green ${overlay.theme === 'green' ? 'active' : ''}" data-theme="green" title="緑 (LINE・新着)"></button>
+                        <button type="button" class="color-chip-btn theme-dark ${overlay.theme === 'dark' ? 'active' : ''}" data-theme="dark" title="黒 (シック・高級)"></button>
+                        <button type="button" class="color-chip-btn theme-blue ${overlay.theme === 'blue' ? 'active' : ''}" data-theme="blue" title="青 (案内)"></button>
+                        <button type="button" class="color-chip-btn theme-yellow ${overlay.theme === 'yellow' ? 'active' : ''}" data-theme="yellow" title="黄 (警告・セール)"></button>
+                        <button type="button" class="color-chip-btn theme-white ${overlay.theme === 'white' ? 'active' : ''}" data-theme="white" title="白 (シンプル)"></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overlay-options-grid" style="margin-top: 8px;">
+                <div>
+                    <span class="option-group-label">文字サイズ:</span>
+                    <select class="select-xs overlay-size-select">
+                        <option value="sm" ${overlay.size === 'sm' ? 'selected' : ''}>小 (標準・すっきり)</option>
+                        <option value="md" ${overlay.size === 'md' || !overlay.size ? 'selected' : ''}>中 (おすすめ・見やすい)</option>
+                        <option value="lg" ${overlay.size === 'lg' ? 'selected' : ''}>大 (目立つ・アピール)</option>
+                        <option value="xl" ${overlay.size === 'xl' ? 'selected' : ''}>特大 (超特大テロップ)</option>
+                    </select>
+                </div>
+                ${(overlay.type === 'badge' || overlay.type === 'free') ? `
+                <div style="display: flex; gap: 6px; align-items: flex-end;">
+                    <div>
+                        <span class="option-group-label">X:</span>
+                        <input type="number" class="coord-field-xs overlay-pos-x" value="${Math.round(overlay.x || 60)}" style="width: 55px; font-size: 11px; padding: 3px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <span class="option-group-label">Y:</span>
+                        <input type="number" class="coord-field-xs overlay-pos-y" value="${Math.round(overlay.y || 60)}" style="width: 55px; font-size: 11px; padding: 3px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        `;
+
+        // イベント: 文字入力
+        const textInput = card.querySelector('.overlay-text-input');
+        textInput.addEventListener('input', () => {
+            overlay.text = textInput.value;
+            renderTextOverlays();
+        });
+
+        // イベント: 定型文チップクリック
+        card.querySelectorAll('.phrase-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                overlay.text = chip.dataset.phrase;
+                textInput.value = overlay.text;
+                renderTextOverlays();
+            });
+        });
+
+        // イベント: 配置タイプ切り替え
+        card.querySelectorAll('.btn-type-pill').forEach(btn => {
+            btn.addEventListener('click', () => {
+                overlay.type = btn.dataset.type;
+                renderTextOverlayControls();
+                renderTextOverlays();
+            });
+        });
+
+        // イベント: カラーテーマ切り替え
+        card.querySelectorAll('.color-chip-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                overlay.theme = btn.dataset.theme;
+                renderTextOverlayControls();
+                renderTextOverlays();
+            });
+        });
+
+        // イベント: サイズ選択
+        const sizeSelect = card.querySelector('.overlay-size-select');
+        sizeSelect.addEventListener('change', () => {
+            overlay.size = sizeSelect.value;
+            renderTextOverlays();
+        });
+
+        // イベント: X/Y座標入力
+        const posXInput = card.querySelector('.overlay-pos-x');
+        const posYInput = card.querySelector('.overlay-pos-y');
+        if (posXInput) {
+            posXInput.addEventListener('input', () => {
+                overlay.x = parseInt(posXInput.value, 10) || 0;
+                renderTextOverlays();
+            });
+        }
+        if (posYInput) {
+            posYInput.addEventListener('input', () => {
+                overlay.y = parseInt(posYInput.value, 10) || 0;
+                renderTextOverlays();
+            });
+        }
+
+        // イベント: 削除
+        card.querySelector('.btn-delete-card-xs').addEventListener('click', () => {
+            deleteTextOverlay(overlay.id);
+        });
+
+        elements.textOverlayList.appendChild(card);
+    });
+}
+
+function addTextOverlay(data = {}) {
+    const newId = (state.textOverlays.length > 0 ? Math.max(...state.textOverlays.map(o => Number(o.id) || 0)) : 0) + 1;
+    const item = {
+        id: newId,
+        text: data.text || '🎉 秋の大感謝祭 開催中！',
+        type: data.type || (state.textOverlays.length === 0 ? 'banner_top' : 'badge'),
+        theme: data.theme || (state.textOverlays.length === 0 ? 'red' : 'green'),
+        size: data.size || 'md',
+        x: data.x || 60,
+        y: data.y || 60
+    };
+    state.textOverlays.push(item);
+    renderTextOverlayControls();
+    renderTextOverlays();
+    showToast('装飾テキストを追加しました', 'info');
+}
+
+function deleteTextOverlay(id) {
+    const numId = Number(id);
+    state.textOverlays = state.textOverlays.filter(o => Number(o.id) !== numId);
+    renderTextOverlayControls();
+    renderTextOverlays();
+}
+
+async function compositeRichMenuImage() {
+    if (!state.textOverlays || state.textOverlays.length === 0) {
+        return state.imageFile || null;
+    }
+
+    const W = state.width;
+    const H = state.height;
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    // 1. ベース画像の描画
+    await new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            ctx.drawImage(img, 0, 0, W, H);
+            resolve();
+        };
+        img.onerror = () => {
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(0, 0, W, H);
+            resolve();
+        };
+        img.src = state.imageSrc;
+    });
+
+    // 2. Webフォント読み込み完了を待機
+    try {
+        if (document.fonts && document.fonts.ready) {
+            await document.fonts.ready;
+        }
+    } catch (e) {}
+
+    // 3. 各装飾テキストの合成描画
+    const themeColors = {
+        red: { bg: '#dc2626', text: '#ffffff', border: 'rgba(255,255,255,0.35)' },
+        green: { bg: '#06C755', text: '#ffffff', border: 'rgba(255,255,255,0.35)' },
+        dark: { bg: 'rgba(15, 23, 42, 0.92)', text: '#fef08a', border: 'rgba(234, 179, 8, 0.5)' },
+        blue: { bg: '#2563eb', text: '#ffffff', border: 'rgba(255,255,255,0.35)' },
+        yellow: { bg: '#f59e0b', text: '#0f172a', border: 'rgba(0,0,0,0.25)' },
+        white: { bg: '#ffffff', text: '#0f172a', border: 'rgba(0,0,0,0.15)' }
+    };
+
+    const fontSizes = {
+        sm: 34,
+        md: 48,
+        lg: 64,
+        xl: 82
+    };
+
+    state.textOverlays.forEach(overlay => {
+        const text = (overlay.text || '').trim();
+        if (!text) return;
+
+        const theme = themeColors[overlay.theme] || themeColors.red;
+        const fontSize = fontSizes[overlay.size] || fontSizes.md;
+        const type = overlay.type || 'banner_top';
+
+        ctx.save();
+        ctx.font = `800 ${fontSize}px "Noto Sans JP", sans-serif`;
+
+        if (type === 'banner_top') {
+            const bannerH = Math.round(fontSize * 2.2);
+            ctx.fillStyle = theme.bg;
+            ctx.fillRect(0, 0, W, bannerH);
+            ctx.fillStyle = theme.border;
+            ctx.fillRect(0, bannerH - 4, W, 4);
+
+            ctx.fillStyle = theme.text;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, W / 2, bannerH / 2);
+        } else if (type === 'banner_bottom') {
+            const bannerH = Math.round(fontSize * 2.2);
+            const bannerY = H - bannerH;
+            ctx.fillStyle = theme.bg;
+            ctx.fillRect(0, bannerY, W, bannerH);
+            ctx.fillStyle = theme.border;
+            ctx.fillRect(0, bannerY, W, 4);
+
+            ctx.fillStyle = theme.text;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, W / 2, bannerY + bannerH / 2);
+        } else if (type === 'badge') {
+            const metrics = ctx.measureText(text);
+            const badgeW = Math.round(metrics.width + fontSize * 1.6);
+            const badgeH = Math.round(fontSize * 1.8);
+            const posX = Math.max(30, Math.min(W - badgeW - 30, overlay.x || 60));
+            const posY = Math.max(30, Math.min(H - badgeH - 30, overlay.y || 60));
+
+            // ドロップシャドウ
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+            ctx.shadowBlur = 16;
+            ctx.shadowOffsetY = 6;
+
+            drawCanvasRoundRect(ctx, posX, posY, badgeW, badgeH, badgeH / 2);
+            ctx.fillStyle = theme.bg;
+            ctx.fill();
+
+            ctx.shadowColor = 'transparent';
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = theme.border;
+            ctx.stroke();
+
+            ctx.fillStyle = theme.text;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, posX + badgeW / 2, posY + badgeH / 2);
+        } else if (type === 'free') {
+            const metrics = ctx.measureText(text);
+            const boxW = Math.round(metrics.width + fontSize * 1.2);
+            const boxH = Math.round(fontSize * 1.6);
+            const posX = Math.max(20, Math.min(W - boxW - 20, overlay.x || 100));
+            const posY = Math.max(20, Math.min(H - boxH - 20, overlay.y || 100));
+
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+            ctx.shadowBlur = 14;
+            ctx.shadowOffsetY = 4;
+
+            drawCanvasRoundRect(ctx, posX, posY, boxW, boxH, 16);
+            ctx.fillStyle = theme.bg;
+            ctx.fill();
+
+            ctx.shadowColor = 'transparent';
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = theme.border;
+            ctx.stroke();
+
+            ctx.fillStyle = theme.text;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, posX + boxW / 2, posY + boxH / 2);
+        }
+
+        ctx.restore();
+    });
+
+    return new Promise((resolve) => {
+        canvas.toBlob((blob) => {
+            if (blob) {
+                resolve(new File([blob], 'richmenu_composite.jpg', { type: 'image/jpeg' }));
+            } else {
+                resolve(state.imageFile || null);
+            }
+        }, 'image/jpeg', 0.92);
+    });
+}
+
+function drawCanvasRoundRect(ctx, x, y, width, height, radius) {
+    if (ctx.roundRect) {
+        ctx.beginPath();
+        ctx.roundRect(x, y, width, height, radius);
+        return;
+    }
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+}
+
 // ================= 保存 & LINE公開 =================
-function saveRichMenu(publish) {
+async function saveRichMenu(publish) {
     const title = elements.menuTitleInput.value.trim();
     if (!title) {
         showToast('メニュー管理名を入力してください', 'error');
@@ -1013,29 +1435,35 @@ function saveRichMenu(publish) {
         return;
     }
 
-    const formData = new FormData();
-    formData.append('password', state.password);
-    formData.append('title', title);
-    formData.append('chat_bar_text', elements.chatBarTextInput.value.trim() || 'メニュー');
-    formData.append('width', state.width);
-    formData.append('height', state.height);
-    formData.append('publish', publish ? '1' : '0');
-    formData.append('areas', JSON.stringify(state.areas));
+    showLoading(publish ? '画像合成＆LINE公式アカウントに公開中...' : '画像合成＆下書きを保存中...');
 
-    if (state.imageFile) {
-        formData.append('image', state.imageFile);
-    } else if (state.imageSrc) {
-        formData.append('existing_image_url', state.imageSrc);
-    }
+    try {
+        // テキストオーバーレイがある場合は高解像度HTML5 Canvasで元画像と自動合成
+        const compositedImageFile = await compositeRichMenuImage();
 
-    showLoading(publish ? 'LINE公式アカウントに公開・反映中...' : '下書きを保存中...');
+        const formData = new FormData();
+        formData.append('password', state.password);
+        formData.append('title', title);
+        formData.append('chat_bar_text', elements.chatBarTextInput.value.trim() || 'メニュー');
+        formData.append('width', state.width);
+        formData.append('height', state.height);
+        formData.append('publish', publish ? '1' : '0');
+        formData.append('areas', JSON.stringify(state.areas));
+        formData.append('text_overlays', JSON.stringify(state.textOverlays || []));
 
-    fetch('../api.php?action=admin_save_richmenu', {
-        method: 'POST',
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
+        if (compositedImageFile) {
+            formData.append('image', compositedImageFile);
+        } else if (state.imageFile) {
+            formData.append('image', state.imageFile);
+        } else if (state.imageSrc) {
+            formData.append('existing_image_url', state.imageSrc);
+        }
+
+        const res = await fetch('../api.php?action=admin_save_richmenu', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
         hideLoading();
         if (data.success) {
             showToast(data.message || '保存が完了しました！', 'success');
@@ -1046,11 +1474,10 @@ function saveRichMenu(publish) {
         } else {
             showToast(data.error || '保存に失敗しました', 'error');
         }
-    })
-    .catch(err => {
+    } catch (err) {
         hideLoading();
         showToast('通信エラーが発生しました: ' + err.message, 'error');
-    });
+    }
 }
 
 // ================= 履歴管理 =================
@@ -1239,10 +1666,23 @@ function loadMenuIntoEditor(item) {
 
     state.selectedAreaId = state.areas.length > 0 ? state.areas[0].id : null;
 
-    // 3. 画像を表示
+    // 3. 装飾テキストの復元
+    state.textOverlays = (item.text_overlays || []).map((o, idx) => ({
+        id: o.id ? parseInt(o.id, 10) : (idx + 1),
+        text: o.text || '',
+        type: o.type || 'banner_top',
+        theme: o.theme || 'red',
+        size: o.size || 'md',
+        x: Number(o.x || 60),
+        y: Number(o.y || 60)
+    }));
+    renderTextOverlays();
+    renderTextOverlayControls();
+
+    // 4. 画像を表示
     displayLoadedImage(item.image_url);
 
-    // 4. 設定フォームとピルを更新
+    // 5. 設定フォームとピルを更新
     updateAreaConfigForm();
 
     showToast(`「${item.title}」をエディタに読み込みました`, 'info');
@@ -1255,6 +1695,9 @@ function resetEditorForm() {
     state.imageSrc = '';
     state.areas = [];
     state.selectedAreaId = null;
+    state.textOverlays = [];
+    renderTextOverlays();
+    renderTextOverlayControls();
     elements.uploadDropzone.style.display = 'block';
     elements.canvasStage.style.display = 'none';
     elements.changeImageBtn.style.display = 'none';

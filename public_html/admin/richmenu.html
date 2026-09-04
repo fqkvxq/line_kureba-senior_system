@@ -13,8 +13,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260904_reedit_v3">
-    <link rel="stylesheet" href="richmenu.css?v=20260904_reedit_v3">
+    <link rel="stylesheet" href="admin.css?v=20260904_text_v1">
+    <link rel="stylesheet" href="richmenu.css?v=20260904_text_v1">
 </head>
 <body>
     <!-- ログインモーダル -->
@@ -126,6 +126,8 @@
                         <!-- 実際の画像 & 座標オーバーレイステージ (画像設定時) -->
                         <div class="canvas-stage" id="canvasStage" style="display: none;">
                             <img id="stageImage" alt="リッチメニュープレビュー">
+                            <!-- 装飾テキスト表示レイヤー -->
+                            <div class="text-overlays-stage" id="textOverlaysStage"></div>
                             <div class="stage-overlay" id="stageOverlay">
                                 <!-- JSで動的エリアボックスを生成 -->
                             </div>
@@ -152,6 +154,25 @@
                         <div class="form-group">
                             <label for="chatBarTextInput">トーク画面下バーの文字 (最大14文字)</label>
                             <input type="text" id="chatBarTextInput" placeholder="メニュー" value="メニュー" maxlength="14">
+                        </div>
+                    </div>
+
+                    <!-- 装飾テキスト・お知らせバナー設定セクション -->
+                    <div class="panel-section" id="textOverlaySection">
+                        <div class="section-header-flex">
+                            <h3><i class="fa-solid fa-bullhorn"></i> お知らせ・装飾テキスト <span class="badge-opt">任意</span></h3>
+                            <button class="btn-primary-xs" id="addTextOverlayBtn" type="button">
+                                <i class="fa-solid fa-plus"></i> テキスト追加
+                            </button>
+                        </div>
+                        <p class="section-desc">画像の上にテロップ帯やセール・新着バッジなどの文言を後から重ねて焼き込めます。</p>
+
+                        <!-- テキストオーバーレイ一覧リスト -->
+                        <div id="textOverlayList" class="text-overlay-list"></div>
+
+                        <div id="textOverlayEmptyMsg" class="panel-placeholder-sm">
+                            <i class="fa-regular fa-message"></i>
+                            <span>テキストやアナウンスバナーはまだありません</span>
                         </div>
                     </div>
 
@@ -304,6 +325,6 @@
     <!-- トースト通知 -->
     <div class="toast-notification" id="adminToast"></div>
 
-    <script src="richmenu.js?v=20260904_reedit_v3"></script>
+    <script src="richmenu.js?v=20260904_text_v1"></script>
 </body>
 </html>

@@ -121,6 +121,7 @@ function getDbConnection(): PDO {
             chat_bar_text TEXT DEFAULT 'メニュー',
             image_url TEXT NOT NULL,
             areas_json TEXT NOT NULL,
+            text_overlays_json TEXT DEFAULT '[]',
             width INTEGER DEFAULT 2500,
             height INTEGER DEFAULT 1686,
             is_active INTEGER DEFAULT 0,
@@ -129,6 +130,7 @@ function getDbConnection(): PDO {
         )
     ");
     try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_rich_menus_active ON rich_menus(is_active)"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE rich_menus ADD COLUMN text_overlays_json TEXT DEFAULT '[]'"); } catch (Exception $e) {}
 
     // 既存 customers テーブルからのデータ移行（初回1回のみ）
     try {

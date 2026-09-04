@@ -1227,6 +1227,7 @@ try {
                     $cleanAreas[] = $ra;
                 }
                 $m['areas'] = $cleanAreas;
+                $m['text_overlays'] = !empty($m['text_overlays_json']) ? (json_decode($m['text_overlays_json'], true) ?: []) : [];
                 $m['is_line_default'] = (!empty($m['line_menu_id']) && $m['line_menu_id'] === $currentLineDefaultId);
                 // DBのis_activeとLINE実状態の整合性を取る
                 if ($m['is_line_default'] && !$m['is_active']) {
@@ -1456,13 +1457,17 @@ try {
                 }
             }
 
+            $textOverlaysJson = $_POST['text_overlays'] ?? '[]';
+            $textOverlays = json_decode($textOverlaysJson, true);
+            if (!is_array($textOverlays)) $textOverlays = [];
+
             // 5. DBに保存
             $stmt = $db->prepare("
                 INSERT INTO rich_menus (
-                    line_menu_id, title, chat_bar_text, image_url, areas_json,
+                    line_menu_id, title, chat_bar_text, image_url, areas_json, text_overlays_json,
                     width, height, is_active, created_at, updated_at
                 ) VALUES (
-                    :line_menu_id, :title, :chat_bar_text, :image_url, :areas_json,
+                    :line_menu_id, :title, :chat_bar_text, :image_url, :areas_json, :text_overlays_json,
                     :width, :height, :is_active, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                 )
             ");
@@ -1472,6 +1477,7 @@ try {
                 ':chat_bar_text' => $chatBarText,
                 ':image_url' => $imageUrl,
                 ':areas_json' => json_encode($dbAreas, JSON_UNESCAPED_UNICODE),
+                ':text_overlays_json' => json_encode($textOverlays, JSON_UNESCAPED_UNICODE),
                 ':width' => $width,
                 ':height' => $height,
                 ':is_active' => $isActive
