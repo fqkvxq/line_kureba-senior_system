@@ -12,6 +12,8 @@ const state = {
     height: 1686,
     imageFile: null,
     imageSrc: '', // data URL or server URL
+    baseImageFile: null, // 装飾テキスト無しのクリーンな元画像ファイル
+    baseImageSrc: '', // 装飾テキスト無しのクリーンな元画像URL
     
     // エリア配列: [{ id, bounds: {x, y, width, height}, action: {type, data, uri, text, displayText} }]
     areas: [],
@@ -399,10 +401,12 @@ function processImageFile(file) {
     }
 
     state.imageFile = file;
+    state.baseImageFile = file;
 
     const reader = new FileReader();
     reader.onload = (event) => {
         state.imageSrc = event.target.result;
+        state.baseImageSrc = event.target.result;
         displayLoadedImage(state.imageSrc);
     };
     reader.readAsDataURL(file);
@@ -1445,7 +1449,7 @@ async function compositeRichMenuImage() {
             ctx.fillRect(0, 0, W, H);
             resolve();
         };
-        img.src = state.imageSrc;
+        img.src = state.baseImageSrc || state.imageSrc;
     });
 
     // 2. Webフォント読み込み完了を待機
@@ -1589,6 +1593,19 @@ function drawCanvasRoundRect(ctx, x, y, width, height, radius) {
     ctx.closePath();
 }
 
+function dataURLtoBlob(dataurl) {
+    const arr = dataurl.split(',');
+    const mimeMatch = arr[0].match(/:(.*?);/);
+    const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+}
+
 // ================= 保存 & LINE公開 =================
 async function saveRichMenu(publish) {
     const title = elements.menuTitleInput.value.trim();
@@ -1611,8 +1628,11 @@ async function saveRichMenu(publish) {
     showLoading(publish ? '画像合成＆LINE公式アカウントに公開中...' : '画像合成＆下書きを保存中...');
 
     try {
-        // テキストオーバーレイがある場合は高解像度HTML5 Canvasで元画像と自動合成
-        const compositedImageFile = await compositeRichMenuImage();
+        const hasOverlays = state.textOverlays && state.textOverlays.length > 0;
+        let compositedImageFile = null;
+        if (hasOverlays) {
+            compositedImageFile = await compositeRichMenuImage();
+        }
 
         const formData = new FormData();
         formData.append('password', state.password);
@@ -1624,12 +1644,34 @@ async function saveRichMenu(publish) {
         formData.append('areas', JSON.stringify(state.areas));
         formData.append('text_overlays', JSON.stringify(state.textOverlays || []));
 
-        if (compositedImageFile) {
+        if (hasOverlays && compositedImageFile) {
+            // LINEアップロード用: テキスト合成画像
             formData.append('image', compositedImageFile);
-        } else if (state.imageFile) {
-            formData.append('image', state.imageFile);
-        } else if (state.imageSrc) {
-            formData.append('existing_image_url', state.imageSrc);
+
+            // 編集復元用: クリーンな元画像（文字が焼き込まれていない画像）
+            if (state.baseImageFile) {
+                formData.append('base_image', state.baseImageFile);
+            } else if (state.baseImageSrc) {
+                if (state.baseImageSrc.startsWith('data:')) {
+                    const blob = dataURLtoBlob(state.baseImageSrc);
+                    formData.append('base_image', new File([blob], 'base_image.jpg', { type: 'image/jpeg' }));
+                } else {
+                    formData.append('existing_base_image_url', state.baseImageSrc);
+                }
+            }
+        } else {
+            // 装飾テキストが無い場合: 元画像がそのままLINE用かつ編集用
+            if (state.baseImageFile || state.imageFile) {
+                formData.append('image', state.baseImageFile || state.imageFile);
+            } else if (state.baseImageSrc || state.imageSrc) {
+                const targetSrc = state.baseImageSrc || state.imageSrc;
+                if (targetSrc.startsWith('data:')) {
+                    const blob = dataURLtoBlob(targetSrc);
+                    formData.append('image', new File([blob], 'menu_image.jpg', { type: 'image/jpeg' }));
+                } else {
+                    formData.append('existing_image_url', targetSrc);
+                }
+            }
         }
 
         const res = await fetch('../api.php?action=admin_save_richmenu', {
@@ -1640,6 +1682,12 @@ async function saveRichMenu(publish) {
         hideLoading();
         if (data.success) {
             showToast(data.message || '保存が完了しました！', 'success');
+            if (data.base_image_url) {
+                state.baseImageSrc = data.base_image_url;
+                state.imageSrc = data.base_image_url;
+                state.baseImageFile = null;
+                state.imageFile = null;
+            }
             loadHistoryList();
             if (publish) {
                 switchView('history');
@@ -1817,7 +1865,10 @@ function loadMenuIntoEditor(item) {
     });
 
     state.imageFile = null;
-    state.imageSrc = item.image_url;
+    state.baseImageFile = null;
+    const cleanImageUrl = item.base_image_url || item.image_url;
+    state.imageSrc = cleanImageUrl;
+    state.baseImageSrc = cleanImageUrl;
 
     // 2. エリア配列のIDと数値を安全に再構築 (ID欠落によるクリック不可バグを完全解消)
     state.areas = (item.areas || []).map((a, idx) => ({
@@ -1852,13 +1903,17 @@ function loadMenuIntoEditor(item) {
     renderTextOverlays();
     renderTextOverlayControls();
 
-    // 4. 画像を表示
-    displayLoadedImage(item.image_url);
+    // 4. 画像を表示 (装飾文字が焼き込まれていないクリーン画像)
+    displayLoadedImage(cleanImageUrl);
 
     // 5. 設定フォームとピルを更新
     updateAreaConfigForm();
 
-    showToast(`「${item.title}」をエディタに読み込みました`, 'info');
+    if (!item.base_image_url && item.text_overlays && item.text_overlays.length > 0) {
+        showToast(`「${item.title}」を読み込みました（旧形式のため文字を変更・削除する場合は「画像を変更」から元画像を再選択してください）`, 'info');
+    } else {
+        showToast(`「${item.title}」をエディタに読み込みました`, 'info');
+    }
 }
 
 function resetEditorForm() {
@@ -1866,6 +1921,8 @@ function resetEditorForm() {
     elements.chatBarTextInput.value = 'メニュー';
     state.imageFile = null;
     state.imageSrc = '';
+    state.baseImageFile = null;
+    state.baseImageSrc = '';
     state.areas = [];
     state.selectedAreaId = null;
     state.textOverlays = [];

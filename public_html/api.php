@@ -1363,6 +1363,53 @@ try {
             $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://{$_SERVER['HTTP_HOST']}";
             $imageUrl = $baseUrl . dirname($_SERVER['SCRIPT_NAME']) . '/uploads/richmenu/' . $savedFileName;
 
+            // クリーンな元画像（装飾テキストを焼き込んでいないベース画像）の保存処理
+            $uploadedBaseFile = $_FILES['base_image'] ?? null;
+            $existingBaseImageUrl = trim($_POST['existing_base_image_url'] ?? '');
+            $baseImageUrl = '';
+
+            if (!empty($uploadedBaseFile) && $uploadedBaseFile['error'] === UPLOAD_ERR_OK) {
+                $bExt = strtolower(pathinfo($uploadedBaseFile['name'], PATHINFO_EXTENSION));
+                if (in_array($bExt, ['jpg', 'jpeg', 'png']) && $uploadedBaseFile['size'] <= 1048576 * 5) {
+                    $bFileName = 'base_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . ($bExt === 'png' ? 'png' : 'jpg');
+                    $bTargetFilePath = RICHMENU_UPLOAD_DIR . '/' . $bFileName;
+                    $bResized = false;
+                    if (function_exists('imagecreatefromstring') && function_exists('imagecopyresampled')) {
+                        $bSrcData = file_get_contents($uploadedBaseFile['tmp_name']);
+                        $bSrcImg = @imagecreatefromstring($bSrcData);
+                        if ($bSrcImg !== false) {
+                            $bOrigW = imagesx($bSrcImg);
+                            $bOrigH = imagesy($bSrcImg);
+                            $bDstImg = imagecreatetruecolor($width, $height);
+                            if ($bExt === 'png') {
+                                imagealphablending($bDstImg, false);
+                                imagesavealpha($bDstImg, true);
+                                imagecopyresampled($bDstImg, $bSrcImg, 0, 0, 0, 0, $width, $height, $bOrigW, $bOrigH);
+                                imagepng($bDstImg, $bTargetFilePath);
+                            } else {
+                                imagecopyresampled($bDstImg, $bSrcImg, 0, 0, 0, 0, $width, $height, $bOrigW, $bOrigH);
+                                imagejpeg($bDstImg, $bTargetFilePath, 90);
+                            }
+                            imagedestroy($bSrcImg);
+                            imagedestroy($bDstImg);
+                            $baseImageUrl = $baseUrl . dirname($_SERVER['SCRIPT_NAME']) . '/uploads/richmenu/' . $bFileName;
+                            $bResized = true;
+                        }
+                    }
+                    if (!$bResized) {
+                        if (move_uploaded_file($uploadedBaseFile['tmp_name'], $bTargetFilePath)) {
+                            $baseImageUrl = $baseUrl . dirname($_SERVER['SCRIPT_NAME']) . '/uploads/richmenu/' . $bFileName;
+                        }
+                    }
+                }
+            } elseif (!empty($existingBaseImageUrl)) {
+                $baseImageUrl = $existingBaseImageUrl;
+            }
+
+            if (empty($baseImageUrl)) {
+                $baseImageUrl = $imageUrl;
+            }
+
             // 1. LINE API用およびDB保存用メタデータ成形
             $lineAreas = [];
             $dbAreas = [];
@@ -1464,10 +1511,10 @@ try {
             // 5. DBに保存
             $stmt = $db->prepare("
                 INSERT INTO rich_menus (
-                    line_menu_id, title, chat_bar_text, image_url, areas_json, text_overlays_json,
+                    line_menu_id, title, chat_bar_text, image_url, base_image_url, areas_json, text_overlays_json,
                     width, height, is_active, created_at, updated_at
                 ) VALUES (
-                    :line_menu_id, :title, :chat_bar_text, :image_url, :areas_json, :text_overlays_json,
+                    :line_menu_id, :title, :chat_bar_text, :image_url, :base_image_url, :areas_json, :text_overlays_json,
                     :width, :height, :is_active, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                 )
             ");
@@ -1476,6 +1523,7 @@ try {
                 ':title' => $title,
                 ':chat_bar_text' => $chatBarText,
                 ':image_url' => $imageUrl,
+                ':base_image_url' => $baseImageUrl,
                 ':areas_json' => json_encode($dbAreas, JSON_UNESCAPED_UNICODE),
                 ':text_overlays_json' => json_encode($textOverlays, JSON_UNESCAPED_UNICODE),
                 ':width' => $width,
@@ -1499,6 +1547,7 @@ try {
                 'line_menu_id' => $lineMenuId,
                 'is_active' => $isActive,
                 'image_url' => $imageUrl,
+                'base_image_url' => $baseImageUrl,
                 'message' => $msg
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
