@@ -163,6 +163,9 @@
                             </button>
                         </div>
 
+                        <!-- 枠選択クイックピル一覧 (全枠をワンクリックで切り替え) -->
+                        <div class="area-pills-wrap" id="areaPillsWrap" style="display: none;"></div>
+
                         <div id="areaNoSelectionMsg" class="panel-placeholder">
                             <i class="fa-solid fa-arrow-pointer"></i>
                             <p>左側のプレビュー枠をクリックして選択するか、プリセット分割ボタンを押してください。</p>
@@ -222,11 +225,15 @@
                                 <label for="uriInput">リンク先 URL</label>
                                 <input type="url" id="uriInput" placeholder="https://...">
 
-                                <span class="field-sub-label">クイック入力:</span>
+                                <span class="field-sub-label">ワンクリックでURLを入力:</span>
                                 <div class="quick-chips-wrap">
+                                    <button class="quick-chip chip-highlight" type="button" id="chipStampCard">🎫 LINE公式 スタンプカード (ショップカード)</button>
                                     <button class="quick-chip" type="button" data-uri="https://liff.line.me/2011340718-OaRM8tV4/mycar.html">📱 マイカー点検パスポート</button>
                                     <button class="quick-chip" type="button" data-uri="https://www.goo-net.com/usedcar_shop/0601492/stock.html">🌐 Goo-net 在庫一覧</button>
                                 </div>
+                                <span class="field-help-text" style="display: block; margin-top: 6px; font-size: 11px; color: var(--gray-600);">
+                                    <i class="fa-solid fa-lightbulb" style="color: #f59e0b;"></i> LINE公式アカウントのスタンプカードは上の「🎫 LINE公式 スタンプカード」からカードURLを設定できます。
+                                </span>
                             </div>
 
                             <!-- Message設定 -->

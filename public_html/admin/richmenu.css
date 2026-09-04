@@ -604,6 +604,58 @@
     color: #059669;
 }
 
+.quick-chip.chip-highlight {
+    background: #ecfdf5;
+    border-color: #10b981;
+    color: #047857;
+    font-weight: 800;
+}
+
+.quick-chip.chip-highlight:hover {
+    background: #06C755;
+    color: #fff;
+    border-color: #06C755;
+}
+
+/* 枠選択クイックピル一覧 */
+.area-pills-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+    padding: 8px 10px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-sm);
+}
+
+.area-pill-btn {
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    color: var(--gray-800);
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.area-pill-btn:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
+}
+
+.area-pill-btn.active {
+    background: #06C755;
+    color: #fff;
+    border-color: #06C755;
+    box-shadow: 0 2px 5px rgba(6, 199, 85, 0.35);
+}
+
 .btn-danger-xs {
     background: #fee2e2;
     color: #dc2626;

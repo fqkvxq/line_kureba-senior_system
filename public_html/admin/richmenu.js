@@ -240,21 +240,59 @@ function initEventListeners() {
     // アクション設定フォームの同期
     elements.actionTypeRadios.forEach(radio => {
         radio.addEventListener('change', () => {
-            onActionTypeChanged(radio.value);
+            showActionFieldGroup(radio.value);
+            syncCurrentAreaFromForm();
         });
     });
     elements.postbackDataInput.addEventListener('input', syncCurrentAreaFromForm);
     elements.postbackDisplayTextInput.addEventListener('input', syncCurrentAreaFromForm);
-    elements.uriInput.addEventListener('input', syncCurrentAreaFromForm);
+    elements.uriInput.addEventListener('input', () => {
+        const val = elements.uriInput.value.trim();
+        if (val.includes('shopCard') || val.includes('shopcard')) {
+            localStorage.setItem('line_shopcard_url', val);
+        }
+        syncCurrentAreaFromForm();
+    });
     elements.messageTextInput.addEventListener('input', syncCurrentAreaFromForm);
 
     // クイック入力チップ
     document.querySelectorAll('.quick-chip').forEach(chip => {
         chip.addEventListener('click', () => {
+            // LINE公式スタンプカード（ショップカード）の場合
+            if (chip.id === 'chipStampCard') {
+                elements.actionTypeRadios.forEach(r => { r.checked = (r.value === 'uri'); });
+                showActionFieldGroup('uri');
+
+                const savedUrl = localStorage.getItem('line_shopcard_url') || '';
+                if (savedUrl) {
+                    elements.uriInput.value = savedUrl;
+                    syncCurrentAreaFromForm();
+                    showToast('保存済みのLINEスタンプカードURLを設定しました', 'success');
+                } else {
+                    const inputUrl = prompt(
+                        '【LINE公式スタンプカード（ショップカード）URL設定】\n\n' +
+                        'LINE Official Account Manager（管理画面）＞ ツール ＞ ショップカード にて発行された「カードURL」を入力または貼り付けてください：\n' +
+                        '（例: https://line.me/R/nv/shopCard/... または https://line.me/R/ch/...）'
+                    );
+                    if (inputUrl && inputUrl.trim()) {
+                        const clean = inputUrl.trim();
+                        localStorage.setItem('line_shopcard_url', clean);
+                        elements.uriInput.value = clean;
+                        syncCurrentAreaFromForm();
+                        showToast('スタンプカードURLを設定しました！次回以降はワンクリックで自動入力されます', 'success');
+                    }
+                }
+                return;
+            }
+
             if (chip.dataset.val) {
+                elements.actionTypeRadios.forEach(r => { r.checked = (r.value === 'postback'); });
+                showActionFieldGroup('postback');
                 elements.postbackDataInput.value = chip.dataset.val;
                 syncCurrentAreaFromForm();
             } else if (chip.dataset.uri) {
+                elements.actionTypeRadios.forEach(r => { r.checked = (r.value === 'uri'); });
+                showActionFieldGroup('uri');
                 elements.uriInput.value = chip.dataset.uri;
                 syncCurrentAreaFromForm();
             }
@@ -344,16 +382,22 @@ function processImageFile(file) {
 }
 
 function displayLoadedImage(src) {
-    elements.stageImage.src = src;
     elements.uploadDropzone.style.display = 'none';
     elements.canvasStage.style.display = 'inline-block';
     elements.changeImageBtn.style.display = 'inline-block';
+
+    elements.stageImage.onload = () => {
+        renderAreas();
+        updateAreaConfigForm();
+    };
+    elements.stageImage.src = src;
 
     // もし枠が空ならデフォルトで6分割を適用
     if (state.areas.length === 0) {
         applyPreset(state.menuSize === 'large' ? 'grid6' : 'grid3');
     } else {
         renderAreas();
+        updateAreaConfigForm();
     }
 }
 
@@ -480,36 +524,40 @@ function applyPreset(presetType) {
 function renderAreas() {
     elements.stageOverlay.innerHTML = '';
 
-    const stageW = elements.stageImage.clientWidth || 600;
-    const stageH = elements.stageImage.clientHeight || 400;
-    const scaleX = stageW / state.width;
-    const scaleY = stageH / state.height;
-
     state.areas.forEach((area, index) => {
         const box = document.createElement('div');
         box.className = 'area-box' + (area.id === state.selectedAreaId ? ' selected' : '');
-        box.dataset.id = area.id;
+        box.dataset.id = String(area.id);
 
-        // ピクセル単位に変換
-        const left = Math.round(area.bounds.x * scaleX);
-        const top = Math.round(area.bounds.y * scaleY);
-        const width = Math.round(area.bounds.width * scaleX);
-        const height = Math.round(area.bounds.height * scaleY);
+        // パーセント座標指定 (解像度・画面サイズ・ロードタイミングに左右されず画像と100%完全一致)
+        const leftPercent = (area.bounds.x / state.width) * 100;
+        const topPercent = (area.bounds.y / state.height) * 100;
+        const widthPercent = (area.bounds.width / state.width) * 100;
+        const heightPercent = (area.bounds.height / state.height) * 100;
 
-        box.style.left = left + 'px';
-        box.style.top = top + 'px';
-        box.style.width = width + 'px';
-        box.style.height = height + 'px';
+        box.style.left = leftPercent + '%';
+        box.style.top = topPercent + '%';
+        box.style.width = widthPercent + '%';
+        box.style.height = heightPercent + '%';
 
         // ラベルバッジ
         const badge = document.createElement('div');
         badge.className = 'area-box-badge';
-        let actionSummary = area.action.type;
-        if (area.action.type === 'postback') {
+        let actionSummary = area.action?.type || 'postback';
+        if (area.action?.type === 'postback') {
             actionSummary = area.action.displayText || area.action.data || 'Postback';
-        } else if (area.action.type === 'uri') {
-            actionSummary = 'リンク';
-        } else if (area.action.type === 'message') {
+        } else if (area.action?.type === 'uri') {
+            const uriVal = area.action.uri || '';
+            if (uriVal.includes('shopCard') || uriVal.includes('shopcard')) {
+                actionSummary = 'スタンプカード';
+            } else if (uriVal.includes('mycar')) {
+                actionSummary = '点検パスポート';
+            } else if (uriVal.includes('goo-net')) {
+                actionSummary = 'Goo-net';
+            } else {
+                actionSummary = 'リンク';
+            }
+        } else if (area.action?.type === 'message') {
             actionSummary = area.action.text || 'Message';
         }
         badge.textContent = `枠${index + 1}: ${actionSummary}`;
@@ -527,6 +575,45 @@ function renderAreas() {
 
         elements.stageOverlay.appendChild(box);
     });
+
+    renderAreaPills();
+}
+
+// 選択枠切り替え用クイックピル一覧
+function renderAreaPills() {
+    const wrap = document.getElementById('areaPillsWrap');
+    if (!wrap) return;
+
+    if (state.areas.length === 0) {
+        wrap.style.display = 'none';
+        wrap.innerHTML = '';
+        return;
+    }
+
+    wrap.style.display = 'flex';
+    wrap.innerHTML = '';
+
+    state.areas.forEach((area, index) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'area-pill-btn' + (area.id === state.selectedAreaId ? ' active' : '');
+
+        let title = `枠 ${index + 1}`;
+        if (area.action?.type === 'uri' && (area.action.uri?.includes('shopCard') || area.action.uri?.includes('shopcard'))) {
+            title += ': 🎫スタンプ';
+        } else if (area.action?.displayText) {
+            title += `: ${area.action.displayText}`;
+        } else if (area.action?.data) {
+            title += `: ${area.action.data.replace('action=', '')}`;
+        }
+
+        btn.textContent = title;
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            selectArea(area.id);
+        });
+        wrap.appendChild(btn);
+    });
 }
 
 // ================= キャンバス上でのインタラクション =================
@@ -535,6 +622,8 @@ function initCanvasInteractions() {
 
     overlay.addEventListener('mousedown', (e) => {
         const rect = overlay.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return;
+
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
 
@@ -554,11 +643,11 @@ function initCanvasInteractions() {
             return;
         }
 
-        // 枠内クリック判定 (移動または選択)
+        // 枠内クリック判定 (選択 & 移動)
         const areaBoxEl = e.target.closest('.area-box');
         if (areaBoxEl) {
             e.stopPropagation();
-            const areaId = parseInt(areaBoxEl.dataset.id);
+            const areaId = parseInt(areaBoxEl.dataset.id, 10);
             selectArea(areaId);
 
             state.isDragging = true;
@@ -585,12 +674,15 @@ function initCanvasInteractions() {
         state.dragTargetArea = newArea;
         state.initialBounds = { ...newArea.bounds };
         renderAreas();
+        updateAreaConfigForm();
     });
 
     window.addEventListener('mousemove', (e) => {
         if (!state.isDragging && !state.isResizing) return;
 
         const rect = overlay.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return;
+
         const mouseX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
         const mouseY = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
 
@@ -607,7 +699,6 @@ function initCanvasInteractions() {
         if (!area || !init) return;
 
         if (state.dragAction === 'move') {
-            // 移動
             let newX = init.x + deltaX;
             let newY = init.y + deltaY;
             newX = Math.max(0, Math.min(state.width - area.bounds.width, newX));
@@ -615,7 +706,6 @@ function initCanvasInteractions() {
             area.bounds.x = newX;
             area.bounds.y = newY;
         } else if (state.dragAction === 'create' || state.dragAction === 'se') {
-            // 右下へのリサイズ
             let newW = init.width + deltaX;
             let newH = init.height + deltaY;
             if (newW > 20 && init.x + newW <= state.width) area.bounds.width = newW;
@@ -663,7 +753,7 @@ function initCanvasInteractions() {
 }
 
 function selectArea(id) {
-    state.selectedAreaId = id;
+    state.selectedAreaId = parseInt(id, 10);
     renderAreas();
     updateAreaConfigForm();
 }
@@ -696,18 +786,20 @@ function updateAreaConfigForm() {
 
     updateCoordsDisplay(area);
 
-    // アクション種別の反映
-    const actionType = area.action.type || 'postback';
+    // 1. 各入力欄に保存されている値を正確に反映 (先に値をセット)
+    elements.postbackDataInput.value = area.action?.data || '';
+    elements.postbackDisplayTextInput.value = area.action?.displayText || '';
+    elements.uriInput.value = area.action?.uri || '';
+    elements.messageTextInput.value = area.action?.text || '';
+
+    // 2. アクション種別のラジオボタンを選択
+    const actionType = area.action?.type || 'postback';
     elements.actionTypeRadios.forEach(radio => {
         radio.checked = (radio.value === actionType);
     });
-    onActionTypeChanged(actionType);
 
-    // フィールド値の反映
-    elements.postbackDataInput.value = area.action.data || '';
-    elements.postbackDisplayTextInput.value = area.action.displayText || '';
-    elements.uriInput.value = area.action.uri || '';
-    elements.messageTextInput.value = area.action.text || '';
+    // 3. フィールド表示の切替のみを実行（syncCurrentAreaFromFormで上書きさせない）
+    showActionFieldGroup(actionType);
 }
 
 function updateCoordsDisplay(area) {
@@ -717,11 +809,10 @@ function updateCoordsDisplay(area) {
     elements.valCoordH.textContent = area.bounds.height;
 }
 
-function onActionTypeChanged(type) {
+function showActionFieldGroup(type) {
     elements.fieldPostback.style.display = (type === 'postback') ? 'block' : 'none';
     elements.fieldUri.style.display = (type === 'uri') ? 'block' : 'none';
     elements.fieldMessage.style.display = (type === 'message') ? 'block' : 'none';
-    syncCurrentAreaFromForm();
 }
 
 function syncCurrentAreaFromForm() {
@@ -733,7 +824,9 @@ function syncCurrentAreaFromForm() {
         if (r.checked) selectedType = r.value;
     });
 
+    if (!area.action) area.action = {};
     area.action.type = selectedType;
+
     if (selectedType === 'postback') {
         area.action.data = elements.postbackDataInput.value.trim() || 'action=search_all';
         area.action.displayText = elements.postbackDisplayTextInput.value.trim();
@@ -956,7 +1049,10 @@ function deleteHistoryMenu(id, title) {
 }
 
 function loadMenuIntoEditor(item) {
-    elements.menuTitleInput.value = item.title + ' (コピー)';
+    // 1. 先にエディタビューを表示状態に切り替え (DOM要素を表示してサイズ計算を保証)
+    switchView('editor');
+
+    elements.menuTitleInput.value = item.title ? (item.title + ' (コピー)') : '';
     elements.chatBarTextInput.value = item.chat_bar_text || 'メニュー';
     setMenuSize(item.height == 843 ? 'small' : 'large');
 
@@ -967,11 +1063,33 @@ function loadMenuIntoEditor(item) {
 
     state.imageFile = null;
     state.imageSrc = item.image_url;
-    state.areas = item.areas || [];
+
+    // 2. エリア配列のIDと数値を安全に再構築 (ID欠落によるクリック不可バグを完全解消)
+    state.areas = (item.areas || []).map((a, idx) => ({
+        id: a.id ? parseInt(a.id, 10) : (idx + 1),
+        bounds: {
+            x: Math.round(Number(a.bounds?.x || 0)),
+            y: Math.round(Number(a.bounds?.y || 0)),
+            width: Math.round(Number(a.bounds?.width || 100)),
+            height: Math.round(Number(a.bounds?.height || 100))
+        },
+        action: {
+            type: a.action?.type || 'postback',
+            data: a.action?.data || '',
+            displayText: a.action?.displayText || '',
+            uri: a.action?.uri || '',
+            text: a.action?.text || ''
+        }
+    }));
+
     state.selectedAreaId = state.areas.length > 0 ? state.areas[0].id : null;
 
+    // 3. 画像を表示
     displayLoadedImage(item.image_url);
-    switchView('editor');
+
+    // 4. 設定フォームとピルを更新
+    updateAreaConfigForm();
+
     showToast(`「${item.title}」をエディタに読み込みました`, 'info');
 }
 
@@ -985,6 +1103,8 @@ function resetEditorForm() {
     elements.uploadDropzone.style.display = 'block';
     elements.canvasStage.style.display = 'none';
     elements.changeImageBtn.style.display = 'none';
+    elements.stageImage.src = '';
+    renderAreas();
     updateAreaConfigForm();
 }
 
