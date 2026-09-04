@@ -2313,12 +2313,24 @@ function hideLoading() {
     elements.loadingOverlay.style.display = 'none';
 }
 
+let toastTimeout = null;
 function showToast(msg, type = 'info') {
-    elements.toast.textContent = msg;
+    if (!elements.toast) return;
+    if (toastTimeout) clearTimeout(toastTimeout);
+
+    let iconHtml = '<i class="fa-solid fa-circle-info"></i>';
+    if (type === 'success') {
+        iconHtml = '<i class="fa-solid fa-circle-check"></i>';
+    } else if (type === 'error') {
+        iconHtml = '<i class="fa-solid fa-triangle-exclamation"></i>';
+    }
+
+    elements.toast.innerHTML = `<span class="toast-icon">${iconHtml}</span><span class="toast-msg">${escapeHtml(msg)}</span>`;
     elements.toast.className = 'toast-notification ' + type + ' show';
-    setTimeout(() => {
-        elements.toast.className = 'toast-notification';
-    }, 4000);
+
+    toastTimeout = setTimeout(() => {
+        elements.toast.classList.remove('show');
+    }, 3800);
 }
 
 function escapeHtml(str) {

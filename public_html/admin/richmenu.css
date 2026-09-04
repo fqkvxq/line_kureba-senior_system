@@ -1471,3 +1471,83 @@
     cursor: pointer;
 }
 
+/* ==========================================================================
+   トースト通知 (adminToast)
+   ========================================================================== */
+.toast-notification {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translate(-50%, -25px) scale(0.95);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 22px;
+    border-radius: 30px;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.4;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.18);
+    transition: all 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+    max-width: 90vw;
+    box-sizing: border-box;
+    backdrop-filter: blur(8px);
+}
+
+.toast-notification.show {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.toast-notification .toast-icon {
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.toast-notification .toast-msg {
+    word-break: break-word;
+}
+
+/* タイプ別カラー定義 */
+.toast-notification.toast-info,
+.toast-notification.info {
+    background: rgba(15, 23, 42, 0.94);
+    color: #f8fafc;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+}
+.toast-notification.toast-info .toast-icon,
+.toast-notification.info .toast-icon {
+    color: #38bdf8;
+}
+
+.toast-notification.toast-success,
+.toast-notification.success {
+    background: rgba(6, 40, 20, 0.95);
+    color: #f0fdf4;
+    border: 1px solid rgba(34, 197, 94, 0.45);
+}
+.toast-notification.toast-success .toast-icon,
+.toast-notification.success .toast-icon {
+    color: #4ade80;
+}
+
+.toast-notification.toast-error,
+.toast-notification.error {
+    background: rgba(69, 10, 10, 0.95);
+    color: #fef2f2;
+    border: 1px solid rgba(239, 68, 68, 0.45);
+}
+.toast-notification.toast-error .toast-icon,
+.toast-notification.error .toast-icon {
+    color: #f87171;
+}
+
+
