@@ -1015,7 +1015,7 @@
     box-sizing: border-box;
     font-family: 'Noto Sans JP', sans-serif;
     font-weight: 800;
-    line-height: 1.25;
+    line-height: 1.35;
     letter-spacing: 0.02em;
     display: flex;
     align-items: center;
@@ -1026,6 +1026,8 @@
     touch-action: none;
     transition: box-shadow 0.15s, transform 0.15s, outline 0.15s;
     user-select: none;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 .overlay-text-item:hover {
@@ -1063,12 +1065,12 @@
 
 .overlay-text-item.badge {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    white-space: nowrap;
+    white-space: pre-wrap;
 }
 
 .overlay-text-item.free {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    white-space: nowrap;
+    white-space: pre-wrap;
 }
 
 /* スタイルカラーテーマ */
@@ -1223,6 +1225,9 @@
     font-family: inherit;
     margin-bottom: 6px;
     transition: border-color 0.15s;
+    resize: vertical;
+    min-height: 52px;
+    line-height: 1.4;
 }
 
 .overlay-text-input:focus {
