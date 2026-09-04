@@ -1939,18 +1939,30 @@ try {
                 exit;
             }
 
-            // ベースメニューのエリア設定を引き継ぐ（多重フォールバック）
+            // ベースメニューのエリア設定を引き継ぐ（LINEサーバー実データを最優先）
             $rawAreas = [];
 
-            // 優先順位1: クライアントから送信された base_areas
-            if (!empty($_POST['base_areas'])) {
-                $posted = json_decode($_POST['base_areas'], true);
-                if (is_array($posted) && count($posted) > 0) {
-                    $rawAreas = $posted;
+            // 優先順位1: ベースメニューの line_menu_id から LINEサーバー上の検証済み実データを直接取得
+            $lineMenuIdToFetch = !empty($baseMenu['line_menu_id']) ? $baseMenu['line_menu_id'] : ($_POST['base_line_menu_id'] ?? '');
+            if (!empty($lineMenuIdToFetch)) {
+                $lineRemote = lineGetRichMenu($lineMenuIdToFetch);
+                if (!empty($lineRemote['areas']) && is_array($lineRemote['areas']) && count($lineRemote['areas']) > 0) {
+                    $rawAreas = $lineRemote['areas'];
                 }
             }
 
-            // 優先順位2: DBの areas_json
+            // 優先順位2: 現在のLINE全体デフォルトリッチメニューから実データを取得
+            if (empty($rawAreas)) {
+                $currentDefId = lineGetDefaultRichMenuId();
+                if (!empty($currentDefId)) {
+                    $lineRemote = lineGetRichMenu($currentDefId);
+                    if (!empty($lineRemote['areas']) && is_array($lineRemote['areas']) && count($lineRemote['areas']) > 0) {
+                        $rawAreas = $lineRemote['areas'];
+                    }
+                }
+            }
+
+            // 優先順位3: DBの areas_json
             if (empty($rawAreas) && !empty($baseMenu['areas_json'])) {
                 $dbJson = json_decode($baseMenu['areas_json'], true);
                 if (is_array($dbJson) && count($dbJson) > 0) {
@@ -1958,23 +1970,11 @@ try {
                 }
             }
 
-            // 優先順位3: ベースメニューの line_menu_id から LINEサーバー実データを直接取得
-            $lineMenuIdToFetch = !empty($baseMenu['line_menu_id']) ? $baseMenu['line_menu_id'] : ($_POST['base_line_menu_id'] ?? '');
-            if (empty($rawAreas) && !empty($lineMenuIdToFetch)) {
-                $lineRemote = lineGetRichMenu($lineMenuIdToFetch);
-                if (!empty($lineRemote['areas']) && is_array($lineRemote['areas'])) {
-                    $rawAreas = $lineRemote['areas'];
-                }
-            }
-
-            // 優先順位4: 現在のLINE全体デフォルトリッチメニューから取得
-            if (empty($rawAreas)) {
-                $currentDefId = lineGetDefaultRichMenuId();
-                if (!empty($currentDefId)) {
-                    $lineRemote = lineGetRichMenu($currentDefId);
-                    if (!empty($lineRemote['areas']) && is_array($lineRemote['areas'])) {
-                        $rawAreas = $lineRemote['areas'];
-                    }
+            // 優先順位4: クライアントから送信された base_areas
+            if (empty($rawAreas) && !empty($_POST['base_areas'])) {
+                $posted = json_decode($_POST['base_areas'], true);
+                if (is_array($posted) && count($posted) > 0) {
+                    $rawAreas = $posted;
                 }
             }
 
@@ -1998,33 +1998,37 @@ try {
                     $bounds['height'] = $height - $bounds['y'];
                 }
 
-                $actionType = $a['action']['type'] ?? 'uri';
-                $action = ['type' => $actionType];
+                $act = $a['action'];
+                $actionType = $act['type'] ?? 'postback';
+                $cleanAction = ['type' => $actionType];
 
                 if ($actionType === 'uri') {
-                    $action['uri'] = trim($a['action']['uri'] ?? 'https://www.goo-net.com');
+                    $cleanAction['uri'] = trim($act['uri'] ?? 'https://www.goo-net.com');
+                    if (!empty($act['label'])) $cleanAction['label'] = $act['label'];
                 } elseif ($actionType === 'postback') {
-                    $action['data'] = trim($a['action']['data'] ?? 'action=search_all');
-                    if (!empty($a['action']['displayText'])) {
-                        $action['displayText'] = trim($a['action']['displayText']);
+                    $cleanAction['data'] = trim($act['data'] ?? 'action=search_all');
+                    if (!empty($act['displayText'])) {
+                        $cleanAction['displayText'] = trim($act['displayText']);
                     }
+                    if (!empty($act['label'])) $cleanAction['label'] = $act['label'];
                 } elseif ($actionType === 'message') {
-                    $action['text'] = trim($a['action']['text'] ?? 'メニュー');
+                    $cleanAction['text'] = trim($act['text'] ?? 'メニュー');
+                    if (!empty($act['label'])) $cleanAction['label'] = $act['label'];
                 } elseif ($actionType === 'richmenuswitch') {
-                    $alias = trim($a['action']['richMenuAliasId'] ?? '');
+                    $alias = trim($act['richMenuAliasId'] ?? '');
                     if (!empty($alias)) {
-                        $action['richMenuAliasId'] = $alias;
-                        $action['data'] = trim($a['action']['data'] ?? 'action=richmenu_switched');
+                        $cleanAction['richMenuAliasId'] = $alias;
+                        $cleanAction['data'] = trim($act['data'] ?? 'action=richmenu_switched');
                     } else {
-                        $action = ['type' => 'postback', 'data' => 'action=search_all', 'displayText' => 'メニュー切り替え'];
+                        $cleanAction = ['type' => 'postback', 'data' => 'action=search_all', 'displayText' => 'メニュー切り替え'];
                     }
                 } else {
-                    $action = ['type' => 'postback', 'data' => 'action=search_all'];
+                    $cleanAction = $act;
                 }
 
                 $lineAreas[] = [
                     'bounds' => $bounds,
-                    'action' => $action
+                    'action' => $cleanAction
                 ];
             }
 
@@ -2111,9 +2115,18 @@ try {
                 ':uid' => $userId
             ]);
 
+            $buttonSummaries = [];
+            foreach ($lineAreas as $idx => $la) {
+                $type = $la['action']['type'] ?? 'unknown';
+                $detail = $la['action']['data'] ?? ($la['action']['uri'] ?? ($la['action']['text'] ?? ''));
+                $buttonSummaries[] = "枠" . ($idx + 1) . " [{$type}: {$detail}]";
+            }
+
             echo json_encode([
                 'success' => true,
-                'message' => "「{$custName}」様に専用メッセージ付きリッチメニューを適用しました！",
+                'message' => "「{$custName}」様に専用メッセージ付きリッチメニューを適用しました！（ボタン" . count($lineAreas) . "個を正常に引き継ぎ）",
+                'buttons' => $buttonSummaries,
+                'areas_count' => count($lineAreas),
                 'custom_line_menu_id' => $newLineMenuId,
                 'custom_menu_text' => $customText
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
