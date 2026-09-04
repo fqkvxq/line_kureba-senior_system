@@ -71,11 +71,11 @@ const elements = {
     selectedAreaLabel: document.getElementById('selectedAreaLabel'),
     deleteSelectedAreaBtn: document.getElementById('deleteSelectedAreaBtn'),
 
-    // 座標
-    valCoordX: document.getElementById('valCoordX'),
-    valCoordY: document.getElementById('valCoordY'),
-    valCoordW: document.getElementById('valCoordW'),
-    valCoordH: document.getElementById('valCoordH'),
+    // 座標直接入力
+    inputCoordX: document.getElementById('inputCoordX'),
+    inputCoordY: document.getElementById('inputCoordY'),
+    inputCoordW: document.getElementById('inputCoordW'),
+    inputCoordH: document.getElementById('inputCoordH'),
 
     // アクション
     actionTypeRadios: document.querySelectorAll('input[name="actionType"]'),
@@ -254,6 +254,12 @@ function initEventListeners() {
         syncCurrentAreaFromForm();
     });
     elements.messageTextInput.addEventListener('input', syncCurrentAreaFromForm);
+
+    // 座標直接入力の同期
+    if (elements.inputCoordX) elements.inputCoordX.addEventListener('input', syncCoordsFromInputs);
+    if (elements.inputCoordY) elements.inputCoordY.addEventListener('input', syncCoordsFromInputs);
+    if (elements.inputCoordW) elements.inputCoordW.addEventListener('input', syncCoordsFromInputs);
+    if (elements.inputCoordH) elements.inputCoordH.addEventListener('input', syncCoordsFromInputs);
 
     // クイック入力チップ
     document.querySelectorAll('.quick-chip').forEach(chip => {
@@ -525,8 +531,9 @@ function renderAreas() {
     elements.stageOverlay.innerHTML = '';
 
     state.areas.forEach((area, index) => {
+        const isSelected = Number(area.id) === Number(state.selectedAreaId);
         const box = document.createElement('div');
-        box.className = 'area-box' + (area.id === state.selectedAreaId ? ' selected' : '');
+        box.className = 'area-box' + (isSelected ? ' selected' : '');
         box.dataset.id = String(area.id);
 
         // パーセント座標指定 (解像度・画面サイズ・ロードタイミングに左右されず画像と100%完全一致)
@@ -564,7 +571,7 @@ function renderAreas() {
         box.appendChild(badge);
 
         // 選択中の場合はリサイズハンドルを追加
-        if (area.id === state.selectedAreaId) {
+        if (isSelected) {
             ['nw', 'ne', 'se', 'sw'].forEach(handleType => {
                 const handle = document.createElement('div');
                 handle.className = `resize-handle handle-${handleType}`;
@@ -572,6 +579,17 @@ function renderAreas() {
                 box.appendChild(handle);
             });
         }
+
+        // 枠自体への直接クリック/タップで即座に再選択
+        box.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectArea(area.id);
+        });
+        box.addEventListener('pointerdown', (e) => {
+            if (!e.target.classList.contains('resize-handle')) {
+                selectArea(area.id);
+            }
+        });
 
         elements.stageOverlay.appendChild(box);
     });
@@ -594,9 +612,11 @@ function renderAreaPills() {
     wrap.innerHTML = '';
 
     state.areas.forEach((area, index) => {
+        const isSelected = Number(area.id) === Number(state.selectedAreaId);
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'area-pill-btn' + (area.id === state.selectedAreaId ? ' active' : '');
+        btn.className = 'area-pill-btn' + (isSelected ? ' active' : '');
+        btn.dataset.id = String(area.id);
 
         let title = `枠 ${index + 1}`;
         if (area.action?.type === 'uri' && (area.action.uri?.includes('shopCard') || area.action.uri?.includes('shopcard'))) {
@@ -610,10 +630,60 @@ function renderAreaPills() {
         btn.textContent = title;
         btn.addEventListener('click', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             selectArea(area.id);
         });
         wrap.appendChild(btn);
     });
+}
+
+// 入力時のリアルタイムバッジ＆ピル更新 (DOM全破棄を行わない)
+function updateAreaBadgeAndPill(area) {
+    const numId = Number(area.id);
+    const box = elements.stageOverlay.querySelector(`.area-box[data-id="${numId}"]`);
+    const index = state.areas.findIndex(a => Number(a.id) === numId);
+    if (index === -1) return;
+
+    let actionSummary = area.action?.type || 'postback';
+    if (area.action?.type === 'postback') {
+        actionSummary = area.action.displayText || area.action.data || 'Postback';
+    } else if (area.action?.type === 'uri') {
+        const uriVal = area.action.uri || '';
+        if (uriVal.includes('shopCard') || uriVal.includes('shopcard')) {
+            actionSummary = 'スタンプカード';
+        } else if (uriVal.includes('mycar')) {
+            actionSummary = '点検パスポート';
+        } else if (uriVal.includes('goo-net')) {
+            actionSummary = 'Goo-net';
+        } else {
+            actionSummary = 'リンク';
+        }
+    } else if (area.action?.type === 'message') {
+        actionSummary = area.action.text || 'Message';
+    }
+
+    if (box) {
+        let badge = box.querySelector('.area-box-badge');
+        if (!badge) {
+            badge = document.createElement('div');
+            badge.className = 'area-box-badge';
+            box.appendChild(badge);
+        }
+        badge.textContent = `枠${index + 1}: ${actionSummary}`;
+    }
+
+    const pill = document.querySelector(`#areaPillsWrap .area-pill-btn[data-id="${numId}"]`);
+    if (pill) {
+        let title = `枠 ${index + 1}`;
+        if (area.action?.type === 'uri' && (area.action.uri?.includes('shopCard') || area.action.uri?.includes('shopcard'))) {
+            title += ': 🎫スタンプ';
+        } else if (area.action?.displayText) {
+            title += `: ${area.action.displayText}`;
+        } else if (area.action?.data) {
+            title += `: ${area.action.data.replace('action=', '')}`;
+        }
+        pill.textContent = title;
+    }
 }
 
 // ================= キャンバス上でのインタラクション =================
@@ -638,7 +708,7 @@ function initCanvasInteractions() {
             state.isResizing = true;
             state.dragAction = e.target.dataset.handle;
             state.dragStart = { x: actualX, y: actualY };
-            state.dragTargetArea = state.areas.find(a => a.id === state.selectedAreaId);
+            state.dragTargetArea = state.areas.find(a => Number(a.id) === Number(state.selectedAreaId));
             state.initialBounds = { ...state.dragTargetArea.bounds };
             return;
         }
@@ -653,7 +723,7 @@ function initCanvasInteractions() {
             state.isDragging = true;
             state.dragAction = 'move';
             state.dragStart = { x: actualX, y: actualY };
-            state.dragTargetArea = state.areas.find(a => a.id === areaId);
+            state.dragTargetArea = state.areas.find(a => Number(a.id) === areaId);
             state.initialBounds = { ...state.dragTargetArea.bounds };
             return;
         }
@@ -663,11 +733,11 @@ function initCanvasInteractions() {
         state.dragAction = 'create';
         state.dragStart = { x: actualX, y: actualY };
 
-        const newId = (state.areas.length > 0 ? Math.max(...state.areas.map(a => a.id)) : 0) + 1;
+        const newId = (state.areas.length > 0 ? Math.max(...state.areas.map(a => Number(a.id) || 0)) : 0) + 1;
         const newArea = {
             id: newId,
             bounds: { x: actualX, y: actualY, width: 10, height: 10 },
-            action: { type: 'postback', data: 'action=search_all' }
+            action: { type: 'postback', data: 'action=search_all', displayText: '' }
         };
         state.areas.push(newArea);
         state.selectedAreaId = newId;
@@ -731,12 +801,31 @@ function initCanvasInteractions() {
             if (init.y + newH <= state.height && newH > 20) { area.bounds.height = newH; }
         }
 
-        renderAreas();
+        // DOM再描画なしで該当boxの位置と大きさを高速更新
+        const boxEl = overlay.querySelector(`.area-box[data-id="${area.id}"]`);
+        if (boxEl) {
+            boxEl.style.left = ((area.bounds.x / state.width) * 100) + '%';
+            boxEl.style.top = ((area.bounds.y / state.height) * 100) + '%';
+            boxEl.style.width = ((area.bounds.width / state.width) * 100) + '%';
+            boxEl.style.height = ((area.bounds.height / state.height) * 100) + '%';
+        }
         updateCoordsDisplay(area);
     });
 
     window.addEventListener('mouseup', () => {
         if (state.isDragging || state.isResizing) {
+            const finishedAction = state.dragAction;
+            const targetArea = state.dragTargetArea;
+
+            // 新規作成で極小（誤クリック）だった場合は枠を破棄して以前の枠に戻す
+            if (finishedAction === 'create' && targetArea) {
+                if (targetArea.bounds.width < 40 || targetArea.bounds.height < 40) {
+                    state.areas = state.areas.filter(a => Number(a.id) !== Number(targetArea.id));
+                    state.selectedAreaId = state.areas.length > 0 ? state.areas[0].id : null;
+                    renderAreas();
+                }
+            }
+
             state.isDragging = false;
             state.isResizing = false;
             state.dragAction = null;
@@ -753,13 +842,43 @@ function initCanvasInteractions() {
 }
 
 function selectArea(id) {
-    state.selectedAreaId = parseInt(id, 10);
-    renderAreas();
+    const numId = Number(id);
+    if (isNaN(numId)) return;
+
+    state.selectedAreaId = numId;
+
+    // DOM要素を破壊せずに高速に選択状態とハンドルを切り替え
+    const allBoxes = elements.stageOverlay.querySelectorAll('.area-box');
+    allBoxes.forEach(b => {
+        const isSelected = Number(b.dataset.id) === numId;
+        b.classList.toggle('selected', isSelected);
+
+        // 既存のリサイズハンドルをクリーンアップ
+        b.querySelectorAll('.resize-handle').forEach(h => h.remove());
+
+        if (isSelected) {
+            ['nw', 'ne', 'se', 'sw'].forEach(handleType => {
+                const handle = document.createElement('div');
+                handle.className = `resize-handle handle-${handleType}`;
+                handle.dataset.handle = handleType;
+                b.appendChild(handle);
+            });
+        }
+    });
+
+    // クイックピルのactive状態を同期
+    const allPills = document.querySelectorAll('#areaPillsWrap .area-pill-btn');
+    allPills.forEach(p => {
+        p.classList.toggle('active', Number(p.dataset.id) === numId);
+    });
+
+    // 設定フォームに選択中エリアの内容を反映
     updateAreaConfigForm();
 }
 
 function deleteArea(id) {
-    state.areas = state.areas.filter(a => a.id !== id);
+    const numId = Number(id);
+    state.areas = state.areas.filter(a => Number(a.id) !== numId);
     state.selectedAreaId = state.areas.length > 0 ? state.areas[0].id : null;
     renderAreas();
     updateAreaConfigForm();
@@ -767,7 +886,8 @@ function deleteArea(id) {
 
 // ================= プロパティ設定フォームの更新 =================
 function updateAreaConfigForm() {
-    const area = state.areas.find(a => a.id === state.selectedAreaId);
+    const targetId = Number(state.selectedAreaId);
+    const area = state.areas.find(a => Number(a.id) === targetId);
 
     if (!area) {
         elements.areaNoSelectionMsg.style.display = 'block';
@@ -781,19 +901,20 @@ function updateAreaConfigForm() {
     elements.areaConfigForm.style.display = 'block';
     elements.deleteSelectedAreaBtn.style.display = 'inline-block';
 
-    const index = state.areas.findIndex(a => a.id === area.id);
+    const index = state.areas.findIndex(a => Number(a.id) === targetId);
     elements.selectedAreaLabel.textContent = `枠 ${index + 1}`;
 
     updateCoordsDisplay(area);
 
-    // 1. 各入力欄に保存されている値を正確に反映 (先に値をセット)
-    elements.postbackDataInput.value = area.action?.data || '';
-    elements.postbackDisplayTextInput.value = area.action?.displayText || '';
-    elements.uriInput.value = area.action?.uri || '';
-    elements.messageTextInput.value = area.action?.text || '';
+    // 1. 各入力欄に保存されている値を正確に反映
+    if (!area.action) area.action = { type: 'postback', data: 'action=search_all', displayText: '' };
+    elements.postbackDataInput.value = area.action.data || '';
+    elements.postbackDisplayTextInput.value = area.action.displayText || '';
+    elements.uriInput.value = area.action.uri || '';
+    elements.messageTextInput.value = area.action.text || '';
 
     // 2. アクション種別のラジオボタンを選択
-    const actionType = area.action?.type || 'postback';
+    const actionType = area.action.type || 'postback';
     elements.actionTypeRadios.forEach(radio => {
         radio.checked = (radio.value === actionType);
     });
@@ -803,10 +924,44 @@ function updateAreaConfigForm() {
 }
 
 function updateCoordsDisplay(area) {
-    elements.valCoordX.textContent = area.bounds.x;
-    elements.valCoordY.textContent = area.bounds.y;
-    elements.valCoordW.textContent = area.bounds.width;
-    elements.valCoordH.textContent = area.bounds.height;
+    if (!area || !area.bounds) return;
+    if (elements.inputCoordX) elements.inputCoordX.value = Math.round(area.bounds.x);
+    if (elements.inputCoordY) elements.inputCoordY.value = Math.round(area.bounds.y);
+    if (elements.inputCoordW) elements.inputCoordW.value = Math.round(area.bounds.width);
+    if (elements.inputCoordH) elements.inputCoordH.value = Math.round(area.bounds.height);
+}
+
+function syncCoordsFromInputs() {
+    const area = state.areas.find(a => Number(a.id) === Number(state.selectedAreaId));
+    if (!area || !area.bounds) return;
+
+    let x = parseInt(elements.inputCoordX.value, 10);
+    let y = parseInt(elements.inputCoordY.value, 10);
+    let w = parseInt(elements.inputCoordW.value, 10);
+    let h = parseInt(elements.inputCoordH.value, 10);
+
+    if (isNaN(x)) x = 0;
+    if (isNaN(y)) y = 0;
+    if (isNaN(w) || w < 20) w = 20;
+    if (isNaN(h) || h < 20) h = 20;
+
+    x = Math.max(0, Math.min(state.width - 20, x));
+    y = Math.max(0, Math.min(state.height - 20, y));
+    if (x + w > state.width) w = state.width - x;
+    if (y + h > state.height) h = state.height - y;
+
+    area.bounds.x = x;
+    area.bounds.y = y;
+    area.bounds.width = w;
+    area.bounds.height = h;
+
+    const box = elements.stageOverlay.querySelector(`.area-box[data-id="${area.id}"]`);
+    if (box) {
+        box.style.left = ((x / state.width) * 100) + '%';
+        box.style.top = ((y / state.height) * 100) + '%';
+        box.style.width = ((w / state.width) * 100) + '%';
+        box.style.height = ((h / state.height) * 100) + '%';
+    }
 }
 
 function showActionFieldGroup(type) {
@@ -816,7 +971,7 @@ function showActionFieldGroup(type) {
 }
 
 function syncCurrentAreaFromForm() {
-    const area = state.areas.find(a => a.id === state.selectedAreaId);
+    const area = state.areas.find(a => Number(a.id) === Number(state.selectedAreaId));
     if (!area) return;
 
     let selectedType = 'postback';
@@ -836,7 +991,7 @@ function syncCurrentAreaFromForm() {
         area.action.text = elements.messageTextInput.value.trim() || 'メニュー';
     }
 
-    renderAreas();
+    updateAreaBadgeAndPill(area);
 }
 
 // ================= 保存 & LINE公開 =================

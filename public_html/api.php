@@ -1220,7 +1220,13 @@ try {
 
             // 現在のLINE設定と同期
             foreach ($menus as &$m) {
-                $m['areas'] = json_decode($m['areas_json'], true) ?: [];
+                $rawAreas = json_decode($m['areas_json'], true) ?: [];
+                $cleanAreas = [];
+                foreach ($rawAreas as $idx => $ra) {
+                    $ra['id'] = !empty($ra['id']) ? (int)$ra['id'] : ($idx + 1);
+                    $cleanAreas[] = $ra;
+                }
+                $m['areas'] = $cleanAreas;
                 $m['is_line_default'] = (!empty($m['line_menu_id']) && $m['line_menu_id'] === $currentLineDefaultId);
                 // DBのis_activeとLINE実状態の整合性を取る
                 if ($m['is_line_default'] && !$m['is_active']) {
@@ -1356,9 +1362,11 @@ try {
             $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://{$_SERVER['HTTP_HOST']}";
             $imageUrl = $baseUrl . dirname($_SERVER['SCRIPT_NAME']) . '/uploads/richmenu/' . $savedFileName;
 
-            // 1. LINE API用メタデータ成形
+            // 1. LINE API用およびDB保存用メタデータ成形
             $lineAreas = [];
-            foreach ($areas as $a) {
+            $dbAreas = [];
+            foreach ($areas as $idx => $a) {
+                $areaId = !empty($a['id']) ? (int)$a['id'] : ($idx + 1);
                 $bounds = [
                     'x' => max(0, (int)($a['bounds']['x'] ?? 0)),
                     'y' => max(0, (int)($a['bounds']['y'] ?? 0)),
@@ -1385,7 +1393,13 @@ try {
                 } elseif ($actionType === 'message') {
                     $action['text'] = trim($a['action']['text'] ?? 'メニュー');
                 }
+
                 $lineAreas[] = [
+                    'bounds' => $bounds,
+                    'action' => $action
+                ];
+                $dbAreas[] = [
+                    'id' => $areaId,
                     'bounds' => $bounds,
                     'action' => $action
                 ];
@@ -1457,7 +1471,7 @@ try {
                 ':title' => $title,
                 ':chat_bar_text' => $chatBarText,
                 ':image_url' => $imageUrl,
-                ':areas_json' => json_encode($lineAreas, JSON_UNESCAPED_UNICODE),
+                ':areas_json' => json_encode($dbAreas, JSON_UNESCAPED_UNICODE),
                 ':width' => $width,
                 ':height' => $height,
                 ':is_active' => $isActive

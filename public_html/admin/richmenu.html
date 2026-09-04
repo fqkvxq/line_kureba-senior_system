@@ -13,8 +13,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260904_1">
-    <link rel="stylesheet" href="richmenu.css?v=20260904_1">
+    <link rel="stylesheet" href="admin.css?v=20260904_reedit_v3">
+    <link rel="stylesheet" href="richmenu.css?v=20260904_reedit_v3">
 </head>
 <body>
     <!-- ログインモーダル -->
@@ -172,12 +172,24 @@
                         </div>
 
                         <div id="areaConfigForm" style="display: none;">
-                            <!-- 座標情報バッジ -->
-                            <div class="coords-info-bar">
-                                <span>X: <strong id="valCoordX">0</strong></span>
-                                <span>Y: <strong id="valCoordY">0</strong></span>
-                                <span>幅: <strong id="valCoordW">0</strong></span>
-                                <span>高: <strong id="valCoordH">0</strong></span>
+                            <!-- 座標情報・直接数値編集バー -->
+                            <div class="coords-edit-bar">
+                                <div class="coord-field">
+                                    <span class="coord-label">X</span>
+                                    <input type="number" id="inputCoordX" min="0" max="2500" step="1" title="X座標 (px)">
+                                </div>
+                                <div class="coord-field">
+                                    <span class="coord-label">Y</span>
+                                    <input type="number" id="inputCoordY" min="0" max="1686" step="1" title="Y座標 (px)">
+                                </div>
+                                <div class="coord-field">
+                                    <span class="coord-label">幅</span>
+                                    <input type="number" id="inputCoordW" min="20" max="2500" step="1" title="幅 (px)">
+                                </div>
+                                <div class="coord-field">
+                                    <span class="coord-label">高</span>
+                                    <input type="number" id="inputCoordH" min="20" max="1686" step="1" title="高さ (px)">
+                                </div>
                             </div>
 
                             <!-- アクション種別 -->
@@ -292,6 +304,6 @@
     <!-- トースト通知 -->
     <div class="toast-notification" id="adminToast"></div>
 
-    <script src="richmenu.js?v=20260904_1"></script>
+    <script src="richmenu.js?v=20260904_reedit_v3"></script>
 </body>
 </html>
