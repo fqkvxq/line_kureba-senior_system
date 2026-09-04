@@ -3154,14 +3154,13 @@ function publishNoticeMenu() {
             return;
         }
 
-        // タップ領域（areas）を構築（OKボタンタップ時に確実に通常メニューへ戻す）
+        // タップ領域（areas）を構築（OKボタンタップ時にサイレントに通常メニューへ戻す）
         const areas = [
             {
                 bounds: noticeState.okBounds,
                 action: {
                     type: 'postback',
-                    data: 'action=close_notice',
-                    displayText: '✓ 通常メニューに戻る'
+                    data: 'action=close_notice'
                 }
             }
         ];

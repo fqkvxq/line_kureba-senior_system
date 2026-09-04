@@ -3793,75 +3793,30 @@ function generateEquipmentMenuMessages(PDO $db): array {
 }
 
 /**
- * ユーザーへお知らせリッチメニューを表示
+ * ユーザーへお知らせリッチメニューを表示（サイレント切り替え: タイムラインを流さないためメッセージ送信なし）
  */
 function handleShowNoticeMenu(string $replyToken, string $userId): void {
     $noticeMenu = getActiveNoticeRichMenu();
     if ($noticeMenu && !empty($noticeMenu['line_menu_id'])) {
-        // ユーザーに個別紐付け (トーク画面下部のリッチメニューをお知らせメニューに切り替え)
+        // ユーザーに個別紐付け (トーク画面下部のリッチメニューをお知らせメニューにサイレント切り替え)
         $linkRes = lineLinkUserRichMenu($userId, $noticeMenu['line_menu_id']);
-        writeDebugLog("お知らせリッチメニュー紐付け実行", [
+        writeDebugLog("お知らせリッチメニュー紐付け実行(サイレント)", [
             'userId' => $userId,
             'richMenuId' => $noticeMenu['line_menu_id'],
             'res' => $linkRes
         ]);
-
-        $menuTitle = $noticeMenu['title'] ?? 'お知らせ';
-
-        $messages = [
-            [
-                'type' => 'text',
-                'text' => "📢 {$menuTitle}\n\n下部のメニューにお知らせを表示しました👇\n（閉じる場合は、メニュー内の「OK」または「閉じる」をタップすると通常メニューに戻ります）",
-                'quickReply' => [
-                    'items' => [
-                        [
-                            'type' => 'action',
-                            'action' => [
-                                'type' => 'postback',
-                                'label' => '✕ 通常メニューに戻す',
-                                'data' => 'action=close_notice'
-                            ]
-                        ],
-                        [
-                            'type' => 'action',
-                            'action' => [
-                                'type' => 'postback',
-                                'label' => '🚗 在庫全台',
-                                'data' => 'action=search_all'
-                            ]
-                        ],
-                        [
-                            'type' => 'action',
-                            'action' => [
-                                'type' => 'postback',
-                                'label' => '🛠️ 点検受付',
-                                'data' => 'action=open_mycar'
-                            ]
-                        ]
-                    ]
-                ]
-            ]
-        ];
-        sendReplyMessage($replyToken, $messages);
     } else {
-        $messages = [
-            [
-                'type' => 'text',
-                'text' => "📢 現在、特別なお知らせはございません。\n最新の入庫車両やメンテナンス受付は下のメニューよりお気軽にご利用ください🚗",
-                'quickReply' => getQuickReplyItems()
-            ]
-        ];
-        sendReplyMessage($replyToken, $messages);
+        writeDebugLog("お知らせリッチメニューなし(サイレント)");
     }
 }
 
 /**
- * ユーザーのお知らせリッチメニューを解除して通常メニューに戻す
+ * ユーザーのお知らせリッチメニューを解除して通常メニューに戻す（サイレント切り替え: タイムラインを流さないためメッセージ送信なし）
  */
 function handleCloseNoticeMenu(string $replyToken, string $userId): void {
     // 1. 個別紐付けを解除（LINE標準の全体デフォルトに戻す試行）
     $unlinkRes = lineUnlinkUserRichMenu($userId);
-    writeDebugLog("お知らせリッチメニュー解除実行", [
+    writeDebugLog("お知らせリッチメニュー解除実行(サイレント)", [
         'userId' => $userId,
         'res' => $unlinkRes
     ]);
@@ -3911,7 +3866,7 @@ function handleCloseNoticeMenu(string $replyToken, string $userId): void {
         // 通常メニューを明示的に紐付け！
         if (!empty($normalLineMenuId)) {
             $linkRes = lineLinkUserRichMenu($userId, $normalLineMenuId);
-            writeDebugLog("通常メニュー明示的再紐付け実行", [
+            writeDebugLog("通常メニュー明示的再紐付け実行(サイレント)", [
                 'userId' => $userId,
                 'richMenuId' => $normalLineMenuId,
                 'res' => $linkRes
@@ -3920,15 +3875,6 @@ function handleCloseNoticeMenu(string $replyToken, string $userId): void {
     } catch (Throwable $e) {
         writeDebugLog("通常メニュー再紐付け例外: " . $e->getMessage());
     }
-
-    $messages = [
-        [
-            'type' => 'text',
-            'text' => "通常メニューに戻りました🚗\nご用件は下のメニューまたはメッセージよりお気軽にどうぞ！",
-            'quickReply' => getQuickReplyItems()
-        ]
-    ];
-    sendReplyMessage($replyToken, $messages);
 }
 
 /**
