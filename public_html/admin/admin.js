@@ -9,7 +9,8 @@ const state = {
     searchQuery: '',
     richMenus: [],
     activeUserMenuCust: null,
-    loadedBaseImg: null
+    loadedBaseImg: null,
+    userMenuBannerBounds: null
 };
 
 const elements = {
@@ -85,6 +86,12 @@ const elements = {
     userMenuFontSizeInput: document.getElementById('userMenuFontSizeInput'),
     userMenuFontSizeVal: document.getElementById('userMenuFontSizeVal'),
     userMenuBannerHeightSelect: document.getElementById('userMenuBannerHeightSelect'),
+    userMenuBannerActionType: document.getElementById('userMenuBannerActionType'),
+    userMenuBannerUriRow: document.getElementById('userMenuBannerUriRow'),
+    userMenuBannerUriInput: document.getElementById('userMenuBannerUriInput'),
+    userMenuBannerPostbackRow: document.getElementById('userMenuBannerPostbackRow'),
+    userMenuBannerPostbackInput: document.getElementById('userMenuBannerPostbackInput'),
+    userMenuShowTapHint: document.getElementById('userMenuShowTapHint'),
     syncLineFollowersBtn: document.getElementById('syncLineFollowersBtn'),
 
     toast: document.getElementById('adminToast')
@@ -192,6 +199,23 @@ function initEventListeners() {
             loadAndRenderUserMenuBaseImage();
         });
     }
+
+    // メッセージ帯アクション切替
+    if (elements.userMenuBannerActionType) {
+        elements.userMenuBannerActionType.addEventListener('change', () => {
+            const val = elements.userMenuBannerActionType.value;
+            if (elements.userMenuBannerUriRow) {
+                elements.userMenuBannerUriRow.style.display = (val === 'uri') ? 'block' : 'none';
+            }
+            if (elements.userMenuBannerPostbackRow) {
+                elements.userMenuBannerPostbackRow.style.display = (val === 'postback') ? 'block' : 'none';
+            }
+            renderUserMenuPreview();
+        });
+    }
+    if (elements.userMenuBannerUriInput) elements.userMenuBannerUriInput.addEventListener('input', renderUserMenuPreview);
+    if (elements.userMenuBannerPostbackInput) elements.userMenuBannerPostbackInput.addEventListener('input', renderUserMenuPreview);
+    if (elements.userMenuShowTapHint) elements.userMenuShowTapHint.addEventListener('change', renderUserMenuPreview);
 
     // LINE友だち一括同期
     if (elements.syncLineFollowersBtn) {
@@ -805,22 +829,35 @@ function renderUserMenuPreview() {
     const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     if (lines.length === 0) return;
 
-    // 帯の高さ計算（文字サイズ・行数・帯の太さ設定を考慮）
+    const actionType = elements.userMenuBannerActionType ? elements.userMenuBannerActionType.value : 'mycar_liff';
+    const showTapHint = elements.userMenuShowTapHint ? elements.userMenuShowTapHint.checked : true;
+    const hasTapAction = actionType !== 'none';
+
+    // 帯の高さ計算（文字サイズ・行数・帯の太さ・タップ案内設定を考慮）
     let bannerH;
+    const extraHintH = (hasTapAction && showTapHint) ? Math.round(fontSize * 0.75) : 0;
     if (heightSetting === 'compact') {
-        bannerH = Math.max(Math.round(fontSize * 1.5), 140);
+        bannerH = Math.max(Math.round(fontSize * 1.5) + extraHintH, 140);
     } else if (heightSetting === 'standard') {
-        bannerH = Math.max(Math.round(fontSize * 1.8), 185);
+        bannerH = Math.max(Math.round(fontSize * 1.8) + extraHintH, 185);
     } else if (heightSetting === 'wide') {
-        bannerH = Math.max(Math.round(fontSize * 2.2), 240);
+        bannerH = Math.max(Math.round(fontSize * 2.2) + extraHintH, 240);
     } else {
         // auto: 行数とフォントサイズに応じて余白を最適化
         const lineSpacing = fontSize * 1.32;
-        const textBlockH = (lines.length * lineSpacing);
+        const textBlockH = (lines.length * lineSpacing) + extraHintH;
         bannerH = Math.max(150, Math.round(textBlockH + (fontSize * 0.95)));
     }
 
     const bannerY = (pos === 'top') ? 0 : (h - bannerH);
+
+    // バナーの座標をstateに保存（適用時にAPIへ送信）
+    state.userMenuBannerBounds = {
+        x: 0,
+        y: bannerY,
+        width: w,
+        height: bannerH
+    };
 
     // テーマカラー設定
     let bgGrad;
@@ -882,13 +919,47 @@ function renderUserMenuPreview() {
     ctx.font = `bold ${fontSize}px "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif`;
 
     const lineSpacing = fontSize * 1.32;
-    const totalTextH = (lines.length - 1) * lineSpacing;
-    const startY = (bannerY + bannerH / 2) - (totalTextH / 2);
+    const totalLinesH = (lines.length - 1) * lineSpacing;
+    // タップガイド表示がある場合は少し上寄りに配置
+    const shiftY = (hasTapAction && showTapHint) ? -Math.round(extraHintH * 0.4) : 0;
+    const startY = ((bannerY + bannerH / 2) - (totalLinesH / 2)) + shiftY;
 
     lines.forEach((line, idx) => {
         const lineY = startY + (idx * lineSpacing);
         ctx.fillText(line, w / 2, lineY, w - 120);
     });
+
+    // タップ誘導ガイド（タップアクション有効時）
+    if (hasTapAction && showTapHint) {
+        let hintLabel = '👆 タップして詳細を見る';
+        if (actionType === 'mycar_liff' || actionType === 'open_mycar') {
+            hintLabel = '👆 タップして点検・予約を開く';
+        } else if (actionType === 'search_all') {
+            hintLabel = '👆 タップして在庫車両を見る';
+        } else if (actionType === 'notice') {
+            hintLabel = '👆 タップしてお知らせを見る';
+        } else if (actionType === 'uri') {
+            hintLabel = '👆 タップしてリンクを開く';
+        }
+
+        const hintFontSize = Math.max(26, Math.round(fontSize * 0.48));
+        ctx.font = `bold ${hintFontSize}px "Noto Sans JP", -apple-system, sans-serif`;
+        const hintY = startY + totalLinesH + (fontSize * 0.95);
+
+        // 半透明ピル背景
+        const textWidth = ctx.measureText(hintLabel).width;
+        const pillW = textWidth + 40;
+        const pillH = hintFontSize * 1.5;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+        ctx.beginPath();
+        const pillX = (w - pillW) / 2;
+        const pillY = hintY - (pillH / 2);
+        ctx.roundRect ? ctx.roundRect(pillX, pillY, pillW, pillH, pillH / 2) : ctx.rect(pillX, pillY, pillW, pillH);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.fillText(hintLabel, w / 2, hintY);
+    }
 
     ctx.restore();
 }
@@ -934,6 +1005,17 @@ async function applyUserRichMenu() {
         formData.append('base_areas', JSON.stringify(base.areas || []));
         formData.append('custom_text', text);
         formData.append('image', blob, 'custom_menu.jpg');
+
+        // メッセージ帯タップ時のアクション設定
+        const actionType = elements.userMenuBannerActionType ? elements.userMenuBannerActionType.value : 'mycar_liff';
+        const actionUri = elements.userMenuBannerUriInput ? elements.userMenuBannerUriInput.value.trim() : '';
+        const actionPostback = elements.userMenuBannerPostbackInput ? elements.userMenuBannerPostbackInput.value.trim() : '';
+        const bannerBounds = state.userMenuBannerBounds || { x: 0, y: 0, width: base.width || 2500, height: 200 };
+
+        formData.append('banner_action_type', actionType);
+        formData.append('banner_action_uri', actionUri);
+        formData.append('banner_action_postback', actionPostback);
+        formData.append('banner_bounds', JSON.stringify(bannerBounds));
 
         try {
             const res = await fetch('../api.php?action=admin_set_user_custom_richmenu', {

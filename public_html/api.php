@@ -2131,6 +2131,83 @@ try {
                 ];
             }
 
+            // メッセージ帯タップ時のアクションを追加（最前面タップエリアとして先頭に配置）
+            $bannerActionType = trim($_POST['banner_action_type'] ?? 'mycar_liff');
+            $bannerActionUri = trim($_POST['banner_action_uri'] ?? '');
+            $bannerActionPostback = trim($_POST['banner_action_postback'] ?? '');
+            $bannerBounds = !empty($_POST['banner_bounds']) ? json_decode($_POST['banner_bounds'], true) : null;
+
+            if ($bannerActionType !== 'none' && !empty($bannerBounds) && is_array($bannerBounds)) {
+                $bannerCleanAction = null;
+                if ($bannerActionType === 'mycar_liff') {
+                    $liffId = defined('LINE_LIFF_ID') ? LINE_LIFF_ID : (defined('LIFF_ID') ? LIFF_ID : '2011340718-OaRM8tV4');
+                    $bannerCleanAction = [
+                        'type' => 'uri',
+                        'uri' => "https://liff.line.me/{$liffId}/mycar.html",
+                        'label' => '点検予約'
+                    ];
+                } elseif ($bannerActionType === 'open_mycar') {
+                    $bannerCleanAction = [
+                        'type' => 'postback',
+                        'data' => 'action=open_mycar',
+                        'label' => '点検受付'
+                    ];
+                } elseif ($bannerActionType === 'search_all') {
+                    $bannerCleanAction = [
+                        'type' => 'postback',
+                        'data' => 'action=search_all',
+                        'label' => '在庫一覧'
+                    ];
+                } elseif ($bannerActionType === 'notice') {
+                    $bannerCleanAction = [
+                        'type' => 'postback',
+                        'data' => 'action=show_notice_menu',
+                        'label' => 'お知らせ'
+                    ];
+                } elseif ($bannerActionType === 'uri') {
+                    $bannerCleanAction = [
+                        'type' => 'uri',
+                        'uri' => !empty($bannerActionUri) ? $bannerActionUri : 'https://www.goo-net.com',
+                        'label' => '詳細リンク'
+                    ];
+                } elseif ($bannerActionType === 'postback') {
+                    $bannerCleanAction = [
+                        'type' => 'postback',
+                        'data' => !empty($bannerActionPostback) ? $bannerActionPostback : 'action=search_all',
+                        'label' => 'アクション'
+                    ];
+                }
+
+                if ($bannerCleanAction) {
+                    $bX = max(0, (int)($bannerBounds['x'] ?? 0));
+                    $bY = max(0, (int)($bannerBounds['y'] ?? 0));
+                    $bW = min($width - $bX, max(1, (int)($bannerBounds['width'] ?? $width)));
+                    $bH = min($height - $bY, max(1, (int)($bannerBounds['height'] ?? 200)));
+
+                    $bannerAreaObj = [
+                        'bounds' => [
+                            'x' => $bX,
+                            'y' => $bY,
+                            'width' => $bW,
+                            'height' => $bH
+                        ],
+                        'action' => $bannerCleanAction
+                    ];
+
+                    // LINEはareasの先頭からヒット判定するため、先頭に追加して最優先化
+                    array_unshift($lineAreas, $bannerAreaObj);
+                    writeDebugLog("専用メニューのメッセージ帯タップ領域追加", [
+                        'action' => $bannerCleanAction,
+                        'bounds' => $bannerAreaObj['bounds']
+                    ]);
+                }
+            }
+
+            // LINEリッチメニューは最大20エリア制限
+            if (count($lineAreas) > 20) {
+                $lineAreas = array_slice($lineAreas, 0, 20);
+            }
+
             // 万が一エリアが0件の場合は空メニューの作成を阻止
             if (empty($lineAreas)) {
                 @unlink($targetFilePath);

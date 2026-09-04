@@ -334,6 +334,41 @@
                                 </select>
                             </div>
                         </div>
+
+                        <!-- メッセージ帯タップ時のアクション設定 -->
+                        <div class="form-group" style="margin-top: 12px; margin-bottom: 0; background: #f8fafc; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                            <label style="font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+                                <span><i class="fa-solid fa-hand-pointer" style="color: #4f46e5;"></i> メッセージ帯タップ時の動作</span>
+                                <span style="font-size: 10px; font-weight: 600; color: #059669; background: #ecfdf5; padding: 1px 6px; border-radius: 4px;">LINE連携</span>
+                            </label>
+                            <select id="userMenuBannerActionType" style="width: 100%; padding: 7px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+                                <option value="mycar_liff" selected>🛠️ マイカー点検・予約を開く (LIFF / パスポート)</option>
+                                <option value="open_mycar">📋 点検受付メニューを表示 (LINEメッセージ)</option>
+                                <option value="search_all">🚗 在庫車両一覧を見る</option>
+                                <option value="notice">📢 店舗お知らせ・キャンペーンを見る</option>
+                                <option value="uri">🔗 任意のURLを開く</option>
+                                <option value="postback">⚡ カスタムPostback</option>
+                                <option value="none">🚫 アクションなし (下のボタンが反応)</option>
+                            </select>
+
+                            <!-- URL入力フィールド (uri 選択時のみ) -->
+                            <div id="userMenuBannerUriRow" style="display: none; margin-top: 6px;">
+                                <input type="url" id="userMenuBannerUriInput" placeholder="https://..." style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                            </div>
+
+                            <!-- Postback入力フィールド (postback 選択時のみ) -->
+                            <div id="userMenuBannerPostbackRow" style="display: none; margin-top: 6px;">
+                                <input type="text" id="userMenuBannerPostbackInput" placeholder="例: action=search_all" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                            </div>
+
+                            <!-- タップ誘導バッジ（ガイド表示）のON/OFF -->
+                            <div style="display: flex; align-items: center; gap: 6px; margin-top: 8px;">
+                                <input type="checkbox" id="userMenuShowTapHint" checked style="accent-color: #4f46e5; cursor: pointer;">
+                                <label for="userMenuShowTapHint" style="font-size: 11px; color: #64748b; cursor: pointer; margin: 0; user-select: none;">
+                                    画像上に「👆 タップして開く」ガイドを表示する
+                                </label>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- 右: リアルタイムプレビュー -->
@@ -346,7 +381,7 @@
                             <canvas id="userMenuPreviewCanvas" width="2500" height="1686"></canvas>
                         </div>
                         <div class="preview-hint">
-                            <i class="fa-solid fa-circle-info"></i> お客様がLINEを開いた際、このデザインのメニューが下部にパーソナライズ表示されます。タップ枠はベースメニューと同じように機能します。
+                            <i class="fa-solid fa-circle-info"></i> お客様がLINEを開いた際、このデザインのメニューが下部にパーソナライズ表示されます。メッセージ帯およびベースメニューのボタン枠が機能します。
                         </div>
                     </div>
                 </div>
@@ -363,6 +398,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260904_custom_menu_v6"></script>
+    <script src="admin.js?v=20260904_custom_menu_v7"></script>
 </body>
 </html>
