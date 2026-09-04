@@ -1237,6 +1237,15 @@ try {
                     $db->prepare("UPDATE rich_menus SET is_active = 0 WHERE id = :id")->execute([':id' => $m['id']]);
                     $m['is_active'] = 0;
                 }
+                // エイリアス未設定の既存メニューがあれば自動生成＆同期
+                if (!empty($m['line_menu_id']) && empty($m['alias_id'])) {
+                    $genAlias = 'rm_' . substr(md5($m['line_menu_id']), 0, 20);
+                    $reg = lineCreateOrUpdateRichMenuAlias($m['line_menu_id'], $genAlias);
+                    if ($reg['success']) {
+                        $db->prepare("UPDATE rich_menus SET alias_id = :aid WHERE id = :id")->execute([':aid' => $genAlias, ':id' => $m['id']]);
+                        $m['alias_id'] = $genAlias;
+                    }
+                }
             }
             unset($m);
 
@@ -1440,6 +1449,9 @@ try {
                     }
                 } elseif ($actionType === 'message') {
                     $action['text'] = trim($a['action']['text'] ?? 'メニュー');
+                } elseif ($actionType === 'richmenuswitch') {
+                    $action['richMenuAliasId'] = trim($a['action']['richMenuAliasId'] ?? '');
+                    $action['data'] = trim($a['action']['data'] ?? 'action=richmenu_switched');
                 }
 
                 $lineAreas[] = [
@@ -1491,6 +1503,10 @@ try {
                 exit;
             }
 
+            // 3.5 LINE API: エイリアス登録
+            $aliasId = 'rm_' . substr(md5($lineMenuId), 0, 20);
+            lineCreateOrUpdateRichMenuAlias($lineMenuId, $aliasId);
+
             // 4. LINE API: 本番適用 (publishフラグが真の場合)
             $isActive = 0;
             $applyError = null;
@@ -1512,15 +1528,16 @@ try {
             // 5. DBに保存
             $stmt = $db->prepare("
                 INSERT INTO rich_menus (
-                    line_menu_id, title, chat_bar_text, image_url, base_image_url, areas_json, text_overlays_json,
+                    line_menu_id, alias_id, title, chat_bar_text, image_url, base_image_url, areas_json, text_overlays_json,
                     width, height, is_active, created_at, updated_at
                 ) VALUES (
-                    :line_menu_id, :title, :chat_bar_text, :image_url, :base_image_url, :areas_json, :text_overlays_json,
+                    :line_menu_id, :alias_id, :title, :chat_bar_text, :image_url, :base_image_url, :areas_json, :text_overlays_json,
                     :width, :height, :is_active, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                 )
             ");
             $stmt->execute([
                 ':line_menu_id' => $lineMenuId,
+                ':alias_id' => $aliasId,
                 ':title' => $title,
                 ':chat_bar_text' => $chatBarText,
                 ':image_url' => $imageUrl,
@@ -1611,6 +1628,9 @@ try {
             // LINE側から削除
             if (!empty($menu['line_menu_id'])) {
                 lineDeleteRichMenu($menu['line_menu_id']);
+            }
+            if (!empty($menu['alias_id'])) {
+                lineDeleteRichMenuAlias($menu['alias_id']);
             }
 
             // 画像ファイルの削除

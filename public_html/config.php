@@ -133,6 +133,7 @@ function getDbConnection(): PDO {
     try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_rich_menus_active ON rich_menus(is_active)"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE rich_menus ADD COLUMN text_overlays_json TEXT DEFAULT '[]'"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE rich_menus ADD COLUMN base_image_url TEXT DEFAULT ''"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE rich_menus ADD COLUMN alias_id TEXT DEFAULT ''"); } catch (Exception $e) {}
 
     // 既存 customers テーブルからのデータ移行（初回1回のみ）
     try {
@@ -523,6 +524,125 @@ function lineDeleteRichMenu(string $richMenuId): array {
         'httpCode' => $httpCode,
         'error' => $curlErr ?: ($httpCode !== 200 ? $res : null)
     ];
+}
+
+/**
+ * LINE Messaging API: リッチメニューエイリアス作成・更新
+ */
+function lineCreateOrUpdateRichMenuAlias(string $richMenuId, string $aliasId): array {
+    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+        return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
+    }
+
+    // 1. まず作成を試みる
+    $url = 'https://api.line.me/v2/bot/richmenu/alias';
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json; charset=utf-8',
+            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+        ],
+        CURLOPT_POSTFIELDS => json_encode([
+            'richMenuId' => $richMenuId,
+            'richMenuAliasId' => $aliasId
+        ], JSON_UNESCAPED_UNICODE)
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    if ($httpCode === 200) {
+        return ['success' => true, 'action' => 'created', 'aliasId' => $aliasId];
+    }
+
+    // 2. 既に存在する場合は更新(UPDATE)
+    $updateUrl = "https://api.line.me/v2/bot/richmenu/alias/{$aliasId}";
+    $ch = curl_init($updateUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json; charset=utf-8',
+            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+        ],
+        CURLOPT_POSTFIELDS => json_encode([
+            'richMenuId' => $richMenuId
+        ], JSON_UNESCAPED_UNICODE)
+    ]);
+    $resUpdate = curl_exec($ch);
+    $httpCodeUpdate = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErrUpdate = curl_error($ch);
+    curl_close($ch);
+
+    return [
+        'success' => ($httpCodeUpdate === 200),
+        'action' => 'updated',
+        'httpCode' => $httpCodeUpdate,
+        'error' => $curlErrUpdate ?: ($httpCodeUpdate !== 200 ? $resUpdate : null)
+    ];
+}
+
+/**
+ * LINE Messaging API: リッチメニューエイリアス削除
+ */
+function lineDeleteRichMenuAlias(string $aliasId): array {
+    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+        return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
+    }
+
+    $url = "https://api.line.me/v2/bot/richmenu/alias/{$aliasId}";
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_CUSTOMREQUEST => 'DELETE',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+        ]
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    return [
+        'success' => ($httpCode === 200),
+        'httpCode' => $httpCode,
+        'error' => $curlErr ?: ($httpCode !== 200 ? $res : null)
+    ];
+}
+
+/**
+ * LINE Messaging API: リッチメニューエイリアス一覧取得
+ */
+function lineGetRichMenuAliasList(): array {
+    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+        return ['success' => false, 'aliases' => []];
+    }
+
+    $url = 'https://api.line.me/v2/bot/richmenu/alias/list';
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+        ]
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode === 200) {
+        $json = json_decode($res, true);
+        return ['success' => true, 'aliases' => $json['aliases'] ?? []];
+    }
+    return ['success' => false, 'aliases' => []];
 }
 
 /**

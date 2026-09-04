@@ -13,8 +13,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260904_toast_v1">
-    <link rel="stylesheet" href="richmenu.css?v=20260904_toast_v1">
+    <link rel="stylesheet" href="admin.css?v=20260904_notice_v1">
+    <link rel="stylesheet" href="richmenu.css?v=20260904_notice_v1">
 </head>
 <body>
     <!-- ログインモーダル -->
@@ -68,8 +68,13 @@
                         <i class="fa-solid fa-clock-rotate-left"></i> 登録・履歴一覧 (<span id="historyCount">0</span>)
                     </button>
                 </div>
-                <div class="current-live-badge" id="currentLiveBadge">
-                    <span class="pulse-dot"></span> 現在本番適用中: <strong id="liveMenuName">確認中...</strong>
+                <div class="view-switch-right">
+                    <button type="button" class="btn-quick-notice" id="btnOpenNoticeModal" title="LINEを開いた全員にお知らせを全面ポップアップ配信">
+                        <i class="fa-solid fa-bullhorn"></i> 📢 お知らせ作成
+                    </button>
+                    <div class="current-live-badge" id="currentLiveBadge">
+                        <span class="pulse-dot"></span> 現在本番適用中: <strong id="liveMenuName">確認中...</strong>
+                    </div>
                 </div>
             </div>
 
@@ -229,6 +234,10 @@
                                         <input type="radio" name="actionType" value="message">
                                         <span>💬 テキスト送信</span>
                                     </label>
+                                    <label class="radio-chip">
+                                        <input type="radio" name="actionType" value="richmenuswitch">
+                                        <span>📋 メニュー切替</span>
+                                    </label>
                                 </div>
                             </div>
 
@@ -274,6 +283,17 @@
                                 <label for="messageTextInput">送信テキスト</label>
                                 <input type="text" id="messageTextInput" placeholder="例: 在庫一覧">
                             </div>
+
+                            <!-- リッチメニュー切替設定 -->
+                            <div class="action-field-group" id="fieldRichMenuSwitch" style="display: none;">
+                                <label for="switchMenuSelect">切替先のリッチメニュー</label>
+                                <select id="switchMenuSelect" class="form-select" style="width: 100%; padding: 8px; font-size: 13px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                    <option value="">-- 切替先メニューを選択 --</option>
+                                </select>
+                                <span class="field-help-text" style="display: block; margin-top: 6px; font-size: 11px; color: var(--gray-600);">
+                                    <i class="fa-solid fa-bolt" style="color: #06C755;"></i> タップした瞬間に、待ち時間0秒で指定のリッチメニューにシームレスに切り替わります（LINE公式 richmenuswitch 仕様）。
+                                </span>
+                            </div>
                         </div>
                     </div>
 
@@ -316,6 +336,128 @@
         </main>
     </div>
 
+    <!-- クイックお知らせ作成モーダル -->
+    <div class="notice-wizard-overlay" id="noticeWizardModal" style="display: none;">
+        <div class="notice-wizard-card">
+            <div class="notice-wizard-header">
+                <div class="wizard-header-title">
+                    <span class="wizard-badge"><i class="fa-solid fa-bullhorn"></i> クイックお知らせ作成</span>
+                    <h2>トーク画面にお知らせを全画面ポップアップ配信</h2>
+                    <p>LINEを開いたお客様全員に大きくお知らせを表示し、「OK」を押すと通常メニューに戻ります。</p>
+                </div>
+                <button type="button" class="btn-wizard-close" id="btnCloseNoticeWizard">&times;</button>
+            </div>
+
+            <div class="notice-wizard-body">
+                <!-- 左側: 入力設定フォーム -->
+                <div class="wizard-form-side">
+                    <div class="form-group">
+                        <label for="noticeTitleInput">お知らせタイトル (大見出し) <span class="required-star">*</span></label>
+                        <input type="text" id="noticeTitleInput" placeholder="例: 🎉 秋の大感謝祭セール開催！" value="🎉 秋の大感謝祭セール開催！" maxlength="60">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="noticeBodyInput">お知らせ本文・詳細 (複数行可) <span class="required-star">*</span></label>
+                        <textarea id="noticeBodyInput" rows="4" placeholder="お知らせ本文を入力してください">9/10(水)〜9/25(木)まで秋の特別商談会を開催！
+期間中にご来店・ご成約のお客様に豪華特典をご用意しております。
+点検・オイル交換のご相談もお気軽にどうぞ！</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>デザインカラーテーマ</label>
+                        <div class="notice-theme-picker">
+                            <label class="notice-theme-opt opt-red active">
+                                <input type="radio" name="noticeTheme" value="red" checked>
+                                <span class="theme-color-dot" style="background: #dc2626;"></span>
+                                <span class="theme-label">赤 (注目・セール)</span>
+                            </label>
+                            <label class="notice-theme-opt opt-green">
+                                <input type="radio" name="noticeTheme" value="green">
+                                <span class="theme-color-dot" style="background: #06C755;"></span>
+                                <span class="theme-label">緑 (LINE・新着)</span>
+                            </label>
+                            <label class="notice-theme-opt opt-dark">
+                                <input type="radio" name="noticeTheme" value="dark">
+                                <span class="theme-color-dot" style="background: #0f172a;"></span>
+                                <span class="theme-label">黒 (シック・高級)</span>
+                            </label>
+                            <label class="notice-theme-opt opt-blue">
+                                <input type="radio" name="noticeTheme" value="blue">
+                                <span class="theme-color-dot" style="background: #2563eb;"></span>
+                                <span class="theme-label">青 (安心・案内)</span>
+                            </label>
+                            <label class="notice-theme-opt opt-yellow">
+                                <input type="radio" name="noticeTheme" value="yellow">
+                                <span class="theme-color-dot" style="background: #f59e0b;"></span>
+                                <span class="theme-label">黄 (元気・お得)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-row-2col">
+                        <div class="form-group">
+                            <label>メニューサイズ</label>
+                            <div class="btn-toggle-group" style="width: 100%;">
+                                <button type="button" class="btn-toggle active" id="btnNoticeSizeLarge" data-size="large">大 (全画面・迫力)</button>
+                                <button type="button" class="btn-toggle" id="btnNoticeSizeSmall" data-size="small">小 (下部帯)</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="noticeReturnMenuSelect">OKタップ時の戻り先メニュー</label>
+                            <select id="noticeReturnMenuSelect" class="form-select" style="width: 100%; padding: 7px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                                <!-- JSで動的生成 -->
+                            </select>
+                            <span style="font-size: 10px; color: var(--gray-600); display: block; margin-top: 3px;">
+                                ※お客様が「OK」を押すと、この通常メニューに0秒で戻ります。
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="form-row-2col">
+                        <div class="form-group">
+                            <label for="noticeCloseBtnTextInput">閉じるボタンの文言</label>
+                            <input type="text" id="noticeCloseBtnTextInput" value="✓ OK (通常メニューへ)" maxlength="25">
+                        </div>
+                        <div class="form-group">
+                            <label for="noticeLinkUrlInput">詳細URLボタン (任意・空欄で非表示)</label>
+                            <input type="url" id="noticeLinkUrlInput" placeholder="https://www.goo-net.com/... など">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右側: リアルタイムプレビュー -->
+                <div class="wizard-preview-side">
+                    <span class="preview-side-label"><i class="fa-solid fa-mobile-screen-button"></i> お客様のLINE画面プレビュー</span>
+                    <div class="notice-phone-mockup">
+                        <div class="phone-mockup-header">
+                            <span>アップファーレン</span>
+                        </div>
+                        <div class="phone-mockup-talk">
+                            <div class="talk-dummy-bubble">
+                                いつもアップファーレンをご利用いただきありがとうございます！
+                            </div>
+                        </div>
+                        <div class="phone-mockup-richmenu">
+                            <canvas id="noticeCanvasPreview" width="2500" height="1686"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="notice-wizard-footer">
+                <div class="wizard-footer-info">
+                    <i class="fa-solid fa-circle-info"></i> 「今すぐ一斉公開」を押すと、LINE公式アカウントの全体メニューが即座にお知らせに切り替わります。
+                </div>
+                <div class="wizard-footer-actions">
+                    <button type="button" class="btn-secondary" id="btnCancelNoticeWizard">キャンセル</button>
+                    <button type="button" class="btn-publish-notice-main" id="btnSubmitNoticePublish">
+                        <i class="fa-solid fa-paper-plane"></i> LINE公式アカウントに今すぐ一斉公開
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ローディングオーバーレイ -->
     <div class="loading-overlay" id="loadingOverlay" style="display: none;">
         <div class="loading-spinner"></div>
@@ -325,6 +467,6 @@
     <!-- トースト通知 -->
     <div class="toast-notification" id="adminToast"></div>
 
-    <script src="richmenu.js?v=20260904_toast_v1"></script>
+    <script src="richmenu.js?v=20260904_notice_v1"></script>
 </body>
 </html>

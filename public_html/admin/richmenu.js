@@ -97,10 +97,27 @@ const elements = {
     fieldPostback: document.getElementById('fieldPostback'),
     fieldUri: document.getElementById('fieldUri'),
     fieldMessage: document.getElementById('fieldMessage'),
+    fieldRichMenuSwitch: document.getElementById('fieldRichMenuSwitch'),
+    switchMenuSelect: document.getElementById('switchMenuSelect'),
     postbackDataInput: document.getElementById('postbackDataInput'),
     postbackDisplayTextInput: document.getElementById('postbackDisplayTextInput'),
     uriInput: document.getElementById('uriInput'),
     messageTextInput: document.getElementById('messageTextInput'),
+
+    // お知らせ作成モーダル
+    btnOpenNoticeModal: document.getElementById('btnOpenNoticeModal'),
+    noticeWizardModal: document.getElementById('noticeWizardModal'),
+    btnCloseNoticeWizard: document.getElementById('btnCloseNoticeWizard'),
+    btnCancelNoticeWizard: document.getElementById('btnCancelNoticeWizard'),
+    btnSubmitNoticePublish: document.getElementById('btnSubmitNoticePublish'),
+    noticeTitleInput: document.getElementById('noticeTitleInput'),
+    noticeBodyInput: document.getElementById('noticeBodyInput'),
+    btnNoticeSizeLarge: document.getElementById('btnNoticeSizeLarge'),
+    btnNoticeSizeSmall: document.getElementById('btnNoticeSizeSmall'),
+    noticeReturnMenuSelect: document.getElementById('noticeReturnMenuSelect'),
+    noticeCloseBtnTextInput: document.getElementById('noticeCloseBtnTextInput'),
+    noticeLinkUrlInput: document.getElementById('noticeLinkUrlInput'),
+    noticeCanvasPreview: document.getElementById('noticeCanvasPreview'),
 
     // ボタン
     publishMenuBtn: document.getElementById('publishMenuBtn'),
@@ -270,6 +287,9 @@ function initEventListeners() {
         syncCurrentAreaFromForm();
     });
     elements.messageTextInput.addEventListener('input', syncCurrentAreaFromForm);
+    if (elements.switchMenuSelect) {
+        elements.switchMenuSelect.addEventListener('change', syncCurrentAreaFromForm);
+    }
 
     // 座標直接入力の同期
     if (elements.inputCoordX) elements.inputCoordX.addEventListener('input', syncCoordsFromInputs);
@@ -338,6 +358,9 @@ function initEventListeners() {
     // 保存・公開ボタン
     elements.publishMenuBtn.addEventListener('click', () => saveRichMenu(true));
     elements.saveDraftBtn.addEventListener('click', () => saveRichMenu(false));
+
+    // クイックお知らせ作成ウィザードイベント
+    initNoticeWizardEvents();
 }
 
 // ================= ビュー切り替え =================
@@ -689,6 +712,9 @@ function updateAreaBadgeAndPill(area) {
         }
     } else if (area.action?.type === 'message') {
         actionSummary = area.action.text || 'Message';
+    } else if (area.action?.type === 'richmenuswitch') {
+        const targetMenu = (state.historyList || []).find(m => (m.alias_id && m.alias_id === area.action.richMenuAliasId) || ('rm_' + m.id) === area.action.richMenuAliasId);
+        actionSummary = targetMenu ? `切替: ${targetMenu.title}` : 'メニュー切替';
     }
 
     if (box) {
@@ -706,6 +732,8 @@ function updateAreaBadgeAndPill(area) {
         let title = `枠 ${index + 1}`;
         if (area.action?.type === 'uri' && (area.action.uri?.includes('shopCard') || area.action.uri?.includes('shopcard'))) {
             title += ': 🎫スタンプ';
+        } else if (area.action?.type === 'richmenuswitch') {
+            title += ': 📋切替';
         } else if (area.action?.displayText) {
             title += `: ${area.action.displayText}`;
         } else if (area.action?.data) {
@@ -992,6 +1020,25 @@ function updateAreaConfigForm() {
     elements.uriInput.value = area.action.uri || '';
     elements.messageTextInput.value = area.action.text || '';
 
+    // 切替先メニューのプルダウン一覧を更新
+    if (elements.switchMenuSelect) {
+        elements.switchMenuSelect.innerHTML = '<option value="">-- 切替先メニューを選択 --</option>';
+        (state.historyList || []).forEach(m => {
+            const aliasVal = m.alias_id || ('rm_' + m.id);
+            const isLive = (m.is_active == 1 || (m.line_menu_id && m.line_menu_id === state.currentLineDefaultId));
+            const opt = document.createElement('option');
+            opt.value = aliasVal;
+            opt.textContent = (isLive ? '★ [本番中] ' : '') + m.title;
+            if (area.action.richMenuAliasId === aliasVal) {
+                opt.selected = true;
+            }
+            elements.switchMenuSelect.appendChild(opt);
+        });
+        if (area.action.type === 'richmenuswitch' && area.action.richMenuAliasId) {
+            elements.switchMenuSelect.value = area.action.richMenuAliasId;
+        }
+    }
+
     // 2. アクション種別のラジオボタンを選択
     const actionType = area.action.type || 'postback';
     elements.actionTypeRadios.forEach(radio => {
@@ -1047,6 +1094,9 @@ function showActionFieldGroup(type) {
     elements.fieldPostback.style.display = (type === 'postback') ? 'block' : 'none';
     elements.fieldUri.style.display = (type === 'uri') ? 'block' : 'none';
     elements.fieldMessage.style.display = (type === 'message') ? 'block' : 'none';
+    if (elements.fieldRichMenuSwitch) {
+        elements.fieldRichMenuSwitch.style.display = (type === 'richmenuswitch') ? 'block' : 'none';
+    }
 }
 
 function syncCurrentAreaFromForm() {
@@ -1068,6 +1118,9 @@ function syncCurrentAreaFromForm() {
         area.action.uri = elements.uriInput.value.trim() || 'https://www.goo-net.com';
     } else if (selectedType === 'message') {
         area.action.text = elements.messageTextInput.value.trim() || 'メニュー';
+    } else if (selectedType === 'richmenuswitch') {
+        area.action.richMenuAliasId = (elements.switchMenuSelect ? elements.switchMenuSelect.value : '') || '';
+        area.action.data = 'action=richmenu_switched';
     }
 
     updateAreaBadgeAndPill(area);
@@ -1157,9 +1210,9 @@ function renderTextOverlays() {
             el.classList.add('has-action');
             const ind = document.createElement('span');
             ind.className = 'overlay-action-indicator';
-            let actionLabel = 'URL';
             if (overlay.action.type === 'postback') actionLabel = 'ポストバック';
             if (overlay.action.type === 'message') actionLabel = 'メッセージ';
+            if (overlay.action.type === 'richmenuswitch') actionLabel = 'メニュー切替';
             ind.innerHTML = `<i class="fa-solid fa-bolt"></i> ${actionLabel}`;
             el.appendChild(ind);
         }
@@ -1368,7 +1421,7 @@ function renderTextOverlayControls() {
                         <i class="fa-solid fa-hand-pointer" style="color: #06C755;"></i> タップ時のアクション:
                     </span>
                     <span class="action-active-badge ${actionType !== 'none' ? 'active' : ''}">
-                        ${actionType === 'none' ? 'なし（下層枠が反応）' : (actionType === 'uri' ? '🔗 URL' : (actionType === 'postback' ? '⚡ ポストバック' : '💬 メッセージ'))}
+                        ${actionType === 'none' ? 'なし（下層枠が反応）' : (actionType === 'uri' ? '🔗 URL' : (actionType === 'postback' ? '⚡ ポストバック' : (actionType === 'richmenuswitch' ? '📋 メニュー切替' : '💬 メッセージ')))}
                     </span>
                 </div>
                 <div class="type-buttons-group overlay-action-type-group">
@@ -1376,6 +1429,7 @@ function renderTextOverlayControls() {
                     <button type="button" class="btn-type-pill btn-action-type ${actionType === 'uri' ? 'active' : ''}" data-atype="uri">URL</button>
                     <button type="button" class="btn-type-pill btn-action-type ${actionType === 'postback' ? 'active' : ''}" data-atype="postback">ポストバック</button>
                     <button type="button" class="btn-type-pill btn-action-type ${actionType === 'message' ? 'active' : ''}" data-atype="message">メッセージ</button>
+                    <button type="button" class="btn-type-pill btn-action-type ${actionType === 'richmenuswitch' ? 'active' : ''}" data-atype="richmenuswitch">切替</button>
                 </div>
 
                 <!-- URI 入力 -->
@@ -1401,6 +1455,18 @@ function renderTextOverlayControls() {
                 <!-- Message 入力 -->
                 <div class="overlay-action-field-group atype-field-message" style="display: ${actionType === 'message' ? 'block' : 'none'}; margin-top: 6px;">
                     <input type="text" class="overlay-action-text-input" value="${escapeHtml(action.text || '')}" placeholder="タップ時に送信するメッセージ" style="width: 100%; box-sizing: border-box; font-size: 11px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                </div>
+
+                <!-- RichMenuSwitch 入力 -->
+                <div class="overlay-action-field-group atype-field-richmenuswitch" style="display: ${actionType === 'richmenuswitch' ? 'block' : 'none'}; margin-top: 6px;">
+                    <select class="overlay-action-switch-select" style="width: 100%; box-sizing: border-box; font-size: 11px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                        <option value="">-- 切替先メニューを選択 --</option>
+                        ${(state.historyList || []).map(m => {
+                            const val = m.alias_id || ('rm_' + m.id);
+                            const isLive = (m.is_active == 1 || (m.line_menu_id && m.line_menu_id === state.currentLineDefaultId));
+                            return `<option value="${escapeHtml(val)}" ${(action.richMenuAliasId === val) ? 'selected' : ''}>${isLive ? '★ ' : ''}${escapeHtml(m.title)}</option>`;
+                        }).join('')}
+                    </select>
                 </div>
             </div>
         `;
@@ -1500,6 +1566,15 @@ function renderTextOverlayControls() {
             actionTextInput.addEventListener('input', () => {
                 overlay.action = overlay.action || {};
                 overlay.action.text = actionTextInput.value.trim();
+                renderTextOverlays();
+            });
+        }
+        const actionSwitchSelect = card.querySelector('.overlay-action-switch-select');
+        if (actionSwitchSelect) {
+            actionSwitchSelect.addEventListener('change', () => {
+                overlay.action = overlay.action || {};
+                overlay.action.richMenuAliasId = actionSwitchSelect.value;
+                overlay.action.data = 'action=richmenu_switched';
                 renderTextOverlays();
             });
         }
@@ -1891,6 +1966,9 @@ async function saveRichMenu(publish) {
                     if (ov.action.displayText) actionObj.displayText = ov.action.displayText;
                 } else if (ov.action.type === 'message') {
                     actionObj.text = ov.action.text || ov.text || 'メニュー';
+                } else if (ov.action.type === 'richmenuswitch') {
+                    actionObj.richMenuAliasId = ov.action.richMenuAliasId || '';
+                    actionObj.data = ov.action.data || 'action=richmenu_switched';
                 }
 
                 overlayAreas.push({
@@ -2250,7 +2328,8 @@ function loadMenuIntoEditor(item) {
                 data: a.action?.data || '',
                 displayText: a.action?.displayText || '',
                 uri: a.action?.uri || '',
-                text: a.action?.text || ''
+                text: a.action?.text || '',
+                richMenuAliasId: a.action?.richMenuAliasId || ''
             }
         }));
 
@@ -2265,7 +2344,7 @@ function loadMenuIntoEditor(item) {
         size: o.size || 'md',
         x: Number(o.x || 60),
         y: Number(o.y || 60),
-        action: o.action || { type: 'none', uri: '', data: '', displayText: '', text: '' }
+        action: o.action || { type: 'none', uri: '', data: '', displayText: '', text: '', richMenuAliasId: '' }
     }));
     renderTextOverlays();
     renderTextOverlayControls();
@@ -2341,4 +2420,583 @@ function escapeHtml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+}
+
+// ================= クイックお知らせ作成ウィザード =================
+const noticeState = {
+    theme: 'red',
+    size: 'large',
+    okBounds: null,
+    linkBounds: null
+};
+
+function initNoticeWizardEvents() {
+    if (!elements.btnOpenNoticeModal) return;
+
+    // 開く・閉じる
+    elements.btnOpenNoticeModal.addEventListener('click', openNoticeWizard);
+    if (elements.btnCloseNoticeWizard) {
+        elements.btnCloseNoticeWizard.addEventListener('click', closeNoticeWizard);
+    }
+    if (elements.btnCancelNoticeWizard) {
+        elements.btnCancelNoticeWizard.addEventListener('click', closeNoticeWizard);
+    }
+    if (elements.noticeWizardModal) {
+        elements.noticeWizardModal.addEventListener('click', (e) => {
+            if (e.target === elements.noticeWizardModal) {
+                closeNoticeWizard();
+            }
+        });
+    }
+
+    // サイズ切替
+    if (elements.btnNoticeSizeLarge && elements.btnNoticeSizeSmall) {
+        elements.btnNoticeSizeLarge.addEventListener('click', () => {
+            elements.btnNoticeSizeLarge.classList.add('active');
+            elements.btnNoticeSizeSmall.classList.remove('active');
+            noticeState.size = 'large';
+            drawNoticePreview();
+        });
+        elements.btnNoticeSizeSmall.addEventListener('click', () => {
+            elements.btnNoticeSizeSmall.classList.add('active');
+            elements.btnNoticeSizeLarge.classList.remove('active');
+            noticeState.size = 'small';
+            drawNoticePreview();
+        });
+    }
+
+    // テーマ選択
+    document.querySelectorAll('.theme-choice').forEach(choice => {
+        choice.addEventListener('click', () => {
+            document.querySelectorAll('.theme-choice').forEach(c => c.classList.remove('active'));
+            choice.classList.add('active');
+            const radio = choice.querySelector('input[type="radio"]');
+            if (radio) radio.checked = true;
+            noticeState.theme = choice.dataset.theme || 'red';
+            drawNoticePreview();
+        });
+    });
+
+    // フォーム入力で即座にプレビュー再描画
+    if (elements.noticeTitleInput) {
+        elements.noticeTitleInput.addEventListener('input', drawNoticePreview);
+    }
+    if (elements.noticeBodyInput) {
+        elements.noticeBodyInput.addEventListener('input', drawNoticePreview);
+    }
+    if (elements.noticeCloseBtnTextInput) {
+        elements.noticeCloseBtnTextInput.addEventListener('input', drawNoticePreview);
+    }
+    if (elements.noticeLinkUrlInput) {
+        elements.noticeLinkUrlInput.addEventListener('input', drawNoticePreview);
+    }
+
+    // 公開ボタン
+    if (elements.btnSubmitNoticePublish) {
+        elements.btnSubmitNoticePublish.addEventListener('click', publishNoticeMenu);
+    }
+}
+
+function openNoticeWizard() {
+    if (!elements.noticeWizardModal) return;
+
+    // 戻り先リッチメニューの選択肢を構築
+    populateNoticeReturnMenuOptions();
+
+    // デフォルト値が未入力ならセット
+    if (elements.noticeTitleInput && !elements.noticeTitleInput.value.trim()) {
+        elements.noticeTitleInput.value = '【重要なお知らせ】最新フェア開催中！';
+    }
+    if (elements.noticeBodyInput && !elements.noticeBodyInput.value.trim()) {
+        elements.noticeBodyInput.value = 'いつも当店をご利用いただき誠にありがとうございます！\nただいま期間限定の特別フェアを開催しております。\n最新の展示車両やお得なキャンペーンをぜひチェックしてください。';
+    }
+    if (elements.noticeCloseBtnTextInput && !elements.noticeCloseBtnTextInput.value.trim()) {
+        elements.noticeCloseBtnTextInput.value = '✔ 確認しました（メニューに戻る）';
+    }
+
+    elements.noticeWizardModal.style.display = 'flex';
+    drawNoticePreview();
+}
+
+function closeNoticeWizard() {
+    if (!elements.noticeWizardModal) return;
+    elements.noticeWizardModal.style.display = 'none';
+}
+
+function populateNoticeReturnMenuOptions() {
+    if (!elements.noticeReturnMenuSelect) return;
+    elements.noticeReturnMenuSelect.innerHTML = '';
+
+    if (!state.historyList || state.historyList.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = '保存済みリッチメニューがありません';
+        elements.noticeReturnMenuSelect.appendChild(opt);
+        return;
+    }
+
+    // 現在本番中（isLive）のものを優先して初期選択
+    let selectedId = '';
+    const liveMenu = state.historyList.find(m => m.is_active == 1 || (m.line_menu_id && m.line_menu_id === state.currentLineDefaultId));
+    if (liveMenu) {
+        selectedId = liveMenu.alias_id || liveMenu.id;
+    }
+
+    state.historyList.forEach(m => {
+        const opt = document.createElement('option');
+        const aliasOrId = m.alias_id || m.id;
+        opt.value = aliasOrId;
+        const isCurrent = (m.is_active == 1 || (m.line_menu_id && m.line_menu_id === state.currentLineDefaultId));
+        opt.textContent = (isCurrent ? '★本番適用中: ' : '') + m.title + (m.alias_id ? ` [${m.alias_id}]` : '');
+        if (isCurrent || (!selectedId && !opt.selected)) {
+            opt.selected = true;
+            selectedId = aliasOrId;
+        }
+        elements.noticeReturnMenuSelect.appendChild(opt);
+    });
+}
+
+function drawNoticePreview() {
+    const canvas = elements.noticeCanvasPreview;
+    if (!canvas) return;
+
+    const isLarge = (noticeState.size === 'large');
+    const width = 2500;
+    const height = isLarge ? 1686 : 843;
+
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+
+    const title = (elements.noticeTitleInput ? elements.noticeTitleInput.value.trim() : '') || 'お知らせタイトル';
+    const body = (elements.noticeBodyInput ? elements.noticeBodyInput.value.trim() : '') || 'お知らせ本文を入力してください。';
+    const closeBtnText = (elements.noticeCloseBtnTextInput ? elements.noticeCloseBtnTextInput.value.trim() : '') || '✔ 確認しました（閉じる）';
+    const linkUrl = (elements.noticeLinkUrlInput ? elements.noticeLinkUrlInput.value.trim() : '');
+
+    // テーマ設定
+    const themes = {
+        red: {
+            bgGrad: ['#7f1d1d', '#991b1b', '#b91c1c'],
+            cardBg: '#ffffff',
+            badgeBg: '#dc2626',
+            badgeText: '#ffffff',
+            badgeLabel: '📢 重要なお知らせ',
+            titleColor: '#0f172a',
+            bodyColor: '#334155',
+            divider: '#e2e8f0',
+            btnOkBg: '#dc2626',
+            btnOkText: '#ffffff',
+            btnLinkBg: '#f8fafc',
+            btnLinkText: '#0f172a',
+            btnLinkBorder: '#cbd5e1'
+        },
+        green: {
+            bgGrad: ['#064e3b', '#065f46', '#047857'],
+            cardBg: '#ffffff',
+            badgeBg: '#059669',
+            badgeText: '#ffffff',
+            badgeLabel: '🌿 お知らせ・ご案内',
+            titleColor: '#0f172a',
+            bodyColor: '#334155',
+            divider: '#e2e8f0',
+            btnOkBg: '#059669',
+            btnOkText: '#ffffff',
+            btnLinkBg: '#f8fafc',
+            btnLinkText: '#0f172a',
+            btnLinkBorder: '#cbd5e1'
+        },
+        dark: {
+            bgGrad: ['#090d16', '#0f172a', '#1e293b'],
+            cardBg: '#1e293b',
+            cardBorder: 'rgba(245, 158, 11, 0.4)',
+            badgeBg: '#d97706',
+            badgeText: '#ffffff',
+            badgeLabel: '✨ SPECIAL NOTICE',
+            titleColor: '#ffffff',
+            bodyColor: '#cbd5e1',
+            divider: 'rgba(255, 255, 255, 0.12)',
+            btnOkBg: '#f59e0b',
+            btnOkText: '#0f172a',
+            btnLinkBg: 'rgba(255, 255, 255, 0.08)',
+            btnLinkText: '#f8fafc',
+            btnLinkBorder: 'rgba(255, 255, 255, 0.2)'
+        },
+        blue: {
+            bgGrad: ['#1e3a8a', '#1d4ed8', '#2563eb'],
+            cardBg: '#ffffff',
+            badgeBg: '#2563eb',
+            badgeText: '#ffffff',
+            badgeLabel: '🔷 インフォメーション',
+            titleColor: '#0f172a',
+            bodyColor: '#334155',
+            divider: '#e2e8f0',
+            btnOkBg: '#2563eb',
+            btnOkText: '#ffffff',
+            btnLinkBg: '#f8fafc',
+            btnLinkText: '#0f172a',
+            btnLinkBorder: '#cbd5e1'
+        },
+        yellow: {
+            bgGrad: ['#78350f', '#92400e', '#b45309'],
+            cardBg: '#ffffff',
+            badgeBg: '#d97706',
+            badgeText: '#ffffff',
+            badgeLabel: '🔔 ピックアップ情報',
+            titleColor: '#0f172a',
+            bodyColor: '#334155',
+            divider: '#e2e8f0',
+            btnOkBg: '#0f172a',
+            btnOkText: '#ffffff',
+            btnLinkBg: '#fef3c7',
+            btnLinkText: '#92400e',
+            btnLinkBorder: '#fde68a'
+        }
+    };
+
+    const t = themes[noticeState.theme] || themes.red;
+
+    // 1. 背景グラデーション描画
+    const grad = ctx.createLinearGradient(0, 0, width, height);
+    grad.addColorStop(0, t.bgGrad[0]);
+    grad.addColorStop(0.5, t.bgGrad[1]);
+    grad.addColorStop(1, t.bgGrad[2]);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+
+    // 背景の微細なサークル装飾
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+    ctx.beginPath();
+    ctx.arc(width * 0.85, height * 0.2, 380, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(width * 0.15, height * 0.85, 420, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 2. メインカード描画
+    const padX = isLarge ? 90 : 70;
+    const padY = isLarge ? 80 : 50;
+    const cardW = width - (padX * 2);
+    const cardH = height - (padY * 2);
+    const cardRadius = isLarge ? 48 : 36;
+
+    // カードのドロップシャドウ
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 16;
+    drawRoundedRect(ctx, padX, padY, cardW, cardH, cardRadius);
+    ctx.fillStyle = t.cardBg;
+    ctx.fill();
+    ctx.restore();
+
+    if (t.cardBorder) {
+        ctx.save();
+        ctx.strokeStyle = t.cardBorder;
+        ctx.lineWidth = 4;
+        drawRoundedRect(ctx, padX, padY, cardW, cardH, cardRadius);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // 3. バッジ描画
+    const badgeX = padX + 80;
+    const badgeY = padY + (isLarge ? 70 : 45);
+    const badgeH = isLarge ? 64 : 52;
+    const badgePadX = 36;
+
+    ctx.font = `bold ${isLarge ? 34 : 28}px "Outfit", "Noto Sans JP", sans-serif`;
+    const badgeTextWidth = ctx.measureText(t.badgeLabel).width;
+    const badgeW = badgeTextWidth + (badgePadX * 2);
+
+    ctx.save();
+    drawRoundedRect(ctx, badgeX, badgeY, badgeW, badgeH, badgeH / 2);
+    ctx.fillStyle = t.badgeBg;
+    ctx.fill();
+    ctx.fillStyle = t.badgeText;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(t.badgeLabel, badgeX + badgeW / 2, badgeY + badgeH / 2);
+    ctx.restore();
+
+    // 4. タイトル描画
+    const titleX = padX + 80;
+    const titleY = badgeY + badgeH + (isLarge ? 50 : 35);
+    const titleFontSize = isLarge ? 76 : 56;
+    ctx.save();
+    ctx.font = `900 ${titleFontSize}px "Outfit", "Noto Sans JP", sans-serif`;
+    ctx.fillStyle = t.titleColor;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+
+    const maxTextW = cardW - 160;
+    const titleLines = getWrappedLines(ctx, title, maxTextW);
+    const titleLineH = isLarge ? 94 : 70;
+    const renderTitleLines = titleLines.slice(0, 2);
+    renderTitleLines.forEach((line, idx) => {
+        ctx.fillText(line, titleX, titleY + (idx * titleLineH));
+    });
+    ctx.restore();
+
+    // 5. 区切り線描画
+    const dividerY = titleY + (renderTitleLines.length * titleLineH) + (isLarge ? 30 : 20);
+    ctx.save();
+    ctx.strokeStyle = t.divider;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padX + 70, dividerY);
+    ctx.lineTo(padX + cardW - 70, dividerY);
+    ctx.stroke();
+    ctx.restore();
+
+    // 6. 本文テキスト描画
+    const bodyX = padX + 80;
+    const bodyY = dividerY + (isLarge ? 40 : 25);
+    const bodyFontSize = isLarge ? 50 : 38;
+    const bodyLineH = isLarge ? 78 : 56;
+
+    ctx.save();
+    ctx.font = `500 ${bodyFontSize}px "Noto Sans JP", sans-serif`;
+    ctx.fillStyle = t.bodyColor;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+
+    // 本文の最大行数計算（ボタン領域の手前まで）
+    const btnAreaH = isLarge ? 220 : 160;
+    const availBodyH = (padY + cardH - btnAreaH) - bodyY;
+    const maxBodyLines = Math.max(2, Math.floor(availBodyH / bodyLineH));
+
+    const rawBodyLines = body.split('\n');
+    let allBodyLines = [];
+    rawBodyLines.forEach(rawLine => {
+        const wrapped = getWrappedLines(ctx, rawLine, maxTextW);
+        allBodyLines = allBodyLines.concat(wrapped.length ? wrapped : ['']);
+    });
+
+    const displayBodyLines = allBodyLines.slice(0, maxBodyLines);
+    if (allBodyLines.length > maxBodyLines && displayBodyLines.length > 0) {
+        displayBodyLines[displayBodyLines.length - 1] += '...';
+    }
+
+    displayBodyLines.forEach((line, idx) => {
+        ctx.fillText(line, bodyX, bodyY + (idx * bodyLineH));
+    });
+    ctx.restore();
+
+    // 7. ボタン領域描画
+    const btnH = isLarge ? 150 : 115;
+    const btnY = padY + cardH - btnH - (isLarge ? 45 : 30);
+    const btnRadius = isLarge ? 28 : 22;
+
+    if (linkUrl) {
+        // 2分割レイアウト: 左「詳細を見る」 / 右「確認しました（閉じる）」
+        const gap = isLarge ? 40 : 30;
+        const totalW = cardW - 140;
+        const singleBtnW = Math.floor((totalW - gap) / 2);
+
+        const leftBtnX = padX + 70;
+        const rightBtnX = leftBtnX + singleBtnW + gap;
+
+        // 詳細リンクボタン
+        drawRoundedRect(ctx, leftBtnX, btnY, singleBtnW, btnH, btnRadius);
+        ctx.fillStyle = t.btnLinkBg;
+        ctx.fill();
+        ctx.strokeStyle = t.btnLinkBorder;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.save();
+        ctx.fillStyle = t.btnLinkText;
+        ctx.font = `bold ${isLarge ? 50 : 38}px "Noto Sans JP", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🔗 詳細を見る', leftBtnX + singleBtnW / 2, btnY + btnH / 2);
+        ctx.restore();
+
+        // OK / 閉じるボタン
+        drawRoundedRect(ctx, rightBtnX, btnY, singleBtnW, btnH, btnRadius);
+        ctx.fillStyle = t.btnOkBg;
+        ctx.fill();
+
+        ctx.save();
+        ctx.fillStyle = t.btnOkText;
+        ctx.font = `bold ${isLarge ? 50 : 38}px "Noto Sans JP", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(closeBtnText, rightBtnX + singleBtnW / 2, btnY + btnH / 2);
+        ctx.restore();
+
+        // LINE API用タップ領域の座標記録
+        noticeState.linkBounds = { x: leftBtnX, y: btnY, width: singleBtnW, height: btnH };
+        noticeState.okBounds = { x: rightBtnX, y: btnY, width: singleBtnW, height: btnH };
+    } else {
+        // 1ボタンレイアウト: 全幅または中央ワイドボタン
+        const singleBtnW = cardW - 140;
+        const singleBtnX = padX + 70;
+
+        drawRoundedRect(ctx, singleBtnX, btnY, singleBtnW, btnH, btnRadius);
+        ctx.fillStyle = t.btnOkBg;
+        ctx.fill();
+
+        ctx.save();
+        ctx.fillStyle = t.btnOkText;
+        ctx.font = `bold ${isLarge ? 56 : 42}px "Noto Sans JP", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(closeBtnText, singleBtnX + singleBtnW / 2, btnY + btnH / 2);
+        ctx.restore();
+
+        // LINE API用タップ領域の座標記録
+        noticeState.linkBounds = null;
+        noticeState.okBounds = { x: singleBtnX, y: btnY, width: singleBtnW, height: btnH };
+    }
+}
+
+// 角丸長方形描画
+function drawRoundedRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+}
+
+// テキスト行分割ヘルパー
+function getWrappedLines(ctx, text, maxWidth) {
+    if (!text) return [];
+    const lines = [];
+    let currentLine = '';
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const testLine = currentLine + char;
+        const testWidth = ctx.measureText(testLine).width;
+        if (testWidth > maxWidth && currentLine !== '') {
+            lines.push(currentLine);
+            currentLine = char;
+        } else {
+            currentLine = testLine;
+        }
+    }
+    if (currentLine) {
+        lines.push(currentLine);
+    }
+    return lines;
+}
+
+// お知らせリッチメニューを一斉公開
+function publishNoticeMenu() {
+    const title = elements.noticeTitleInput ? elements.noticeTitleInput.value.trim() : '';
+    const body = elements.noticeBodyInput ? elements.noticeBodyInput.value.trim() : '';
+    const returnAliasOrId = elements.noticeReturnMenuSelect ? elements.noticeReturnMenuSelect.value.trim() : '';
+    const linkUrl = elements.noticeLinkUrlInput ? elements.noticeLinkUrlInput.value.trim() : '';
+
+    if (!title) {
+        showToast('お知らせのタイトルを入力してください', 'error');
+        if (elements.noticeTitleInput) elements.noticeTitleInput.focus();
+        return;
+    }
+
+    if (!body) {
+        showToast('お知らせの本文を入力してください', 'error');
+        if (elements.noticeBodyInput) elements.noticeBodyInput.focus();
+        return;
+    }
+
+    if (!returnAliasOrId) {
+        showToast('戻り先の通常リッチメニューを選択してください', 'error');
+        return;
+    }
+
+    if (!noticeState.okBounds) {
+        showToast('プレビュー描画が完了していません', 'error');
+        return;
+    }
+
+    // 戻り先エイリアスIDの特定（state.historyListから）
+    let returnAliasId = returnAliasOrId;
+    const targetMenu = state.historyList.find(m => (m.alias_id && m.alias_id === returnAliasOrId) || String(m.id) === returnAliasOrId);
+    if (targetMenu && targetMenu.alias_id) {
+        returnAliasId = targetMenu.alias_id;
+    } else if (targetMenu && !targetMenu.alias_id) {
+        returnAliasId = 'rm_' + (targetMenu.line_menu_id ? targetMenu.line_menu_id.replace(/[^a-zA-Z0-9_-]/g, '').slice(-20) : targetMenu.id);
+    }
+
+    const confirmMsg = 
+        `【お知らせリッチメニューを一斉公開しますか？】\n\n` +
+        `・友だち全員のLINEトーク画面にこのお知らせが表示されます。\n` +
+        `・「閉じる/確認」をタップすると、指定した「${targetMenu ? targetMenu.title : '通常メニュー'}」へ瞬時に切り替わります。\n\n` +
+        `今すぐ公開してよろしいですか？`;
+
+    if (!confirm(confirmMsg)) return;
+
+    showLoading('お知らせ画像を合成してLINE公式に公開中...');
+
+    // Canvasから画像Blobを生成
+    elements.noticeCanvasPreview.toBlob((blob) => {
+        if (!blob) {
+            hideLoading();
+            showToast('お知らせ画像の生成に失敗しました', 'error');
+            return;
+        }
+
+        // タップ領域（areas）を構築
+        const areas = [
+            {
+                bounds: noticeState.okBounds,
+                action: {
+                    type: 'richmenuswitch',
+                    richMenuAliasId: returnAliasId,
+                    data: 'action=close_notice'
+                }
+            }
+        ];
+
+        if (noticeState.linkBounds && linkUrl) {
+            areas.push({
+                bounds: noticeState.linkBounds,
+                action: {
+                    type: 'uri',
+                    uri: linkUrl
+                }
+            });
+        }
+
+        const formData = new FormData();
+        formData.append('title', '【お知らせ】' + title);
+        formData.append('chat_bar_text', '📢 お知らせ・ご案内');
+        formData.append('menu_size', noticeState.size);
+        formData.append('publish', '1'); // 一斉公開（LINE全体デフォルト適用）
+        formData.append('areas', JSON.stringify(areas));
+        formData.append('image', blob, 'notice_menu.png');
+
+        fetch('../api.php?action=admin_save_richmenu&password=' + encodeURIComponent(state.password), {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                showToast('🎉 お知らせリッチメニューを一斉公開しました！友だち全員に表示されます', 'success');
+                closeNoticeWizard();
+                switchView('history');
+                loadHistoryList();
+            } else {
+                showToast(data.error || 'お知らせの公開に失敗しました', 'error');
+            }
+        })
+        .catch(err => {
+            hideLoading();
+            showToast('通信エラーが発生しました: ' + err.message, 'error');
+        });
+    }, 'image/png');
 }
