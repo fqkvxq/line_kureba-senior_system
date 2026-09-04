@@ -856,9 +856,12 @@ function initCanvasInteractions() {
         }
     });
 
-    // ウィンドウリサイズ時に再描画
+    // ウィンドウリサイズ時に再描画 (エリア座標および装飾文字サイズを完全同期)
     window.addEventListener('resize', () => {
-        if (state.imageSrc) renderAreas();
+        if (state.imageSrc) {
+            renderAreas();
+            renderTextOverlays();
+        }
     });
 }
 
@@ -1016,16 +1019,22 @@ function syncCurrentAreaFromForm() {
 }
 
 // ================= 装飾テキスト・お知らせバナー管理 =================
+// 幅2500px基準のフォントサイズマスター定数 (Canvas合成とエディタプレビューで100%比率同期)
+const OVERLAY_FONT_SIZES = {
+    sm: 75,   // 小 (長文・補足向け / 2500px時 75px / スマホ換算 約11.2px)
+    md: 100,  // 中 (標準ニュース・告知向け / 2500px時 100px / スマホ換算 約15px)
+    lg: 135,  // 大 (強調タイトル・バッジ向け / 2500px時 135px / スマホ換算 約20.2px)
+    xl: 175   // 特大 (SALE・NEW等キャッチ向け / 2500px時 175px / スマホ換算 約26.2px)
+};
+
 function renderTextOverlays() {
     if (!elements.textOverlaysStage) return;
     elements.textOverlaysStage.innerHTML = '';
 
-    const fontSizesRatio = {
-        sm: 1.35,
-        md: 1.85,
-        lg: 2.45,
-        xl: 3.1
-    };
+    // 現在のエディタステージの表示幅を取得し、原寸(state.width, 通常2500px)に対するスケール比を計算
+    const stageW = elements.stageImage.clientWidth || elements.canvasStage.clientWidth || 600;
+    const originalW = Number(state.width) || 2500;
+    const scale = stageW / originalW;
 
     state.textOverlays.forEach((overlay) => {
         const text = (overlay.text || '').trim();
@@ -1039,22 +1048,41 @@ function renderTextOverlays() {
         el.className = `overlay-text-item ${type} overlay-theme-${theme}`;
         el.dataset.id = String(overlay.id);
 
-        // コンテナの幅に応じたフォントサイズ自動スケーリング
-        el.style.fontSize = `clamp(10px, ${fontSizesRatio[sizeKey] || 1.85}cqi, 34px)`;
+        // 画像原寸(2500px)に対する比率をそのまま縮小し、エディタ上でもCanvasと100%同一サイズで表示
+        const baseFontSize = OVERLAY_FONT_SIZES[sizeKey] || OVERLAY_FONT_SIZES.md;
+        const previewFontSize = Math.max(8, Math.round(baseFontSize * scale));
+        el.style.fontSize = previewFontSize + 'px';
 
         if (type === 'banner_top') {
+            const bannerH = Math.round(previewFontSize * 2.1);
             el.style.left = '0';
             el.style.top = '0';
             el.style.width = '100%';
+            el.style.height = bannerH + 'px';
+            el.style.lineHeight = bannerH + 'px';
+            el.style.padding = '0 ' + Math.round(previewFontSize * 0.4) + 'px';
         } else if (type === 'banner_bottom') {
+            const bannerH = Math.round(previewFontSize * 2.1);
             el.style.left = '0';
             el.style.bottom = '0';
             el.style.width = '100%';
-        } else if (type === 'badge' || type === 'free') {
-            const leftPercent = ((overlay.x || 60) / state.width) * 100;
-            const topPercent = ((overlay.y || 60) / state.height) * 100;
+            el.style.height = bannerH + 'px';
+            el.style.lineHeight = bannerH + 'px';
+            el.style.padding = '0 ' + Math.round(previewFontSize * 0.4) + 'px';
+        } else if (type === 'badge') {
+            const leftPercent = ((overlay.x || 60) / (state.width || 2500)) * 100;
+            const topPercent = ((overlay.y || 60) / (state.height || 1686)) * 100;
             el.style.left = leftPercent + '%';
             el.style.top = topPercent + '%';
+            el.style.padding = `${Math.round(previewFontSize * 0.25)}px ${Math.round(previewFontSize * 0.7)}px`;
+            el.style.borderRadius = `${Math.round(previewFontSize * 0.9)}px`;
+        } else if (type === 'free') {
+            const leftPercent = ((overlay.x || 60) / (state.width || 2500)) * 100;
+            const topPercent = ((overlay.y || 60) / (state.height || 1686)) * 100;
+            el.style.left = leftPercent + '%';
+            el.style.top = topPercent + '%';
+            el.style.padding = `${Math.round(previewFontSize * 0.25)}px ${Math.round(previewFontSize * 0.5)}px`;
+            el.style.borderRadius = `${Math.max(4, Math.round(previewFontSize * 0.15))}px`;
         }
 
         el.textContent = text;
@@ -1291,26 +1319,21 @@ async function compositeRichMenuImage() {
         white: { bg: '#ffffff', text: '#0f172a', border: 'rgba(0,0,0,0.15)' }
     };
 
-    const fontSizes = {
-        sm: 34,
-        md: 48,
-        lg: 64,
-        xl: 82
-    };
-
     state.textOverlays.forEach(overlay => {
         const text = (overlay.text || '').trim();
         if (!text) return;
 
         const theme = themeColors[overlay.theme] || themeColors.red;
-        const fontSize = fontSizes[overlay.size] || fontSizes.md;
+        const canvasScale = W / 2500;
+        const baseFontSize = OVERLAY_FONT_SIZES[overlay.size] || OVERLAY_FONT_SIZES.md;
+        const fontSize = Math.round(baseFontSize * canvasScale);
         const type = overlay.type || 'banner_top';
 
         ctx.save();
         ctx.font = `800 ${fontSize}px "Noto Sans JP", sans-serif`;
 
         if (type === 'banner_top') {
-            const bannerH = Math.round(fontSize * 2.2);
+            const bannerH = Math.round(fontSize * 2.1);
             ctx.fillStyle = theme.bg;
             ctx.fillRect(0, 0, W, bannerH);
             ctx.fillStyle = theme.border;
@@ -1321,7 +1344,7 @@ async function compositeRichMenuImage() {
             ctx.textBaseline = 'middle';
             ctx.fillText(text, W / 2, bannerH / 2);
         } else if (type === 'banner_bottom') {
-            const bannerH = Math.round(fontSize * 2.2);
+            const bannerH = Math.round(fontSize * 2.1);
             const bannerY = H - bannerH;
             ctx.fillStyle = theme.bg;
             ctx.fillRect(0, bannerY, W, bannerH);
@@ -1334,10 +1357,12 @@ async function compositeRichMenuImage() {
             ctx.fillText(text, W / 2, bannerY + bannerH / 2);
         } else if (type === 'badge') {
             const metrics = ctx.measureText(text);
-            const badgeW = Math.round(metrics.width + fontSize * 1.6);
+            const badgeW = Math.round(metrics.width + fontSize * 1.4);
             const badgeH = Math.round(fontSize * 1.8);
-            const posX = Math.max(30, Math.min(W - badgeW - 30, overlay.x || 60));
-            const posY = Math.max(30, Math.min(H - badgeH - 30, overlay.y || 60));
+            const origW = Number(state.width) || 2500;
+            const origH = Number(state.height) || 1686;
+            const posX = Math.round(((overlay.x || 60) / origW) * W);
+            const posY = Math.round(((overlay.y || 60) / origH) * H);
 
             // ドロップシャドウ
             ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
@@ -1359,16 +1384,18 @@ async function compositeRichMenuImage() {
             ctx.fillText(text, posX + badgeW / 2, posY + badgeH / 2);
         } else if (type === 'free') {
             const metrics = ctx.measureText(text);
-            const boxW = Math.round(metrics.width + fontSize * 1.2);
+            const boxW = Math.round(metrics.width + fontSize * 1.0);
             const boxH = Math.round(fontSize * 1.6);
-            const posX = Math.max(20, Math.min(W - boxW - 20, overlay.x || 100));
-            const posY = Math.max(20, Math.min(H - boxH - 20, overlay.y || 100));
+            const origW = Number(state.width) || 2500;
+            const origH = Number(state.height) || 1686;
+            const posX = Math.round(((overlay.x || 100) / origW) * W);
+            const posY = Math.round(((overlay.y || 100) / origH) * H);
 
             ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
             ctx.shadowBlur = 14;
             ctx.shadowOffsetY = 4;
 
-            drawCanvasRoundRect(ctx, posX, posY, boxW, boxH, 16);
+            drawCanvasRoundRect(ctx, posX, posY, boxW, boxH, Math.max(8, Math.round(fontSize * 0.15)));
             ctx.fillStyle = theme.bg;
             ctx.fill();
 
