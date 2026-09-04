@@ -772,7 +772,7 @@ function initCanvasInteractions() {
         updateAreaConfigForm();
     });
 
-    window.addEventListener('mousemove', (e) => {
+    const handleMove = (e) => {
         // 1. 装飾テキストのドラッグ移動
         if (state.isOverlayDragging && state.dragOverlayItem && state.overlayDragStart && state.dragOverlayEl) {
             const dx = e.clientX - state.overlayDragStart.pointerX;
@@ -865,9 +865,9 @@ function initCanvasInteractions() {
             boxEl.style.height = ((area.bounds.height / state.height) * 100) + '%';
         }
         updateCoordsDisplay(area);
-    });
+    };
 
-    window.addEventListener('mouseup', () => {
+    const handleEnd = () => {
         if (state.isOverlayDragging) {
             state.isOverlayDragging = false;
             if (state.dragOverlayEl) {
@@ -898,7 +898,14 @@ function initCanvasInteractions() {
             state.initialBounds = null;
             updateAreaConfigForm();
         }
-    });
+    };
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('pointermove', handleMove);
+
+    window.addEventListener('mouseup', handleEnd);
+    window.addEventListener('pointerup', handleEnd);
+    window.addEventListener('pointercancel', handleEnd);
 
     // ウィンドウリサイズ時に再描画 (エリア座標および装飾文字サイズを完全同期)
     window.addEventListener('resize', () => {
@@ -1142,6 +1149,10 @@ function renderTextOverlays() {
             state.dragOverlayEl = el;
             el.classList.add('dragging');
 
+            try {
+                el.setPointerCapture(e.pointerId);
+            } catch (err) {}
+
             const origW = Number(state.width) || 2500;
             const origH = Number(state.height) || 1686;
 
@@ -1156,6 +1167,8 @@ function renderTextOverlays() {
                 el.className = `overlay-text-item free overlay-theme-${overlay.theme || 'red'} dragging`;
                 el.style.width = 'auto';
                 el.style.height = 'auto';
+                el.style.bottom = 'auto';
+                el.style.right = 'auto';
                 el.style.lineHeight = 'normal';
                 renderTextOverlayControls(); // カード側も自由配置に切り替え
             }
@@ -1175,6 +1188,23 @@ function renderTextOverlays() {
             // 右側カードのハイライト＆自動スクロール
             highlightOverlayCard(overlay.id);
         });
+
+        const releaseOverlayDrag = (ev) => {
+            try {
+                if (ev && ev.pointerId) el.releasePointerCapture(ev.pointerId);
+            } catch (err) {}
+            if (state.isOverlayDragging) {
+                state.isOverlayDragging = false;
+                if (state.dragOverlayEl) {
+                    state.dragOverlayEl.classList.remove('dragging');
+                }
+                state.dragOverlayItem = null;
+                state.dragOverlayEl = null;
+                state.overlayDragStart = null;
+            }
+        };
+        el.addEventListener('pointerup', releaseOverlayDrag);
+        el.addEventListener('pointercancel', releaseOverlayDrag);
 
         elements.textOverlaysStage.appendChild(el);
     });
