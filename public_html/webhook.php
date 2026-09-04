@@ -104,20 +104,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
         if (!$replyToken) continue;
 
         $userId = $event['source']['userId'] ?? '';
-        $type = $event['type'];
+        $type = $event['type'] ?? '';
         writeDebugLog("イベント処理開始", ['type' => $type, 'userId' => $userId]);
 
-        if ($type === 'message' && $event['message']['type'] === 'text') {
-            $userText = trim($event['message']['text']);
-            writeDebugLog("テキスト受信", ['text' => $userText, 'userId' => $userId]);
-            handleTextMessage($db, $replyToken, $userText, $userId);
-        } elseif ($type === 'postback') {
-            $postbackData = $event['postback']['data'] ?? '';
-            writeDebugLog("ポストバック受信", ['data' => $postbackData, 'userId' => $userId]);
-            handlePostback($db, $replyToken, $postbackData, $userId);
-        } elseif ($type === 'follow') {
-            writeDebugLog("友だち追加イベント", ['userId' => $userId]);
-            handleFollow($replyToken);
+        try {
+            if ($type === 'message' && ($event['message']['type'] ?? '') === 'text') {
+                $userText = trim($event['message']['text'] ?? '');
+                writeDebugLog("テキスト受信", ['text' => $userText, 'userId' => $userId]);
+                handleTextMessage($db, $replyToken, $userText, $userId);
+            } elseif ($type === 'postback') {
+                $postbackData = $event['postback']['data'] ?? '';
+                writeDebugLog("ポストバック受信", ['data' => $postbackData, 'userId' => $userId]);
+                handlePostback($db, $replyToken, $postbackData, $userId);
+            } elseif ($type === 'follow') {
+                writeDebugLog("友だち追加イベント", ['userId' => $userId]);
+                handleFollow($replyToken);
+            }
+        } catch (Throwable $e) {
+            writeDebugLog("イベント処理例外エラー", [
+                'type' => $type,
+                'userId' => $userId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
         }
     }
 
@@ -168,7 +177,7 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
     }
 
     // 2. オイル交換・定期点検・車検・メンテナンス関連のキーワード判定 (在庫検索の誤爆防止)
-    if (preg_match('/^(点検受付|マイカー|マイカー点検|点検メニュー)$/u', trim($text))) {
+    if (preg_match('/(点検受付|点検・来店予約|来店予約|点検予約|車検予約|オイル予約|マイカー|マイカー点検|点検メニュー|メンテナンス予約|点検相談)/u', trim($text))) {
         sendMyCarMenuMessage($db, $replyToken, $userId);
         return;
     }
@@ -218,8 +227,8 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
         return;
     }
 
-    // 3. 特殊キーワードの判定
-    if (in_array($text, ['在庫一覧', '車を探す', 'メニュー', '在庫', '車', '全台'])) {
+    // 3. 在庫一覧・全台キーワードの判定 (表記揺れ・displayTextの全網羅)
+    if (preg_match('/(在庫|全台|車を探す|中古車|展示車|在庫車両|在庫全台|在庫一覧|在庫車両一覧|おすすめ在庫|クルマ)/u', trim($text))) {
         searchCarsAndReply($db, $replyToken, [], '現在の在庫車両一覧', $userId);
         return;
     }
@@ -241,10 +250,13 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
  * ポストバックイベントの処理
  */
 function handlePostback(PDO $db, string $replyToken, string $dataStr, string $userId = '') {
-    parse_str($dataStr, $params);
-    $action = $params['action'] ?? '';
+    $cleanData = ltrim(trim($dataStr), '?');
+    parse_str($cleanData, $params);
+    $action = trim($params['action'] ?? '');
+    writeDebugLog("handlePostback実行", ['action' => $action, 'raw' => $dataStr, 'userId' => $userId]);
 
-    switch ($action) {
+    try {
+        switch ($action) {
         // --- 1. 車両問い合わせ確認ステップ (誤タップ防止) ---
         case 'ask_inquiry':
             $carId = $params['id'] ?? '';
@@ -409,26 +421,42 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             }
             break;
 
+        // --- 9-6. リッチメニュー切替アクション (サイレント終了) ---
+        case 'richmenu_switched':
+        case 'richmenu_switch':
+        case 'none':
+            writeDebugLog("リッチメニュー切替通知受信(サイレント)", ['action' => $action, 'userId' => $userId]);
+            break;
+
         // --- 10. サイレント検索: 在庫全台一覧 ---
         case 'search_all':
         default:
             searchCarsAndReply($db, $replyToken, [], '現在の在庫車両一覧', $userId);
             break;
+        }
+    } catch (Throwable $e) {
+        writeDebugLog("handlePostback例外エラー", [
+            'action' => $action,
+            'userId' => $userId,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
     }
 }
 
 /**
  * LIFF Trigger からのPush送信用サイレントPostback実行関数
  */
-function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bool {
-    parse_str($dataStr, $params);
-    $action = $params['action'] ?? '';
+function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): array {
+    $cleanData = ltrim(trim($dataStr), '?');
+    parse_str($cleanData, $params);
+    $action = trim($params['action'] ?? '');
 
     writeDebugLog("LIFF Silent Postback Push実行", ['uid' => $userId, 'action' => $action, 'data' => $dataStr]);
 
     if (!str_starts_with($userId, 'U')) {
         writeDebugLog("Push送信スキップ: 有効なLINEユーザーIDではありません ({$userId})");
-        return false;
+        return ['success' => false, 'error' => "無効なLINEユーザーID: {$userId}"];
     }
 
     $messages = [];
@@ -532,7 +560,7 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bo
         case 'none':
             // リッチメニュー切り替え完了通知等（サイレント・メッセージ送信なし）
             writeDebugLog("リッチメニュー切替/サイレントPostback受信", ['action' => $action, 'userId' => $userId]);
-            return;
+            return ['success' => true, 'message' => 'サイレント処理完了'];
 
         case 'search_all':
             $messages = generateCarSearchMessages($db, [], '現在の在庫車両一覧', $userId);
@@ -541,7 +569,7 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): bo
         default:
             // 未知または明示的にハンドリングされていないPostbackアクションではカルーセルを誤送信せずサイレント終了
             writeDebugLog("未処理のPostbackアクション（サイレント無視）", ['action' => $action, 'data' => $dataStr, 'userId' => $userId]);
-            return;
+            return ['success' => true, 'message' => '未処理アクション（サイレント無視）'];
     }
 
     if (!empty($messages)) {
@@ -593,7 +621,7 @@ function handleFollow(string $replyToken) {
 function searchCarsAndReply(PDO $db, string $replyToken, array $criteria, string $heading, string $userId = '') {
     $messages = generateCarSearchMessages($db, $criteria, $heading, $userId);
     if (!empty($messages)) {
-        sendReplyMessage($replyToken, $messages);
+        sendReplyMessage($replyToken, $messages, $userId);
     }
 }
 
@@ -719,17 +747,22 @@ function generateCarSearchMessages(PDO $db, array $criteria, string $heading, st
 
         $whereSql = implode(' AND ', $where);
         
-        // 最大40台まで取得 (LINEの1回返信上限: 10台×4カルーセル = 40台)
-        $stmt = $db->prepare("SELECT * FROM cars WHERE {$whereSql} ORDER BY (total_price_num IS NULL), total_price_num ASC LIMIT 40");
+        // 最大20台まで取得 (LINEのAPIサイズ上限・タイムアウト防止: 10台×最大2カルーセル = 20台)
+        $stmt = $db->prepare("SELECT * FROM cars WHERE {$whereSql} ORDER BY (total_price_num IS NULL), total_price_num ASC LIMIT 20");
         $stmt->execute($params);
         $cars = $stmt->fetchAll();
 
         writeDebugLog("検索実行完了", ['heading' => $heading, 'hitCount' => count($cars), 'userId' => $userId]);
 
         if (empty($cars)) {
-            // 一致する車両が見つからない場合はメッセージを返信しない（通常チャットやスタッフとのやり取りを妨害しない）
-            writeDebugLog("車両検索0件のため返信スキップ", ['heading' => $heading, 'criteria' => $criteria]);
-            return [];
+            writeDebugLog("車両検索0件のため案内メッセージ返信", ['heading' => $heading, 'criteria' => $criteria]);
+            return [
+                [
+                    'type' => 'text',
+                    'text' => "🚗 {$heading}\n\n現在、条件に一致する車両がございません。\n最新の未掲載在庫や近日入庫予定の車両もございますので、お気軽にスタッフまでご相談ください！",
+                    'quickReply' => getQuickReplyItems()
+                ]
+            ];
         }
 
         // カルーセルバブルを構築
@@ -756,8 +789,8 @@ function generateCarSearchMessages(PDO $db, array $criteria, string $heading, st
             ]
         ];
 
-        // 最大4カルーセル（40台）まで（LINEの1リクエスト上限: テキスト1件 + カルーセル4件 = 5件）
-        $bubbleChunks = array_slice($bubbleChunks, 0, 4);
+        // 最大2カルーセル（20台）まで（LINEのAPIペイロード制限を遵守し、確実に高速送信）
+        $bubbleChunks = array_slice($bubbleChunks, 0, 2);
 
         foreach ($bubbleChunks as $idx => $chunk) {
             $messages[] = [
@@ -1304,7 +1337,7 @@ function handleSubmitMaintenanceBooking(string $replyToken, string $bookingType,
  */
 function sendMyCarMenuMessage(PDO $db, string $replyToken, string $userId = '') {
     $messages = generateMyCarMenuMessages($db, $userId);
-    sendReplyMessage($replyToken, $messages);
+    sendReplyMessage($replyToken, $messages, $userId);
 }
 
 /**
@@ -3926,7 +3959,7 @@ function getQuickReplyItems(): array {
 /**
  * LINE Messaging API 返信送信
  */
-function sendReplyMessage(string $replyToken, array $messages) {
+function sendReplyMessage(string $replyToken, array $messages, string $userId = '') {
     if (empty($messages)) {
         return;
     }
@@ -3945,7 +3978,7 @@ function sendReplyMessage(string $replyToken, array $messages) {
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 5,
+        CURLOPT_TIMEOUT => 10,
         CURLOPT_HTTPHEADER => [
             'Content-Type: application/json; charset=utf-8',
             'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
@@ -3959,7 +3992,18 @@ function sendReplyMessage(string $replyToken, array $messages) {
 
     writeDebugLog("LINE API返信結果", [
         'httpCode' => $httpCode,
+        'userId' => $userId,
         'response' => $res,
         'curlError' => $curlErr
     ]);
+
+    // Replyが失敗（400エラー、replyToken失効等）した場合、userIdがあればPush送信で確実にメッセージを届ける
+    if ($httpCode !== 200 && !empty($userId) && str_starts_with($userId, 'U')) {
+        writeDebugLog("Reply失敗のためPushメッセージ送信で自動フォールバック試行", ['userId' => $userId, 'httpCode' => $httpCode]);
+        try {
+            sendLinePushMessage($userId, $messages);
+        } catch (Throwable $e) {
+            writeDebugLog("Pushフォールバック例外: " . $e->getMessage());
+        }
+    }
 }

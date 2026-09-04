@@ -317,11 +317,12 @@ try {
                 if (!function_exists('executeSilentPostbackPush')) {
                     throw new Exception("executeSilentPostbackPush 関数が見つかりません");
                 }
-                $success = executeSilentPostbackPush($db, $userId, $dataStr);
+                $res = executeSilentPostbackPush($db, $userId, $dataStr);
+                $isSuccess = is_array($res) ? !empty($res['success']) : (bool)$res;
 
                 echo json_encode([
-                    'success' => $success,
-                    'message' => $success ? 'サイレントPostbackを実行しました' : 'Push送信に失敗しました (詳細はwebhook_debug.logを確認)',
+                    'success' => $isSuccess,
+                    'message' => $isSuccess ? 'サイレントPostbackを実行しました' : ($res['error'] ?? 'Push送信に失敗しました (詳細はwebhook_debug.logを確認)'),
                     'uid' => $userId,
                     'data' => $dataStr
                 ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
@@ -1519,9 +1520,28 @@ try {
                 if ($actionType === 'uri') {
                     $action['uri'] = trim($a['action']['uri'] ?? 'https://www.goo-net.com');
                 } elseif ($actionType === 'postback') {
-                    $action['data'] = trim($a['action']['data'] ?? 'action=search_all');
-                    if (!empty($a['action']['displayText'])) {
-                        $action['displayText'] = trim($a['action']['displayText']);
+                    $data = trim($a['action']['data'] ?? 'action=search_all');
+                    $action['data'] = $data;
+                    $disp = trim($a['action']['displayText'] ?? '');
+                    if (empty($disp)) {
+                        if (str_contains($data, 'search_all')) {
+                            $disp = '在庫車両一覧';
+                        } elseif (str_contains($data, 'open_mycar')) {
+                            $disp = '点検・来店予約';
+                        } elseif (str_contains($data, 'show_price_menu')) {
+                            $disp = '価格で探す';
+                        } elseif (str_contains($data, 'show_type_menu')) {
+                            $disp = '車種で探す';
+                        } elseif (str_contains($data, 'show_equipment_menu')) {
+                            $disp = '装備で探す';
+                        } elseif (str_contains($data, 'show_distance_menu')) {
+                            $disp = '距離で探す';
+                        } elseif (str_contains($data, 'show_notice_menu')) {
+                            $disp = 'お知らせを見る';
+                        }
+                    }
+                    if (!empty($disp)) {
+                        $action['displayText'] = $disp;
                     }
                 } elseif ($actionType === 'message') {
                     $action['text'] = trim($a['action']['text'] ?? 'メニュー');
@@ -1939,30 +1959,18 @@ try {
                 exit;
             }
 
-            // ベースメニューのエリア設定を引き継ぐ（LINEサーバー実データを最優先）
+            // ベースメニューのエリア設定を引き継ぐ（画面送信・DB設定・LINEサーバー実データの最適マージ）
             $rawAreas = [];
 
-            // 優先順位1: ベースメニューの line_menu_id から LINEサーバー上の検証済み実データを直接取得
-            $lineMenuIdToFetch = !empty($baseMenu['line_menu_id']) ? $baseMenu['line_menu_id'] : ($_POST['base_line_menu_id'] ?? '');
-            if (!empty($lineMenuIdToFetch)) {
-                $lineRemote = lineGetRichMenu($lineMenuIdToFetch);
-                if (!empty($lineRemote['areas']) && is_array($lineRemote['areas']) && count($lineRemote['areas']) > 0) {
-                    $rawAreas = $lineRemote['areas'];
+            // 優先順位1: クライアントから送信された base_areas (管理画面で選択したメニューの現在のアクション定義)
+            if (!empty($_POST['base_areas'])) {
+                $posted = json_decode($_POST['base_areas'], true);
+                if (is_array($posted) && count($posted) > 0) {
+                    $rawAreas = $posted;
                 }
             }
 
-            // 優先順位2: 現在のLINE全体デフォルトリッチメニューから実データを取得
-            if (empty($rawAreas)) {
-                $currentDefId = lineGetDefaultRichMenuId();
-                if (!empty($currentDefId)) {
-                    $lineRemote = lineGetRichMenu($currentDefId);
-                    if (!empty($lineRemote['areas']) && is_array($lineRemote['areas']) && count($lineRemote['areas']) > 0) {
-                        $rawAreas = $lineRemote['areas'];
-                    }
-                }
-            }
-
-            // 優先順位3: DBの areas_json
+            // 優先順位2: DBの areas_json (保存済みの検証済みボタンアクション)
             if (empty($rawAreas) && !empty($baseMenu['areas_json'])) {
                 $dbJson = json_decode($baseMenu['areas_json'], true);
                 if (is_array($dbJson) && count($dbJson) > 0) {
@@ -1970,11 +1978,23 @@ try {
                 }
             }
 
-            // 優先順位4: クライアントから送信された base_areas
-            if (empty($rawAreas) && !empty($_POST['base_areas'])) {
-                $posted = json_decode($_POST['base_areas'], true);
-                if (is_array($posted) && count($posted) > 0) {
-                    $rawAreas = $posted;
+            // 優先順位3: ベースメニューの line_menu_id から LINEサーバー実データを直接取得
+            $lineMenuIdToFetch = !empty($baseMenu['line_menu_id']) ? $baseMenu['line_menu_id'] : ($_POST['base_line_menu_id'] ?? '');
+            if (empty($rawAreas) && !empty($lineMenuIdToFetch)) {
+                $lineRemote = lineGetRichMenu($lineMenuIdToFetch);
+                if (!empty($lineRemote['areas']) && is_array($lineRemote['areas']) && count($lineRemote['areas']) > 0) {
+                    $rawAreas = $lineRemote['areas'];
+                }
+            }
+
+            // 優先順位4: 現在のLINE全体デフォルトリッチメニューから実データを取得
+            if (empty($rawAreas)) {
+                $currentDefId = lineGetDefaultRichMenuId();
+                if (!empty($currentDefId)) {
+                    $lineRemote = lineGetRichMenu($currentDefId);
+                    if (!empty($lineRemote['areas']) && is_array($lineRemote['areas']) && count($lineRemote['areas']) > 0) {
+                        $rawAreas = $lineRemote['areas'];
+                    }
                 }
             }
 
@@ -2006,9 +2026,31 @@ try {
                     $cleanAction['uri'] = trim($act['uri'] ?? 'https://www.goo-net.com');
                     if (!empty($act['label'])) $cleanAction['label'] = $act['label'];
                 } elseif ($actionType === 'postback') {
-                    $cleanAction['data'] = trim($act['data'] ?? 'action=search_all');
-                    if (!empty($act['displayText'])) {
-                        $cleanAction['displayText'] = trim($act['displayText']);
+                    $data = trim($act['data'] ?? '');
+                    if (empty($data)) $data = 'action=search_all';
+                    $cleanAction['data'] = $data;
+
+                    // displayText の自動補完（空の場合でもLINEトーク上に吹き出しを表示させタップ反応を即座に明示）
+                    $disp = trim($act['displayText'] ?? '');
+                    if (empty($disp)) {
+                        if (str_contains($data, 'search_all')) {
+                            $disp = '在庫車両一覧';
+                        } elseif (str_contains($data, 'open_mycar')) {
+                            $disp = '点検・来店予約';
+                        } elseif (str_contains($data, 'show_price_menu')) {
+                            $disp = '価格で探す';
+                        } elseif (str_contains($data, 'show_type_menu')) {
+                            $disp = '車種で探す';
+                        } elseif (str_contains($data, 'show_equipment_menu')) {
+                            $disp = '装備で探す';
+                        } elseif (str_contains($data, 'show_distance_menu')) {
+                            $disp = '距離で探す';
+                        } elseif (str_contains($data, 'show_notice_menu')) {
+                            $disp = 'お知らせを見る';
+                        }
+                    }
+                    if (!empty($disp)) {
+                        $cleanAction['displayText'] = $disp;
                     }
                     if (!empty($act['label'])) $cleanAction['label'] = $act['label'];
                 } elseif ($actionType === 'message') {
@@ -2020,7 +2062,7 @@ try {
                         $cleanAction['richMenuAliasId'] = $alias;
                         $cleanAction['data'] = trim($act['data'] ?? 'action=richmenu_switched');
                     } else {
-                        $cleanAction = ['type' => 'postback', 'data' => 'action=search_all', 'displayText' => 'メニュー切り替え'];
+                        $cleanAction = ['type' => 'postback', 'data' => 'action=search_all', 'displayText' => '在庫車両一覧'];
                     }
                 } else {
                     $cleanAction = $act;
