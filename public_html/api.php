@@ -1578,16 +1578,33 @@ try {
                 exit;
             }
 
-            // 3.5 LINE API: エイリアス登録
-            $aliasId = 'rm_' . substr(md5($lineMenuId), 0, 20);
+            $editId = !empty($_POST['edit_id']) ? (int)$_POST['edit_id'] : 0;
+            $existingMenu = null;
+            if ($editId > 0) {
+                $stmtExist = $db->prepare("SELECT * FROM rich_menus WHERE id = :id");
+                $stmtExist->execute([':id' => $editId]);
+                $existingMenu = $stmtExist->fetch(PDO::FETCH_ASSOC);
+            }
+
+            // 3.5 LINE API: エイリアス登録・更新
+            // 既存メニューの編集なら、そのメニューの既存alias_idをそのまま引き継ぐ！
+            // これにより、他メニューに設定された切替アクション（richmenuswitch）のエイリアスIDが一切壊れずシームレスに維持されます
+            if ($existingMenu && !empty($existingMenu['alias_id'])) {
+                $aliasId = $existingMenu['alias_id'];
+            } else {
+                $aliasId = 'rm_' . substr(md5($lineMenuId), 0, 20);
+            }
             lineCreateOrUpdateRichMenuAlias($lineMenuId, $aliasId);
 
-            // 4. LINE API: 本番適用 (publishフラグが真の場合)
-            $isNotice = (!empty($_POST['is_notice']) && $_POST['is_notice'] === '1') ? 1 : 0;
+            // 4. LINE API: 本番適用 (publishフラグが真の場合、または既存メニューが元々本番中の場合)
+            $isNotice = (!empty($_POST['is_notice']) && $_POST['is_notice'] === '1') ? 1 : ($existingMenu ? (int)$existingMenu['is_notice'] : 0);
             $isActive = 0;
             $applyError = null;
 
-            if ($publish) {
+            // 既存メニューが元々本番中だった場合は、更新時に自動で本番も最新メニューへ切り替え
+            $shouldApplyLive = $publish || ($existingMenu && (int)$existingMenu['is_active'] === 1 && !$isNotice);
+
+            if ($shouldApplyLive) {
                 $setDefRes = lineSetDefaultRichMenu($lineMenuId);
                 if ($setDefRes['success']) {
                     $isActive = 1;
@@ -1609,46 +1626,94 @@ try {
             $textOverlays = json_decode($textOverlaysJson, true);
             if (!is_array($textOverlays)) $textOverlays = [];
 
-            // 5. DBに保存
-            $stmt = $db->prepare("
-                INSERT INTO rich_menus (
-                    line_menu_id, alias_id, title, chat_bar_text, image_url, base_image_url, areas_json, text_overlays_json,
-                    width, height, is_active, is_notice, created_at, updated_at
-                ) VALUES (
-                    :line_menu_id, :alias_id, :title, :chat_bar_text, :image_url, :base_image_url, :areas_json, :text_overlays_json,
-                    :width, :height, :is_active, :is_notice, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-                )
-            ");
-            $stmt->execute([
-                ':line_menu_id' => $lineMenuId,
-                ':alias_id' => $aliasId,
-                ':title' => $title,
-                ':chat_bar_text' => $chatBarText,
-                ':image_url' => $imageUrl,
-                ':base_image_url' => $baseImageUrl,
-                ':areas_json' => json_encode($dbAreas, JSON_UNESCAPED_UNICODE),
-                ':text_overlays_json' => json_encode($textOverlays, JSON_UNESCAPED_UNICODE),
-                ':width' => $width,
-                ':height' => $height,
-                ':is_active' => $isActive,
-                ':is_notice' => $isNotice
-            ]);
-            $newId = (int)$db->lastInsertId();
+            // 5. DBに保存 (既存更新 UPDATE or 新規登録 INSERT)
+            if ($existingMenu) {
+                $stmt = $db->prepare("
+                    UPDATE rich_menus SET
+                        line_menu_id = :line_menu_id,
+                        alias_id = :alias_id,
+                        title = :title,
+                        chat_bar_text = :chat_bar_text,
+                        image_url = :image_url,
+                        base_image_url = :base_image_url,
+                        areas_json = :areas_json,
+                        text_overlays_json = :text_overlays_json,
+                        width = :width,
+                        height = :height,
+                        is_active = :is_active,
+                        is_notice = :is_notice,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = :id
+                ");
+                $stmt->execute([
+                    ':line_menu_id' => $lineMenuId,
+                    ':alias_id' => $aliasId,
+                    ':title' => $title,
+                    ':chat_bar_text' => $chatBarText,
+                    ':image_url' => $imageUrl,
+                    ':base_image_url' => $baseImageUrl,
+                    ':areas_json' => json_encode($dbAreas, JSON_UNESCAPED_UNICODE),
+                    ':text_overlays_json' => json_encode($textOverlays, JSON_UNESCAPED_UNICODE),
+                    ':width' => $width,
+                    ':height' => $height,
+                    ':is_active' => $isActive,
+                    ':is_notice' => $isNotice,
+                    ':id' => $editId
+                ]);
+                $savedId = $editId;
 
-            $msg = 'リッチメニューを下書きとして保存しました！';
-            if ($publish) {
-                if ($isActive) {
-                    $msg = 'リッチメニューを登録し、LINE本番アカウントに即時適用しました！';
-                } else {
-                    $msg = "リッチメニューは保存されましたが、LINE本番適用でエラーが発生しました: {$applyError}";
+                // 古いLINEメニューIDをLINE APIから削除して整理
+                if (!empty($existingMenu['line_menu_id']) && $existingMenu['line_menu_id'] !== $lineMenuId) {
+                    lineDeleteRichMenu($existingMenu['line_menu_id']);
                 }
-            } elseif ($isNotice) {
-                $msg = 'お知らせ専用メニューを登録し、クイックリプライ「📢 お知らせ」のアクティブ対象に設定しました！';
+
+                $msg = 'リッチメニューを上書き保存しました！';
+                if ($shouldApplyLive) {
+                    $msg = $isActive 
+                        ? 'リッチメニューを更新し、LINE本番アカウントに即時反映しました！' 
+                        : "リッチメニューは更新されましたが、LINE本番適用でエラーが発生しました: {$applyError}";
+                }
+            } else {
+                $stmt = $db->prepare("
+                    INSERT INTO rich_menus (
+                        line_menu_id, alias_id, title, chat_bar_text, image_url, base_image_url, areas_json, text_overlays_json,
+                        width, height, is_active, is_notice, created_at, updated_at
+                    ) VALUES (
+                        :line_menu_id, :alias_id, :title, :chat_bar_text, :image_url, :base_image_url, :areas_json, :text_overlays_json,
+                        :width, :height, :is_active, :is_notice, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                    )
+                ");
+                $stmt->execute([
+                    ':line_menu_id' => $lineMenuId,
+                    ':alias_id' => $aliasId,
+                    ':title' => $title,
+                    ':chat_bar_text' => $chatBarText,
+                    ':image_url' => $imageUrl,
+                    ':base_image_url' => $baseImageUrl,
+                    ':areas_json' => json_encode($dbAreas, JSON_UNESCAPED_UNICODE),
+                    ':text_overlays_json' => json_encode($textOverlays, JSON_UNESCAPED_UNICODE),
+                    ':width' => $width,
+                    ':height' => $height,
+                    ':is_active' => $isActive,
+                    ':is_notice' => $isNotice
+                ]);
+                $savedId = (int)$db->lastInsertId();
+
+                $msg = 'リッチメニューを下書きとして新規保存しました！';
+                if ($publish) {
+                    if ($isActive) {
+                        $msg = 'リッチメニューを登録し、LINE本番アカウントに即時適用しました！';
+                    } else {
+                        $msg = "リッチメニューは保存されましたが、LINE本番適用でエラーが発生しました: {$applyError}";
+                    }
+                } elseif ($isNotice) {
+                    $msg = 'お知らせ専用メニューを登録し、クイックリプライ「📢 お知らせ」のアクティブ対象に設定しました！';
+                }
             }
 
             echo json_encode([
                 'success' => true,
-                'id' => $newId,
+                'id' => $savedId,
                 'line_menu_id' => $lineMenuId,
                 'alias_id' => $aliasId,
                 'image_url' => $imageUrl,

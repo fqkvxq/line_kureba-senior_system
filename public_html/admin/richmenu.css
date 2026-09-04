@@ -2035,5 +2035,64 @@
     box-shadow: 0 6px 16px rgba(6, 199, 85, 0.45);
 }
 
+/* ==========================================================================
+   編集中ステータスバナー
+   ========================================================================== */
+.editing-status-banner {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #bfdbfe;
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    gap: 12px;
+}
 
+.editing-banner-content {
+    flex: 1;
+}
 
+.editing-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #2563eb;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+    letter-spacing: 0.02em;
+}
+
+.editing-desc {
+    font-size: 11.5px;
+    color: #1e3a8a;
+    line-height: 1.45;
+    font-weight: 500;
+}
+
+.btn-cancel-edit {
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    color: #64748b;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.btn-cancel-edit:hover {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #dc2626;
+}

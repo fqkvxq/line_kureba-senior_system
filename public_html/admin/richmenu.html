@@ -150,6 +150,17 @@
 
                 <!-- 右側: プロパティ設定パネル -->
                 <div class="property-panel-card">
+                    <!-- 既存メニュー編集中ステータスバー -->
+                    <div id="editingStatusBanner" class="editing-status-banner" style="display: none;">
+                        <div class="editing-banner-content">
+                            <div class="editing-badge"><i class="fa-solid fa-pen"></i> 編集中 (上書き保存モード)</div>
+                            <div class="editing-desc">切替エイリアスIDを引き継ぐため、他メニューからの切替リンクが一切外れません。</div>
+                        </div>
+                        <button type="button" class="btn-cancel-edit" id="btnCancelEditMode" title="編集モードを解除して新規作成に戻す">
+                            <i class="fa-solid fa-xmark"></i> 解除
+                        </button>
+                    </div>
+
                     <div class="panel-section">
                         <h3><i class="fa-solid fa-sliders"></i> メニュー基本設定</h3>
                         <div class="form-group">
@@ -304,7 +315,10 @@
                             <i class="fa-solid fa-paper-plane"></i> LINE公式アカウントに公開して反映
                         </button>
                         <button class="btn-save-draft" id="saveDraftBtn">
-                            <i class="fa-solid fa-floppy-disk"></i> 下書きとして履歴に保存
+                            <i class="fa-solid fa-floppy-disk"></i> 下書きとして保存
+                        </button>
+                        <button class="btn-secondary-sm" id="saveAsCopyBtn" style="display: none; width: 100%; margin-top: 8px; justify-content: center;" title="現在の内容を既存メニューとは別の新しいメニューとして保存します">
+                            <i class="fa-solid fa-copy"></i> コピーとして新規保存 (別メニュー化)
                         </button>
                     </div>
                 </div>

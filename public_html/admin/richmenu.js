@@ -33,6 +33,11 @@ const state = {
     historyFilter: 'all', // 'all' | 'normal' | 'notice'
     activeNoticeId: null,
 
+    // 既存メニュー編集中状態
+    editingMenuId: null,
+    editingMenuAliasId: null,
+    editingMenuTitle: '',
+
     // 装飾テキスト・お知らせバナー
     textOverlays: [],
     isOverlayDragging: false,
@@ -131,9 +136,12 @@ const elements = {
     noticeCanvasPreview: document.getElementById('noticeCanvasPreview'),
     noticePublishToAllCheckbox: document.getElementById('noticePublishToAllCheckbox'),
 
-    // ボタン
+    // ボタン & 編集中バナー
+    editingStatusBanner: document.getElementById('editingStatusBanner'),
+    btnCancelEditMode: document.getElementById('btnCancelEditMode'),
     publishMenuBtn: document.getElementById('publishMenuBtn'),
     saveDraftBtn: document.getElementById('saveDraftBtn'),
+    saveAsCopyBtn: document.getElementById('saveAsCopyBtn'),
 
     // 履歴
     historyGrid: document.getElementById('historyGrid'),
@@ -384,8 +392,14 @@ function initEventListeners() {
     }
 
     // 保存・公開ボタン
-    elements.publishMenuBtn.addEventListener('click', () => saveRichMenu(true));
-    elements.saveDraftBtn.addEventListener('click', () => saveRichMenu(false));
+    elements.publishMenuBtn.addEventListener('click', () => saveRichMenu(true, false));
+    elements.saveDraftBtn.addEventListener('click', () => saveRichMenu(false, false));
+    if (elements.saveAsCopyBtn) {
+        elements.saveAsCopyBtn.addEventListener('click', () => saveRichMenu(false, true));
+    }
+    if (elements.btnCancelEditMode) {
+        elements.btnCancelEditMode.addEventListener('click', () => exitEditMode());
+    }
 
     // クイックお知らせ作成ウィザードイベント
     initNoticeWizardEvents();
@@ -1949,7 +1963,7 @@ function dataURLtoBlob(dataurl) {
 }
 
 // ================= 保存 & LINE公開 =================
-async function saveRichMenu(publish) {
+async function saveRichMenu(publish, asCopy = false) {
     const title = elements.menuTitleInput.value.trim();
     if (!title) {
         showToast('メニュー管理名を入力してください', 'error');
@@ -1967,7 +1981,16 @@ async function saveRichMenu(publish) {
         return;
     }
 
-    showLoading(publish ? '画像合成＆LINE公式アカウントに公開中...' : '画像合成＆下書きを保存中...');
+    const isEditing = !asCopy && state.editingMenuId;
+    let loadingText = '画像合成＆下書きを保存中...';
+    if (publish) {
+        loadingText = isEditing ? '画像合成＆LINE公式アカウントを更新中...' : '画像合成＆LINE公式アカウントに公開中...';
+    } else if (asCopy) {
+        loadingText = 'コピーを作成して新規保存中...';
+    } else if (isEditing) {
+        loadingText = '画像合成＆リッチメニューを上書き更新中...';
+    }
+    showLoading(loadingText);
 
     try {
         const hasOverlays = state.textOverlays && state.textOverlays.length > 0;
@@ -2022,6 +2045,11 @@ async function saveRichMenu(publish) {
         formData.append('areas', JSON.stringify(combinedAreas));
         formData.append('text_overlays', JSON.stringify(state.textOverlays || []));
 
+        // 既存メニューの編集ならedit_idを送信（エイリアス引き継ぎ＆UPDATE）
+        if (isEditing) {
+            formData.append('edit_id', String(state.editingMenuId));
+        }
+
         if (hasOverlays && compositedImageFile) {
             // LINEアップロード用: テキスト合成画像
             formData.append('image', compositedImageFile);
@@ -2066,6 +2094,25 @@ async function saveRichMenu(publish) {
                 state.baseImageFile = null;
                 state.imageFile = null;
             }
+
+            if (asCopy) {
+                // コピー保存時は新メニューの編集モードに切り替える
+                state.editingMenuId = data.id;
+                state.editingMenuAliasId = data.alias_id || '';
+                state.editingMenuTitle = title;
+                updateEditingBanner();
+            } else if (isEditing) {
+                state.editingMenuTitle = title;
+                state.editingMenuAliasId = data.alias_id || state.editingMenuAliasId;
+                updateEditingBanner();
+            } else if (data.id) {
+                // 初回新規保存後も自動的に編集モードとしてIDを保持
+                state.editingMenuId = data.id;
+                state.editingMenuAliasId = data.alias_id || '';
+                state.editingMenuTitle = title;
+                updateEditingBanner();
+            }
+
             loadHistoryList();
             if (publish) {
                 switchView('history');
@@ -2395,7 +2442,12 @@ function loadMenuIntoEditor(item) {
     // 1. 先にエディタビューを表示状態に切り替え (DOM要素を表示してサイズ計算を保証)
     switchView('editor');
 
-    elements.menuTitleInput.value = item.title ? (item.title + ' (コピー)') : '';
+    // 編集中状態を設定（既存ID・エイリアスを引き継ぎ、コピーを作らず上書き更新）
+    state.editingMenuId = item.id;
+    state.editingMenuAliasId = item.alias_id || '';
+    state.editingMenuTitle = item.title || '';
+
+    elements.menuTitleInput.value = item.title || '';
     elements.chatBarTextInput.value = item.chat_bar_text || 'メニュー';
     setMenuSize(item.height == 843 ? 'small' : 'large');
 
@@ -2453,14 +2505,48 @@ function loadMenuIntoEditor(item) {
     // 5. 設定フォームとピルを更新
     updateAreaConfigForm();
 
+    // 6. 編集中ステータスバナーとボタン表示の更新
+    updateEditingBanner();
+
     if (!item.base_image_url && item.text_overlays && item.text_overlays.length > 0) {
         showToast(`「${item.title}」を読み込みました（旧形式のため文字を変更・削除する場合は「画像を変更」から元画像を再選択してください）`, 'info');
     } else {
-        showToast(`「${item.title}」をエディタに読み込みました`, 'info');
+        showToast(`「${item.title}」をエディタに読み込みました（上書き保存モード）`, 'info');
+    }
+}
+
+function updateEditingBanner() {
+    if (state.editingMenuId) {
+        if (elements.editingStatusBanner) {
+            elements.editingStatusBanner.style.display = 'flex';
+            const desc = elements.editingStatusBanner.querySelector('.editing-desc');
+            if (desc) {
+                desc.textContent = `「${state.editingMenuTitle}」を編集中。保存すると切替キー（エイリアス）を引き継いで更新されるため、他メニューからの切替リンクが一切外れません。`;
+            }
+        }
+        if (elements.saveAsCopyBtn) elements.saveAsCopyBtn.style.display = 'inline-flex';
+        if (elements.saveDraftBtn) elements.saveDraftBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 上書き保存';
+        if (elements.publishMenuBtn) elements.publishMenuBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> 本番に更新して反映';
+    } else {
+        if (elements.editingStatusBanner) elements.editingStatusBanner.style.display = 'none';
+        if (elements.saveAsCopyBtn) elements.saveAsCopyBtn.style.display = 'none';
+        if (elements.saveDraftBtn) elements.saveDraftBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 下書きとして保存';
+        if (elements.publishMenuBtn) elements.publishMenuBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> LINE公式アカウントに公開して反映';
+    }
+}
+
+function exitEditMode(showToastMsg = true) {
+    state.editingMenuId = null;
+    state.editingMenuAliasId = null;
+    state.editingMenuTitle = '';
+    updateEditingBanner();
+    if (showToastMsg) {
+        showToast('新規作成モードに戻りました（保存すると新しいメニューとして作成されます）', 'info');
     }
 }
 
 function resetEditorForm() {
+    exitEditMode(false);
     elements.menuTitleInput.value = '';
     elements.chatBarTextInput.value = 'メニュー';
     state.imageFile = null;
