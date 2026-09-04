@@ -576,7 +576,9 @@ function handleFollow(string $replyToken) {
  */
 function searchCarsAndReply(PDO $db, string $replyToken, array $criteria, string $heading, string $userId = '') {
     $messages = generateCarSearchMessages($db, $criteria, $heading, $userId);
-    sendReplyMessage($replyToken, $messages);
+    if (!empty($messages)) {
+        sendReplyMessage($replyToken, $messages);
+    }
 }
 
 /**
@@ -709,13 +711,9 @@ function generateCarSearchMessages(PDO $db, array $criteria, string $heading, st
         writeDebugLog("検索実行完了", ['heading' => $heading, 'hitCount' => count($cars), 'userId' => $userId]);
 
         if (empty($cars)) {
-            return [
-                [
-                    'type' => 'text',
-                    'text' => "申し訳ありません。ご指定の条件に一致する車両が見つかりませんでした。\n\n別のキーワードや価格帯でお試しください！",
-                    'quickReply' => getQuickReplyItems()
-                ]
-            ];
+            // 一致する車両が見つからない場合はメッセージを返信しない（通常チャットやスタッフとのやり取りを妨害しない）
+            writeDebugLog("車両検索0件のため返信スキップ", ['heading' => $heading, 'criteria' => $criteria]);
+            return [];
         }
 
         // カルーセルバブルを構築
@@ -3963,6 +3961,9 @@ function getQuickReplyItems(): array {
  * LINE Messaging API 返信送信
  */
 function sendReplyMessage(string $replyToken, array $messages) {
+    if (empty($messages)) {
+        return;
+    }
     if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         writeDebugLog("返信スキップ: LINE_CHANNEL_ACCESS_TOKEN が未設定です");
         return;
