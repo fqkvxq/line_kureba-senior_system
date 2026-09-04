@@ -2025,7 +2025,17 @@ function renderHistoryList() {
                 <span class="badge-size">${sizeLabel}</span>
             </div>
             <div class="history-body">
-                <h3 class="history-title">${escapeHtml(item.title)}</h3>
+                <div class="history-title-row">
+                    <h3 class="history-title" title="クリックして名前を変更">${escapeHtml(item.title)}</h3>
+                    <button type="button" class="btn-edit-title" title="管理名を変更" data-id="${item.id}">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                </div>
+                <div class="history-title-edit-form" style="display: none;">
+                    <input type="text" class="input-title-edit" value="${escapeHtml(item.title)}" maxlength="100" placeholder="メニュー名を入力">
+                    <button type="button" class="btn-save-title" title="保存"><i class="fa-solid fa-check"></i></button>
+                    <button type="button" class="btn-cancel-title" title="キャンセル"><i class="fa-solid fa-xmark"></i></button>
+                </div>
                 <div class="history-meta">
                     <span><i class="fa-solid fa-clock"></i> 登録日時: ${escapeHtml(item.created_at || '-')}</span>
                     <span><i class="fa-solid fa-table-cells"></i> 設定エリア数: ${areaCount}枠</span>
@@ -2044,6 +2054,88 @@ function renderHistoryList() {
                 </div>
             </div>
         `;
+
+        // 管理名（タイトル）インライン変更
+        const titleRow = card.querySelector('.history-title-row');
+        const titleElem = card.querySelector('.history-title');
+        const editTitleBtn = card.querySelector('.btn-edit-title');
+        const editForm = card.querySelector('.history-title-edit-form');
+        const titleInput = card.querySelector('.input-title-edit');
+        const saveTitleBtn = card.querySelector('.btn-save-title');
+        const cancelTitleBtn = card.querySelector('.btn-cancel-title');
+
+        const openTitleEdit = () => {
+            titleRow.style.display = 'none';
+            editForm.style.display = 'flex';
+            titleInput.value = item.title;
+            titleInput.focus();
+            titleInput.select();
+        };
+
+        const closeTitleEdit = () => {
+            editForm.style.display = 'none';
+            titleRow.style.display = 'flex';
+        };
+
+        titleElem.addEventListener('click', openTitleEdit);
+        editTitleBtn.addEventListener('click', openTitleEdit);
+        cancelTitleBtn.addEventListener('click', closeTitleEdit);
+
+        const saveNewTitle = async () => {
+            const newTitle = titleInput.value.trim();
+            if (!newTitle) {
+                showToast('リッチメニュー名を入力してください', 'error');
+                titleInput.focus();
+                return;
+            }
+            if (newTitle === item.title) {
+                closeTitleEdit();
+                return;
+            }
+
+            saveTitleBtn.disabled = true;
+            saveTitleBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+            const formData = new FormData();
+            formData.append('password', state.password);
+            formData.append('id', item.id);
+            formData.append('title', newTitle);
+
+            try {
+                const res = await fetch('../api.php?action=admin_rename_richmenu', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                saveTitleBtn.disabled = false;
+                saveTitleBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
+
+                if (data.success) {
+                    item.title = newTitle;
+                    titleElem.textContent = newTitle;
+                    showToast('リッチメニュー名を変更しました', 'success');
+                    closeTitleEdit();
+                    updateLiveStatusBadge();
+                } else {
+                    showToast(data.error || '名前の変更に失敗しました', 'error');
+                }
+            } catch (err) {
+                saveTitleBtn.disabled = false;
+                saveTitleBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
+                showToast('通信エラーが発生しました: ' + err.message, 'error');
+            }
+        };
+
+        saveTitleBtn.addEventListener('click', saveNewTitle);
+        titleInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveNewTitle();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                closeTitleEdit();
+            }
+        });
 
         // 本番適用ボタン
         const applyBtn = card.querySelector('.btn-apply-card');

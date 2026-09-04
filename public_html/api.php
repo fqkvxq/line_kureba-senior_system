@@ -1223,7 +1223,7 @@ try {
                 $rawAreas = json_decode($m['areas_json'], true) ?: [];
                 $cleanAreas = [];
                 foreach ($rawAreas as $idx => $ra) {
-                    $ra['id'] = !empty($ra['id']) ? (int)$ra['id'] : ($idx + 1);
+                    $ra['id'] = !empty($ra['id']) ? $ra['id'] : ($idx + 1);
                     $cleanAreas[] = $ra;
                 }
                 $m['areas'] = $cleanAreas;
@@ -1629,6 +1629,46 @@ try {
                 'success' => true,
                 'message' => "リッチメニュー「{$menu['title']}」を削除しました。"
             ], JSON_UNESCAPED_UNICODE);
+            break;
+
+        // --- 15. リッチメニュー管理: 管理名（タイトル）変更 ---
+        case 'admin_rename_richmenu':
+            $authPass = $_POST['password'] ?? '';
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
+                exit;
+            }
+
+            $id = (int)($_POST['id'] ?? 0);
+            $newTitle = trim($_POST['title'] ?? '');
+            if (empty($newTitle)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'リッチメニュー名を入力してください']);
+                exit;
+            }
+
+            $stmt = $db->prepare("SELECT id, title FROM rich_menus WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+            $menu = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$menu) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'error' => '対象のリッチメニューが見つかりません']);
+                exit;
+            }
+
+            $updateStmt = $db->prepare("UPDATE rich_menus SET title = :title, updated_at = CURRENT_TIMESTAMP WHERE id = :id");
+            $updateStmt->execute([
+                ':title' => $newTitle,
+                ':id' => $id
+            ]);
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'リッチメニュー名を変更しました',
+                'id' => $id,
+                'title' => $newTitle
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
         default:
