@@ -1126,6 +1126,7 @@ function renderTextOverlays() {
             el.style.left = leftPercent + '%';
             el.style.top = topPercent + '%';
             el.style.padding = `${Math.round(previewFontSize * 0.25)}px ${Math.round(previewFontSize * 0.5)}px`;
+        }
         el.textContent = text;
 
         // 掴んで自由に移動するためのドラッグイベントリスナー
