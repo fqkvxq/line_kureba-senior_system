@@ -1939,24 +1939,111 @@ try {
                 exit;
             }
 
-            // ベースメニューのエリア設定を引き継ぐ
-            $rawAreas = json_decode($baseMenu['areas_json'] ?? '[]', true) ?: [];
-            $lineAreas = [];
+            // ベースメニューのエリア設定を引き継ぐ（多重フォールバック）
+            $rawAreas = [];
+
+            // 優先順位1: クライアントから送信された base_areas
+            if (!empty($_POST['base_areas'])) {
+                $posted = json_decode($_POST['base_areas'], true);
+                if (is_array($posted) && count($posted) > 0) {
+                    $rawAreas = $posted;
+                }
+            }
+
+            // 優先順位2: DBの areas_json
+            if (empty($rawAreas) && !empty($baseMenu['areas_json'])) {
+                $dbJson = json_decode($baseMenu['areas_json'], true);
+                if (is_array($dbJson) && count($dbJson) > 0) {
+                    $rawAreas = $dbJson;
+                }
+            }
+
+            // 優先順位3: ベースメニューの line_menu_id から LINEサーバー実データを直接取得
+            $lineMenuIdToFetch = !empty($baseMenu['line_menu_id']) ? $baseMenu['line_menu_id'] : ($_POST['base_line_menu_id'] ?? '');
+            if (empty($rawAreas) && !empty($lineMenuIdToFetch)) {
+                $lineRemote = lineGetRichMenu($lineMenuIdToFetch);
+                if (!empty($lineRemote['areas']) && is_array($lineRemote['areas'])) {
+                    $rawAreas = $lineRemote['areas'];
+                }
+            }
+
+            // 優先順位4: 現在のLINE全体デフォルトリッチメニューから取得
+            if (empty($rawAreas)) {
+                $currentDefId = lineGetDefaultRichMenuId();
+                if (!empty($currentDefId)) {
+                    $lineRemote = lineGetRichMenu($currentDefId);
+                    if (!empty($lineRemote['areas']) && is_array($lineRemote['areas'])) {
+                        $rawAreas = $lineRemote['areas'];
+                    }
+                }
+            }
+
             $width = (int)($baseMenu['width'] ?? 2500);
             $height = (int)($baseMenu['height'] ?? 1686);
+            $lineAreas = [];
 
             foreach ($rawAreas as $a) {
                 if (empty($a['bounds']) || empty($a['action'])) continue;
+
+                $bounds = [
+                    'x' => max(0, (int)($a['bounds']['x'] ?? 0)),
+                    'y' => max(0, (int)($a['bounds']['y'] ?? 0)),
+                    'width' => max(1, (int)($a['bounds']['width'] ?? 100)),
+                    'height' => max(1, (int)($a['bounds']['height'] ?? 100))
+                ];
+                if ($bounds['x'] + $bounds['width'] > $width) {
+                    $bounds['width'] = $width - $bounds['x'];
+                }
+                if ($bounds['y'] + $bounds['height'] > $height) {
+                    $bounds['height'] = $height - $bounds['y'];
+                }
+
+                $actionType = $a['action']['type'] ?? 'uri';
+                $action = ['type' => $actionType];
+
+                if ($actionType === 'uri') {
+                    $action['uri'] = trim($a['action']['uri'] ?? 'https://www.goo-net.com');
+                } elseif ($actionType === 'postback') {
+                    $action['data'] = trim($a['action']['data'] ?? 'action=search_all');
+                    if (!empty($a['action']['displayText'])) {
+                        $action['displayText'] = trim($a['action']['displayText']);
+                    }
+                } elseif ($actionType === 'message') {
+                    $action['text'] = trim($a['action']['text'] ?? 'メニュー');
+                } elseif ($actionType === 'richmenuswitch') {
+                    $alias = trim($a['action']['richMenuAliasId'] ?? '');
+                    if (!empty($alias)) {
+                        $action['richMenuAliasId'] = $alias;
+                        $action['data'] = trim($a['action']['data'] ?? 'action=richmenu_switched');
+                    } else {
+                        $action = ['type' => 'postback', 'data' => 'action=search_all', 'displayText' => 'メニュー切り替え'];
+                    }
+                } else {
+                    $action = ['type' => 'postback', 'data' => 'action=search_all'];
+                }
+
                 $lineAreas[] = [
-                    'bounds' => [
-                        'x' => (int)$a['bounds']['x'],
-                        'y' => (int)$a['bounds']['y'],
-                        'width' => (int)$a['bounds']['width'],
-                        'height' => (int)$a['bounds']['height']
-                    ],
-                    'action' => $a['action']
+                    'bounds' => $bounds,
+                    'action' => $action
                 ];
             }
+
+            // 万が一エリアが0件の場合は空メニューの作成を阻止
+            if (empty($lineAreas)) {
+                @unlink($targetFilePath);
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'ベースメニューのボタン設定（タップ領域）が検出できませんでした。リッチメニュー管理でメニューにボタン枠が設定されているかご確認ください。'
+                ]);
+                exit;
+            }
+
+            writeDebugLog("個別専用リッチメニュー作成開始", [
+                'userId' => $userId,
+                'areasCount' => count($lineAreas),
+                'firstArea' => $lineAreas[0] ?? null
+            ]);
 
             // 顧客名を取得
             $stmtCust = $db->prepare("SELECT user_name, custom_line_menu_id FROM customer_cars WHERE user_id = :uid LIMIT 1");

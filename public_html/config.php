@@ -496,6 +496,34 @@ function lineGetDefaultRichMenuId(): ?string {
 }
 
 /**
+ * LINE Messaging API: リッチメニュー詳細取得 (LINEサーバー上の実データ)
+ */
+function lineGetRichMenu(string $richMenuId): ?array {
+    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE' || empty($richMenuId)) {
+        return null;
+    }
+
+    $url = "https://api.line.me/v2/bot/richmenu/{$richMenuId}";
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+        ]
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode === 200) {
+        $data = json_decode($res, true);
+        return is_array($data) ? $data : null;
+    }
+    return null;
+}
+
+/**
  * LINE Messaging API: リッチメニュー削除
  */
 function lineDeleteRichMenu(string $richMenuId): array {

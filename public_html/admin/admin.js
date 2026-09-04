@@ -890,7 +890,9 @@ async function applyUserRichMenu() {
         const formData = new FormData();
         formData.append('password', state.password);
         formData.append('uid', cust.user_id);
-        formData.append('base_menu_id', base.id);
+        formData.append('base_menu_id', base.id || '');
+        formData.append('base_line_menu_id', base.line_menu_id || '');
+        formData.append('base_areas', JSON.stringify(base.areas || []));
         formData.append('custom_text', text);
         formData.append('image', blob, 'custom_menu.jpg');
 
