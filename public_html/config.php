@@ -862,6 +862,38 @@ function lineGetRichMenuImage(string $richMenuId): ?string {
 }
 
 /**
+ * LINE Messaging API: ユーザーに現在個別紐付けされているリッチメニューIDを取得
+ * GET https://api.line.me/v2/bot/user/{userId}/richmenu
+ * @return string|null 個別紐付けリッチメニューID（個別紐付けなし/全体デフォルト表示中の場合はnull）
+ */
+function lineGetUserRichMenu(string $userId): ?string {
+    if (empty($userId) || LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+        return null;
+    }
+
+    $url = "https://api.line.me/v2/bot/user/" . urlencode($userId) . "/richmenu";
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 5,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+        ]
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode === 200 && !empty($res)) {
+        $json = json_decode($res, true);
+        return $json['richMenuId'] ?? null;
+    }
+
+    // 404等は個別リッチメニューなし（全体デフォルトメニューを表示中）
+    return null;
+}
+
+/**
  * LINE Messaging API: ユーザーに個別リッチメニューを紐付け
  * POST https://api.line.me/v2/bot/user/{userId}/richmenu/{richMenuId}
  */

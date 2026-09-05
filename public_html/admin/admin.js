@@ -65,6 +65,7 @@ const elements = {
     closeUserMenuModalBtn: document.getElementById('closeUserMenuModalBtn'),
     cancelUserMenuBtn: document.getElementById('cancelUserMenuBtn'),
     applyUserMenuBtn: document.getElementById('applyUserMenuBtn'),
+    applyDirectMenuBtn: document.getElementById('applyDirectMenuBtn'),
     btnUnlinkMenuBtn: document.getElementById('btnUnlinkMenuBtn'),
     modalCustName: document.getElementById('modalCustName'),
     modalCustCar: document.getElementById('modalCustCar'),
@@ -73,6 +74,20 @@ const elements = {
     pillInsp: document.getElementById('pillInsp'),
     userMenuStatusAlert: document.getElementById('userMenuStatusAlert'),
     currentCustomText: document.getElementById('currentCustomText'),
+
+    // リアルタイムステータス & タブ & 既存メニュー指定
+    userMenuRealtimeCard: document.getElementById('userMenuRealtimeCard'),
+    realtimeMenuThumb: document.getElementById('realtimeMenuThumb'),
+    realtimeMenuBadge: document.getElementById('realtimeMenuBadge'),
+    realtimeMenuTitle: document.getElementById('realtimeMenuTitle'),
+    tabModeExistingMenu: document.getElementById('tabModeExistingMenu'),
+    tabModeCustomMessage: document.getElementById('tabModeCustomMessage'),
+    sectionExistingMenu: document.getElementById('sectionExistingMenu'),
+    sectionCustomMessageMenu: document.getElementById('sectionCustomMessageMenu'),
+    directAssignMenuSelect: document.getElementById('directAssignMenuSelect'),
+    directAssignMenuPreviewImg: document.getElementById('directAssignMenuPreviewImg'),
+    directAssignMenuMeta: document.getElementById('directAssignMenuMeta'),
+
     userMenuBaseSelect: document.getElementById('userMenuBaseSelect'),
     userMenuTextInput: document.getElementById('userMenuTextInput'),
     userMenuThemeSelect: document.getElementById('userMenuThemeSelect'),
@@ -167,7 +182,21 @@ function initEventListeners() {
     if (elements.closeUserMenuModalBtn) elements.closeUserMenuModalBtn.addEventListener('click', closeUserRichMenuModal);
     if (elements.cancelUserMenuBtn) elements.cancelUserMenuBtn.addEventListener('click', closeUserRichMenuModal);
     if (elements.applyUserMenuBtn) elements.applyUserMenuBtn.addEventListener('click', applyUserRichMenu);
+    if (elements.applyDirectMenuBtn) elements.applyDirectMenuBtn.addEventListener('click', applyDirectRichMenu);
     if (elements.btnUnlinkMenuBtn) elements.btnUnlinkMenuBtn.addEventListener('click', unlinkUserRichMenu);
+
+    // タブ切替 (既存メニュー指定 vs 専用メッセージ帯作成)
+    if (elements.tabModeExistingMenu) {
+        elements.tabModeExistingMenu.addEventListener('click', () => switchUserMenuTab('existing'));
+    }
+    if (elements.tabModeCustomMessage) {
+        elements.tabModeCustomMessage.addEventListener('click', () => switchUserMenuTab('custom'));
+    }
+
+    // 既存メニュー指定セレクタ変更時
+    if (elements.directAssignMenuSelect) {
+        elements.directAssignMenuSelect.addEventListener('change', updateDirectAssignPreview);
+    }
 
     // 定型文チップ
     if (elements.chipCustInsp) elements.chipCustInsp.addEventListener('click', () => insertCustomPhrase('insp'));
@@ -403,6 +432,18 @@ function renderTable() {
         const carId = c.id || '';
         const userId = c.user_id || '';
         const hasCustomMenu = Boolean(c.custom_line_menu_id);
+        const menuType = c.current_menu_type || (hasCustomMenu ? 'custom_message' : 'default');
+        const menuName = c.current_menu_name || (hasCustomMenu ? '専用メニュー' : '全体共通');
+        const isCustomized = (menuType === 'custom_message' || menuType === 'custom_assigned' || hasCustomMenu);
+
+        let menuBadgeHtml = '';
+        if (menuType === 'custom_message') {
+            menuBadgeHtml = `<span class="badge-menu-status badge-menu-custom" title="専用メッセージ: ${escapeHtml(c.custom_menu_text || '')}"><i class="fa-solid fa-bolt"></i> 専用メッセージ中</span>`;
+        } else if (menuType === 'custom_assigned') {
+            menuBadgeHtml = `<span class="badge-menu-status badge-menu-assigned" title="個別メニュー指定中"><i class="fa-solid fa-tag"></i> 個別: ${escapeHtml(menuName)}</span>`;
+        } else {
+            menuBadgeHtml = `<span class="badge-menu-status badge-menu-default" title="LINE全体共通メニュー表示中"><i class="fa-solid fa-globe"></i> 共通: ${escapeHtml(menuName)}</span>`;
+        }
 
         return `
             <tr data-index="${idx}">
@@ -421,7 +462,7 @@ function renderTable() {
                         <div style="min-width: 0;">
                             <div class="cust-name">${escapeHtml(c.user_name || '名前なし')}</div>
                             <div class="cust-uid">${escapeHtml(c.user_id || '')}</div>
-                            ${hasCustomMenu ? `<div class="badge-custom-menu-active" title="専用メッセージ: ${escapeHtml(c.custom_menu_text || '')}"><i class="fa-solid fa-bolt"></i> 専用メニュー中</div>` : ''}
+                            <div style="margin-top: 4px;">${menuBadgeHtml}</div>
                         </div>
                     </div>
                 </td>
@@ -436,8 +477,8 @@ function renderTable() {
                 <td style="font-size: 11px; color: #64748b;">${updated}</td>
                 <td>
                     <div class="action-btns">
-                        <button class="btn-user-richmenu ${hasCustomMenu ? 'is-active' : ''}" data-action="custom-menu" data-idx="${idx}" title="専用メッセージ付きリッチメニューを設定">
-                            <i class="fa-solid fa-table-cells-large"></i> 専用メニュー
+                        <button class="btn-user-richmenu ${isCustomized ? 'is-active' : ''}" data-action="custom-menu" data-idx="${idx}" title="リッチメニューの確認・個別指定・メッセージ設定">
+                            <i class="fa-solid fa-table-cells-large"></i> メニュー設定
                         </button>
                         <button class="btn-remind-oil" data-action="remind-oil" data-idx="${idx}" title="オイル交換リマインドをLINE送信">
                             <i class="fa-solid fa-oil-can"></i> オイル
@@ -710,6 +751,154 @@ function updateBaseMenuSelect() {
     });
 }
 
+function updateDirectAssignSelect(preferredMenuId) {
+    if (!elements.directAssignMenuSelect) return;
+    elements.directAssignMenuSelect.innerHTML = '';
+
+    if (!state.richMenus || state.richMenus.length === 0) {
+        elements.directAssignMenuSelect.innerHTML = '<option value="">（作成済みリッチメニューがありません）</option>';
+        updateDirectAssignPreview();
+        return;
+    }
+
+    let foundMatch = false;
+    state.richMenus.forEach(m => {
+        const isLive = (m.is_active == 1);
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = (isLive ? '★ [全社公開中] ' : '') + m.title + ` (ボタン${(m.areas || []).length}個)`;
+        if (preferredMenuId && (String(m.id) === String(preferredMenuId) || String(m.line_menu_id) === String(preferredMenuId))) {
+            opt.selected = true;
+            foundMatch = true;
+        }
+        elements.directAssignMenuSelect.appendChild(opt);
+    });
+
+    if (!foundMatch && state.richMenus.length > 0) {
+        const defaultMenu = state.richMenus.find(m => m.is_active == 1) || state.richMenus[0];
+        if (defaultMenu) {
+            elements.directAssignMenuSelect.value = defaultMenu.id;
+        }
+    }
+
+    updateDirectAssignPreview();
+}
+
+function updateDirectAssignPreview() {
+    if (!elements.directAssignMenuSelect) return;
+    const menuId = elements.directAssignMenuSelect.value;
+    const menu = state.richMenus.find(m => String(m.id) === String(menuId));
+
+    if (!menu) {
+        if (elements.directAssignMenuPreviewImg) elements.directAssignMenuPreviewImg.src = '';
+        if (elements.directAssignMenuMeta) elements.directAssignMenuMeta.innerHTML = '<span style="color:#94a3b8;">リッチメニューが選択されていません</span>';
+        return;
+    }
+
+    if (elements.directAssignMenuPreviewImg) {
+        elements.directAssignMenuPreviewImg.src = menu.image_url || menu.base_image_url || '';
+    }
+    if (elements.directAssignMenuMeta) {
+        const isLiveBadge = (menu.is_active == 1) ? '<span style="color:#059669; font-weight:700;">★ LINE公式全体のデフォルト公開中</span>' : '<span style="color:#64748b;">個別専用/下書き</span>';
+        const buttonCount = (menu.areas || []).length;
+        elements.directAssignMenuMeta.innerHTML = `
+            <strong>${escapeHtml(menu.title)}</strong> （${menu.width || 2500} × ${menu.height || 1686}px / アクション枠: ${buttonCount}箇所）<br>
+            <span style="font-size: 11px;">状態: ${isLiveBadge} | LINE Menu ID: <code>${escapeHtml(menu.line_menu_id || '未発行')}</code></span>
+        `;
+    }
+}
+
+function switchUserMenuTab(mode) {
+    if (mode === 'existing') {
+        if (elements.tabModeExistingMenu) elements.tabModeExistingMenu.classList.add('active');
+        if (elements.tabModeCustomMessage) elements.tabModeCustomMessage.classList.remove('active');
+        if (elements.sectionExistingMenu) elements.sectionExistingMenu.style.display = 'block';
+        if (elements.sectionCustomMessageMenu) elements.sectionCustomMessageMenu.style.display = 'none';
+        if (elements.applyDirectMenuBtn) elements.applyDirectMenuBtn.style.display = 'inline-flex';
+        if (elements.applyUserMenuBtn) elements.applyUserMenuBtn.style.display = 'none';
+    } else {
+        if (elements.tabModeExistingMenu) elements.tabModeExistingMenu.classList.remove('active');
+        if (elements.tabModeCustomMessage) elements.tabModeCustomMessage.classList.add('active');
+        if (elements.sectionExistingMenu) elements.sectionExistingMenu.style.display = 'none';
+        if (elements.sectionCustomMessageMenu) elements.sectionCustomMessageMenu.style.display = 'block';
+        if (elements.applyDirectMenuBtn) elements.applyDirectMenuBtn.style.display = 'none';
+        if (elements.applyUserMenuBtn) elements.applyUserMenuBtn.style.display = 'inline-flex';
+        renderUserMenuPreview();
+    }
+}
+
+async function checkUserRealtimeMenuStatus(userId) {
+    if (!elements.userMenuRealtimeCard) return;
+
+    if (elements.realtimeMenuThumb) elements.realtimeMenuThumb.style.display = 'none';
+    if (elements.realtimeMenuBadge) {
+        elements.realtimeMenuBadge.className = 'badge-menu-status badge-menu-default';
+        elements.realtimeMenuBadge.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 確認中...';
+    }
+    if (elements.realtimeMenuTitle) {
+        elements.realtimeMenuTitle.textContent = 'LINE公式アカウント側の表示状況をリアルタイム確認中...';
+    }
+    if (elements.btnUnlinkMenuBtn) {
+        elements.btnUnlinkMenuBtn.style.display = 'none';
+    }
+
+    try {
+        const res = await fetch(`../api.php?action=admin_get_user_richmenu_status&password=${encodeURIComponent(state.password)}&uid=${encodeURIComponent(userId)}`);
+        const data = await res.json();
+
+        if (data.success) {
+            const status = data.status || 'default';
+            const title = data.title || '全体共通メニュー';
+            const imgUrl = data.image_url || '';
+
+            if (elements.realtimeMenuTitle) {
+                elements.realtimeMenuTitle.innerHTML = `<strong>${escapeHtml(title)}</strong> ${data.rich_menu_id ? `<span style="font-size: 11px; font-weight: normal; color: #64748b;">(ID: ${escapeHtml(data.rich_menu_id)})</span>` : ''}`;
+            }
+
+            if (elements.realtimeMenuThumb) {
+                if (imgUrl) {
+                    elements.realtimeMenuThumb.src = imgUrl;
+                    elements.realtimeMenuThumb.style.display = 'block';
+                } else {
+                    elements.realtimeMenuThumb.style.display = 'none';
+                }
+            }
+
+            if (elements.realtimeMenuBadge) {
+                if (status === 'custom_message') {
+                    elements.realtimeMenuBadge.className = 'badge-menu-status badge-menu-custom';
+                    elements.realtimeMenuBadge.innerHTML = '<i class="fa-solid fa-bolt"></i> 専用メッセージ中';
+                } else if (status === 'custom_assigned') {
+                    elements.realtimeMenuBadge.className = 'badge-menu-status badge-menu-assigned';
+                    elements.realtimeMenuBadge.innerHTML = '<i class="fa-solid fa-tag"></i> 個別割当';
+                } else {
+                    elements.realtimeMenuBadge.className = 'badge-menu-status badge-menu-default';
+                    elements.realtimeMenuBadge.innerHTML = '<i class="fa-solid fa-globe"></i> 全体共通';
+                }
+            }
+
+            // 個別リンクがある場合は「全体共通に戻す」ボタンを表示
+            if (elements.btnUnlinkMenuBtn) {
+                elements.btnUnlinkMenuBtn.style.display = data.has_custom_link ? 'inline-flex' : 'none';
+            }
+
+            // 既存メニュー指定セレクタの選択状態を更新
+            if (data.menu_id) {
+                updateDirectAssignSelect(data.menu_id);
+            }
+        } else {
+            if (elements.realtimeMenuTitle) {
+                elements.realtimeMenuTitle.textContent = data.error || 'LINEメニュー状態の取得に失敗しました';
+            }
+        }
+    } catch (e) {
+        console.error('Error fetching user richmenu status:', e);
+        if (elements.realtimeMenuTitle) {
+            elements.realtimeMenuTitle.textContent = 'LINEメニュー状態の取得中に通信エラーが発生しました';
+        }
+    }
+}
+
 async function openUserRichMenuModal(cust) {
     if (!cust.user_id || cust.user_id.startsWith('MANUAL_')) {
         alert('この顧客は手動登録（LINE未連携）のため、専用リッチメニューを適用できません。\n友だち登録連携後のお客様のみご利用いただけます。');
@@ -736,23 +925,30 @@ async function openUserRichMenuModal(cust) {
     elements.pillPeriodic.innerHTML = `12ヶ月点検: <strong>${cust.periodic_insp_next_date || '未定'}</strong>`;
     elements.pillInsp.innerHTML = `車検満了: <strong>${cust.inspection_next_date || '未定'}</strong>`;
 
-    // 適用中ステータス
-    if (cust.custom_line_menu_id) {
+    // 適用中ステータスバー（メッセージ帯案内）
+    if (cust.custom_line_menu_id && cust.custom_menu_text) {
         elements.userMenuStatusAlert.style.display = 'flex';
-        elements.currentCustomText.textContent = cust.custom_menu_text || '専用メニュー適用中';
+        elements.currentCustomText.textContent = cust.custom_menu_text;
     } else {
         elements.userMenuStatusAlert.style.display = 'none';
     }
 
-    // メッセージ入力の初期値
-    elements.userMenuTextInput.value = cust.custom_menu_text || getDefaultCustomPhrase(cust, 'insp');
+    // 初期タブを「既存メニューから選んで指定」にする
+    switchUserMenuTab('existing');
 
     // リッチメニュー一覧が未取得なら取得
     if (!state.richMenus || state.richMenus.length === 0) {
         await loadRichMenus();
     } else {
         updateBaseMenuSelect();
+        updateDirectAssignSelect(cust.custom_line_menu_id);
     }
+
+    // メッセージ入力の初期値
+    elements.userMenuTextInput.value = cust.custom_menu_text || getDefaultCustomPhrase(cust, 'insp');
+
+    // LINEリアルタイム表示ステータスの確認実行
+    checkUserRealtimeMenuStatus(cust.user_id);
 
     elements.userRichMenuModal.classList.add('active');
 
@@ -1064,11 +1260,69 @@ async function applyUserRichMenu() {
     }, 'image/jpeg', 0.92);
 }
 
+async function applyDirectRichMenu() {
+    const cust = state.activeUserMenuCust;
+    if (!cust || !cust.user_id) return;
+
+    if (!elements.directAssignMenuSelect) return;
+    const menuId = elements.directAssignMenuSelect.value;
+    if (!menuId) {
+        alert('適用するリッチメニューを選択してください');
+        return;
+    }
+
+    const menu = state.richMenus.find(m => String(m.id) === String(menuId));
+    const menuTitle = menu ? menu.title : '選択したリッチメニュー';
+
+    if (!confirm(`【${cust.user_name || 'お客様'} 様】に、リッチメニュー「${menuTitle}」を個別に指定・適用しますか？\n（LINE画面下部が即座に切り替わります）`)) {
+        return;
+    }
+
+    const btn = elements.applyDirectMenuBtn;
+    const originalHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> LINEに適用中...';
+    }
+
+    try {
+        const payload = new URLSearchParams({
+            action: 'admin_assign_richmenu_to_user',
+            password: state.password,
+            uid: cust.user_id,
+            menu_id: menuId
+        });
+
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            showToast(data.message || `「${menuTitle}」を友だちに適用しました！`);
+            closeUserRichMenuModal();
+            await fetchCustomers();
+        } else {
+            alert(data.error || '適用に失敗しました');
+        }
+    } catch (e) {
+        console.error('Apply direct menu error:', e);
+        alert('通信エラーが発生しました: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    }
+}
+
 async function unlinkUserRichMenu() {
     const cust = state.activeUserMenuCust;
     if (!cust || !cust.user_id) return;
 
-    if (!confirm(`【${cust.user_name || 'お客様'} 様】の専用リッチメニューを解除し、全体共通メニューに戻しますか？`)) {
+    if (!confirm(`【${cust.user_name || 'お客様'} 様】の個別リッチメニュー設定を解除し、全体共通メニューに戻しますか？`)) {
         return;
     }
 
@@ -1091,7 +1345,12 @@ async function unlinkUserRichMenu() {
         if (data.success) {
             showToast(data.message || '全体共通メニューに戻しました！');
             elements.userMenuStatusAlert.style.display = 'none';
-            if (cust) cust.custom_line_menu_id = '';
+            if (cust) {
+                cust.custom_line_menu_id = '';
+                cust.current_menu_type = 'default';
+            }
+            // リアルタイム表示ステータスを即時再取得
+            await checkUserRealtimeMenuStatus(cust.user_id);
             await fetchCustomers();
         } else {
             alert(data.error || '解除に失敗しました');
