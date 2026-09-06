@@ -506,6 +506,14 @@
                                 <p>当システムはWebサーバー設定（`.htaccess`, `.user.ini`）、PHPスクリプト、データベース（SQLite）のすべてで<strong>日本標準時（JST / Asia/Tokyo）</strong>に統一されています。過去に保存された既存データも含めて自動マイグレーションによりJSTへ一括補正されており、LINEメッセージ受信時や友だち同期時、リマインド送信時などすべて確実な日本時間でリアルタイムに記録・表示されます。</p>
                             </div>
                         </div>
+
+                        <div class="step-card">
+                            <div class="step-number">Q</div>
+                            <div class="step-body">
+                                <h4>新着車両が入庫した際のLINE友だちへの自動配信はどうなっていますか？</h4>
+                                <p>新着車両を検知した際のLINE友だち全員への自動一斉配信（Flex Messageカルーセル）は現在<strong>「OFF（送信しない）」</strong>に設定されています。社内向けDiscord通知のみが自動送信されます。必要に応じて `config.php` の `ENABLE_NEW_CAR_BROADCAST` を `true` にすることでいつでも再開できます。</p>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -517,6 +525,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260906_manual_v1"></script>
+    <script src="manual.js?v=20260906_manual_v2"></script>
 </body>
 </html>

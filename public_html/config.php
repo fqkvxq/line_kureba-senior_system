@@ -16,7 +16,7 @@ define('LINE_LIFF_ID', '2011340718-OaRM8tV4');                           // LIFF
 define('LIFF_ID', '2011340718-OaRM8tV4');                                // エイリアス用LIFF ID
 
 // --- 新着車両の自動配信設定 ---
-define('ENABLE_NEW_CAR_BROADCAST', true); // 新着検知時にLINE公式アカウントの友だち全員へ自動一斉配信するか (true: 送信する, false: 送信しない)
+define('ENABLE_NEW_CAR_BROADCAST', false); // 新着検知時にLINE公式アカウントの友だち全員へ自動一斉配信するか (true: 送信する, false: 送信しない)
 define('ENABLE_NEW_CAR_DISCORD', true);   // 新着検知時にDiscordへ通知するか
 
 // --- 店舗管理画面設定 ---
