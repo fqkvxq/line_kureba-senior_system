@@ -434,6 +434,10 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
                 $isNotice = isNoticeMenu($db, $targetAlias);
                 if (!$isNotice) {
                     $customMenuId = getUserCustomRichMenuId($db, $userId);
+                    if (!empty($customMenuId) && isNoticeMenu($db, $customMenuId)) {
+                        $customMenuId = null;
+                        $db->prepare("UPDATE customer_cars SET custom_line_menu_id = '' WHERE user_id = :uid")->execute([':uid' => $userId]);
+                    }
                     if (!empty($customMenuId)) {
                         $relinkRes = lineLinkUserRichMenu($userId, $customMenuId);
                         writeDebugLog("タブ切替からメイン復帰: 専用リッチメニュー再リンク実行", [
@@ -607,6 +611,10 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): ar
                 $isNotice = isNoticeMenu($db, $targetAlias);
                 if (!$isNotice) {
                     $customMenuId = getUserCustomRichMenuId($db, $userId);
+                    if (!empty($customMenuId) && isNoticeMenu($db, $customMenuId)) {
+                        $customMenuId = null;
+                        $db->prepare("UPDATE customer_cars SET custom_line_menu_id = '' WHERE user_id = :uid")->execute([':uid' => $userId]);
+                    }
                     if (!empty($customMenuId)) {
                         $relinkRes = lineLinkUserRichMenu($userId, $customMenuId);
                         if (empty($relinkRes['success'])) {
@@ -3928,8 +3936,18 @@ function handleCloseNoticeMenu(?PDO $db, string $replyToken, string $userId): vo
     // ユーザーに有効な専用リッチメニューが設定されているか確認
     $customMenuId = getUserCustomRichMenuId($db, $userId);
 
+    // 【重要防護】もし customMenuId がお知らせメニュー（is_notice=1等）だった場合、絶対に再リンクしない
+    if (!empty($customMenuId) && isNoticeMenu($db, $customMenuId)) {
+        writeDebugLog("handleCloseNoticeMenu: 専用メニューがお知らせメニューと同一だったためクリア", [
+            'userId' => $userId,
+            'wrongMenuId' => $customMenuId
+        ]);
+        $customMenuId = null;
+        $db->prepare("UPDATE customer_cars SET custom_line_menu_id = '' WHERE user_id = :uid")->execute([':uid' => $userId]);
+    }
+
     if (!empty($customMenuId)) {
-        // 専用リッチメニューを設定されているお客様なら、専用リッチメニューを再リンクして復帰！
+        // 専用リッチメニューを設定されているお客様なら、通常専用リッチメニューを再リンクして復帰！
         $linkRes = lineLinkUserRichMenu($userId, $customMenuId);
         writeDebugLog("お知らせ終了: 専用リッチメニュー復帰実行(サイレント)", [
             'userId' => $userId,
@@ -3947,7 +3965,7 @@ function handleCloseNoticeMenu(?PDO $db, string $replyToken, string $userId): vo
             lineUnlinkUserRichMenu($userId);
         }
     } else {
-        // 通常ユーザーは個別紐付けを解除（LINE公式アカウント全体のデフォルトリッチメニューに自動復帰）
+        // 通常ユーザーは個別紐付けを解除（LINE公式アカウント全体のデフォルト通常リッチメニューに自動復帰）
         $unlinkRes = lineUnlinkUserRichMenu($userId);
         writeDebugLog("お知らせ終了: 全体デフォルトメニュー復帰実行(unlink)", [
             'userId' => $userId,

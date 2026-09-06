@@ -2085,20 +2085,29 @@ try {
             $customText = trim($_POST['custom_text'] ?? '');
             $baseMenuId = (int)($_POST['base_menu_id'] ?? 0);
 
-            // ベースとなるリッチメニューを取得
+            // ベースとなるリッチメニューを取得（お知らせメニューは絶対に専用メニューのベースにしない！）
             $baseMenu = null;
             if ($baseMenuId > 0) {
                 $stmt = $db->prepare("SELECT * FROM rich_menus WHERE id = :id");
                 $stmt->execute([':id' => $baseMenuId]);
-                $baseMenu = $stmt->fetch(PDO::FETCH_ASSOC);
+                $candidate = $stmt->fetch(PDO::FETCH_ASSOC);
+                // お知らせメニューでなければ採用
+                if ($candidate && empty($candidate['is_notice'])) {
+                    $baseMenu = $candidate;
+                }
             }
             if (!$baseMenu) {
-                // デフォルトとして現在本番中の通常メニューを取得
+                // デフォルトとして現在本番中の通常メニューを取得 (is_notice = 0)
                 $stmt = $db->query("SELECT * FROM rich_menus WHERE is_active = 1 AND is_notice = 0 ORDER BY id DESC LIMIT 1");
                 $baseMenu = $stmt->fetch(PDO::FETCH_ASSOC);
             }
             if (!$baseMenu) {
-                // さらに無ければ最新メニューを取得
+                // さらに無ければ通常メニューの最新を取得 (is_notice = 0)
+                $stmt = $db->query("SELECT * FROM rich_menus WHERE is_notice = 0 ORDER BY id DESC LIMIT 1");
+                $baseMenu = $stmt->fetch(PDO::FETCH_ASSOC);
+            }
+            if (!$baseMenu) {
+                // 最後の手段として全体から取得
                 $stmt = $db->query("SELECT * FROM rich_menus ORDER BY id DESC LIMIT 1");
                 $baseMenu = $stmt->fetch(PDO::FETCH_ASSOC);
             }

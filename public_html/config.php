@@ -558,7 +558,28 @@ function getUserCustomRichMenuId(?PDO $db, string $userId): ?string {
         $stmt->execute([':uid' => $userId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!empty($row['custom_line_menu_id'])) {
-            return trim($row['custom_line_menu_id']);
+            $menuId = trim($row['custom_line_menu_id']);
+
+            // 【重要】もし custom_line_menu_id がお知らせリッチメニュー(is_notice=1)だった場合、
+            // それは専用メニューではなく誤ってお知らせメニューが登録されたものなので除外＆自動クリア
+            $noticeMenu = getActiveNoticeRichMenu($db);
+            $isNotice = false;
+            if ($noticeMenu && !empty($noticeMenu['line_menu_id']) && $noticeMenu['line_menu_id'] === $menuId) {
+                $isNotice = true;
+            } elseif (isNoticeMenu($db, $menuId)) {
+                $isNotice = true;
+            }
+
+            if ($isNotice) {
+                writeDebugLog("getUserCustomRichMenuId: お知らせメニューが専用メニューに誤指定されていたため自動解除", [
+                    'userId' => $userId,
+                    'wrongMenuId' => $menuId
+                ]);
+                $db->prepare("UPDATE customer_cars SET custom_line_menu_id = '' WHERE user_id = :uid")->execute([':uid' => $userId]);
+                return null;
+            }
+
+            return $menuId;
         }
     } catch (Throwable $e) {
         writeDebugLog("getUserCustomRichMenuId例外", ['error' => $e->getMessage()]);

@@ -847,7 +847,9 @@ async function applyNearestRichMenuBackground(custData, nearest) {
             await loadRichMenus();
         }
 
-        const base = state.richMenus.find(m => m.is_active == 1) || state.richMenus[0];
+        // 【重要】お知らせメニュー(is_notice == 1)は絶対に専用メニューのベースにしない！通常メニュー(is_notice == 0)の本番メニューを特定
+        const normalMenus = (state.richMenus || []).filter(m => !m.is_notice || m.is_notice == 0);
+        const base = normalMenus.find(m => m.is_active == 1) || normalMenus[0] || state.richMenus.find(m => !m.is_notice) || state.richMenus[0];
         if (!base) {
             console.warn('No base menu available for auto apply');
             return;
@@ -1142,14 +1144,39 @@ function updateBaseMenuSelect() {
         return;
     }
 
-    state.richMenus.forEach(m => {
+    // 通常メニューを優先配置（お知らせメニューは個別専用メッセージのベースには非推奨）
+    const normalMenus = state.richMenus.filter(m => !m.is_notice || m.is_notice == 0);
+    const noticeMenus = state.richMenus.filter(m => m.is_notice == 1);
+    const orderedMenus = [...normalMenus, ...noticeMenus];
+
+    let selectedAssigned = false;
+    orderedMenus.forEach(m => {
+        const isNotice = (m.is_notice == 1);
         const isLive = (m.is_active == 1);
         const opt = document.createElement('option');
         opt.value = m.id;
-        opt.textContent = (isLive ? '★ [本番公開中] ' : '') + m.title;
-        if (isLive) opt.selected = true;
+        
+        let label = '';
+        if (isNotice) {
+            label = `[📢お知らせ用・非推奨] ${m.title}`;
+        } else if (isLive) {
+            label = `★ [本番通常メニュー] ${m.title}`;
+        } else {
+            label = m.title;
+        }
+        opt.textContent = label;
+
+        // 通常の本番メニューを最優先で選択
+        if (!isNotice && isLive && !selectedAssigned) {
+            opt.selected = true;
+            selectedAssigned = true;
+        }
         elements.userMenuBaseSelect.appendChild(opt);
     });
+
+    if (!selectedAssigned && elements.userMenuBaseSelect.options.length > 0) {
+        elements.userMenuBaseSelect.selectedIndex = 0;
+    }
 }
 
 function updateDirectAssignSelect(preferredMenuId) {
@@ -1456,8 +1483,10 @@ function insertCustomPhrase(type) {
 
 function getSelectedBaseMenu() {
     const baseId = elements.userMenuBaseSelect ? elements.userMenuBaseSelect.value : '';
-    if (!baseId && state.richMenus.length > 0) return state.richMenus[0];
-    return state.richMenus.find(m => String(m.id) === String(baseId)) || state.richMenus[0] || null;
+    const normalMenus = (state.richMenus || []).filter(m => !m.is_notice || m.is_notice == 0);
+    const fallback = normalMenus.find(m => m.is_active == 1) || normalMenus[0] || state.richMenus[0] || null;
+    if (!baseId) return fallback;
+    return state.richMenus.find(m => String(m.id) === String(baseId)) || fallback;
 }
 
 function loadAndRenderUserMenuBaseImage() {
