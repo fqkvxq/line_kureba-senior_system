@@ -1006,11 +1006,13 @@ async function openUserRichMenuModal(cust) {
     elements.pillInsp.innerHTML = `車検満了: <strong>${cust.inspection_next_date || '未定'}</strong>`;
 
     // 適用中ステータスバー（メッセージ帯案内）
-    if (cust.custom_line_menu_id && cust.custom_menu_text) {
-        elements.userMenuStatusAlert.style.display = 'flex';
-        elements.currentCustomText.textContent = cust.custom_menu_text;
-    } else {
-        elements.userMenuStatusAlert.style.display = 'none';
+    if (elements.userMenuStatusAlert) {
+        if (cust.custom_line_menu_id && cust.custom_menu_text) {
+            elements.userMenuStatusAlert.style.display = 'flex';
+            if (elements.currentCustomText) elements.currentCustomText.textContent = cust.custom_menu_text;
+        } else {
+            elements.userMenuStatusAlert.style.display = 'none';
+        }
     }
 
     // 初期タブを「既存メニューから選んで指定」にする
@@ -1424,7 +1426,7 @@ async function unlinkUserRichMenu() {
 
         if (data.success) {
             showToast(data.message || '全体共通メニューに戻しました！');
-            elements.userMenuStatusAlert.style.display = 'none';
+            if (elements.userMenuStatusAlert) elements.userMenuStatusAlert.style.display = 'none';
             if (cust) {
                 cust.custom_line_menu_id = '';
                 cust.current_menu_type = 'default';
