@@ -116,6 +116,42 @@ function getDbConnection(): PDO {
     try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN custom_menu_text TEXT DEFAULT ''"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN custom_menu_set_at DATETIME"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN picture_url TEXT DEFAULT ''"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN last_interaction_at DATETIME"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN last_interaction_type TEXT DEFAULT ''"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN last_interaction_preview TEXT DEFAULT ''"); } catch (Exception $e) {}
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_last_interaction ON customer_cars(last_interaction_at)"); } catch (Exception $e) {}
+
+    // 初期化マイグレーション: last_interaction_at が NULL の既存顧客に対して最新日付を補完
+    try {
+        $pdo->exec("
+            UPDATE customer_cars
+            SET 
+                last_interaction_at = COALESCE(
+                    inspection_reminded_at,
+                    periodic_reminded_at,
+                    oil_reminded_at,
+                    custom_menu_set_at,
+                    updated_at,
+                    created_at,
+                    CURRENT_TIMESTAMP
+                ),
+                last_interaction_type = CASE
+                    WHEN inspection_reminded_at IS NOT NULL THEN 'admin_reminder'
+                    WHEN periodic_reminded_at IS NOT NULL THEN 'admin_reminder'
+                    WHEN oil_reminded_at IS NOT NULL THEN 'admin_reminder'
+                    WHEN custom_menu_set_at IS NOT NULL THEN 'custom_menu'
+                    ELSE 'follow'
+                END,
+                last_interaction_preview = CASE
+                    WHEN inspection_reminded_at IS NOT NULL THEN '車検リマインド送信'
+                    WHEN periodic_reminded_at IS NOT NULL THEN '12ヶ月点検リマインド送信'
+                    WHEN oil_reminded_at IS NOT NULL THEN 'オイル交換リマインド送信'
+                    WHEN custom_menu_set_at IS NOT NULL THEN '個別リッチメニュー設定'
+                    ELSE '友だち登録'
+                END
+            WHERE last_interaction_at IS NULL
+        ");
+    } catch (Exception $e) {}
 
     // リッチメニュー履歴管理テーブルの初期化
     $pdo->exec("
@@ -314,9 +350,11 @@ function ensureCustomerExists(PDO $db, string $userId): ?array {
         $insertStmt = $db->prepare("
             INSERT INTO customer_cars (
                 user_id, user_name, picture_url, car_model, car_number,
+                last_interaction_at, last_interaction_type, last_interaction_preview,
                 created_at, updated_at
             ) VALUES (
                 :uid, :uname, :pic, '【未登録】愛車登録待ち', '',
+                CURRENT_TIMESTAMP, 'follow', '友だち登録',
                 CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
             )
         ");
@@ -333,12 +371,96 @@ function ensureCustomerExists(PDO $db, string $userId): ?array {
             'user_id' => $userId,
             'user_name' => $displayName,
             'picture_url' => $pictureUrl,
-            'car_model' => '【未登録】愛車登録待ち'
+            'car_model' => '【未登録】愛車登録待ち',
+            'last_interaction_at' => date('Y-m-d H:i:s'),
+            'last_interaction_type' => 'follow',
+            'last_interaction_preview' => '友だち登録'
         ];
     } catch (Throwable $e) {
         writeDebugLog("ensureCustomerExists 例外", ['error' => $e->getMessage()]);
         return null;
     }
+}
+
+/**
+ * 顧客との最新チャット・やり取り日時を記録
+ * @param PDO $db
+ * @param string $userId LINE User ID
+ * @param string $type やり取り種別 (user_message, user_action, admin_reminder, follow, custom_menu)
+ * @param string $preview プレビュー文字列 (50文字程度推奨)
+ * @param int|null $carId 特定の車両レコードID (省略時は該当userIdのレコードを更新)
+ */
+function recordCustomerInteraction(PDO $db, string $userId, string $type, string $preview, ?int $carId = null): void {
+    if (empty($userId) || !str_starts_with($userId, 'U')) {
+        return;
+    }
+
+    try {
+        $preview = mb_substr(trim($preview), 0, 80);
+        if ($carId) {
+            $stmt = $db->prepare("
+                UPDATE customer_cars 
+                SET last_interaction_at = CURRENT_TIMESTAMP,
+                    last_interaction_type = :type,
+                    last_interaction_preview = :preview,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = :id
+            ");
+            $stmt->execute([':type' => $type, ':preview' => $preview, ':id' => $carId]);
+        } else {
+            $stmt = $db->prepare("
+                UPDATE customer_cars 
+                SET last_interaction_at = CURRENT_TIMESTAMP,
+                    last_interaction_type = :type,
+                    last_interaction_preview = :preview,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = :uid
+            ");
+            $stmt->execute([':type' => $type, ':preview' => $preview, ':uid' => $userId]);
+        }
+        writeDebugLog("顧客インタラクション記録", ['uid' => $userId, 'type' => $type, 'preview' => $preview]);
+    } catch (Throwable $e) {
+        writeDebugLog("recordCustomerInteraction 例外", ['error' => $e->getMessage()]);
+    }
+}
+
+/**
+ * 日時文字列から親切な相対時間表記を生成
+ * 例: たった今, 15分前, 3時間前, 昨日 14:20, 3日前, 2026/09/01
+ */
+function formatTimeDiffText(?string $datetimeStr): string {
+    if (empty($datetimeStr)) {
+        return '未記録';
+    }
+    $ts = strtotime($datetimeStr);
+    if (!$ts) {
+        return '未記録';
+    }
+    $now = time();
+    $diff = $now - $ts;
+
+    if ($diff < 0) {
+        return date('Y/m/d', $ts);
+    }
+    if ($diff < 60) {
+        return 'たった今';
+    }
+    if ($diff < 3600) {
+        $m = max(1, floor($diff / 60));
+        return "{$m}分前";
+    }
+    if ($diff < 86400) {
+        $h = floor($diff / 3600);
+        return "{$h}時間前";
+    }
+    if ($diff < 86400 * 2) {
+        return '昨日 ' . date('H:i', $ts);
+    }
+    if ($diff < 86400 * 7) {
+        $d = floor($diff / 86400);
+        return "{$d}日前";
+    }
+    return date('Y/m/d', $ts);
 }
 
 /**

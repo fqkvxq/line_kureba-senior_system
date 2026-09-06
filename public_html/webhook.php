@@ -113,16 +113,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
                 ensureCustomerExists($db, $userId);
             }
 
-            if ($type === 'message' && ($event['message']['type'] ?? '') === 'text') {
-                $userText = trim($event['message']['text'] ?? '');
-                writeDebugLog("テキスト受信", ['text' => $userText, 'userId' => $userId]);
-                handleTextMessage($db, $replyToken, $userText, $userId);
+            if ($type === 'message') {
+                $msgType = $event['message']['type'] ?? '';
+                if ($msgType === 'text') {
+                    $userText = trim($event['message']['text'] ?? '');
+                    writeDebugLog("テキスト受信", ['text' => $userText, 'userId' => $userId]);
+                    $preview = mb_substr($userText, 0, 45);
+                    recordCustomerInteraction($db, $userId, 'user_message', "💬 {$preview}");
+                    handleTextMessage($db, $replyToken, $userText, $userId);
+                } elseif ($msgType === 'sticker') {
+                    writeDebugLog("スタンプ受信", ['userId' => $userId]);
+                    recordCustomerInteraction($db, $userId, 'user_message', "🎨 スタンプを受信");
+                } elseif ($msgType === 'image') {
+                    writeDebugLog("画像受信", ['userId' => $userId]);
+                    recordCustomerInteraction($db, $userId, 'user_message', "📷 画像を受信");
+                } else {
+                    writeDebugLog("その他メッセージ受信", ['msgType' => $msgType, 'userId' => $userId]);
+                    recordCustomerInteraction($db, $userId, 'user_message', "📎 メッセージを受信");
+                }
             } elseif ($type === 'postback') {
                 $postbackData = $event['postback']['data'] ?? '';
                 writeDebugLog("ポストバック受信", ['data' => $postbackData, 'userId' => $userId]);
+
+                // ポストバック種別のプレビュー生成
+                parse_str(ltrim($postbackData, '?'), $pbParams);
+                $pbAction = $pbParams['action'] ?? '';
+                $actionLabel = '⚡ メニュー操作';
+                if (str_contains($pbAction, 'inquiry')) {
+                    $actionLabel = '🚗 在庫問い合わせ';
+                } elseif (str_contains($pbAction, 'maintenance')) {
+                    $mType = $pbParams['type'] ?? '';
+                    $actionLabel = ($mType === 'oil') ? '🛢️ オイル交換相談' : (($mType === 'inspection') ? '🚗 車検予約相談' : '📋 点検予約相談');
+                } elseif ($pbAction === 'open_mycar') {
+                    $actionLabel = '📱 マイカーメニュー表示';
+                } elseif ($pbAction === 'search_all') {
+                    $actionLabel = '🔍 在庫車両一覧の閲覧';
+                } elseif ($pbAction === 'notice') {
+                    $actionLabel = '📢 お知らせの確認';
+                }
+                recordCustomerInteraction($db, $userId, 'user_action', $actionLabel);
+
                 handlePostback($db, $replyToken, $postbackData, $userId, $event['postback']['params'] ?? []);
             } elseif ($type === 'follow') {
                 writeDebugLog("友だち追加イベント", ['userId' => $userId]);
+                recordCustomerInteraction($db, $userId, 'follow', '✨ 友だち追加');
                 handleFollow($replyToken, $userId);
             }
         } catch (Throwable $e) {
@@ -165,6 +199,7 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
             $prefTime = trim($prefM[1]);
         }
 
+        recordCustomerInteraction($db, $userId, 'user_action', "📅 {$bookingType}予約: {$carModel}");
         handleSubmitMaintenanceBooking($replyToken, $bookingType, $carModel, $prefTime, $userId);
         return;
     }

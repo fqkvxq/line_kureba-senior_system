@@ -1071,3 +1071,123 @@ body {
     text-overflow: ellipsis;
 }
 
+/* --- 並び替えコントロール --- */
+.sort-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #ffffff;
+    border: 1px solid var(--gray-200);
+    padding: 4px 10px;
+    border-radius: var(--radius-md);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.sort-box label {
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--gray-600);
+    white-space: nowrap;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.sort-select {
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gray-800);
+    background-color: #f8fafc;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sort-select:hover {
+    border-color: #4f46e5;
+    background-color: #ffffff;
+}
+
+.sort-select:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+/* --- 最終やり取りセル --- */
+.interaction-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    max-width: 190px;
+}
+
+.interaction-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.interaction-time-badge {
+    font-size: 11px;
+    font-weight: 800;
+    color: #1e293b;
+}
+
+.interaction-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+}
+
+.interaction-badge.badge-user-msg {
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+}
+
+.interaction-badge.badge-user-action {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+}
+
+.interaction-badge.badge-admin-remind {
+    background: #fff7ed;
+    color: #ea580c;
+    border: 1px solid #fed7aa;
+}
+
+.interaction-badge.badge-follow {
+    background: #fdf4ff;
+    color: #c026d3;
+    border: 1px solid #f5d0fe;
+}
+
+.interaction-badge.badge-custom-menu {
+    background: #eef2ff;
+    color: #4f46e5;
+    border: 1px solid #c7d2fe;
+}
+
+.interaction-preview {
+    font-size: 10.5px;
+    color: #64748b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+
+.interaction-full-date {
+    font-size: 10px;
+    color: #94a3b8;
+}
+

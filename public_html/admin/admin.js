@@ -6,6 +6,7 @@ const state = {
     password: '',
     allCustomers: [],
     currentFilter: 'all',
+    currentSort: 'last_interaction',
     searchQuery: '',
     richMenus: [],
     activeUserMenuCust: null,
@@ -29,6 +30,7 @@ const elements = {
 
     // ツールバー
     adminSearchInput: document.getElementById('adminSearchInput'),
+    adminSortSelect: document.getElementById('adminSortSelect'),
     tabBtns: document.querySelectorAll('.tab-btn'),
     tabCountAll: document.getElementById('tabCountAll'),
     tabCountOil: document.getElementById('tabCountOil'),
@@ -149,6 +151,14 @@ function initEventListeners() {
         state.searchQuery = e.target.value.trim().toLowerCase();
         renderTable();
     });
+
+    // 並び替えセレクト
+    if (elements.adminSortSelect) {
+        elements.adminSortSelect.addEventListener('change', (e) => {
+            state.currentSort = e.target.value;
+            renderTable();
+        });
+    }
 
     // フィルタータブ
     elements.tabBtns.forEach(btn => {
@@ -295,7 +305,8 @@ async function loadDashboard() {
 
 async function fetchCustomers() {
     try {
-        const res = await fetch(`../api.php?action=admin_list_customers&password=${encodeURIComponent(state.password)}`);
+        const sortParam = encodeURIComponent(state.currentSort || 'last_interaction');
+        const res = await fetch(`../api.php?action=admin_list_customers&password=${encodeURIComponent(state.password)}&sort=${sortParam}`);
         const data = await res.json();
         if (data.success) {
             state.allCustomers = data.customers || [];
@@ -423,12 +434,43 @@ function renderTable() {
 
     elements.emptyTablePlaceholder.style.display = 'none';
 
+    // 並び替え処理
+    const sort = state.currentSort || 'last_interaction';
+    filtered.sort((a, b) => {
+        if (sort === 'last_interaction') {
+            const timeA = new Date(a.last_interaction_at || a.updated_at || a.created_at || 0).getTime();
+            const timeB = new Date(b.last_interaction_at || b.updated_at || b.created_at || 0).getTime();
+            return timeB - timeA;
+        } else if (sort === 'insp_soon') {
+            if (!a.inspection_next_date && !b.inspection_next_date) return 0;
+            if (!a.inspection_next_date) return 1;
+            if (!b.inspection_next_date) return -1;
+            return new Date(a.inspection_next_date) - new Date(b.inspection_next_date);
+        } else if (sort === 'oil_soon') {
+            if (!a.oil_next_date && !b.oil_next_date) return 0;
+            if (!a.oil_next_date) return 1;
+            if (!b.oil_next_date) return -1;
+            return new Date(a.oil_next_date) - new Date(b.oil_next_date);
+        } else if (sort === 'periodic_soon') {
+            if (!a.periodic_insp_next_date && !b.periodic_insp_next_date) return 0;
+            if (!a.periodic_insp_next_date) return 1;
+            if (!b.periodic_insp_next_date) return -1;
+            return new Date(a.periodic_insp_next_date) - new Date(b.periodic_insp_next_date);
+        } else if (sort === 'name_asc') {
+            return (a.user_name || '').localeCompare(b.user_name || '', 'ja');
+        } else if (sort === 'created_desc') {
+            return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+        } else if (sort === 'updated_desc') {
+            return new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime();
+        }
+        return 0;
+    });
+
     elements.customerTableBody.innerHTML = filtered.map((c, idx) => {
         const oilBadge = getBadgeHtml(c.oil_next_date);
         const periodicBadge = getBadgeHtml(c.periodic_insp_next_date);
         const inspBadge = getBadgeHtml(c.inspection_next_date);
         const memo = c.staff_memo ? escapeHtml(c.staff_memo) : '<span style="color:#cbd5e1">-</span>';
-        const updated = (c.updated_at || '').substring(0, 10);
         const carId = c.id || '';
         const userId = c.user_id || '';
         const hasCustomMenu = Boolean(c.custom_line_menu_id);
@@ -444,6 +486,44 @@ function renderTable() {
         } else {
             menuBadgeHtml = `<span class="badge-menu-status badge-menu-default" title="LINE全体共通メニュー表示中"><i class="fa-solid fa-globe"></i> 共通: ${escapeHtml(menuName)}</span>`;
         }
+
+        // 最終やり取り情報
+        const interactionType = c.last_interaction_type || 'follow';
+        const interactionPreview = c.last_interaction_preview || '友だち登録';
+        const interactionDisplay = c.last_interaction_display || (c.last_interaction_at ? c.last_interaction_at.substring(0, 16).replace('-', '/') : '未記録');
+        const diffText = c.last_interaction_diff_text || (c.last_interaction_at ? c.last_interaction_at.substring(0, 10) : '未記録');
+
+        let badgeClass = 'badge-follow';
+        let badgeIcon = '<i class="fa-solid fa-user-plus"></i>';
+        let badgeLabel = '友だち登録';
+        if (interactionType === 'user_message') {
+            badgeClass = 'badge-user-msg';
+            badgeIcon = '<i class="fa-solid fa-comment"></i>';
+            badgeLabel = 'メッセージ';
+        } else if (interactionType === 'user_action') {
+            badgeClass = 'badge-user-action';
+            badgeIcon = '<i class="fa-solid fa-bolt"></i>';
+            badgeLabel = '操作・相談';
+        } else if (interactionType === 'admin_reminder') {
+            badgeClass = 'badge-admin-remind';
+            badgeIcon = '<i class="fa-solid fa-paper-plane"></i>';
+            badgeLabel = 'リマインド';
+        } else if (interactionType === 'custom_menu') {
+            badgeClass = 'badge-custom-menu';
+            badgeIcon = '<i class="fa-solid fa-table-cells-large"></i>';
+            badgeLabel = 'メニュー設定';
+        }
+
+        const interactionCellHtml = `
+            <div class="interaction-cell" title="${escapeHtml(interactionPreview)} (${interactionDisplay})">
+                <div class="interaction-header">
+                    <span class="interaction-time-badge">${escapeHtml(diffText)}</span>
+                    <span class="interaction-badge ${badgeClass}">${badgeIcon} ${badgeLabel}</span>
+                </div>
+                <div class="interaction-preview">${escapeHtml(interactionPreview)}</div>
+                <div class="interaction-full-date">${escapeHtml(interactionDisplay)}</div>
+            </div>
+        `;
 
         return `
             <tr data-index="${idx}">
@@ -473,8 +553,8 @@ function renderTable() {
                 <td>${oilBadge}</td>
                 <td>${periodicBadge}</td>
                 <td>${inspBadge}</td>
+                <td>${interactionCellHtml}</td>
                 <td style="max-width: 160px; font-size: 11px;">${memo}</td>
-                <td style="font-size: 11px; color: #64748b;">${updated}</td>
                 <td>
                     <div class="action-btns">
                         <button class="btn-user-richmenu ${isCustomized ? 'is-active' : ''}" data-action="custom-menu" data-idx="${idx}" title="リッチメニューの確認・個別指定・メッセージ設定">

@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260905_menu_assign_v1">
+    <link rel="stylesheet" href="admin.css?v=20260906_last_chat_v1">
 </head>
 <body>
     <!-- ログインモーダル (初期表示) -->
@@ -107,6 +107,19 @@
                     <button class="tab-btn" data-filter="periodic_soon">📋 12ヶ月点検 (<span id="tabCountPeriodic">0</span>)</button>
                     <button class="tab-btn" data-filter="inspection_soon">🚗 車検 (<span id="tabCountInsp">0</span>)</button>
                 </div>
+                <div class="sort-box">
+                    <label for="adminSortSelect">
+                        <i class="fa-solid fa-arrow-down-wide-short"></i> 並び替え:
+                    </label>
+                    <select id="adminSortSelect" class="form-select sort-select">
+                        <option value="last_interaction" selected>💬 最終チャット・やり取り順</option>
+                        <option value="insp_soon">🚗 次回車検が近い順</option>
+                        <option value="oil_soon">🛢️ 次回オイルが近い順</option>
+                        <option value="periodic_soon">📋 12ヶ月点検が近い順</option>
+                        <option value="name_asc">👤 お名前順 (五十音)</option>
+                        <option value="created_desc">🆕 友だち登録が新しい順</option>
+                    </select>
+                </div>
             </div>
 
             <!-- 顧客データテーブル -->
@@ -119,8 +132,8 @@
                             <th>次回オイル</th>
                             <th>12ヶ月点検</th>
                             <th>車検満了</th>
+                            <th style="min-width: 155px;"><i class="fa-regular fa-comment-dots"></i> 最終やり取り</th>
                             <th>店舗メモ</th>
-                            <th>最終更新</th>
                             <th>操作</th>
                         </tr>
                     </thead>
@@ -446,6 +459,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260905_menu_assign_v1"></script>
+    <script src="admin.js?v=20260906_last_chat_v1"></script>
 </body>
 </html>

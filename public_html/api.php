@@ -770,6 +770,7 @@ try {
 
             $search = trim($_GET['search'] ?? '');
             $filter = $_GET['filter'] ?? 'all'; // all, oil_soon, periodic_soon, inspection_soon
+            $sort = $_GET['sort'] ?? 'last_interaction'; // last_interaction, insp_soon, oil_soon, periodic_soon, name_asc, created_desc, updated_desc
 
             $where = ["1 = 1"];
             $params = [];
@@ -793,8 +794,24 @@ try {
                 $params[':in30'] = $in30days;
             }
 
+            // ソート順の判定
+            $orderBy = "COALESCE(last_interaction_at, updated_at, created_at) DESC";
+            if ($sort === 'insp_soon') {
+                $orderBy = "CASE WHEN inspection_next_date IS NULL OR inspection_next_date = '' THEN 1 ELSE 0 END ASC, inspection_next_date ASC";
+            } elseif ($sort === 'oil_soon') {
+                $orderBy = "CASE WHEN oil_next_date IS NULL OR oil_next_date = '' THEN 1 ELSE 0 END ASC, oil_next_date ASC";
+            } elseif ($sort === 'periodic_soon') {
+                $orderBy = "CASE WHEN periodic_insp_next_date IS NULL OR periodic_insp_next_date = '' THEN 1 ELSE 0 END ASC, periodic_insp_next_date ASC";
+            } elseif ($sort === 'name_asc') {
+                $orderBy = "user_name ASC";
+            } elseif ($sort === 'created_desc') {
+                $orderBy = "created_at DESC";
+            } elseif ($sort === 'updated_desc') {
+                $orderBy = "updated_at DESC";
+            }
+
             $whereSql = implode(' AND ', $where);
-            $stmt = $db->prepare("SELECT * FROM customer_cars WHERE {$whereSql} ORDER BY updated_at DESC");
+            $stmt = $db->prepare("SELECT * FROM customer_cars WHERE {$whereSql} ORDER BY {$orderBy}");
             $stmt->execute($params);
             $customers = $stmt->fetchAll();
 
@@ -826,6 +843,18 @@ try {
                 } else {
                     $c['current_menu_type'] = 'custom_assigned';
                     $c['current_menu_name'] = '個別メニュー';
+                }
+
+                // 最後のやり取り情報の補完
+                $interactionAt = !empty($c['last_interaction_at']) ? $c['last_interaction_at'] : (!empty($c['updated_at']) ? $c['updated_at'] : ($c['created_at'] ?? ''));
+                $c['last_interaction_at'] = $interactionAt;
+                $c['last_interaction_display'] = !empty($interactionAt) ? date('Y/m/d H:i', strtotime($interactionAt)) : '未記録';
+                $c['last_interaction_diff_text'] = formatTimeDiffText($interactionAt);
+                if (empty($c['last_interaction_type'])) {
+                    $c['last_interaction_type'] = 'follow';
+                }
+                if (empty($c['last_interaction_preview'])) {
+                    $c['last_interaction_preview'] = '友だち登録';
                 }
             }
             unset($c);
@@ -1315,13 +1344,25 @@ try {
 
             $res = sendLinePushMessage($userId, [$flexMessage]);
             if (!empty($res['success'])) {
-                if ($type === 'oil') {
-                    $db->prepare("UPDATE customers SET oil_reminded_at = CURRENT_TIMESTAMP WHERE user_id = :uid")->execute([':uid' => $userId]);
-                } elseif ($type === 'periodic') {
-                    $db->prepare("UPDATE customers SET periodic_reminded_at = CURRENT_TIMESTAMP WHERE user_id = :uid")->execute([':uid' => $userId]);
+                $remindLabel = ($type === 'oil') ? 'オイル交換' : (($type === 'periodic') ? '12ヶ月点検' : '車検満了');
+                if ($carId) {
+                    if ($type === 'oil') {
+                        $db->prepare("UPDATE customer_cars SET oil_reminded_at = CURRENT_TIMESTAMP WHERE id = :id")->execute([':id' => $carId]);
+                    } elseif ($type === 'periodic') {
+                        $db->prepare("UPDATE customer_cars SET periodic_reminded_at = CURRENT_TIMESTAMP WHERE id = :id")->execute([':id' => $carId]);
+                    } else {
+                        $db->prepare("UPDATE customer_cars SET inspection_reminded_at = CURRENT_TIMESTAMP WHERE id = :id")->execute([':id' => $carId]);
+                    }
                 } else {
-                    $db->prepare("UPDATE customers SET inspection_reminded_at = CURRENT_TIMESTAMP WHERE user_id = :uid")->execute([':uid' => $userId]);
+                    if ($type === 'oil') {
+                        $db->prepare("UPDATE customer_cars SET oil_reminded_at = CURRENT_TIMESTAMP WHERE user_id = :uid")->execute([':uid' => $userId]);
+                    } elseif ($type === 'periodic') {
+                        $db->prepare("UPDATE customer_cars SET periodic_reminded_at = CURRENT_TIMESTAMP WHERE user_id = :uid")->execute([':uid' => $userId]);
+                    } else {
+                        $db->prepare("UPDATE customer_cars SET inspection_reminded_at = CURRENT_TIMESTAMP WHERE user_id = :uid")->execute([':uid' => $userId]);
+                    }
                 }
+                recordCustomerInteraction($db, $userId, 'admin_reminder', "{$remindLabel}リマインド送信: {$carModel}", $carId);
                 echo json_encode(['success' => true, 'message' => "{$userName} 様へLINEリマインドを送信しました！"], JSON_UNESCAPED_UNICODE);
             } else {
                 http_response_code(500);
@@ -2334,6 +2375,7 @@ try {
                 ':txt' => $customText,
                 ':uid' => $userId
             ]);
+            recordCustomerInteraction($db, $userId, 'custom_menu', "専用メッセージ設定: " . mb_substr($customText, 0, 35));
 
             $buttonSummaries = [];
             foreach ($lineAreas as $idx => $la) {
@@ -2541,6 +2583,7 @@ try {
                 ':lmid' => $newLineMenuId,
                 ':uid' => $userId
             ]);
+            recordCustomerInteraction($db, $userId, 'custom_menu', "個別メニュー割当: {$targetMenu['title']}");
 
             echo json_encode([
                 'success' => true,
