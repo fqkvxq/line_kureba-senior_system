@@ -4,8 +4,10 @@
  * 車両一覧、絞り込み、メタ情報取得、顧客メンテナンス管理をサポート
  */
 
-// タイムゾーンとエラー設定
+// タイムゾーンとエラー設定 (日本時間 / JST)
 date_default_timezone_set('Asia/Tokyo');
+ini_set('date.timezone', 'Asia/Tokyo');
+putenv('TZ=Asia/Tokyo');
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
@@ -242,7 +244,7 @@ try {
                         created_at, updated_at
                     ) VALUES (
                         :uid, :uname, '【未登録】愛車登録待ち', '',
-                        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                        datetime('now', '+9 hours'), datetime('now', '+9 hours')
                     )
                 ");
                 $insertStmt->execute([
@@ -373,7 +375,7 @@ try {
                         oil_next_date = :oil_next_date,
                         periodic_insp_next_date = :periodic_next_date,
                         inspection_next_date = :inspection_next_date,
-                        updated_at = CURRENT_TIMESTAMP
+                        updated_at = datetime('now', '+9 hours')
                     WHERE id = :car_id AND user_id = :uid
                 ");
                 $stmt->execute([
@@ -397,7 +399,7 @@ try {
                     ) VALUES (
                         :uid, :uname, :car_model, :car_number,
                         :oil_last_date, :oil_next_date, :periodic_next_date, :inspection_next_date,
-                        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                        datetime('now', '+9 hours'), datetime('now', '+9 hours')
                     )
                 ");
                 $stmt->execute([
@@ -902,7 +904,7 @@ try {
                         periodic_insp_next_date = :periodic_next_date,
                         inspection_next_date = :inspection_next_date,
                         staff_memo = :staff_memo,
-                        updated_at = CURRENT_TIMESTAMP
+                        updated_at = datetime('now', '+9 hours')
                     WHERE id = :id
                 ");
                 $stmt->execute([
@@ -925,7 +927,7 @@ try {
                     ) VALUES (
                         :uid, :uname, :car_model, :car_number,
                         :oil_last_date, :oil_next_date, :periodic_next_date, :inspection_next_date,
-                        :staff_memo, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                        :staff_memo, datetime('now', '+9 hours'), datetime('now', '+9 hours')
                     )
                 ");
                 $stmt->execute([
@@ -995,7 +997,7 @@ try {
                             created_at, updated_at
                         ) VALUES (
                             :uid, :uname, :pic, '【未登録】愛車登録待ち', '',
-                            CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                            datetime('now', '+9 hours'), datetime('now', '+9 hours')
                         )
                     ");
                     $insertStmt->execute([
@@ -1014,7 +1016,7 @@ try {
                         UPDATE customer_cars SET
                             user_name = :uname,
                             picture_url = :pic,
-                            updated_at = CURRENT_TIMESTAMP
+                            updated_at = datetime('now', '+9 hours')
                         WHERE id = :id
                     ")->execute([
                         ':uname' => $currentName,
@@ -1347,19 +1349,19 @@ try {
                 $remindLabel = ($type === 'oil') ? 'オイル交換' : (($type === 'periodic') ? '12ヶ月点検' : '車検満了');
                 if ($carId) {
                     if ($type === 'oil') {
-                        $db->prepare("UPDATE customer_cars SET oil_reminded_at = CURRENT_TIMESTAMP WHERE id = :id")->execute([':id' => $carId]);
+                        $db->prepare("UPDATE customer_cars SET oil_reminded_at = datetime('now', '+9 hours') WHERE id = :id")->execute([':id' => $carId]);
                     } elseif ($type === 'periodic') {
-                        $db->prepare("UPDATE customer_cars SET periodic_reminded_at = CURRENT_TIMESTAMP WHERE id = :id")->execute([':id' => $carId]);
+                        $db->prepare("UPDATE customer_cars SET periodic_reminded_at = datetime('now', '+9 hours') WHERE id = :id")->execute([':id' => $carId]);
                     } else {
-                        $db->prepare("UPDATE customer_cars SET inspection_reminded_at = CURRENT_TIMESTAMP WHERE id = :id")->execute([':id' => $carId]);
+                        $db->prepare("UPDATE customer_cars SET inspection_reminded_at = datetime('now', '+9 hours') WHERE id = :id")->execute([':id' => $carId]);
                     }
                 } else {
                     if ($type === 'oil') {
-                        $db->prepare("UPDATE customer_cars SET oil_reminded_at = CURRENT_TIMESTAMP WHERE user_id = :uid")->execute([':uid' => $userId]);
+                        $db->prepare("UPDATE customer_cars SET oil_reminded_at = datetime('now', '+9 hours') WHERE user_id = :uid")->execute([':uid' => $userId]);
                     } elseif ($type === 'periodic') {
-                        $db->prepare("UPDATE customer_cars SET periodic_reminded_at = CURRENT_TIMESTAMP WHERE user_id = :uid")->execute([':uid' => $userId]);
+                        $db->prepare("UPDATE customer_cars SET periodic_reminded_at = datetime('now', '+9 hours') WHERE user_id = :uid")->execute([':uid' => $userId]);
                     } else {
-                        $db->prepare("UPDATE customer_cars SET inspection_reminded_at = CURRENT_TIMESTAMP WHERE user_id = :uid")->execute([':uid' => $userId]);
+                        $db->prepare("UPDATE customer_cars SET inspection_reminded_at = datetime('now', '+9 hours') WHERE user_id = :uid")->execute([':uid' => $userId]);
                     }
                 }
                 recordCustomerInteraction($db, $userId, 'admin_reminder', "{$remindLabel}リマインド送信: {$carModel}", $carId);
@@ -1818,7 +1820,7 @@ try {
                         height = :height,
                         is_active = :is_active,
                         is_notice = :is_notice,
-                        updated_at = CURRENT_TIMESTAMP
+                        updated_at = datetime('now', '+9 hours')
                     WHERE id = :id
                 ");
                 $stmt->execute([
@@ -1856,7 +1858,7 @@ try {
                         width, height, is_active, is_notice, created_at, updated_at
                     ) VALUES (
                         :line_menu_id, :alias_id, :title, :chat_bar_text, :image_url, :base_image_url, :areas_json, :text_overlays_json,
-                        :width, :height, :is_active, :is_notice, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                        :width, :height, :is_active, :is_notice, datetime('now', '+9 hours'), datetime('now', '+9 hours')
                     )
                 ");
                 $stmt->execute([
@@ -1921,7 +1923,7 @@ try {
 
             // 他のお知らせメニューのis_activeを0にして、このメニューをis_notice=1 & is_active=1にする
             $db->exec("UPDATE rich_menus SET is_active = 0 WHERE is_notice = 1");
-            $db->prepare("UPDATE rich_menus SET is_notice = 1, is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = :id")->execute([':id' => $id]);
+            $db->prepare("UPDATE rich_menus SET is_notice = 1, is_active = 1, updated_at = datetime('now', '+9 hours') WHERE id = :id")->execute([':id' => $id]);
 
             echo json_encode([
                 'success' => true,
@@ -1957,7 +1959,7 @@ try {
 
             // DB更新
             $db->exec("UPDATE rich_menus SET is_active = 0");
-            $db->prepare("UPDATE rich_menus SET is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = :id")->execute([':id' => $id]);
+            $db->prepare("UPDATE rich_menus SET is_active = 1, updated_at = datetime('now', '+9 hours') WHERE id = :id")->execute([':id' => $id]);
 
             echo json_encode([
                 'success' => true,
@@ -2036,7 +2038,7 @@ try {
                 exit;
             }
 
-            $updateStmt = $db->prepare("UPDATE rich_menus SET title = :title, updated_at = CURRENT_TIMESTAMP WHERE id = :id");
+            $updateStmt = $db->prepare("UPDATE rich_menus SET title = :title, updated_at = datetime('now', '+9 hours') WHERE id = :id");
             $updateStmt->execute([
                 ':title' => $newTitle,
                 ':id' => $id
@@ -2368,7 +2370,7 @@ try {
                 UPDATE customer_cars SET
                     custom_line_menu_id = :lmid,
                     custom_menu_text = :txt,
-                    custom_menu_set_at = CURRENT_TIMESTAMP
+                    custom_menu_set_at = datetime('now', '+9 hours')
                 WHERE user_id = :uid
             ")->execute([
                 ':lmid' => $newLineMenuId,
@@ -2577,7 +2579,7 @@ try {
                 UPDATE customer_cars SET
                     custom_line_menu_id = :lmid,
                     custom_menu_text = '',
-                    custom_menu_set_at = CURRENT_TIMESTAMP
+                    custom_menu_set_at = datetime('now', '+9 hours')
                 WHERE user_id = :uid
             ")->execute([
                 ':lmid' => $newLineMenuId,

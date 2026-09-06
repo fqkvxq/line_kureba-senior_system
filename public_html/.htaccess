@@ -1,0 +1,15 @@
+# ------------------------------------------------------------------------------
+# アップファーレン サーバー設定 (.htaccess)
+# タイムゾーンを日本時間(JST / Asia/Tokyo)に設定
+# ------------------------------------------------------------------------------
+SetEnv TZ Asia/Tokyo
+
+<IfModule mod_php7.c>
+    php_value date.timezone "Asia/Tokyo"
+</IfModule>
+<IfModule mod_php8.c>
+    php_value date.timezone "Asia/Tokyo"
+</IfModule>
+<IfModule mod_php.c>
+    php_value date.timezone "Asia/Tokyo"
+</IfModule>

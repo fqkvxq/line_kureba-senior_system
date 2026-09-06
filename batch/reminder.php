@@ -188,7 +188,7 @@ foreach ($oilTargetCustomers as $cust) {
 
     $res = sendLinePushMessage($userId, [$flexMessage]);
     if (!empty($res['success'])) {
-        $updateStmt = $db->prepare("UPDATE customer_cars SET oil_reminded_at = CURRENT_TIMESTAMP WHERE id = :id");
+        $updateStmt = $db->prepare("UPDATE customer_cars SET oil_reminded_at = datetime('now', '+9 hours') WHERE id = :id");
         $updateStmt->execute([':id' => $cust['id']]);
         $oilSentCount++;
         $reportDetails[] = [
@@ -342,7 +342,7 @@ foreach ($periodicTargetCustomers as $cust) {
 
     $res = sendLinePushMessage($userId, [$flexMessage]);
     if (!empty($res['success'])) {
-        $updateStmt = $db->prepare("UPDATE customer_cars SET periodic_reminded_at = CURRENT_TIMESTAMP WHERE id = :id");
+        $updateStmt = $db->prepare("UPDATE customer_cars SET periodic_reminded_at = datetime('now', '+9 hours') WHERE id = :id");
         $updateStmt->execute([':id' => $cust['id']]);
         $periodicSentCount++;
         $reportDetails[] = [
@@ -496,7 +496,7 @@ foreach ($inspTargetCustomers as $cust) {
 
     $res = sendLinePushMessage($userId, [$flexMessage]);
     if (!empty($res['success'])) {
-        $updateStmt = $db->prepare("UPDATE customer_cars SET inspection_reminded_at = CURRENT_TIMESTAMP WHERE id = :id");
+        $updateStmt = $db->prepare("UPDATE customer_cars SET inspection_reminded_at = datetime('now', '+9 hours') WHERE id = :id");
         $updateStmt->execute([':id' => $cust['id']]);
         $shakenSentCount++;
         $reportDetails[] = [

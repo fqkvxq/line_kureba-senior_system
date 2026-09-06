@@ -4,8 +4,10 @@
  * Xserver環境およびLINE公式アカウント、Discord通知、顧客メンテナンス管理の設定を管理します。
  */
 
-// タイムゾーン設定
+// タイムゾーン設定 (日本時間 / JST)
 date_default_timezone_set('Asia/Tokyo');
+ini_set('date.timezone', 'Asia/Tokyo');
+putenv('TZ=Asia/Tokyo');
 
 // --- LINE公式アカウント設定 ---
 define('LINE_CHANNEL_ACCESS_TOKEN', 'JixCe0rnnP4omxlVgYbU3aC0As5sUV7mZtwmgLNULVePqlCEfdr85oAzjWoMacmU++aNCQmSNyDwR70g9JkOyZK9AU5M0gkdttBHYWCcXacUQxavZuw4ftsuDATXEHlN+lVPuxTEcDi0I8N5xYMsfQdB04t89/1O/w1cDnyilFU='); // チャネルアクセストークン (長期)
@@ -102,8 +104,8 @@ function getDbConnection(): PDO {
             oil_reminded_at DATETIME,
             periodic_reminded_at DATETIME,
             inspection_reminded_at DATETIME,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at DATETIME DEFAULT (datetime('now', '+9 hours')),
+            updated_at DATETIME DEFAULT (datetime('now', '+9 hours'))
         )
     ");
 
@@ -133,7 +135,7 @@ function getDbConnection(): PDO {
                     custom_menu_set_at,
                     updated_at,
                     created_at,
-                    CURRENT_TIMESTAMP
+                    datetime('now', '+9 hours')
                 ),
                 last_interaction_type = CASE
                     WHEN inspection_reminded_at IS NOT NULL THEN 'admin_reminder'
@@ -167,8 +169,8 @@ function getDbConnection(): PDO {
             width INTEGER DEFAULT 2500,
             height INTEGER DEFAULT 1686,
             is_active INTEGER DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at DATETIME DEFAULT (datetime('now', '+9 hours')),
+            updated_at DATETIME DEFAULT (datetime('now', '+9 hours'))
         )
     ");
     try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_rich_menus_active ON rich_menus(is_active)"); } catch (Exception $e) {}
@@ -333,7 +335,7 @@ function ensureCustomerExists(PDO $db, string $userId): ?array {
                 if ($prof) {
                     $upName = (!empty($prof['displayName']) && $needUpdateName) ? $prof['displayName'] : $existing['user_name'];
                     $upPic = !empty($prof['pictureUrl']) ? $prof['pictureUrl'] : ($existing['picture_url'] ?? '');
-                    $upStmt = $db->prepare("UPDATE customer_cars SET user_name = :uname, picture_url = :pic, updated_at = CURRENT_TIMESTAMP WHERE id = :id");
+                    $upStmt = $db->prepare("UPDATE customer_cars SET user_name = :uname, picture_url = :pic, updated_at = datetime('now', '+9 hours') WHERE id = :id");
                     $upStmt->execute([':uname' => $upName, ':pic' => $upPic, ':id' => $existing['id']]);
                     $existing['user_name'] = $upName;
                     $existing['picture_url'] = $upPic;
@@ -354,8 +356,8 @@ function ensureCustomerExists(PDO $db, string $userId): ?array {
                 created_at, updated_at
             ) VALUES (
                 :uid, :uname, :pic, '【未登録】愛車登録待ち', '',
-                CURRENT_TIMESTAMP, 'follow', '友だち登録',
-                CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                datetime('now', '+9 hours'), 'follow', '友だち登録',
+                datetime('now', '+9 hours'), datetime('now', '+9 hours')
             )
         ");
         $insertStmt->execute([
@@ -400,20 +402,20 @@ function recordCustomerInteraction(PDO $db, string $userId, string $type, string
         if ($carId) {
             $stmt = $db->prepare("
                 UPDATE customer_cars 
-                SET last_interaction_at = CURRENT_TIMESTAMP,
+                SET last_interaction_at = datetime('now', '+9 hours'),
                     last_interaction_type = :type,
                     last_interaction_preview = :preview,
-                    updated_at = CURRENT_TIMESTAMP
+                    updated_at = datetime('now', '+9 hours')
                 WHERE id = :id
             ");
             $stmt->execute([':type' => $type, ':preview' => $preview, ':id' => $carId]);
         } else {
             $stmt = $db->prepare("
                 UPDATE customer_cars 
-                SET last_interaction_at = CURRENT_TIMESTAMP,
+                SET last_interaction_at = datetime('now', '+9 hours'),
                     last_interaction_type = :type,
                     last_interaction_preview = :preview,
-                    updated_at = CURRENT_TIMESTAMP
+                    updated_at = datetime('now', '+9 hours')
                 WHERE user_id = :uid
             ");
             $stmt->execute([':type' => $type, ':preview' => $preview, ':uid' => $userId]);

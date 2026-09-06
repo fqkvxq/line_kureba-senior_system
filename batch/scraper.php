@@ -5,8 +5,10 @@
  * 新着車両が検知された場合、LINE公式アカウントの友だち全員へFlex Message自動一斉配信＆Discord通知を行います。
  */
 
-// タイムゾーンとエラー設定
+// タイムゾーンとエラー設定 (日本時間 / JST)
 date_default_timezone_set('Asia/Tokyo');
+ini_set('date.timezone', 'Asia/Tokyo');
+putenv('TZ=Asia/Tokyo');
 ini_set('display_errors', '1');
 error_reporting(E_ALL);
 
@@ -161,8 +163,8 @@ try {
             fuel TEXT,
             equipments TEXT,
             is_active INTEGER DEFAULT 1,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at DATETIME DEFAULT (datetime('now', '+9 hours')),
+            updated_at DATETIME DEFAULT (datetime('now', '+9 hours'))
         );
         CREATE INDEX IF NOT EXISTS idx_cars_active ON cars(is_active);
         CREATE INDEX IF NOT EXISTS idx_cars_price ON cars(total_price_num);
@@ -464,7 +466,7 @@ try {
             :base_price_text, :base_price_num, :year, :distance, :distance_num,
             :displacement, :repair_history, :shaken, :image_url, :detail_url,
             :drive_type, :color, :transmission, :passengers, :fuel, :equipments,
-            1, CURRENT_TIMESTAMP
+            1, datetime('now', '+9 hours')
         )
     ");
 
@@ -498,7 +500,7 @@ try {
     $currentIds = array_keys($allCars);
     $inClause = implode(',', array_fill(0, count($currentIds), '?'));
     $deactivateStmt = $db->prepare("
-        UPDATE cars SET is_active = 0, updated_at = CURRENT_TIMESTAMP
+        UPDATE cars SET is_active = 0, updated_at = datetime('now', '+9 hours')
         WHERE shop_code = ? AND id NOT IN ({$inClause})
     ");
     $deactivateStmt->execute(array_merge([$shopCode], $currentIds));

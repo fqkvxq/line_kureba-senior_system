@@ -490,6 +490,14 @@
                                 <p>サーバー上の `config.php` に記載されている `ADMIN_PASSWORD` の値を変更することで、管理画面の共通パスワードをいつでも更新できます。</p>
                             </div>
                         </div>
+
+                        <div class="step-card">
+                            <div class="step-number">Q</div>
+                            <div class="step-body">
+                                <h4>システムの基準時間（タイムゾーン）はどうなっていますか？</h4>
+                                <p>当システムはWebサーバー設定（`.htaccess`, `.user.ini`）、PHPスクリプト、データベース（SQLite）のすべてで<strong>日本標準時（JST / Asia/Tokyo）</strong>に統一されています。海外サーバーやクラウド環境の初期状態（UTC）による9時間のズレは発生せず、最終やり取り日時やリマインド送信日時、点検日判定がすべて正確な日本時間で管理されます。</p>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
