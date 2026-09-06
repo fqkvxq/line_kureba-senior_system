@@ -893,6 +893,7 @@ try {
                 $userId = 'MANUAL_' . uniqid();
             }
 
+            $nowJst = date('Y-m-d H:i:s');
             if ($carId) {
                 $stmt = $db->prepare("
                     UPDATE customer_cars SET
@@ -904,7 +905,7 @@ try {
                         periodic_insp_next_date = :periodic_next_date,
                         inspection_next_date = :inspection_next_date,
                         staff_memo = :staff_memo,
-                        updated_at = datetime('now', '+9 hours')
+                        updated_at = :updated_at
                     WHERE id = :id
                 ");
                 $stmt->execute([
@@ -916,18 +917,21 @@ try {
                     ':oil_next_date' => $oilNextDate,
                     ':periodic_next_date' => $periodicInspNextDate,
                     ':inspection_next_date' => $inspectionNextDate,
-                    ':staff_memo' => $staffMemo
+                    ':staff_memo' => $staffMemo,
+                    ':updated_at' => $nowJst
                 ]);
             } else {
                 $stmt = $db->prepare("
                     INSERT INTO customer_cars (
                         user_id, user_name, car_model, car_number,
                         oil_last_date, oil_next_date, periodic_insp_next_date, inspection_next_date,
-                        staff_memo, created_at, updated_at
+                        staff_memo, last_interaction_at, last_interaction_type, last_interaction_preview,
+                        created_at, updated_at
                     ) VALUES (
                         :uid, :uname, :car_model, :car_number,
                         :oil_last_date, :oil_next_date, :periodic_next_date, :inspection_next_date,
-                        :staff_memo, datetime('now', '+9 hours'), datetime('now', '+9 hours')
+                        :staff_memo, :now_jst1, 'follow', '手動登録',
+                        :now_jst2, :now_jst3
                     )
                 ");
                 $stmt->execute([
@@ -939,7 +943,10 @@ try {
                     ':oil_next_date' => $oilNextDate,
                     ':periodic_next_date' => $periodicInspNextDate,
                     ':inspection_next_date' => $inspectionNextDate,
-                    ':staff_memo' => $staffMemo
+                    ':staff_memo' => $staffMemo,
+                    ':now_jst1' => $nowJst,
+                    ':now_jst2' => $nowJst,
+                    ':now_jst3' => $nowJst
                 ]);
             }
 
@@ -990,20 +997,26 @@ try {
                 $displayName = !empty($prof['displayName']) ? $prof['displayName'] : 'LINE友だち';
                 $pictureUrl = !empty($prof['pictureUrl']) ? $prof['pictureUrl'] : '';
 
+                $nowJst = date('Y-m-d H:i:s');
                 if (!$existing) {
                     $insertStmt = $db->prepare("
                         INSERT INTO customer_cars (
                             user_id, user_name, picture_url, car_model, car_number,
+                            last_interaction_at, last_interaction_type, last_interaction_preview,
                             created_at, updated_at
                         ) VALUES (
                             :uid, :uname, :pic, '【未登録】愛車登録待ち', '',
-                            datetime('now', '+9 hours'), datetime('now', '+9 hours')
+                            :now_jst1, 'follow', '友だち登録',
+                            :now_jst2, :now_jst3
                         )
                     ");
                     $insertStmt->execute([
                         ':uid' => $uid,
                         ':uname' => $displayName,
-                        ':pic' => $pictureUrl
+                        ':pic' => $pictureUrl,
+                        ':now_jst1' => $nowJst,
+                        ':now_jst2' => $nowJst,
+                        ':now_jst3' => $nowJst
                     ]);
                     $importedCount++;
                 } else {
@@ -1016,11 +1029,12 @@ try {
                         UPDATE customer_cars SET
                             user_name = :uname,
                             picture_url = :pic,
-                            updated_at = datetime('now', '+9 hours')
+                            updated_at = :updated_at
                         WHERE id = :id
                     ")->execute([
                         ':uname' => $currentName,
                         ':pic' => $currentPic,
+                        ':updated_at' => $nowJst,
                         ':id' => $existing['id']
                     ]);
                     $updatedCount++;

@@ -123,8 +123,20 @@ function getDbConnection(): PDO {
     try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN last_interaction_preview TEXT DEFAULT ''"); } catch (Exception $e) {}
     try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_last_interaction ON customer_cars(last_interaction_at)"); } catch (Exception $e) {}
 
+    // システム設定・マイグレーション管理テーブル
+    try {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS system_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT,
+                updated_at DATETIME
+            )
+        ");
+    } catch (Exception $e) {}
+
     // 初期化マイグレーション: last_interaction_at が NULL の既存顧客に対して最新日付を補完
     try {
+        $nowJst = date('Y-m-d H:i:s');
         $pdo->exec("
             UPDATE customer_cars
             SET 
@@ -135,7 +147,7 @@ function getDbConnection(): PDO {
                     custom_menu_set_at,
                     updated_at,
                     created_at,
-                    datetime('now', '+9 hours')
+                    '{$nowJst}'
                 ),
                 last_interaction_type = CASE
                     WHEN inspection_reminded_at IS NOT NULL THEN 'admin_reminder'
@@ -154,6 +166,53 @@ function getDbConnection(): PDO {
             WHERE last_interaction_at IS NULL
         ");
     } catch (Exception $e) {}
+
+    // 【重要】既存データのUTC→JST(+9時間) 一括変換マイグレーション (1回限り実行)
+    // 過去に DEFAULT CURRENT_TIMESTAMP 等で記録されたUTC時刻データを日本標準時(JST)に揃える
+    try {
+        $checkStmt = $pdo->prepare("SELECT value FROM system_settings WHERE key = 'tz_migrated_to_jst_v2'");
+        $checkStmt->execute();
+        $isMigrated = $checkStmt->fetchColumn();
+        if (!$isMigrated) {
+            $nowJst = date('Y-m-d H:i:s');
+            $pdo->beginTransaction();
+
+            // 1. 過去の既存レコードの各日時カラムを +9時間 して日本時間に補正
+            $pdo->exec("
+                UPDATE customer_cars
+                SET 
+                    created_at = datetime(created_at, '+9 hours'),
+                    updated_at = datetime(updated_at, '+9 hours'),
+                    last_interaction_at = CASE 
+                        WHEN last_interaction_at IS NOT NULL THEN datetime(last_interaction_at, '+9 hours')
+                        ELSE datetime(COALESCE(updated_at, created_at), '+9 hours')
+                    END,
+                    oil_reminded_at = CASE WHEN oil_reminded_at IS NOT NULL THEN datetime(oil_reminded_at, '+9 hours') ELSE NULL END,
+                    periodic_reminded_at = CASE WHEN periodic_reminded_at IS NOT NULL THEN datetime(periodic_reminded_at, '+9 hours') ELSE NULL END,
+                    inspection_reminded_at = CASE WHEN inspection_reminded_at IS NOT NULL THEN datetime(inspection_reminded_at, '+9 hours') ELSE NULL END,
+                    custom_menu_set_at = CASE WHEN custom_menu_set_at IS NOT NULL THEN datetime(custom_menu_set_at, '+9 hours') ELSE NULL END
+            ");
+
+            // 2. 念のための安全防護策: 補正により現在時刻より未来（10分以上先）になってしまったものは現在時刻(JST)に丸める
+            $safeStmt = $pdo->prepare("
+                UPDATE customer_cars 
+                SET last_interaction_at = :now_jst 
+                WHERE last_interaction_at > datetime(:now_jst_check, '+10 minutes')
+            ");
+            $safeStmt->execute([':now_jst' => $nowJst, ':now_jst_check' => $nowJst]);
+
+            // 完了フラグを記録
+            $pdo->prepare("INSERT OR REPLACE INTO system_settings (key, value, updated_at) VALUES ('tz_migrated_to_jst_v2', '1', :now_jst)")
+                ->execute([':now_jst' => $nowJst]);
+            $pdo->commit();
+            writeDebugLog("全顧客データのUTC→JST一括マイグレーション完了");
+        }
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        writeDebugLog("JSTマイグレーション例外", ['error' => $e->getMessage()]);
+    }
 
     // リッチメニュー履歴管理テーブルの初期化
     $pdo->exec("
@@ -333,10 +392,11 @@ function ensureCustomerExists(PDO $db, string $userId): ?array {
             if ($needUpdateName || $needUpdatePic) {
                 $prof = getLineUserProfile($userId);
                 if ($prof) {
+                    $nowJst = date('Y-m-d H:i:s');
                     $upName = (!empty($prof['displayName']) && $needUpdateName) ? $prof['displayName'] : $existing['user_name'];
                     $upPic = !empty($prof['pictureUrl']) ? $prof['pictureUrl'] : ($existing['picture_url'] ?? '');
-                    $upStmt = $db->prepare("UPDATE customer_cars SET user_name = :uname, picture_url = :pic, updated_at = datetime('now', '+9 hours') WHERE id = :id");
-                    $upStmt->execute([':uname' => $upName, ':pic' => $upPic, ':id' => $existing['id']]);
+                    $upStmt = $db->prepare("UPDATE customer_cars SET user_name = :uname, picture_url = :pic, updated_at = :updated_at WHERE id = :id");
+                    $upStmt->execute([':uname' => $upName, ':pic' => $upPic, ':updated_at' => $nowJst, ':id' => $existing['id']]);
                     $existing['user_name'] = $upName;
                     $existing['picture_url'] = $upPic;
                 }
@@ -348,6 +408,7 @@ function ensureCustomerExists(PDO $db, string $userId): ?array {
         $prof = getLineUserProfile($userId);
         $displayName = !empty($prof['displayName']) ? $prof['displayName'] : 'お客様';
         $pictureUrl = !empty($prof['pictureUrl']) ? $prof['pictureUrl'] : '';
+        $nowJst = date('Y-m-d H:i:s');
 
         $insertStmt = $db->prepare("
             INSERT INTO customer_cars (
@@ -356,14 +417,17 @@ function ensureCustomerExists(PDO $db, string $userId): ?array {
                 created_at, updated_at
             ) VALUES (
                 :uid, :uname, :pic, '【未登録】愛車登録待ち', '',
-                datetime('now', '+9 hours'), 'follow', '友だち登録',
-                datetime('now', '+9 hours'), datetime('now', '+9 hours')
+                :now_jst1, 'follow', '友だち登録',
+                :now_jst2, :now_jst3
             )
         ");
         $insertStmt->execute([
             ':uid' => $userId,
             ':uname' => $displayName,
-            ':pic' => $pictureUrl
+            ':pic' => $pictureUrl,
+            ':now_jst1' => $nowJst,
+            ':now_jst2' => $nowJst,
+            ':now_jst3' => $nowJst
         ]);
         $newId = (int)$db->lastInsertId();
         writeDebugLog("LINEユーザー自動顧客登録完了", ['uid' => $userId, 'name' => $displayName, 'pic' => $pictureUrl, 'id' => $newId]);
@@ -374,7 +438,7 @@ function ensureCustomerExists(PDO $db, string $userId): ?array {
             'user_name' => $displayName,
             'picture_url' => $pictureUrl,
             'car_model' => '【未登録】愛車登録待ち',
-            'last_interaction_at' => date('Y-m-d H:i:s'),
+            'last_interaction_at' => $nowJst,
             'last_interaction_type' => 'follow',
             'last_interaction_preview' => '友だち登録'
         ];
@@ -399,28 +463,29 @@ function recordCustomerInteraction(PDO $db, string $userId, string $type, string
 
     try {
         $preview = mb_substr(trim($preview), 0, 80);
+        $nowJst = date('Y-m-d H:i:s');
         if ($carId) {
             $stmt = $db->prepare("
                 UPDATE customer_cars 
-                SET last_interaction_at = datetime('now', '+9 hours'),
+                SET last_interaction_at = :now_jst1,
                     last_interaction_type = :type,
                     last_interaction_preview = :preview,
-                    updated_at = datetime('now', '+9 hours')
+                    updated_at = :now_jst2
                 WHERE id = :id
             ");
-            $stmt->execute([':type' => $type, ':preview' => $preview, ':id' => $carId]);
+            $stmt->execute([':now_jst1' => $nowJst, ':type' => $type, ':preview' => $preview, ':now_jst2' => $nowJst, ':id' => $carId]);
         } else {
             $stmt = $db->prepare("
                 UPDATE customer_cars 
-                SET last_interaction_at = datetime('now', '+9 hours'),
+                SET last_interaction_at = :now_jst1,
                     last_interaction_type = :type,
                     last_interaction_preview = :preview,
-                    updated_at = datetime('now', '+9 hours')
+                    updated_at = :now_jst2
                 WHERE user_id = :uid
             ");
-            $stmt->execute([':type' => $type, ':preview' => $preview, ':uid' => $userId]);
+            $stmt->execute([':now_jst1' => $nowJst, ':type' => $type, ':preview' => $preview, ':now_jst2' => $nowJst, ':uid' => $userId]);
         }
-        writeDebugLog("顧客インタラクション記録", ['uid' => $userId, 'type' => $type, 'preview' => $preview]);
+        writeDebugLog("顧客インタラクション記録", ['uid' => $userId, 'type' => $type, 'preview' => $preview, 'time' => $nowJst]);
     } catch (Throwable $e) {
         writeDebugLog("recordCustomerInteraction 例外", ['error' => $e->getMessage()]);
     }
@@ -441,8 +506,12 @@ function formatTimeDiffText(?string $datetimeStr): string {
     $now = time();
     $diff = $now - $ts;
 
+    // わずかな時計ズレ（10分以内の未来）は「たった今」とする
     if ($diff < 0) {
-        return date('Y/m/d', $ts);
+        if ($diff > -600) {
+            return 'たった今';
+        }
+        return date('Y/m/d H:i', $ts);
     }
     if ($diff < 60) {
         return 'たった今';

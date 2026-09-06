@@ -450,32 +450,39 @@ function renderTable() {
 
     // 並び替え処理
     const sort = state.currentSort || 'last_interaction';
+    const parseSafeTime = (val) => {
+        if (!val) return 0;
+        const str = String(val).replace(/-/g, '/').replace('T', ' ');
+        const t = new Date(str).getTime();
+        return isNaN(t) ? 0 : t;
+    };
+
     filtered.sort((a, b) => {
         if (sort === 'last_interaction') {
-            const timeA = new Date(a.last_interaction_at || a.updated_at || a.created_at || 0).getTime();
-            const timeB = new Date(b.last_interaction_at || b.updated_at || b.created_at || 0).getTime();
+            const timeA = parseSafeTime(a.last_interaction_at || a.updated_at || a.created_at);
+            const timeB = parseSafeTime(b.last_interaction_at || b.updated_at || b.created_at);
             return timeB - timeA;
         } else if (sort === 'insp_soon') {
             if (!a.inspection_next_date && !b.inspection_next_date) return 0;
             if (!a.inspection_next_date) return 1;
             if (!b.inspection_next_date) return -1;
-            return new Date(a.inspection_next_date) - new Date(b.inspection_next_date);
+            return parseSafeTime(a.inspection_next_date) - parseSafeTime(b.inspection_next_date);
         } else if (sort === 'oil_soon') {
             if (!a.oil_next_date && !b.oil_next_date) return 0;
             if (!a.oil_next_date) return 1;
             if (!b.oil_next_date) return -1;
-            return new Date(a.oil_next_date) - new Date(b.oil_next_date);
+            return parseSafeTime(a.oil_next_date) - parseSafeTime(b.oil_next_date);
         } else if (sort === 'periodic_soon') {
             if (!a.periodic_insp_next_date && !b.periodic_insp_next_date) return 0;
             if (!a.periodic_insp_next_date) return 1;
             if (!b.periodic_insp_next_date) return -1;
-            return new Date(a.periodic_insp_next_date) - new Date(b.periodic_insp_next_date);
+            return parseSafeTime(a.periodic_insp_next_date) - parseSafeTime(b.periodic_insp_next_date);
         } else if (sort === 'name_asc') {
             return (a.user_name || '').localeCompare(b.user_name || '', 'ja');
         } else if (sort === 'created_desc') {
-            return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+            return parseSafeTime(b.created_at) - parseSafeTime(a.created_at);
         } else if (sort === 'updated_desc') {
-            return new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime();
+            return parseSafeTime(b.updated_at) - parseSafeTime(a.updated_at);
         }
         return 0;
     });
