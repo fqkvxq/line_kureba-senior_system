@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260906_last_chat_v1">
+    <link rel="stylesheet" href="admin.css?v=20260906_auto_nearest_v3">
 </head>
 <body>
     <!-- ログインモーダル (初期表示) -->
@@ -213,8 +213,25 @@
                 </div>
 
                 <div class="form-row full">
+                    <!-- 直近点検期限サマリー -->
+                    <div class="nearest-maint-summary" id="editNearestMaintSummary" style="display: none;">
+                        <div class="nearest-maint-icon"><i class="fa-solid fa-bell"></i></div>
+                        <div class="nearest-maint-content">
+                            <div class="nearest-maint-title">最も期限が近いメンテナンス</div>
+                            <div class="nearest-maint-text" id="editNearestMaintText">次回オイル交換 (あと14日)</div>
+                        </div>
+                    </div>
+
                     <label>店舗用スタッフメモ (エレメント推奨、走行距離など)</label>
                     <textarea id="editStaffMemo" rows="3" placeholder="例: 次回エレメント同時交換推奨。走行距離: 5.2万km"></textarea>
+
+                    <!-- 専用リッチメニュー自動更新オプション -->
+                    <div class="auto-apply-menu-row" id="editAutoApplyMenuRow" style="display: none;">
+                        <label class="auto-apply-menu-label">
+                            <input type="checkbox" id="editAutoApplyMenuCheckbox" checked>
+                            <span><i class="fa-solid fa-wand-magic-sparkles" style="color: #4f46e5;"></i> 保存と同時に、直近の期限メッセージで専用リッチメニューをLINEに自動適用する</span>
+                        </label>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -323,6 +340,9 @@
                                     ワンクリック定型文（点検日を自動挿入）:
                                 </label>
                                 <div class="phrase-chips-grid">
+                                    <button type="button" class="btn-phrase-chip btn-phrase-nearest" id="chipCustAutoNearest">
+                                        <i class="fa-solid fa-wand-magic-sparkles" style="color: #6366f1;"></i> 最も期限が近い点検項目を自動選択
+                                    </button>
                                     <button type="button" class="btn-phrase-chip" id="chipCustInsp">
                                         <i class="fa-solid fa-shield-halved" style="color: #e11d48;"></i> 次回車検
                                     </button>
@@ -459,6 +479,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260906_fix_null_alert_v2"></script>
+    <script src="admin.js?v=20260906_auto_nearest_v3"></script>
 </body>
 </html>

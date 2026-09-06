@@ -60,6 +60,10 @@ const elements = {
     editPeriodicNextDate: document.getElementById('editPeriodicNextDate'),
     editInspectionNextDate: document.getElementById('editInspectionNextDate'),
     editStaffMemo: document.getElementById('editStaffMemo'),
+    editNearestMaintSummary: document.getElementById('editNearestMaintSummary'),
+    editNearestMaintText: document.getElementById('editNearestMaintText'),
+    editAutoApplyMenuRow: document.getElementById('editAutoApplyMenuRow'),
+    editAutoApplyMenuCheckbox: document.getElementById('editAutoApplyMenuCheckbox'),
 
     // 特定ユーザー向け専用リッチメニュー設定モーダル
     userRichMenuModal: document.getElementById('userRichMenuModal'),
@@ -95,6 +99,7 @@ const elements = {
     userMenuThemeSelect: document.getElementById('userMenuThemeSelect'),
     userMenuPosSelect: document.getElementById('userMenuPosSelect'),
     userMenuPreviewCanvas: document.getElementById('userMenuPreviewCanvas'),
+    chipCustAutoNearest: document.getElementById('chipCustAutoNearest'),
     chipCustInsp: document.getElementById('chipCustInsp'),
     chipCustOil: document.getElementById('chipCustOil'),
     chipCustPeriodic: document.getElementById('chipCustPeriodic'),
@@ -208,7 +213,16 @@ function initEventListeners() {
         elements.directAssignMenuSelect.addEventListener('change', updateDirectAssignPreview);
     }
 
+    // 顧客登録・編集モーダルでの直近点検サマリー自動連動
+    ['editOilNextDate', 'editPeriodicNextDate', 'editInspectionNextDate', 'editUserName'].forEach(id => {
+        if (elements[id]) {
+            elements[id].addEventListener('input', updateEditModalNearestSummary);
+            elements[id].addEventListener('change', updateEditModalNearestSummary);
+        }
+    });
+
     // 定型文チップ
+    if (elements.chipCustAutoNearest) elements.chipCustAutoNearest.addEventListener('click', applyNearestPhraseToCustomMenu);
     if (elements.chipCustInsp) elements.chipCustInsp.addEventListener('click', () => insertCustomPhrase('insp'));
     if (elements.chipCustOil) elements.chipCustOil.addEventListener('click', () => insertCustomPhrase('oil'));
     if (elements.chipCustPeriodic) elements.chipCustPeriodic.addEventListener('click', () => insertCustomPhrase('periodic'));
@@ -704,6 +718,267 @@ async function deleteCarRecord(cust) {
     }
 }
 
+// ==========================================================================
+// 直近のメンテナンス期限判定 & 自動メッセージ生成
+// ==========================================================================
+function getNearestMaintenanceInfo(data, customName) {
+    if (!data) return null;
+    const name = customName || data.user_name || 'お客様';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const items = [];
+
+    // 1. オイル交換
+    if (data.oil_next_date) {
+        const d = new Date(data.oil_next_date);
+        d.setHours(0, 0, 0, 0);
+        const diff = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
+        items.push({
+            type: 'oil',
+            label: '次回オイル交換',
+            shortLabel: '次回オイル',
+            date: data.oil_next_date,
+            diffDays: diff,
+            icon: 'fa-oil-can',
+            theme: diff <= 7 ? 'red' : (diff <= 30 ? 'orange' : 'amber'),
+            phrase: (diff < 0)
+                ? `${name}様 オイル交換の目安時期【${data.oil_next_date}】を過ぎています🛢️ 早めの交換をおすすめします！`
+                : (diff === 0)
+                ? `${name}様 本日はオイル交換の予定日です🛢️ ご来店をお待ちしております！`
+                : (diff <= 14)
+                ? `${name}様 次回オイル交換の目安は【${data.oil_next_date}】(あと${diff}日)です🛢️ お早めにご予約ください！`
+                : `${name}様 次回オイル交換の目安は【${data.oil_next_date}】です🛢️`
+        });
+    }
+
+    // 2. 12ヶ月定期点検
+    if (data.periodic_insp_next_date) {
+        const d = new Date(data.periodic_insp_next_date);
+        d.setHours(0, 0, 0, 0);
+        const diff = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
+        items.push({
+            type: 'periodic',
+            label: '12ヶ月定期点検',
+            shortLabel: '12ヶ月点検',
+            date: data.periodic_insp_next_date,
+            diffDays: diff,
+            icon: 'fa-clipboard-check',
+            theme: diff <= 14 ? 'red' : (diff <= 45 ? 'blue' : 'emerald'),
+            phrase: (diff < 0)
+                ? `${name}様 12ヶ月定期点検の時期【${data.periodic_insp_next_date}】を過ぎています📋 お気軽にご相談ください！`
+                : (diff === 0)
+                ? `${name}様 本日は12ヶ月点検の予定日です📋 ご来店をお待ちしております！`
+                : (diff <= 30)
+                ? `${name}様 12ヶ月定期点検【${data.periodic_insp_next_date}】(あと${diff}日)が近づいています📋 ご予約受付中！`
+                : `${name}様 【${data.periodic_insp_next_date}】は12ヶ月定期点検の時期です📋`
+        });
+    }
+
+    // 3. 車検満了
+    if (data.inspection_next_date) {
+        const d = new Date(data.inspection_next_date);
+        d.setHours(0, 0, 0, 0);
+        const diff = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
+        items.push({
+            type: 'insp',
+            label: '車検満了日',
+            shortLabel: '次回車検',
+            date: data.inspection_next_date,
+            diffDays: diff,
+            icon: 'fa-shield-halved',
+            theme: diff <= 30 ? 'red' : (diff <= 60 ? 'orange' : 'indigo'),
+            phrase: (diff < 0)
+                ? `${name}様 車検満了日【${data.inspection_next_date}】を過ぎています⚠️ お早めにご連絡ください！`
+                : (diff === 0)
+                ? `${name}様 本日は車検満了日です⚠️ お早めにご相談ください！`
+                : (diff <= 60)
+                ? `${name}様 次回車検は【${data.inspection_next_date}】(あと${diff}日)です🚗 お早めのご予約をおすすめします！`
+                : `${name}様 次回車検は【${data.inspection_next_date}】です🚗 ご予約はお早めに！`
+        });
+    }
+
+    if (items.length === 0) return null;
+
+    // 未来(diff >= 0)の中で diffDays が最小のものを優先
+    const futureItems = items.filter(it => it.diffDays >= 0);
+    if (futureItems.length > 0) {
+        futureItems.sort((a, b) => a.diffDays - b.diffDays);
+        return futureItems[0];
+    }
+
+    // 未来がない場合は過去(diff < 0)の中で期限切れが最も浅いもの（絶対値が最小）
+    items.sort((a, b) => b.diffDays - a.diffDays);
+    return items[0];
+}
+
+function updateEditModalNearestSummary() {
+    if (!elements.editNearestMaintSummary || !elements.editNearestMaintText) return;
+
+    const dummyData = {
+        oil_next_date: elements.editOilNextDate ? elements.editOilNextDate.value : '',
+        periodic_insp_next_date: elements.editPeriodicNextDate ? elements.editPeriodicNextDate.value : '',
+        inspection_next_date: elements.editInspectionNextDate ? elements.editInspectionNextDate.value : '',
+        user_name: elements.editUserName ? elements.editUserName.value : ''
+    };
+
+    const nearest = getNearestMaintenanceInfo(dummyData);
+    if (nearest) {
+        elements.editNearestMaintSummary.style.display = 'flex';
+        let diffBadge = nearest.diffDays < 0 
+            ? `<span style="color: #ef4444; font-weight: bold;">(期限切れ)</span>`
+            : (nearest.diffDays === 0 ? `<span style="color: #ef4444; font-weight: bold;">(本日！)</span>` : `<span style="color: #059669; font-weight: bold;">(あと${nearest.diffDays}日)</span>`);
+        elements.editNearestMaintText.innerHTML = `<i class="fa-solid ${nearest.icon}"></i> ${escapeHtml(nearest.label)}: <strong>${nearest.date}</strong> ${diffBadge}`;
+    } else {
+        elements.editNearestMaintSummary.style.display = 'none';
+    }
+}
+
+async function applyNearestRichMenuBackground(custData, nearest) {
+    try {
+        if (!state.richMenus || state.richMenus.length === 0) {
+            await loadRichMenus();
+        }
+
+        const base = state.richMenus.find(m => m.is_active == 1) || state.richMenus[0];
+        if (!base) {
+            console.warn('No base menu available for auto apply');
+            return;
+        }
+
+        const baseImgUrl = base.base_image_url || base.image_url;
+        if (!baseImgUrl) {
+            console.warn('Base menu has no image url');
+            return;
+        }
+
+        // オフスクリーン画像読み込み
+        const img = await new Promise((resolve, reject) => {
+            const image = new Image();
+            image.crossOrigin = 'anonymous';
+            image.onload = () => resolve(image);
+            image.onerror = (e) => reject(new Error('Base image load failed'));
+            image.src = baseImgUrl;
+        });
+
+        const canvas = document.createElement('canvas');
+        const w = parseInt(base.width, 10) || 2500;
+        const h = parseInt(base.height, 10) || 1686;
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+
+        // ベース画像の描画
+        ctx.drawImage(img, 0, 0, w, h);
+
+        // メッセージ帯の描画
+        const rawText = nearest.phrase;
+        const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        const fontSize = 65;
+        const showTapHint = true;
+        const extraHintH = Math.round(fontSize * 0.75);
+        const lineSpacing = fontSize * 1.32;
+        const textBlockH = (lines.length * lineSpacing) + extraHintH;
+        const bannerH = Math.max(150, Math.round(textBlockH + (fontSize * 0.95)));
+        const bannerY = 0;
+        const theme = nearest.theme || 'red';
+
+        ctx.save();
+        const grad = ctx.createLinearGradient(0, bannerY, w, bannerY + bannerH);
+        if (theme === 'red') {
+            grad.addColorStop(0, 'rgba(225, 29, 72, 0.96)');
+            grad.addColorStop(1, 'rgba(190, 18, 60, 0.96)');
+        } else if (theme === 'amber') {
+            grad.addColorStop(0, 'rgba(217, 119, 6, 0.96)');
+            grad.addColorStop(1, 'rgba(180, 83, 9, 0.96)');
+        } else if (theme === 'orange') {
+            grad.addColorStop(0, 'rgba(234, 88, 12, 0.96)');
+            grad.addColorStop(1, 'rgba(194, 65, 12, 0.96)');
+        } else if (theme === 'blue') {
+            grad.addColorStop(0, 'rgba(37, 99, 235, 0.96)');
+            grad.addColorStop(1, 'rgba(29, 78, 216, 0.96)');
+        } else if (theme === 'emerald') {
+            grad.addColorStop(0, 'rgba(5, 150, 105, 0.96)');
+            grad.addColorStop(1, 'rgba(4, 120, 87, 0.96)');
+        } else {
+            grad.addColorStop(0, 'rgba(79, 70, 229, 0.96)');
+            grad.addColorStop(1, 'rgba(67, 56, 202, 0.96)');
+        }
+
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, bannerY, w, bannerH);
+
+        // 下部アクセントライン
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+        ctx.fillRect(0, bannerY + bannerH - 4, w, 4);
+
+        // テキスト描画
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${fontSize}px "Noto Sans JP", -apple-system, sans-serif`;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetY = 2;
+
+        const totalLinesH = (lines.length - 1) * lineSpacing;
+        const startY = bannerY + (bannerH / 2) - (totalLinesH / 2) - (extraHintH / 2);
+
+        lines.forEach((line, index) => {
+            const lineY = startY + (index * lineSpacing);
+            ctx.fillText(line, w / 2, lineY, w - 120);
+        });
+
+        // タップ誘導
+        const hintLabel = '👆 タップして点検・予約を開く';
+        const hintFontSize = Math.max(26, Math.round(fontSize * 0.48));
+        ctx.font = `bold ${hintFontSize}px "Noto Sans JP", -apple-system, sans-serif`;
+        const hintY = startY + totalLinesH + (fontSize * 0.95);
+        const textWidth = ctx.measureText(hintLabel).width;
+        const pillW = textWidth + 40;
+        const pillH = hintFontSize * 1.5;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+        ctx.beginPath();
+        const pillX = (w - pillW) / 2;
+        const pillY = hintY - (pillH / 2);
+        ctx.roundRect ? ctx.roundRect(pillX, pillY, pillW, pillH, pillH / 2) : ctx.rect(pillX, pillY, pillW, pillH);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.fillText(hintLabel, w / 2, hintY);
+        ctx.restore();
+
+        // Blob化 & API送信
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+        if (!blob) throw new Error('Blob generation failed');
+
+        const formData = new FormData();
+        formData.append('password', state.password);
+        formData.append('uid', custData.user_id);
+        formData.append('base_menu_id', base.id || '');
+        formData.append('base_line_menu_id', base.line_menu_id || '');
+        formData.append('base_areas', JSON.stringify(base.areas || []));
+        formData.append('custom_text', nearest.phrase);
+        formData.append('image', blob, 'custom_menu.jpg');
+        formData.append('banner_action_type', 'mycar_liff');
+        formData.append('banner_action_uri', '');
+        formData.append('banner_action_postback', '');
+        formData.append('banner_bounds', JSON.stringify({ x: 0, y: bannerY, width: w, height: bannerH }));
+
+        const res = await fetch('../api.php?action=admin_set_user_custom_richmenu', {
+            method: 'POST',
+            body: formData
+        });
+        const resData = await res.json();
+        if (resData.success) {
+            showToast(`🎉 【${custData.user_name} 様】の専用リッチメニュー（${nearest.shortLabel}）をLINEに自動適用しました！`);
+        } else {
+            console.error('Auto apply rich menu failed:', resData.error);
+        }
+    } catch (err) {
+        console.error('applyNearestRichMenuBackground error:', err);
+    }
+}
+
 function openEditModal(cust) {
     if (cust) {
         activeEditingCarId = cust.id;
@@ -718,6 +993,15 @@ function openEditModal(cust) {
         elements.editPeriodicNextDate.value = cust.periodic_insp_next_date || '';
         elements.editInspectionNextDate.value = cust.inspection_next_date || '';
         elements.editStaffMemo.value = cust.staff_memo || '';
+
+        // LINE連携ユーザーなら自動適用オプションを表示
+        if (cust.user_id && cust.user_id.startsWith('U')) {
+            if (elements.editAutoApplyMenuRow) elements.editAutoApplyMenuRow.style.display = 'block';
+            if (elements.editAutoApplyMenuCheckbox) elements.editAutoApplyMenuCheckbox.checked = true;
+        } else {
+            if (elements.editAutoApplyMenuRow) elements.editAutoApplyMenuRow.style.display = 'none';
+            if (elements.editAutoApplyMenuCheckbox) elements.editAutoApplyMenuCheckbox.checked = false;
+        }
     } else {
         activeEditingCarId = null;
         elements.modalTitle.textContent = '新規顧客・愛車メンテナンス情報の登録';
@@ -731,7 +1015,12 @@ function openEditModal(cust) {
         elements.editPeriodicNextDate.value = '';
         elements.editInspectionNextDate.value = '';
         elements.editStaffMemo.value = '';
+        if (elements.editAutoApplyMenuRow) elements.editAutoApplyMenuRow.style.display = 'none';
+        if (elements.editAutoApplyMenuCheckbox) elements.editAutoApplyMenuCheckbox.checked = false;
     }
+
+    // 直近点検サマリーの表示更新
+    updateEditModalNearestSummary();
 
     elements.customerEditModal.classList.add('active');
 }
@@ -749,11 +1038,14 @@ async function saveCustomer() {
         return;
     }
 
+    const targetUid = elements.editUserUid.value.trim() || elements.editUserId.value.trim();
+    const shouldAutoApply = elements.editAutoApplyMenuCheckbox && elements.editAutoApplyMenuCheckbox.checked;
+
     const payload = new URLSearchParams({
         action: 'admin_save_customer',
         password: state.password,
         car_id: activeEditingCarId || '',
-        uid: elements.editUserUid.value.trim() || elements.editUserId.value.trim(),
+        uid: targetUid,
         uname: userName,
         car_model: carModel,
         car_number: elements.editCarNumber.value.trim(),
@@ -772,8 +1064,30 @@ async function saveCustomer() {
         });
         const data = await res.json();
         if (data.success) {
-            showToast('✅ 顧客メンテナンス情報を保存しました！');
             closeEditModal();
+
+            // LINE連携ユーザーで自動適用チェックが付いている場合、直近の期限メッセージで専用メニューを自動適用
+            if (shouldAutoApply && targetUid && targetUid.startsWith('U')) {
+                const custData = {
+                    user_id: targetUid,
+                    user_name: userName,
+                    car_model: carModel,
+                    car_number: elements.editCarNumber.value.trim(),
+                    oil_next_date: elements.editOilNextDate.value,
+                    periodic_insp_next_date: elements.editPeriodicNextDate.value,
+                    inspection_next_date: elements.editInspectionNextDate.value
+                };
+                const nearest = getNearestMaintenanceInfo(custData);
+                if (nearest) {
+                    showToast(`✅ 顧客情報を保存！直近の【${nearest.shortLabel}】で専用メニューをLINEに適用中...`);
+                    await applyNearestRichMenuBackground(custData, nearest);
+                } else {
+                    showToast('✅ 顧客メンテナンス情報を保存しました！');
+                }
+            } else {
+                showToast('✅ 顧客メンテナンス情報を保存しました！');
+            }
+
             await fetchCustomers();
         } else {
             alert(data.error || '保存に失敗しました');
@@ -1026,8 +1340,21 @@ async function openUserRichMenuModal(cust) {
         updateDirectAssignSelect(cust.custom_line_menu_id);
     }
 
-    // メッセージ入力の初期値
-    elements.userMenuTextInput.value = cust.custom_menu_text || getDefaultCustomPhrase(cust, 'insp');
+    // 各種チップの残日数バッジと直近チップの表示更新
+    updateChipBadges(cust);
+
+    // メッセージ入力の初期値（保存済みメッセージがあれば優先、なければ最も期限の近い点検メッセージを自動セット）
+    const nearest = getNearestMaintenanceInfo(cust);
+    if (cust.custom_menu_text) {
+        elements.userMenuTextInput.value = cust.custom_menu_text;
+    } else if (nearest) {
+        elements.userMenuTextInput.value = nearest.phrase;
+        if (elements.userMenuThemeSelect && nearest.theme) {
+            elements.userMenuThemeSelect.value = nearest.theme;
+        }
+    } else {
+        elements.userMenuTextInput.value = getDefaultCustomPhrase(cust, 'insp');
+    }
 
     // LINEリアルタイム表示ステータスの確認実行
     checkUserRealtimeMenuStatus(cust.user_id);
@@ -1041,6 +1368,60 @@ function closeUserRichMenuModal() {
     elements.userRichMenuModal.classList.remove('active');
     state.activeUserMenuCust = null;
     state.loadedBaseImg = null;
+}
+
+function updateChipBadges(cust) {
+    const nearest = getNearestMaintenanceInfo(cust);
+    if (elements.chipCustAutoNearest) {
+        if (nearest) {
+            const diffStr = nearest.diffDays < 0 ? '期限切れ' : (nearest.diffDays === 0 ? '本日！' : `あと${nearest.diffDays}日`);
+            elements.chipCustAutoNearest.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles" style="color: #6366f1;"></i> 最も近い点検: <strong>${escapeHtml(nearest.shortLabel)} (${diffStr})</strong>`;
+            elements.chipCustAutoNearest.style.background = '#eef2ff';
+            elements.chipCustAutoNearest.style.borderColor = '#c7d2fe';
+        } else {
+            elements.chipCustAutoNearest.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles" style="color: #6366f1;"></i> 最も期限が近い点検項目を自動選択`;
+            elements.chipCustAutoNearest.style.background = '';
+            elements.chipCustAutoNearest.style.borderColor = '';
+        }
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const formatDiff = (dateStr) => {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        d.setHours(0, 0, 0, 0);
+        const diff = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
+        return diff < 0 ? ' <span class="chip-badge-nearest" style="background:#ef4444;">期限切</span>'
+             : (diff === 0 ? ' <span class="chip-badge-nearest" style="background:#ef4444;">本日</span>'
+             : ` <span class="chip-badge-nearest">あと${diff}日</span>`);
+    };
+
+    if (elements.chipCustInsp) {
+        elements.chipCustInsp.innerHTML = `<i class="fa-solid fa-shield-halved" style="color: #e11d48;"></i> 次回車検${formatDiff(cust.inspection_next_date)}`;
+    }
+    if (elements.chipCustOil) {
+        elements.chipCustOil.innerHTML = `<i class="fa-solid fa-oil-can" style="color: #f59e0b;"></i> 次回オイル${formatDiff(cust.oil_next_date)}`;
+    }
+    if (elements.chipCustPeriodic) {
+        elements.chipCustPeriodic.innerHTML = `<i class="fa-solid fa-clipboard-check" style="color: #059669;"></i> 12ヶ月点検${formatDiff(cust.periodic_insp_next_date)}`;
+    }
+}
+
+function applyNearestPhraseToCustomMenu() {
+    if (!state.activeUserMenuCust) return;
+    const nearest = getNearestMaintenanceInfo(state.activeUserMenuCust);
+    if (nearest) {
+        elements.userMenuTextInput.value = nearest.phrase;
+        if (elements.userMenuThemeSelect && nearest.theme) {
+            elements.userMenuThemeSelect.value = nearest.theme;
+        }
+        renderUserMenuPreview();
+        showToast(`✨ 最も期限が近い「${nearest.shortLabel}」のメッセージをセットしました！`);
+    } else {
+        showToast('⚠️ 点検日が入力されていません');
+    }
 }
 
 function getDefaultCustomPhrase(cust, type) {
