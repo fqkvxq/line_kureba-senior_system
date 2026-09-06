@@ -476,7 +476,16 @@ function getUserCustomRichMenuId(?PDO $db, string $userId): ?string {
         $db = getDbConnection();
     }
     try {
-        $stmt = $db->prepare("SELECT custom_line_menu_id FROM customer_cars WHERE user_id = :uid LIMIT 1");
+        // 空文字ではない有効な custom_line_menu_id を持つ最新レコードを確実に取得
+        $stmt = $db->prepare("
+            SELECT custom_line_menu_id 
+            FROM customer_cars 
+            WHERE user_id = :uid 
+              AND custom_line_menu_id IS NOT NULL 
+              AND custom_line_menu_id != '' 
+            ORDER BY COALESCE(custom_menu_set_at, updated_at) DESC, id DESC 
+            LIMIT 1
+        ");
         $stmt->execute([':uid' => $userId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!empty($row['custom_line_menu_id'])) {
@@ -484,6 +493,37 @@ function getUserCustomRichMenuId(?PDO $db, string $userId): ?string {
         }
     } catch (Throwable $e) {
         writeDebugLog("getUserCustomRichMenuId例外", ['error' => $e->getMessage()]);
+    }
+    return null;
+}
+
+/**
+ * LINE Messaging API: ユーザーに現在リンクされているリッチメニューIDを取得
+ * GET https://api.line.me/v2/bot/user/{userId}/richmenu
+ */
+function lineGetUserRichMenuId(string $userId): ?string {
+    if (empty($userId) || LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+        return null;
+    }
+
+    $url = "https://api.line.me/v2/bot/user/{$userId}/richmenu";
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 6,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+        ]
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode === 200 && !empty($res)) {
+        $data = json_decode($res, true);
+        if (!empty($data['richMenuId'])) {
+            return trim($data['richMenuId']);
+        }
     }
     return null;
 }
@@ -497,10 +537,20 @@ function isNoticeMenu(?PDO $db, string $aliasOrMenuId): bool {
         $db = getDbConnection();
     }
     try {
-        $stmt = $db->prepare("SELECT is_notice FROM rich_menus WHERE alias_id = :aid OR line_menu_id = :mid LIMIT 1");
+        $stmt = $db->prepare("
+            SELECT is_notice, title 
+            FROM rich_menus 
+            WHERE alias_id = :aid OR line_menu_id = :mid 
+            LIMIT 1
+        ");
         $stmt->execute([':aid' => $aliasOrMenuId, ':mid' => $aliasOrMenuId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($row && (int)$row['is_notice'] === 1) {
+        if ($row) {
+            if ((int)$row['is_notice'] === 1 || str_contains($row['title'] ?? '', 'お知らせ') || str_contains($row['title'] ?? '', 'ご案内')) {
+                return true;
+            }
+        }
+        if (str_contains($aliasOrMenuId, 'notice')) {
             return true;
         }
     } catch (Throwable $e) {
