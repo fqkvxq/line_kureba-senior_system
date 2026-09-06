@@ -231,12 +231,17 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
 
     writeDebugLog("handlePostback実行", ['action' => $action, 'raw' => $dataStr, 'userId' => $userId, 'postbackParams' => $postbackParams]);
 
-    // お知らせメニュー表示以外のアクション実行時、お知らせメニューが表示中であれば自動的に元の専用メニューへ復帰
-    $isNoticeAction = in_array($action, ['show_notice_menu', 'show_notice', 'notice', 'open_notice']);
-    if (!$isNoticeAction && !empty($userId)) {
+    // お知らせメニュー表示中に「別のアクション（在庫検索や点検予約等）」を実行した場合のみ、自動的にお知らせメニューを解除して復帰
+    // ※リッチメニューの切り替えアクション（richmenu_switched等）や、お知らせを開く・閉じる操作自体は絶対に妨害しない！
+    $isMenuSwitchOrNoticeAction = in_array($action, [
+        'show_notice_menu', 'show_notice', 'notice', 'open_notice',
+        'richmenu_switched', 'richmenu_switch', 'switch_tab', 'tab_switch', 'none',
+        'close_notice', 'close_notice_menu', 'close_notice_richmenu', 'back_normal', 'back_main', 'back_to_main', 'return_main', 'close', 'back', 'default_menu'
+    ]);
+    if (!$isMenuSwitchOrNoticeAction && !empty($userId)) {
         $currentLinkedMenuId = lineGetUserRichMenuId($userId);
         if (!empty($currentLinkedMenuId) && isNoticeMenu($db, $currentLinkedMenuId)) {
-            writeDebugLog("別アクション実行検知: お知らせメニューから専用メニューへ自動復帰", ['userId' => $userId, 'action' => $action]);
+            writeDebugLog("別アクション実行検知: お知らせメニューから通常メニューへ自動復帰", ['userId' => $userId, 'action' => $action]);
             handleCloseNoticeMenu($db, '', $userId);
         }
     }
@@ -414,46 +419,21 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             }
             break;
 
-        // --- 9-6. リッチメニュー切替アクション (タブ切替等) ---
+        // --- 9-6. リッチメニュー切替アクション (タブ切替・エイリアス切替等の完了通知) ---
         case 'richmenu_switched':
         case 'richmenu_switch':
         case 'switch_tab':
         case 'tab_switch':
         case 'none':
+            // LINEクライアント自身がすでに目的のリッチメニュー（エイリアス）に切り替え済み
+            // サーバー側から上書き再リンクを行うとユーザーが切り替えたメニューが強制的に戻ってしまうため、記録のみ行う
             $targetAlias = trim($params['to_alias'] ?? ($params['alias'] ?? ($postbackParams['newRichMenuAliasId'] ?? '')));
-            writeDebugLog("リッチメニュー切替通知受信(サイレント)", [
+            writeDebugLog("リッチメニュー切替完了通知受信(クライアント操作尊重・サーバー上書きなし)", [
                 'action' => $action,
                 'targetAlias' => $targetAlias,
                 'userId' => $userId,
                 'params' => $postbackParams
             ]);
-
-            // 切替先がお知らせメニューではない（＝メインメニュー等へ戻った）場合、
-            // かつユーザーが専用リッチメニューを持っていれば専用メニューを即座に再リンク復帰！
-            if (!empty($userId)) {
-                $isNotice = isNoticeMenu($db, $targetAlias);
-                if (!$isNotice) {
-                    $customMenuId = getUserCustomRichMenuId($db, $userId);
-                    if (!empty($customMenuId) && isNoticeMenu($db, $customMenuId)) {
-                        $customMenuId = null;
-                        $db->prepare("UPDATE customer_cars SET custom_line_menu_id = '' WHERE user_id = :uid")->execute([':uid' => $userId]);
-                    }
-                    if (!empty($customMenuId)) {
-                        $relinkRes = lineLinkUserRichMenu($userId, $customMenuId);
-                        writeDebugLog("タブ切替からメイン復帰: 専用リッチメニュー再リンク実行", [
-                            'userId' => $userId,
-                            'customMenuId' => $customMenuId,
-                            'res' => $relinkRes
-                        ]);
-                        if (empty($relinkRes['success'])) {
-                            lineUnlinkUserRichMenu($userId);
-                        }
-                    } else {
-                        // 専用メニューがない場合は全体共通メニューへ
-                        lineUnlinkUserRichMenu($userId);
-                    }
-                }
-            }
             break;
 
         // --- 10. サイレント検索: 在庫全台一覧 ---
@@ -605,27 +585,8 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): ar
         case 'switch_tab':
         case 'tab_switch':
         case 'none':
-            // リッチメニュー切り替え完了通知等（サイレント）
-            $targetAlias = trim($params['to_alias'] ?? ($params['alias'] ?? ($postbackParams['newRichMenuAliasId'] ?? '')));
-            if (!empty($userId)) {
-                $isNotice = isNoticeMenu($db, $targetAlias);
-                if (!$isNotice) {
-                    $customMenuId = getUserCustomRichMenuId($db, $userId);
-                    if (!empty($customMenuId) && isNoticeMenu($db, $customMenuId)) {
-                        $customMenuId = null;
-                        $db->prepare("UPDATE customer_cars SET custom_line_menu_id = '' WHERE user_id = :uid")->execute([':uid' => $userId]);
-                    }
-                    if (!empty($customMenuId)) {
-                        $relinkRes = lineLinkUserRichMenu($userId, $customMenuId);
-                        if (empty($relinkRes['success'])) {
-                            lineUnlinkUserRichMenu($userId);
-                        }
-                    } else {
-                        lineUnlinkUserRichMenu($userId);
-                    }
-                }
-            }
-            writeDebugLog("リッチメニュー切替/サイレントPostback受信", ['action' => $action, 'userId' => $userId]);
+            // リッチメニュー切り替え完了通知等（クライアント操作尊重・サーバー上書きなし）
+            writeDebugLog("リッチメニュー切替/サイレントPostback受信(サーバー上書きなし)", ['action' => $action, 'userId' => $userId]);
             return ['success' => true, 'message' => 'サイレント処理完了'];
 
         case 'search_all':
@@ -3936,14 +3897,13 @@ function handleCloseNoticeMenu(?PDO $db, string $replyToken, string $userId): vo
     // ユーザーに有効な専用リッチメニューが設定されているか確認
     $customMenuId = getUserCustomRichMenuId($db, $userId);
 
-    // 【重要防護】もし customMenuId がお知らせメニュー（is_notice=1等）だった場合、絶対に再リンクしない
+    // 【重要防護】もし customMenuId がお知らせメニュー（is_notice=1等）だった場合、通常メニュー復帰時にそれを再リンクしない
     if (!empty($customMenuId) && isNoticeMenu($db, $customMenuId)) {
-        writeDebugLog("handleCloseNoticeMenu: 専用メニューがお知らせメニューと同一だったためクリア", [
+        writeDebugLog("handleCloseNoticeMenu: 取得メニューがお知らせメニューのため専用リンクをスキップし全体通常メニューへ復帰", [
             'userId' => $userId,
-            'wrongMenuId' => $customMenuId
+            'menuId' => $customMenuId
         ]);
         $customMenuId = null;
-        $db->prepare("UPDATE customer_cars SET custom_line_menu_id = '' WHERE user_id = :uid")->execute([':uid' => $userId]);
     }
 
     if (!empty($customMenuId)) {

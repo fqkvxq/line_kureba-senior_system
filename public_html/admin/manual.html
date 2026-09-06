@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260906_manual_v1">
+    <link rel="stylesheet" href="manual.css?v=20260906_manual_v2">
 </head>
 <body>
     <!-- ログインモーダル -->
@@ -382,6 +382,14 @@
                                 <p>お客様がお知らせメニューを開いた後、「通常メニューに戻る」ボタンを押した際は、<strong>専用メッセージが設定されているお客様は「専用メッセージ付き通常メニュー」に復帰し、設定されていないお客様は「通常の全体共通メニュー」に確実に復帰</strong>します。</p>
                             </div>
                         </div>
+
+                        <div class="step-card">
+                            <div class="step-number">E</div>
+                            <div class="step-body">
+                                <h4>LINEアプリ側でのタブ切り替え操作の尊重</h4>
+                                <p>LINEアプリ上でユーザー自身がタブ切り替えボタンやメニュー切り替えアクションを実行した際、サーバーから元のメニューへ強制的に再リンクして上書きしてしまうことのないよう設計されています。お客様の選択したタブ・メニュー表示が保たれます。</p>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -515,6 +523,14 @@
                                 <p>新着車両を検知した際のLINE友だち全員への自動一斉配信（Flex Messageカルーセル）は現在<strong>「OFF（送信しない）」</strong>に設定されています。社内向けDiscord通知のみが自動送信されます。必要に応じて `config.php` の `ENABLE_NEW_CAR_BROADCAST` を `true` にすることでいつでも再開できます。</p>
                             </div>
                         </div>
+
+                        <div class="step-card">
+                            <div class="step-number">Q</div>
+                            <div class="step-body">
+                                <h4>お客様側でリッチメニューのタブを切り替えたとき、勝手に元のメニューに戻ることはありませんか？</h4>
+                                <p>LINE公式アカウントのリッチメニュータブ切り替え機能（エイリアス切替）を使用する際、LINEアプリ側の操作が尊重されます。Webhookによる過度な強制再リンクを排除しているため、お客様がタブを切り替えた後に勝手に元のリッチメニューへ戻ってしまうことはありません。</p>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -526,6 +542,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260906_manual_v3"></script>
+    <script src="manual.js?v=20260906_manual_v4"></script>
 </body>
 </html>
