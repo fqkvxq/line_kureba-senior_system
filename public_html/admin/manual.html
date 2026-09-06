@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>操作マニュアル - アップファーレン LINE顧客・点検管理システム</title>
+    <!-- Google Fonts & Font Awesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="manual.css?v=20260906_manual_v1">
+</head>
+<body>
+    <!-- ログインモーダル -->
+    <div class="login-overlay" id="loginModal">
+        <div class="login-card">
+            <div class="login-icon">
+                <i class="fa-solid fa-book-open"></i>
+            </div>
+            <h2>操作マニュアル</h2>
+            <p>管理者パスワードを入力して閲覧してください</p>
+            <div class="form-group">
+                <label for="adminPasswordInput">パスワード</label>
+                <input type="password" id="adminPasswordInput" class="form-input" placeholder="••••••••">
+            </div>
+            <button class="btn-login" id="loginBtn">ログインして閲覧</button>
+            <div class="login-error" id="loginErrorMsg"></div>
+        </div>
+    </div>
+
+    <!-- メインアプリケーション -->
+    <div class="admin-wrapper" id="adminApp" style="display: none;">
+        <!-- ヘッダー -->
+        <header class="admin-header">
+            <div class="admin-brand">
+                <div class="brand-badge"><i class="fa-solid fa-car"></i></div>
+                <div>
+                    <h1>アップファーレン 店舗管理</h1>
+                    <span>システム操作マニュアル & 機能ガイド</span>
+                </div>
+            </div>
+
+            <!-- ナビゲーションリンク -->
+            <nav class="admin-nav-links">
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-users"></i> 顧客・点検管理</a>
+                <a href="richmenu.html" class="nav-link"><i class="fa-solid fa-table-cells-large"></i> リッチメニュー管理</a>
+                <a href="manual.html" class="nav-link active"><i class="fa-solid fa-book-open"></i> 操作マニュアル</a>
+            </nav>
+
+            <div class="admin-header-actions">
+                <button class="btn-logout" id="logoutBtn" title="ログアウト">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- マニュアルコンテナ -->
+        <div class="manual-container">
+            <!-- 左サイドバー（目次 & 検索） -->
+            <aside class="manual-sidebar">
+                <div class="manual-search-box">
+                    <i class="fa-solid fa-magnifying-glass manual-search-icon"></i>
+                    <input type="text" id="manualSearchInput" class="manual-search-input" placeholder="マニュアル内を検索...">
+                </div>
+
+                <div class="toc-card">
+                    <div class="toc-title"><i class="fa-solid fa-list-ol"></i> 目次</div>
+                    <ul class="toc-list">
+                        <li class="toc-item"><a href="#sec-overview" class="active"><i class="fa-solid fa-compass"></i> 1. システム全体概要</a></li>
+                        <li class="toc-item"><a href="#sec-line-sync"><i class="fa-brands fa-line" style="color:#06C755;"></i> 2. LINE友だち一括同期</a></li>
+                        <li class="toc-item"><a href="#sec-customer-maint"><i class="fa-solid fa-car-side"></i> 3. 顧客・愛車点検管理</a></li>
+                        <li class="toc-item"><a href="#sec-auto-nearest"><i class="fa-solid fa-wand-magic-sparkles" style="color:#6366f1;"></i> 4. 直近点検日の自動反映</a></li>
+                        <li class="toc-item"><a href="#sec-user-richmenu"><i class="fa-solid fa-table-cells-large"></i> 5. 専用リッチメニュー設定</a></li>
+                        <li class="toc-item"><a href="#sec-line-reminder"><i class="fa-solid fa-paper-plane"></i> 6. LINEリマインド個別送信</a></li>
+                        <li class="toc-item"><a href="#sec-global-richmenu"><i class="fa-solid fa-sliders"></i> 7. 全体リッチメニュー管理</a></li>
+                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 8. よくある質問・注意点</a></li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- メインコンテンツ -->
+            <main class="manual-main">
+                <!-- ヒーローセクション -->
+                <section class="manual-hero">
+                    <div class="manual-hero-tag"><i class="fa-solid fa-shield-halved"></i> 社内スタッフ向け公式ガイド</div>
+                    <h2>アップファーレン LINE顧客・点検管理システム操作マニュアル</h2>
+                    <p>LINE公式アカウントと連携し、車検・オイル交換・12ヶ月点検の期日管理や、お客様一人ひとりに最適化されたパーソナライズ・リッチメニューの自動配信を行うための操作ガイドです。</p>
+                </section>
+
+                <!-- クイックサマリーグリッド -->
+                <div class="quick-summary-grid">
+                    <a href="#sec-line-sync" class="summary-card">
+                        <div class="summary-icon-wrap" style="background: #e8f9ed; color: #06C755;">
+                            <i class="fa-brands fa-line"></i>
+                        </div>
+                        <div class="summary-card-content">
+                            <h3>LINE友だち一括同期</h3>
+                            <p>LINE公式アカウントの全友だちを1クリックで取得し、最新チャット順に一覧化。</p>
+                        </div>
+                    </a>
+
+                    <a href="#sec-auto-nearest" class="summary-card">
+                        <div class="summary-icon-wrap" style="background: #eef2ff; color: #4f46e5;">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </div>
+                        <div class="summary-card-content">
+                            <h3>直近点検の自動反映</h3>
+                            <p>車検・オイル・点検のうち、今日から最も期限の近いものを自動判定してLINEメニューに適用。</p>
+                        </div>
+                    </a>
+
+                    <a href="#sec-user-richmenu" class="summary-card">
+                        <div class="summary-icon-wrap" style="background: #fdf2f8; color: #db2777;">
+                            <i class="fa-solid fa-table-cells-large"></i>
+                        </div>
+                        <div class="summary-card-content">
+                            <h3>個別リッチメニュー</h3>
+                            <p>お客様のLINE画面に専用メッセージ帯を焼き込み表示。タップ時の予約画面も連動。</p>
+                        </div>
+                    </a>
+
+                    <a href="#sec-line-reminder" class="summary-card">
+                        <div class="summary-icon-wrap" style="background: #fffbeb; color: #d97706;">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </div>
+                        <div class="summary-card-content">
+                            <h3>個別LINEリマインド</h3>
+                            <p>車検満了やオイル交換時期を迎えたお客様へ、ワンクリックで親切な案内通知を送信。</p>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- 1. システム全体概要 -->
+                <section class="manual-section" id="sec-overview">
+                    <div class="section-header">
+                        <div class="section-header-icon" style="background: #eef2ff; color: #4f46e5;">
+                            <i class="fa-solid fa-compass"></i>
+                        </div>
+                        <div class="section-header-text">
+                            <h2>1. システム全体概要</h2>
+                            <p>アップファーレン店舗管理システムの構成と目的</p>
+                        </div>
+                    </div>
+
+                    <p>当システムは、自動車販売・整備工場「アップファーレン」の店舗スタッフが、日々の車検・点検顧客を効率的かつパーソナルにフォローするためのLINE連携ツールです。</p>
+                    
+                    <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">A</div>
+                            <div class="step-body">
+                                <h4>顧客・点検管理画面 (index.html)</h4>
+                                <p>全顧客の愛車情報（車種・ナンバー）、次回車検日・オイル交換目安日・12ヶ月点検日の管理や、LINE個別リマインド送信、特定顧客専用リッチメニューの設定を行います。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">B</div>
+                            <div class="step-body">
+                                <h4>リッチメニュー管理画面 (richmenu.html)</h4>
+                                <p>LINE公式アカウントで配信するベースのリッチメニュー（ボタン配置・リンク先・全体公開設定）の作成や切り替えを行います。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">C</div>
+                            <div class="step-body">
+                                <h4>お客様側 愛車カルテ (LIFF画面 / liff.html)</h4>
+                                <p>お客様がLINEトーク画面からアクセスし、自身の愛車の次回点検日や整備履歴を確認・点検予約ができる専用WEBページです。</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. LINE友だち一括同期 -->
+                <section class="manual-section" id="sec-line-sync">
+                    <div class="section-header">
+                        <div class="section-header-icon" style="background: #e8f9ed; color: #06C755;">
+                            <i class="fa-brands fa-line"></i>
+                        </div>
+                        <div class="section-header-text">
+                            <h2>2. LINE友だち一括同期</h2>
+                            <p>LINE公式アカウントの友だち情報を瞬時に取り込み</p>
+                        </div>
+                    </div>
+
+                    <p>LINE公式アカウントの友だちリスト（フォロー中のお客様）を自動取得し、システム内の顧客一覧に一括同期します。</p>
+
+                    <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <div class="step-body">
+                                <h4>ヘッダーの「LINE友だち一括同期」ボタンをクリック</h4>
+                                <p>管理画面上部にある緑色の「<strong><i class="fa-brands fa-line"></i> LINE友だち一括同期</strong>」ボタンを押します。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <div class="step-body">
+                                <h4>最新プロフィールの自動取得</h4>
+                                <p>以下の最新情報がLINEプラットフォームから自動取得・更新されます：</p>
+                                <ul>
+                                    <li><strong>アイコン画像</strong>: お客様のLINEプロフィール画像</li>
+                                    <li><strong>LINE表示名</strong>: お客様がLINEに設定しているニックネーム</li>
+                                    <li><strong>最新チャットやり取り日時</strong>: LINE Official Account Manager で直近にトークを行った日時</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">3</div>
+                            <div class="step-body">
+                                <h4>最新チャット順での並び替え・確認</h4>
+                                <p>一覧テーブル右上の並び替えセレクトで「<strong>直近チャットが新しい順</strong>」を選択すると、最近やり取りのあったアクティブなお客様から順に確認できます。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="callout callout-info">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <div>
+                            <strong>ワンポイント:</strong> 店舗スタッフがLINE公式アカウント管理画面側でお客様に「表示名（あだ名や実名）」を設定している場合、その表示名も優先的に同期・反映されます。
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. 顧客・愛車点検管理 -->
+                <section class="manual-section" id="sec-customer-maint">
+                    <div class="section-header">
+                        <div class="section-header-icon" style="background: #eff6ff; color: #2563eb;">
+                            <i class="fa-solid fa-car-side"></i>
+                        </div>
+                        <div class="section-header-text">
+                            <h2>3. 顧客・愛車点検管理</h2>
+                            <p>愛車情報および次回点検期日の登録と編集</p>
+                        </div>
+                    </div>
+
+                    <p>顧客一覧テーブルの「<i class="fa-solid fa-pen"></i> 編集」ボタン、または右上の「<i class="fa-solid fa-user-plus"></i> 新規顧客登録」ボタンから顧客情報を管理します。</p>
+
+                    <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <div class="step-body">
+                                <h4>基本情報と愛車の入力</h4>
+                                <ul>
+                                    <li><strong>お名前</strong>: お客様のフルネーム（LINE表示名とは別に店舗管理名として保持）</li>
+                                    <li><strong>車種名</strong>: ワゴンR、プリウス、タントなど</li>
+                                    <li><strong>車両ナンバー</strong>: 静岡580 あ 12-34 など</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <div class="step-body">
+                                <h4>メンテナンス期日の入力</h4>
+                                <ul>
+                                    <li><strong>次回オイル交換目安日</strong>: 走行距離または期間（例: 半年後）</li>
+                                    <li><strong>12ヶ月定期点検日</strong>: 法定12ヶ月点検の予定月日</li>
+                                    <li><strong>次回車検満了日</strong>: 車検証に記載の満了期日</li>
+                                    <li><strong>前回オイル交換日 / 店舗メモ</strong>: エレメント同時交換や特記事項</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="callout callout-success">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <div>
+                            <strong>期日バッジの色の見方:</strong><br>
+                            ・<span class="badge-feature badge-rose">赤色</span>: 期日切れ、または残り7日以内の緊急ステータス<br>
+                            ・<span class="badge-feature badge-amber">黄色</span>: 残り30日以内のリマインド推奨ステータス<br>
+                            ・<span class="badge-feature badge-green">緑色</span>: 余裕あり
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. 直近点検日の自動反映 -->
+                <section class="manual-section" id="sec-auto-nearest">
+                    <div class="section-header">
+                        <div class="section-header-icon" style="background: #f5f3ff; color: #7c3aed;">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </div>
+                        <div class="section-header-text">
+                            <h2>4. 直近点検日の自動反映機能</h2>
+                            <p>今日から最も期限の近い点検予定を自動判定し、LINEメニューに即時反映</p>
+                        </div>
+                    </div>
+
+                    <p>「次回車検日」「オイル交換日」「12ヶ月点検日」を入力すると、システムが自動的に<strong>今日から一番期日が近い点検項目</strong>を計算し、メッセージ帯を作成してLINEに反映します。</p>
+
+                    <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <div class="step-body">
+                                <h4>日付入力時のリアルタイムサマリー</h4>
+                                <p>日付を入力すると、フォーム下部に「<strong>最も期限が近いメンテナンス</strong>」が自動表示されます。<br>
+                                例: 「<i class="fa-solid fa-oil-can"></i> 次回オイル交換: 2026-10-15 (あと14日)」</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <div class="step-body">
+                                <h4>保存と同時にLINEへ自動適用（完全自動化）</h4>
+                                <p>「<strong>保存と同時に、直近の期限メッセージで専用リッチメニューをLINEに自動適用する</strong>」にチェックを入れた状態で保存すると：</p>
+                                <ul>
+                                    <li>店舗スタッフがメニュー画面を手動で開く必要はありません。</li>
+                                    <li>自動的に一番近い点検メッセージが入った専用リッチメニュー画像がバックグラウンドで合成されます。</li>
+                                    <li>保存完了と同時に、お客様のLINE画面下部メニューが即座に切り替わります。</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="callout callout-info">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <div>
+                            <strong>自動判定の優先順位:</strong><br>
+                            今日以降の未来の予定（diffDays ≥ 0）の中で残り日数が最小の項目を最優先します。もし全ての点検期日が過ぎている場合は、直近で切れた項目を注意メッセージとして選定します。
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. 専用リッチメニュー設定 -->
+                <section class="manual-section" id="sec-user-richmenu">
+                    <div class="section-header">
+                        <div class="section-header-icon" style="background: #fdf2f8; color: #db2777;">
+                            <i class="fa-solid fa-table-cells-large"></i>
+                        </div>
+                        <div class="section-header-text">
+                            <h2>5. 特定顧客向け専用リッチメニュー設定</h2>
+                            <p>お客様ごとのLINE画面のリアルタイム確認・個別指定・メッセージ帯カスタマイズ</p>
+                        </div>
+                    </div>
+
+                    <p>顧客一覧の「<strong><i class="fa-solid fa-table-cells-large"></i> メニュー設定</strong>」ボタンをクリックすると、そのお客様専用の設定モーダルが開きます。</p>
+
+                    <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">A</div>
+                            <div class="step-body">
+                                <h4>LINE表示中の実態ステータス確認</h4>
+                                <p>モーダル上部に、お客様の現在のLINE画面にどのメニューが表示されているかがリアルタイム表示されます：</p>
+                                <ul>
+                                    <li><span class="badge-feature badge-blue">全体共通</span>: 全社共通のリッチメニューが表示されています。</li>
+                                    <li><span class="badge-feature badge-purple">個別割当</span>: 既存メニューの中から特定メニューが個別に割り当てられています。</li>
+                                    <li><span class="badge-feature badge-green">専用メッセージ中</span>: お客様のお名前や点検期日が入った専用バナーが表示されています。</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">B</div>
+                            <div class="step-body">
+                                <h4>メッセージ帯付き専用メニューの作成手順</h4>
+                                <ol style="margin-left: 20px; font-size: 13px; line-height: 1.8;">
+                                    <li><strong>定型文チップの選択</strong>: 「最も近い点検 (あと〇日)」「次回車検」「次回オイル」「12ヶ月点検」からワンクリックでメッセージを入力。</li>
+                                    <li><strong>メッセージの自由編集</strong>: 必要に応じて「山田様 オイル交換時期です！土日もご予約受付中」など自由に改行・編集可能。</li>
+                                    <li><strong>テーマカラー & 帯の太さ</strong>: 赤・オレンジ・青・緑・紫などのグラデーションや文字サイズを調整。</li>
+                                    <li><strong>タップ時のアクション</strong>: メッセージ帯をタップした際「愛車点検LIFF予約画面を開く」「在庫車両一覧」「お知らせ」「WEBリンク」などの動作を指定。</li>
+                                    <li><strong>「専用リッチメニューをLINEに適用」をクリック</strong>: 数秒でお客様のLINEへ反映されます。</li>
+                                </ol>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">C</div>
+                            <div class="step-body">
+                                <h4>全体共通メニューに戻す方法</h4>
+                                <p>個別設定を解除したい場合は、ステータスカード右側の「<strong><i class="fa-solid fa-arrow-rotate-left"></i> 全体共通に戻す</strong>」ボタンを押すだけで、いつでも全社共通のデフォルトメニューに戻せます。</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 6. LINE個別リマインド送信 -->
+                <section class="manual-section" id="sec-line-reminder">
+                    <div class="section-header">
+                        <div class="section-header-icon" style="background: #fffbeb; color: #d97706;">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </div>
+                        <div class="section-header-text">
+                            <h2>6. LINE個別リマインド送信</h2>
+                            <p>車検・オイル・点検のリマインドメッセージを1対1でプッシュ通知</p>
+                        </div>
+                    </div>
+
+                    <p>顧客一覧の「オイル」「点検」「車検」ボタンから、該当のお客様へLINEプッシュ通知を即座に送信できます。</p>
+
+                    <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <div class="step-body">
+                                <h4>リマインドボタンのクリック</h4>
+                                <ul>
+                                    <li><button class="badge-feature badge-amber" style="border:none; cursor:default;"><i class="fa-solid fa-oil-can"></i> オイル</button>: 次回オイル交換目安日とお礼・ご予約案内を送信</li>
+                                    <li><button class="badge-feature badge-green" style="border:none; cursor:default;"><i class="fa-solid fa-clipboard-check"></i> 点検</button>: 12ヶ月定期点検のご案内を送信</li>
+                                    <li><button class="badge-feature badge-rose" style="border:none; cursor:default;"><i class="fa-solid fa-shield-halved"></i> 車検</button>: 車検満了日の告知とお早めのご予約案内を送信</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <div class="step-body">
+                                <h4>送信前確認ダイアログ</h4>
+                                <p>誤送信を防ぐため、「【山田 様 (ワゴンR)】へLINEリマインドを今すぐ送信しますか？」という確認が表示されます。「OK」を押すと送信されます。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="callout callout-warning">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <div>
+                            <strong>LINE公式アカウントの無料メッセージ通数について:</strong><br>
+                            LINE公式アカウントの月間無料メッセージ通数枠を消費します。一斉配信ではなく、期日が迫っているお客様へピンポイントで送信することをお勧めします。
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 7. 全体リッチメニュー管理 -->
+                <section class="manual-section" id="sec-global-richmenu">
+                    <div class="section-header">
+                        <div class="section-header-icon" style="background: #f1f5f9; color: #334155;">
+                            <i class="fa-solid fa-sliders"></i>
+                        </div>
+                        <div class="section-header-text">
+                            <h2>7. 全体リッチメニュー管理</h2>
+                            <p>リッチメニュー管理画面 (richmenu.html) の機能</p>
+                        </div>
+                    </div>
+
+                    <p>ヘッダーの「<strong><i class="fa-solid fa-table-cells-large"></i> リッチメニュー管理</strong>」リンクから移動できます。</p>
+
+                    <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <div class="step-body">
+                                <h4>本番公開メニューの切り替え</h4>
+                                <p>登録されているリッチメニューカードの「<strong>本番公開メニューに設定</strong>」を押すと、個別メニューが指定されていない全友だちのLINE画面が一括でそのメニューに切り替わります。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <div class="step-body">
+                                <h4>ボタン領域（Areas）とタップアクションの編集</h4>
+                                <p>メニュー画像上のどの場所をタップした際に、どのURL（愛車マイページ、在庫車検索、お知らせ、電話発信など）を開くかを直感的に設定できます。</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 8. よくある質問・注意点 -->
+                <section class="manual-section" id="sec-faq">
+                    <div class="section-header">
+                        <div class="section-header-icon" style="background: #fef2f2; color: #ef4444;">
+                            <i class="fa-solid fa-circle-question"></i>
+                        </div>
+                        <div class="section-header-text">
+                            <h2>8. よくある質問・トラブルシューティング</h2>
+                            <p>困ったときの解決方法</p>
+                        </div>
+                    </div>
+
+                    <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">Q</div>
+                            <div class="step-body">
+                                <h4>手動登録した顧客にLINEメニューやメッセージが送信できません</h4>
+                                <p>手動登録（LINE連携していない顧客）にはLINEのユーザーID（`U...`）が存在しないため、LINE経由の配信は行えません。お客様に店舗のLINE公式アカウントへ友だち追加いただき、アンケートやお知らせから愛車登録をいただくか、「LINE友だち一括同期」で紐付けを行ってください。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">Q</div>
+                            <div class="step-body">
+                                <h4>メニュー設定を変更したのにお客様のLINEが変わっていません</h4>
+                                <p>LINEアプリの仕様上、トーク画面を開いたままの場合は画像がキャッシュされていることがあります。一度別のトーク画面やホーム画面に戻ってから、再度アップファーレンのトーク画面を開き直すと最新のメニューに更新されます。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">Q</div>
+                            <div class="step-body">
+                                <h4>スタッフが利用するパスワードを変更したいです</h4>
+                                <p>サーバー上の `config.php` に記載されている `ADMIN_PASSWORD` の値を変更することで、管理画面の共通パスワードをいつでも更新できます。</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- フッター -->
+                <footer class="manual-footer">
+                    &copy; 2026 アップファーレン (Up-Fahren) LINE顧客・点検管理システム
+                </footer>
+            </main>
+        </div>
+    </div>
+
+    <script src="manual.js?v=20260906_manual_v1"></script>
+</body>
+</html>
