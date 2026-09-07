@@ -496,16 +496,17 @@ function renderTable() {
         const userId = c.user_id || '';
         const hasCustomMenu = Boolean(c.custom_line_menu_id);
         const menuType = c.current_menu_type || (hasCustomMenu ? 'custom_message' : 'default');
-        const menuName = c.current_menu_name || (hasCustomMenu ? '専用メニュー' : '全体共通');
+        const menuName = c.current_menu_name || (hasCustomMenu ? '専用メニュー' : '通常メニュー');
         const isCustomized = (menuType === 'custom_message' || menuType === 'custom_assigned' || hasCustomMenu);
 
         let menuBadgeHtml = '';
         if (menuType === 'custom_message') {
             menuBadgeHtml = `<span class="badge-menu-status badge-menu-custom" title="専用メッセージ: ${escapeHtml(c.custom_menu_text || '')}"><i class="fa-solid fa-bolt"></i> 専用メッセージ中</span>`;
         } else if (menuType === 'custom_assigned') {
-            menuBadgeHtml = `<span class="badge-menu-status badge-menu-assigned" title="個別メニュー指定中"><i class="fa-solid fa-tag"></i> 個別: ${escapeHtml(menuName)}</span>`;
+            menuBadgeHtml = `<span class="badge-menu-status badge-menu-assigned" title="個別メニュー指定中: ${escapeHtml(menuName)}"><i class="fa-solid fa-tag"></i> 個別: ${escapeHtml(menuName)}</span>`;
         } else {
-            menuBadgeHtml = `<span class="badge-menu-status badge-menu-default" title="LINE全体共通メニュー表示中"><i class="fa-solid fa-globe"></i> 共通: ${escapeHtml(menuName)}</span>`;
+            const displayName = (menuName && menuName !== '全体共通メニュー' && menuName !== '全体共通') ? menuName : '通常メニュー';
+            menuBadgeHtml = `<span class="badge-menu-status badge-menu-default" title="設定中のリッチメニュー（全体共通）: ${escapeHtml(displayName)}"><i class="fa-solid fa-globe"></i> ${escapeHtml(displayName)}</span>`;
         }
 
         // 最終やり取り情報

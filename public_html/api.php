@@ -817,18 +817,55 @@ try {
             $stmt->execute($params);
             $customers = $stmt->fetchAll();
 
-            // 現在の全体デフォルトリッチメニューを取得
-            $defMenuStmt = $db->query("SELECT id, title, line_menu_id FROM rich_menus WHERE is_active = 1 AND is_notice = 0 ORDER BY id DESC LIMIT 1");
-            $defaultMenu = $defMenuStmt->fetch(PDO::FETCH_ASSOC);
-            $defaultMenuTitle = $defaultMenu['title'] ?? '全体共通メニュー';
-
             // 全リッチメニューのマップ
-            $allMenusStmt = $db->query("SELECT id, title, line_menu_id FROM rich_menus");
+            $allMenusStmt = $db->query("SELECT id, title, line_menu_id, is_active, is_notice FROM rich_menus");
             $menuMap = [];
+            $activeDefaultMenu = null;
+            $latestNormalMenu = null;
             while ($rm = $allMenusStmt->fetch(PDO::FETCH_ASSOC)) {
                 if (!empty($rm['line_menu_id'])) {
                     $menuMap[$rm['line_menu_id']] = $rm;
                 }
+                if (empty($rm['is_notice'])) {
+                    if ((int)$rm['is_active'] === 1 && !$activeDefaultMenu) {
+                        $activeDefaultMenu = $rm;
+                    }
+                    if (!$latestNormalMenu) {
+                        $latestNormalMenu = $rm;
+                    }
+                }
+            }
+
+            // 現在LINE公式アカウントに設定されているデフォルトリッチメニューIDを取得
+            $currentLineDefaultId = lineGetDefaultRichMenuId();
+            $defaultMenuTitle = '';
+
+            // 1. LINE公式アカウントに現在適用されているメニューIDとDBの突き合わせ
+            if (!empty($currentLineDefaultId) && isset($menuMap[$currentLineDefaultId])) {
+                $defaultMenuTitle = trim($menuMap[$currentLineDefaultId]['title'] ?? '');
+            }
+
+            // 2. DB上に無ければLINE APIから直接メニュー名を取得
+            if (empty($defaultMenuTitle) && !empty($currentLineDefaultId)) {
+                $lineRemote = lineGetRichMenu($currentLineDefaultId);
+                if (!empty($lineRemote['name'])) {
+                    $defaultMenuTitle = trim($lineRemote['name']);
+                }
+            }
+
+            // 3. DBの現在アクティブ通常メニュー
+            if (empty($defaultMenuTitle) && $activeDefaultMenu) {
+                $defaultMenuTitle = trim($activeDefaultMenu['title'] ?? '');
+            }
+
+            // 4. DBの最新通常メニュー
+            if (empty($defaultMenuTitle) && $latestNormalMenu) {
+                $defaultMenuTitle = trim($latestNormalMenu['title'] ?? '');
+            }
+
+            // 5. フォールバック
+            if (empty($defaultMenuTitle) || $defaultMenuTitle === '全体共通メニュー') {
+                $defaultMenuTitle = !empty($latestNormalMenu['title']) ? $latestNormalMenu['title'] : '通常メニュー';
             }
 
             foreach ($customers as &$c) {
@@ -2488,9 +2525,33 @@ try {
             // LINEサーバー上の実態を取得
             $realLineMenuId = lineGetUserRichMenu($userId);
 
-            // DB上の現在全体デフォルトメニュー
-            $defMenuStmt = $db->query("SELECT id, title, line_menu_id, image_url FROM rich_menus WHERE is_active = 1 AND is_notice = 0 ORDER BY id DESC LIMIT 1");
-            $defaultMenu = $defMenuStmt->fetch(PDO::FETCH_ASSOC);
+            // 現在LINE公式アカウント全体のデフォルトリッチメニューID
+            $currentLineDefaultId = lineGetDefaultRichMenuId();
+
+            // DB上の現在全体デフォルトメニューを検索
+            $defaultMenu = null;
+            if (!empty($currentLineDefaultId)) {
+                $stmtDef = $db->prepare("SELECT id, title, line_menu_id, image_url FROM rich_menus WHERE line_menu_id = :mid LIMIT 1");
+                $stmtDef->execute([':mid' => $currentLineDefaultId]);
+                $defaultMenu = $stmtDef->fetch(PDO::FETCH_ASSOC);
+            }
+            if (!$defaultMenu) {
+                $defMenuStmt = $db->query("SELECT id, title, line_menu_id, image_url FROM rich_menus WHERE is_active = 1 AND is_notice = 0 ORDER BY id DESC LIMIT 1");
+                $defaultMenu = $defMenuStmt->fetch(PDO::FETCH_ASSOC);
+            }
+            if (!$defaultMenu) {
+                $defMenuStmt = $db->query("SELECT id, title, line_menu_id, image_url FROM rich_menus WHERE is_notice = 0 ORDER BY id DESC LIMIT 1");
+                $defaultMenu = $defMenuStmt->fetch(PDO::FETCH_ASSOC);
+            }
+
+            $resolvedDefaultTitle = $defaultMenu['title'] ?? '';
+            if (empty($resolvedDefaultTitle) && !empty($currentLineDefaultId)) {
+                $lineRemote = lineGetRichMenu($currentLineDefaultId);
+                $resolvedDefaultTitle = $lineRemote['name'] ?? '通常メニュー';
+            }
+            if (empty($resolvedDefaultTitle) || $resolvedDefaultTitle === '全体共通メニュー') {
+                $resolvedDefaultTitle = '通常メニュー';
+            }
 
             // 顧客テーブルの記録
             $custStmt = $db->prepare("SELECT user_name, custom_line_menu_id, custom_menu_text, custom_menu_set_at FROM customer_cars WHERE user_id = :uid LIMIT 1");
@@ -2498,9 +2559,9 @@ try {
             $cust = $custStmt->fetch(PDO::FETCH_ASSOC);
 
             $statusType = 'default';
-            $menuTitle = $defaultMenu['title'] ?? '全体共通メニュー';
+            $menuTitle = $resolvedDefaultTitle;
             $menuImageUrl = $defaultMenu['image_url'] ?? '';
-            $menuId = $realLineMenuId ?: ($defaultMenu['line_menu_id'] ?? '');
+            $menuId = $realLineMenuId ?: ($defaultMenu['line_menu_id'] ?? $currentLineDefaultId);
 
             if (!empty($realLineMenuId)) {
                 // DBの全リッチメニューから照合
@@ -2539,7 +2600,7 @@ try {
                 'menu_image_url' => $menuImageUrl,
                 'custom_menu_text' => $cust['custom_menu_text'] ?? '',
                 'custom_menu_set_at' => $cust['custom_menu_set_at'] ?? null,
-                'default_menu_title' => $defaultMenu['title'] ?? '全体共通メニュー'
+                'default_menu_title' => $resolvedDefaultTitle
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
