@@ -2730,7 +2730,7 @@ try {
             ];
 
             $saved = saveAdminLineSettings($settingsToSave, $db);
-            if ($saved) {
+            if (!empty($saved['success'])) {
                 $updated = getAdminLineSettings($db);
                 $updated['admin_line_uids'] = $updated['admin_uids'] ?? [];
                 echo json_encode([
@@ -2740,7 +2740,10 @@ try {
                 ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             } else {
                 http_response_code(500);
-                echo json_encode(['success' => false, 'error' => '設定の保存に失敗しました']);
+                echo json_encode([
+                    'success' => false,
+                    'error' => '設定の保存に失敗しました: ' . ($saved['error'] ?? '不明なエラー')
+                ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             }
             break;
 

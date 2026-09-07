@@ -1719,6 +1719,13 @@ function getAdminLineSettings(?PDO $pdo = null): array {
         'notify_reminder' => true
     ];
     try {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS system_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT,
+                updated_at DATETIME
+            )
+        ");
         $stmt = $pdo->prepare("SELECT value FROM system_settings WHERE key = 'admin_line_settings' LIMIT 1");
         $stmt->execute();
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -1737,11 +1744,19 @@ function getAdminLineSettings(?PDO $pdo = null): array {
 /**
  * 管理者LINE通知設定を保存
  */
-function saveAdminLineSettings(array $settings, ?PDO $pdo = null): bool {
+function saveAdminLineSettings(array $settings, ?PDO $pdo = null): array {
     if (!$pdo) {
         $pdo = getDbConnection();
     }
     try {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS system_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT,
+                updated_at DATETIME
+            )
+        ");
+
         $cleanUids = [];
         if (!empty($settings['admin_uids']) && is_array($settings['admin_uids'])) {
             foreach ($settings['admin_uids'] as $uid) {
@@ -1762,15 +1777,22 @@ function saveAdminLineSettings(array $settings, ?PDO $pdo = null): bool {
         ];
         $json = json_encode($dataToSave, JSON_UNESCAPED_UNICODE);
 
+        // 古いSQLiteでも100%確実に動作する INSERT OR REPLACE
         $stmt = $pdo->prepare("
-            INSERT INTO system_settings (key, value, updated_at) 
+            INSERT OR REPLACE INTO system_settings (key, value, updated_at) 
             VALUES ('admin_line_settings', :val, datetime('now', '+9 hours'))
-            ON CONFLICT(key) DO UPDATE SET value = :val, updated_at = datetime('now', '+9 hours')
         ");
-        return $stmt->execute([':val' => $json]);
+        $ok = $stmt->execute([':val' => $json]);
+        if ($ok) {
+            return ['success' => true];
+        } else {
+            $err = $stmt->errorInfo();
+            writeDebugLog("saveAdminLineSettings失敗", ['error' => $err]);
+            return ['success' => false, 'error' => $err[2] ?? 'DB保存に失敗しました'];
+        }
     } catch (Throwable $e) {
         writeDebugLog("saveAdminLineSettings例外", ['error' => $e->getMessage()]);
-        return false;
+        return ['success' => false, 'error' => $e->getMessage()];
     }
 }
 
