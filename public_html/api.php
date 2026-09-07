@@ -902,10 +902,7 @@ try {
                 'success' => true,
                 'customers' => $customers,
                 'total' => count($customers),
-                'default_menu_title' => $defaultMenuTitle,
-                'line_basic_id' => defined('LINE_BASIC_ID') ? LINE_BASIC_ID : '@ayr0183o',
-                'line_chat_account_id' => defined('LINE_CHAT_ACCOUNT_ID') ? LINE_CHAT_ACCOUNT_ID : 'U6c5ea2fca97147e21959b70c23790713',
-                'line_chat_url' => defined('LINE_OFFICIAL_CHAT_URL') ? LINE_OFFICIAL_CHAT_URL : 'https://chat.line.biz/U6c5ea2fca97147e21959b70c23790713/chat/'
+                'default_menu_title' => $defaultMenuTitle
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 

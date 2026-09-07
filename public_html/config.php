@@ -14,9 +14,6 @@ define('LINE_CHANNEL_ACCESS_TOKEN', 'JixCe0rnnP4omxlVgYbU3aC0As5sUV7mZtwmgLNULVe
 define('LINE_CHANNEL_SECRET', 'a94b53929e0ab8e1c1f183b54a6cc695');             // チャネルシークレット
 define('LINE_LIFF_ID', '2011340718-OaRM8tV4');                           // LIFF ID (例: 1234567890-AbcdEfgh)
 define('LIFF_ID', '2011340718-OaRM8tV4');                                // エイリアス用LIFF ID
-define('LINE_BASIC_ID', '@ayr0183o');                                     // LINE公式アカウント ベーシックID
-define('LINE_CHAT_ACCOUNT_ID', 'U6c5ea2fca97147e21959b70c23790713');                     // LINE Official Web Chat アカウントID
-define('LINE_OFFICIAL_CHAT_URL', 'https://chat.line.biz/U6c5ea2fca97147e21959b70c23790713/chat/'); // 個別LINEチャット直接遷移ベースURL
 
 // --- 新着車両の自動配信設定 ---
 define('ENABLE_NEW_CAR_BROADCAST', false); // 新着検知時にLINE公式アカウントの友だち全員へ自動一斉配信するか (true: 送信する, false: 送信しない)
