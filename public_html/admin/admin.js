@@ -140,6 +140,7 @@ const elements = {
     saveProlineSettingsBtn: document.getElementById('saveProlineSettingsBtn'),
     testProlineRelayBtn: document.getElementById('testProlineRelayBtn'),
     prolineWebhookUrlInput: document.getElementById('prolineWebhookUrlInput'),
+    prolineCalendarUrlInput: document.getElementById('prolineCalendarUrlInput'),
     prolineRelayEnabledCheck: document.getElementById('prolineRelayEnabledCheck'),
     prolineTestResultBanner: document.getElementById('prolineTestResultBanner'),
     prolineRecentLogsWrap: document.getElementById('prolineRecentLogsWrap'),
@@ -2175,6 +2176,9 @@ async function loadProlineSettings() {
             if (elements.prolineWebhookUrlInput) {
                 elements.prolineWebhookUrlInput.value = data.settings.webhook_url || '';
             }
+            if (elements.prolineCalendarUrlInput) {
+                elements.prolineCalendarUrlInput.value = data.settings.calendar_url || '';
+            }
             if (elements.prolineRelayEnabledCheck) {
                 elements.prolineRelayEnabledCheck.checked = Boolean(data.settings.relay_enabled);
             }
@@ -2194,6 +2198,7 @@ async function loadProlineSettings() {
 
 async function saveProlineSettings() {
     const url = elements.prolineWebhookUrlInput ? elements.prolineWebhookUrlInput.value.trim() : '';
+    const calendarUrl = elements.prolineCalendarUrlInput ? elements.prolineCalendarUrlInput.value.trim() : '';
     const enabled = elements.prolineRelayEnabledCheck && elements.prolineRelayEnabledCheck.checked ? 1 : 0;
 
     try {
@@ -2204,6 +2209,7 @@ async function saveProlineSettings() {
             action: 'admin_save_proline_settings',
             password: state.password,
             url: url,
+            calendar_url: calendarUrl,
             relay_enabled: enabled
         });
 

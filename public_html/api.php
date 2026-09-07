@@ -2852,8 +2852,9 @@ try {
 
             $url = $_POST['url'] ?? '';
             $enabled = isset($_POST['relay_enabled']) ? (bool)(int)$_POST['relay_enabled'] : true;
+            $calendarUrl = $_POST['calendar_url'] ?? '';
 
-            $result = saveProlineSettings($url, $enabled, $db);
+            $result = saveProlineSettings($url, $enabled, $calendarUrl, $db);
             echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 

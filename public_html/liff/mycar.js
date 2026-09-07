@@ -136,6 +136,32 @@ function initEventListeners() {
         if (e.target === bookingModal) closeModal();
     });
 
+    // プロライン予約カレンダー連携 (UID自動付与)
+    function openProlineCalendar() {
+        const baseUrl = 'https://d0o2pa7q.autosns.app/cp/A9xhz7MWZF';
+        const sep = baseUrl.includes('?') ? '&' : '?';
+        let url = `${baseUrl}${sep}uid=${encodeURIComponent(state.userId || '')}`;
+        if (state.userName && state.userName !== 'お客様') {
+            url += `&name=${encodeURIComponent(state.userName)}`;
+        }
+        const currentCourse = getCurrentActiveCar()?.car_model;
+        if (currentCourse) {
+            url += `&course=${encodeURIComponent(currentCourse)}`;
+        }
+
+        if (typeof liff !== 'undefined' && liff.openWindow) {
+            liff.openWindow({ url: url, external: false });
+        } else {
+            window.open(url, '_blank');
+        }
+    }
+
+    getEl('btnOpenProlineCalendarCard')?.addEventListener('click', openProlineCalendar);
+    getEl('btnOpenProlineCalendarFromModal')?.addEventListener('click', () => {
+        closeModal();
+        openProlineCalendar();
+    });
+
     document.querySelectorAll('.maint-choice-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
             const pref = btn.getAttribute('data-pref');

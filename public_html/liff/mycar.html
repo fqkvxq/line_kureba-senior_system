@@ -368,12 +368,18 @@
                 <span class="maint-badge" style="background: #e0e7ff; color: #4338ca; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px;">いつでも受付</span>
             </div>
             <p style="font-size: 12.5px; color: #64748b; margin: 0 0 14px; line-height: 1.5;">
-                「操作でわからないところがある」「プリンターがつながらない」「スマホの買い替え相談をしたい」など、お気軽に教室スタッフへご相談ください。
+                レッスンの日時予約や、パソコン・スマホの「操作がわからない」「プリンターの不調」など、お気軽に教室へご相談ください。
             </p>
-            <button class="maint-action-btn" id="openGeneralInquiryBtn" style="background: #eef2ff; color: #3730a3; width: 100%; height: 42px; border-radius: 10px; border: none; font-size: 13.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
-                <i class="fa-solid fa-clipboard-question"></i>
-                <span>ご相談・質問フォームを開く</span>
-            </button>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button class="maint-action-btn" id="btnOpenProlineCalendarCard" style="background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%); color: #fff; width: 100%; height: 44px; border-radius: 10px; border: none; font-size: 13.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(67, 56, 202, 0.25);">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    <span>📅 プロライン予約カレンダーで日時を選ぶ</span>
+                </button>
+                <button class="maint-action-btn" id="openGeneralInquiryBtn" style="background: #f1f5f9; color: #475569; width: 100%; height: 38px; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 12.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer;">
+                    <i class="fa-solid fa-clipboard-question"></i>
+                    <span>個別のお困りごと・質問フォーム</span>
+                </button>
+            </div>
         </div>
 
         <!-- 次回レッスンカード -->
@@ -572,6 +578,22 @@
             </div>
             <p style="font-size: 12px; color: #64748b; margin: 0 0 16px;">ご希望の時間帯を選択してください。<br>教室スタッフが確認の上、LINEトークにてご返信いたします。</p>
 
+            <!-- プロラインカレンダーで即時予約 -->
+            <div style="margin-bottom: 14px;">
+                <button type="button" id="btnOpenProlineCalendarFromModal" style="width: 100%; height: 48px; border: none; border-radius: 12px; background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%); color: #fff; font-weight: 800; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(67, 56, 202, 0.35);">
+                    <i class="fa-solid fa-calendar-days"></i> <span>プロライン予約カレンダーで日時を選ぶ</span>
+                </button>
+                <div style="font-size: 11px; color: #6366f1; text-align: center; margin-top: 4px;">
+                    ※ 空き枠を確認しながらその場で確定予約できます
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+                <span style="font-size: 11px; color: #94a3b8; font-weight: bold;">またはLINEで大まかな希望を送る</span>
+                <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+            </div>
+
             <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
                 <button class="maint-choice-btn" data-pref="午前レッスン (10:00〜12:00)" style="width: 100%; height: 44px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; font-weight: 700; font-size: 13px; color: #1e293b; cursor: pointer; text-align: left; padding: 0 14px;">☀️ 午前レッスン (10:00〜12:00) を希望</button>
                 <button class="maint-choice-btn" data-pref="午後レッスン (13:30〜15:30)" style="width: 100%; height: 44px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; font-weight: 700; font-size: 13px; color: #1e293b; cursor: pointer; text-align: left; padding: 0 14px;">🌤️ 午後レッスン (13:30〜15:30) を希望</button>
@@ -742,6 +764,6 @@
     <!-- トースト通知 -->
     <div class="toast" id="appToast"></div>
 
-    <script src="mycar.js?v=20260831_8"></script>
+    <script src="mycar.js?v=20260907_senior_proline_v4"></script>
 </body>
 </html>

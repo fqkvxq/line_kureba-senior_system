@@ -242,6 +242,19 @@
                                 プロライン中継の有効状況や、直近のWebhook受信・プロライン転送のログ（HTTPステータスや転送所要時間ms）をいつでも確認できます。</p>
                             </div>
                         </div>
+
+                        <div class="step-card">
+                            <div class="step-number">5</div>
+                            <div class="step-body">
+                                <h4>プロライン カレンダー予約連携（受講生UID自動付与 & 0秒ジャンプ）</h4>
+                                <p>プロラインのカレンダー予約（<code>https://d0o2pa7q.autosns.app/cp/...</code>）と連携し、受講生が面倒な名前や連絡先の入力をすることなく、<strong>1タップで自分のアカウントが自動認識された状態のカレンダー予約画面を開く</strong>ことができます。</p>
+                                <ul>
+                                    <li><strong>受講生マイカルテ（LIFF）からの予約</strong>: マイカルテ内の「📅 プロライン予約カレンダーで日時を選ぶ」ボタンを押すと、自動的に <code>?uid=受講生のUID&name=お名前</code> が付与されて開きます。</li>
+                                    <li><strong>リッチメニューからの0秒ジャンプ（LIFFリダイレクター）</strong>: リッチメニューのボタンURLに <code>https://liff.line.me/2000276344-YL1wXh0h/redirect.html</code> を設定すると、タップした瞬間に受講生のUIDを自動判定し、0秒でプロラインの予約カレンダーへ自動転送されます。リッチメニュー管理エディタ（<code>richmenu.html</code>）のチップ「<strong>📅 プロライン カレンダー予約 (UID自動付与)</strong>」からワンクリックでURLをセットできます。</li>
+                                    <li><strong>カレンダーURLの変更</strong>: 管理画面右上の「プロライン連携」モーダル内にある「プロライン カレンダー予約URL」欄からいつでも教室専用のURLを更新・保存できます。</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="callout callout-info">
@@ -587,6 +600,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260907_senior_proline_v1"></script>
+    <script src="manual.js?v=20260907_senior_proline_v2"></script>
 </body>
 </html>
