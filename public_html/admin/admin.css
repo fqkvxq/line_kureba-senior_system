@@ -487,6 +487,52 @@ body {
     background: #bfdbfe;
 }
 
+.btn-line-chat {
+    background: #06C755;
+    color: #ffffff;
+    border: 1px solid #05b04b;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(6, 199, 85, 0.2);
+}
+
+.btn-line-chat:hover {
+    background: #05b04b;
+    border-color: #04923e;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(6, 199, 85, 0.35);
+}
+
+.btn-line-chat-quick {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-line-chat-quick:hover {
+    background: #06C755;
+    color: #ffffff;
+    border-color: #06C755;
+    box-shadow: 0 2px 4px rgba(6, 199, 85, 0.25);
+}
+
 .btn-edit {
     background: #e0f2fe;
     color: #0369a1;

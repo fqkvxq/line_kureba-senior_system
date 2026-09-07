@@ -902,7 +902,9 @@ try {
                 'success' => true,
                 'customers' => $customers,
                 'total' => count($customers),
-                'default_menu_title' => $defaultMenuTitle
+                'default_menu_title' => $defaultMenuTitle,
+                'line_basic_id' => defined('LINE_BASIC_ID') ? LINE_BASIC_ID : '@ayr0183o',
+                'line_chat_url' => defined('LINE_OFFICIAL_CHAT_URL') ? LINE_OFFICIAL_CHAT_URL : 'https://manager.line.biz/account/@ayr0183o/chat'
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 

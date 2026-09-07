@@ -11,7 +11,9 @@ const state = {
     richMenus: [],
     activeUserMenuCust: null,
     loadedBaseImg: null,
-    userMenuBannerBounds: null
+    userMenuBannerBounds: null,
+    lineBasicId: '@ayr0183o',
+    lineChatUrl: 'https://manager.line.biz/account/@ayr0183o/chat'
 };
 
 const elements = {
@@ -47,6 +49,7 @@ const elements = {
     closeEditModalBtn: document.getElementById('closeEditModalBtn'),
     cancelEditBtn: document.getElementById('cancelEditBtn'),
     saveCustomerBtn: document.getElementById('saveCustomerBtn'),
+    editModalLineChatBtn: document.getElementById('editModalLineChatBtn'),
     modalTitle: document.getElementById('modalTitle'),
     
     // 顧客フォーム
@@ -321,6 +324,8 @@ async function attemptLogin() {
             elements.loginModal.style.display = 'none';
             elements.adminApp.style.display = 'block';
             state.allCustomers = data.customers || [];
+            if (data.line_chat_url) state.lineChatUrl = data.line_chat_url;
+            if (data.line_basic_id) state.lineBasicId = data.line_basic_id;
             updateStats();
             renderTable();
             loadRichMenus();
@@ -348,6 +353,8 @@ async function fetchCustomers() {
         const data = await res.json();
         if (data.success) {
             state.allCustomers = data.customers || [];
+            if (data.line_chat_url) state.lineChatUrl = data.line_chat_url;
+            if (data.line_basic_id) state.lineBasicId = data.line_basic_id;
             updateStats();
             renderTable();
         } else if (res.status === 401) {
@@ -593,6 +600,9 @@ function renderTable() {
                                     <button class="btn-copy-uid" title="UIDをクリップボードにコピー" onclick="event.stopPropagation(); copyCustUid('${escapeHtml(c.user_id)}');" style="background: none; border: none; color: #64748b; cursor: pointer; padding: 2px 4px; font-size: 11px; border-radius: 4px;" onmouseover="this.style.color='#1e293b'; this.style.background='#f1f5f9';" onmouseout="this.style.color='#64748b'; this.style.background='none';">
                                         <i class="fa-regular fa-copy"></i>
                                     </button>
+                                    <button class="btn-line-chat-quick" title="このお客様とのLINEチャットを開く (名前をコピーしてLINE公式へ遷移)" onclick="event.stopPropagation(); openLineOfficialChat('${escapeHtml(c.user_name || '')}', '${escapeHtml(c.user_id || '')}');">
+                                        <i class="fa-brands fa-line" style="font-size: 12px;"></i> チャット
+                                    </button>
                                     <button class="btn-add-admin-uid" title="このアカウントを管理者LINE通知先に登録" onclick="event.stopPropagation(); addAdminUidDirectly('${escapeHtml(c.user_id)}', '${escapeHtml(c.user_name || '')}');" style="background: none; border: none; color: #0284c7; cursor: pointer; padding: 2px 4px; font-size: 11px; border-radius: 4px;" onmouseover="this.style.color='#0369a1'; this.style.background='#e0f2fe';" onmouseout="this.style.color='#0284c7'; this.style.background='none';">
                                         <i class="fa-solid fa-bell"></i> 通知先に登録
                                     </button>
@@ -613,6 +623,9 @@ function renderTable() {
                 <td style="max-width: 160px; font-size: 11px;">${memo}</td>
                 <td>
                     <div class="action-btns">
+                        <button class="btn-line-chat" data-action="line-chat" data-idx="${idx}" title="LINE公式アカウントのチャット画面を開く (名前を自動コピー)">
+                            <i class="fa-brands fa-line" style="font-size: 13px;"></i> チャット
+                        </button>
                         <button class="btn-user-richmenu ${isCustomized ? 'is-active' : ''}" data-action="custom-menu" data-idx="${idx}" title="リッチメニューの確認・個別指定・メッセージ設定">
                             <i class="fa-solid fa-table-cells-large"></i> メニュー設定
                         </button>
@@ -646,7 +659,9 @@ function renderTable() {
             const cust = filtered[idx];
             if (!cust) return;
 
-            if (action === 'custom-menu') {
+            if (action === 'line-chat') {
+                openLineOfficialChat(cust.user_name, cust.user_id);
+            } else if (action === 'custom-menu') {
                 openUserRichMenuModal(cust);
             } else if (action === 'remind-oil') {
                 sendManualReminder(cust.id, cust.user_id, 'oil', cust.user_name, cust.car_model);
@@ -1042,9 +1057,14 @@ function openEditModal(cust) {
         if (cust.user_id && cust.user_id.startsWith('U')) {
             if (elements.editAutoApplyMenuRow) elements.editAutoApplyMenuRow.style.display = 'block';
             if (elements.editAutoApplyMenuCheckbox) elements.editAutoApplyMenuCheckbox.checked = true;
+            if (elements.editModalLineChatBtn) {
+                elements.editModalLineChatBtn.style.display = 'inline-flex';
+                elements.editModalLineChatBtn.onclick = () => openLineOfficialChat(cust.user_name, cust.user_id);
+            }
         } else {
             if (elements.editAutoApplyMenuRow) elements.editAutoApplyMenuRow.style.display = 'none';
             if (elements.editAutoApplyMenuCheckbox) elements.editAutoApplyMenuCheckbox.checked = false;
+            if (elements.editModalLineChatBtn) elements.editModalLineChatBtn.style.display = 'none';
         }
     } else {
         activeEditingCarId = null;
@@ -1061,6 +1081,7 @@ function openEditModal(cust) {
         elements.editStaffMemo.value = '';
         if (elements.editAutoApplyMenuRow) elements.editAutoApplyMenuRow.style.display = 'none';
         if (elements.editAutoApplyMenuCheckbox) elements.editAutoApplyMenuCheckbox.checked = false;
+        if (elements.editModalLineChatBtn) elements.editModalLineChatBtn.style.display = 'none';
     }
 
     // 直近点検サマリーの表示更新
@@ -1146,7 +1167,7 @@ function showToast(msg) {
     elements.toast.classList.add('show');
     setTimeout(() => {
         elements.toast.classList.remove('show');
-    }, 3000);
+    }, 4000);
 }
 
 function escapeHtml(str) {
@@ -1895,6 +1916,51 @@ async function unlinkUserRichMenu() {
         alert('通信エラーが発生しました: ' + e.message);
     }
 }
+
+// ==========================================================================
+// LINE公式アカウント チャット画面への遷移 & お客様名自動コピー
+// ==========================================================================
+
+window.openLineOfficialChat = async function(userName, userId) {
+    const isLineUser = Boolean(userId && userId.startsWith('U'));
+    if (!isLineUser) {
+        if (!confirm('この顧客は手動登録（LINE未連携）です。\nLINE公式アカウントのチャット管理画面を開きますか？')) {
+            return;
+        }
+    }
+
+    const chatUrl = state.lineChatUrl || 'https://manager.line.biz/account/@ayr0183o/chat';
+    const targetName = (userName || '').trim();
+    let copied = false;
+
+    if (targetName) {
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(targetName);
+                copied = true;
+            } else {
+                const tmpInput = document.createElement('input');
+                tmpInput.value = targetName;
+                document.body.appendChild(tmpInput);
+                tmpInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tmpInput);
+                copied = true;
+            }
+        } catch (e) {
+            console.warn('Clipboard copy failed:', e);
+        }
+    }
+
+    // LINE Official Account Manager チャット管理画面を別タブで開く
+    window.open(chatUrl, '_blank');
+
+    if (copied) {
+        showToast(`💬 「${targetName}」様のお名前をコピーしました！検索窓に貼り付けてトークを開いてください`);
+    } else {
+        showToast(`💬 LINE公式アカウントのチャット画面を開きました`);
+    }
+};
 
 // ==========================================================================
 // 管理者LINE通知設定 & UIDヘルパー

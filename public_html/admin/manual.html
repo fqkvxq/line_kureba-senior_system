@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260907_branch_custom_v1">
+    <link rel="stylesheet" href="manual.css?v=20260907_line_chat_v1">
 </head>
 <body>
     <!-- ログインモーダル -->
@@ -234,7 +234,7 @@
                         </div>
                         <div class="section-header-text">
                             <h2>3. 顧客・愛車点検管理</h2>
-                            <p>愛車情報および次回点検期日の登録と編集</p>
+                            <p>愛車情報および次回点検期日の登録と編集・LINE個別チャット連携</p>
                         </div>
                     </div>
 
@@ -262,6 +262,19 @@
                                     <li><strong>12ヶ月定期点検日</strong>: 法定12ヶ月点検の予定月日</li>
                                     <li><strong>次回車検満了日</strong>: 車検証に記載の満了期日</li>
                                     <li><strong>前回オイル交換日 / 店舗メモ</strong>: エレメント同時交換や特記事項</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="step-card" style="border-left: 4px solid #06C755;">
+                            <div class="step-number" style="background: #06C755;"><i class="fa-brands fa-line"></i></div>
+                            <div class="step-body">
+                                <h4>LINEチャット画面への直接遷移とお名前自動コピー【新機能】</h4>
+                                <p>顧客テーブルの各行にある「<strong style="color: #059669;"><i class="fa-brands fa-line"></i> チャット</strong>」ボタン（操作列の緑色ボタン、またはお名前横のクイックボタン）、および顧客編集画面の「<strong>LINEチャットを開く</strong>」ボタンから直接トーク画面へ移動できます。</p>
+                                <ul>
+                                    <li><strong>お名前の自動コピー</strong>: ボタンを押すと同時にお客様のLINE登録名がクリップボードへ自動コピーされます。</li>
+                                    <li><strong>迷わず一発検索</strong>: 別タブで開いたLINE公式アカウント（LINE Official Account Manager）のチャット画面左上の検索窓に「貼り付け（Ctrl+V / Cmd+V）」するだけで、該当のお客様とのトークを即座に開くことができます。</li>
+                                    <li>点検リマインド後のご相談受付や、車検見積もり等の個別チャット対応が極めてスピーディーに行えます。</li>
                                 </ul>
                             </div>
                         </div>
@@ -615,6 +628,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260907_branch_custom_v1"></script>
+    <script src="manual.js?v=20260907_line_chat_v1"></script>
 </body>
 </html>
