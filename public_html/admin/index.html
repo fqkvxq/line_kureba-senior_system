@@ -431,10 +431,9 @@
                                     <span style="font-size: 10px; font-weight: 600; color: #059669; background: #ecfdf5; padding: 1px 6px; border-radius: 4px;">LINE連携</span>
                                 </label>
                                 <select id="userMenuBannerActionType" style="width: 100%; padding: 7px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
-                                    <option value="mycar_liff" selected>🛠️ マイカー点検・予約を開く (LIFF / パスポート)</option>
-                                    <option value="open_mycar">📋 点検受付メニューを表示 (LINEメッセージ)</option>
-                                    <option value="search_all">🚗 在庫車両一覧を見る</option>
-                                    <option value="notice">📢 店舗お知らせ・キャンペーンを見る</option>
+                                    <option value="reservation_cal" selected>📅 レッスン予約・日程変更を開く (おすすめ)</option>
+                                    <option value="mycar_liff">💻 受講生マイカルテ・相談を開く (LIFF)</option>
+                                    <option value="open_mycar">📋 受講カルテ・予約メニューを表示 (LINEメッセージ)</option>
                                     <option value="uri">🔗 任意のURLを開く</option>
                                     <option value="postback">⚡ カスタムPostback</option>
                                     <option value="none">🚫 アクションなし (下のボタンが反応)</option>
@@ -616,7 +615,7 @@
                     <label style="font-weight: bold; font-size: 13px; color: #1e293b; display: block; margin-bottom: 6px;">
                         <span><i class="fa-solid fa-calendar-days" style="color: #4f46e5; margin-right: 4px;"></i> プロライン カレンダー予約URL</span>
                     </label>
-                    <input type="url" id="prolineCalendarUrlInput" placeholder="例: https://d0o2pa7q.autosns.app/cp/A9xhz7MWZF" style="width: 100%; box-sizing: border-box; padding: 10px 12px; font-family: monospace; font-size: 12.5px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                    <input type="url" id="prolineCalendarUrlInput" placeholder="例: https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1" style="width: 100%; box-sizing: border-box; padding: 10px 12px; font-family: monospace; font-size: 12.5px; border: 1px solid #cbd5e1; border-radius: 8px;">
                     <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
                         ※ 受講生がリッチメニューやマイカルテから開いた際、自動で <code>?uid=受講生のUID&name=お名前</code> が付与されます。
                     </div>
@@ -693,6 +692,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260907_senior_proline_v5"></script>
+    <script src="admin.js?v=20260907_senior_proline_v6"></script>
 </body>
 </html>

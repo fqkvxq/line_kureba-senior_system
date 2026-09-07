@@ -246,14 +246,16 @@
                         <div class="step-card">
                             <div class="step-number">5</div>
                             <div class="step-body">
-                                <h4>プロライン カレンダー予約連携（公式予約URLとリッチメニュー設定）</h4>
-                                <p>プロラインのカレンダー予約（<code>https://d0o2pa7q.autosns.app/cl/QaOK41fkzp</code>）と連携し、受講生がLINE内から1タップでレッスン日時を選んで予約できるようにします。</p>
+                                <h4>レッスン予約・日程変更カレンダー連携（公式予約URLとリッチメニュー設定）</h4>
+                                <p>レッスンの予約・日程変更URL（<code>https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1</code>）と連携し、受講生がLINE内から1タップでレッスン日時を選んで予約や変更を行えるようにします。</p>
                                 <ul>
                                     <li><strong>リッチメニューでの予約設定</strong>:<br>
-                                        リッチメニュー管理エディタ（<code>richmenu.html</code>）のチップ「<strong>📅 プロライン カレンダー予約</strong>」をクリックすると、プロライン公式の予約カレンダーURL <code>https://d0o2pa7q.autosns.app/cl/QaOK41fkzp</code> がセットされます。<br>
-                                        受講生がタップすると、プロラインが自動的に受講生のLINEログイン・認証を行い、正規のカレンダー予約画面へ直接案内されます。</li>
+                                        リッチメニュー管理エディタ（<code>richmenu.html</code>）のチップ「<strong>📅 レッスン予約・日程変更</strong>」をクリックすると、公式の予約・日程変更URL <code>https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1</code> がセットされます。<br>
+                                        受講生がタップすると、外部ブラウザで直接カレンダー予約・日程変更画面がスムーズに立ち上がります。</li>
+                                    <li><strong>個別メニューのメッセージ帯タップ連動</strong>:<br>
+                                        受講生カルテ画面の「個別リッチメニュー設定」で「📅 レッスン予約・日程変更を開く」を指定すると、次回レッスン日のメッセージ帯をタップした際にもこの予約カレンダーが自動起動します。</li>
                                     <li><strong>受講生マイカルテ（<code>mycar.html</code>）からの連動予約</strong>:<br>
-                                        受講生マイカルテ画面内の「📅 プロライン予約カレンダーで日時を選ぶ」ボタンを押した場合も、この公式予約URLへ自動直結されるため、受講生はカルテを見ながらスムーズに次回レッスンを予約できます。</li>
+                                        受講生マイカルテ画面内の「📅 レッスン予約カレンダーで日時を選ぶ」ボタンを押した場合も、この公式予約URLへ自動直結されます。</li>
                                 </ul>
                             </div>
                         </div>
@@ -580,9 +582,9 @@
                             <div class="step-body">
                                 <h4>リッチメニューに設定する「予約」と「マイカルテ」のURLは何を指定すれば良いですか？</h4>
                                 <p>リッチメニュー管理エディタ（<code>richmenu.html</code>）のチップからワンクリックで設定できます：<br>
-                                <strong>・カレンダー予約ボタン</strong>: <code>https://d0o2pa7q.autosns.app/cl/QaOK41fkzp</code>（チップ「📅 プロライン カレンダー予約」をクリック）<br>
+                                <strong>・レッスン予約・日程変更ボタン</strong>: <code>https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1</code>（チップ「📅 レッスン予約・日程変更」をクリック）<br>
                                 <strong>・マイカルテボタン</strong>: <code>https://liff.line.me/2000276344-YL1wXh0h</code>（チップ「💻 受講生マイカルテ・相談」をクリック）<br>
-                                この2つのURLを設定するだけで、プロラインのカレンダー予約と本システムの受講生マイカルテの両方がLINE上で完璧に動作します。</p>
+                                この2つのURLを設定するだけで、予約・日程変更カレンダーと本システムの受講生マイカルテの両方がLINE上で完璧に動作します。</p>
                             </div>
                         </div>
 
@@ -631,6 +633,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260907_senior_proline_v7"></script>
+    <script src="manual.js?v=20260907_senior_proline_v8"></script>
 </body>
 </html>

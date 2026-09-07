@@ -33,7 +33,7 @@ define('SHOP_GOO_URL', '');
 // --- プロライン (ProLine) Webhook中継・連携設定 ---
 define('PROLINE_WEBHOOK_URL', ''); // プロラインのWebhook URL (例: https://autosns.pro/.../webhook/...)
 define('PROLINE_RELAY_ENABLED', true); // プロラインへのWebhook転送を有効にするか (true: 有効, false: 無効)
-define('PROLINE_CALENDAR_URL', 'https://d0o2pa7q.autosns.app/cl/QaOK41fkzp'); // プロラインのカレンダー予約URL (例: https://d0o2pa7q.autosns.app/cl/QaOK41fkzp)
+define('PROLINE_CALENDAR_URL', 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'); // レッスン予約・日程変更URL
 
 
 // --- リッチメニュー画像保存ディレクトリ ---
@@ -2070,7 +2070,7 @@ function getProlineSettings(?PDO $pdo = null): array {
             return [
                 'webhook_url' => defined('PROLINE_WEBHOOK_URL') ? PROLINE_WEBHOOK_URL : '',
                 'relay_enabled' => defined('PROLINE_RELAY_ENABLED') ? PROLINE_RELAY_ENABLED : true,
-                'calendar_url' => defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://d0o2pa7q.autosns.app/cl/QaOK41fkzp',
+                'calendar_url' => defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1',
                 'last_relay_at' => '',
                 'last_relay_status' => '',
                 'last_relay_http_code' => 0
@@ -2085,7 +2085,16 @@ function getProlineSettings(?PDO $pdo = null): array {
 
         $url = isset($rows['proline_webhook_url']) ? $rows['proline_webhook_url'] : (defined('PROLINE_WEBHOOK_URL') ? PROLINE_WEBHOOK_URL : '');
         $enabled = isset($rows['proline_relay_enabled']) ? (bool)(int)$rows['proline_relay_enabled'] : (defined('PROLINE_RELAY_ENABLED') ? PROLINE_RELAY_ENABLED : true);
-        $calUrl = isset($rows['proline_calendar_url']) ? $rows['proline_calendar_url'] : (defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://d0o2pa7q.autosns.app/cl/QaOK41fkzp');
+        $calUrl = isset($rows['proline_calendar_url']) ? $rows['proline_calendar_url'] : (defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1');
+
+        // 古い無効なクリック測定URLがDBに残っている場合は自動で新URLへ更新
+        if (str_contains($calUrl, 'autosns.app/cl/QaOK41fkzp') || empty($calUrl)) {
+            $calUrl = 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1';
+            try {
+                $upStmt = $pdo->prepare("INSERT INTO system_settings (key, value, updated_at) VALUES ('proline_calendar_url', :val, datetime('now', '+9 hours')) ON CONFLICT(key) DO UPDATE SET value = :val, updated_at = datetime('now', '+9 hours')");
+                $upStmt->execute([':val' => $calUrl]);
+            } catch (Exception $ign) {}
+        }
 
         return [
             'webhook_url' => trim($url),
@@ -2099,7 +2108,7 @@ function getProlineSettings(?PDO $pdo = null): array {
         return [
             'webhook_url' => defined('PROLINE_WEBHOOK_URL') ? PROLINE_WEBHOOK_URL : '',
             'relay_enabled' => defined('PROLINE_RELAY_ENABLED') ? PROLINE_RELAY_ENABLED : true,
-            'calendar_url' => defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://d0o2pa7q.autosns.app/cl/QaOK41fkzp',
+            'calendar_url' => defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1',
             'last_relay_at' => '',
             'last_relay_status' => '',
             'last_relay_http_code' => 0

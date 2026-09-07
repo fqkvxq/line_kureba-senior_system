@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 const LIFF_ID = '2000276344-YL1wXh0h';
-const PROLINE_DEFAULT_CALENDAR_URL = 'https://d0o2pa7q.autosns.app/cl/QaOK41fkzp';
+const PROLINE_DEFAULT_CALENDAR_URL = 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1';
 
 // プロライン予約カレンダー連携（受講生UID・お名前を自動付与して転送）
 function openProlineCalendar() {

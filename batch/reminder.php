@@ -177,10 +177,9 @@ foreach ($lessonTargetCustomers as $cust) {
                         'color' => '#0284c7',
                         'height' => 'sm',
                         'action' => [
-                            'type' => 'postback',
-                            'label' => '📅 レッスンの予約・日程変更',
-                            'data' => 'action=ask_class&type=lesson&course=' . urlencode($courseName) . '&date=' . urlencode($lessonDate),
-                            'displayText' => "【{$courseName}】のレッスン予約・日程について相談したい"
+                            'type' => 'uri',
+                            'label' => '📅 レッスン予約・日程変更',
+                            'uri' => 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
                         ]
                     ]
                 ]
