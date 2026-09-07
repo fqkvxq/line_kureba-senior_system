@@ -50,6 +50,9 @@
             </nav>
 
             <div class="admin-header-actions">
+                <button class="btn-secondary" id="openAdminLineSettingsBtn" title="管理者へのLINE通知設定（問い合わせ・来店予約・新規顧客等）" style="background: #1e293b; color: #ffffff; border: 1px solid #334155; font-weight: 600;">
+                    <i class="fa-solid fa-bell" style="color: #38bdf8; margin-right: 4px;"></i> 管理者LINE通知
+                </button>
                 <button class="btn-secondary" id="syncLineFollowersBtn" title="LINE公式アカウントの全友だちを取得して顧客一覧に一括登録・更新します" style="background: #06C755; color: #ffffff; border: none; font-weight: bold; box-shadow: 0 2px 4px rgba(6,199,85,0.2);">
                     <i class="fa-brands fa-line" style="font-size: 16px; margin-right: 4px;"></i> LINE友だち一括同期
                 </button>
@@ -166,7 +169,12 @@
                         <input type="text" id="editUserName" placeholder="例: 山田 太郎" required>
                     </div>
                     <div class="form-col">
-                        <label>LINE ユーザーID (任意 / 空欄で自動)</label>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <label style="margin: 0;">LINE ユーザーID (任意 / 空欄で自動)</label>
+                            <button type="button" id="btnQuickAddAdminFromEdit" style="display: none; background: none; border: none; color: #0284c7; font-size: 11px; cursor: pointer; text-decoration: underline; padding: 0;">
+                                <i class="fa-solid fa-user-shield"></i> 通知先管理者に登録
+                            </button>
+                        </div>
                         <input type="text" id="editUserUid" placeholder="Uから始まるID または空欄">
                     </div>
                 </div>
@@ -477,9 +485,96 @@
         </div>
     </div>
 
+    <!-- 管理者LINE通知設定モーダル -->
+    <div class="modal-overlay" id="adminLineSettingsModal" style="display: none;">
+        <div class="modal-card" style="max-width: 620px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(56, 189, 248, 0.15); display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 18px;">
+                        <i class="fa-solid fa-bell"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #fff;">管理者LINE通知設定</h3>
+                        <p style="margin: 2px 0 0; font-size: 11.5px; color: #94a3b8;">問い合わせ・来店予約などの重要通知を管理者のLINEへPush通知</p>
+                    </div>
+                </div>
+                <button class="modal-close" id="closeAdminLineSettingsModalBtn" style="color: #94a3b8;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <!-- 通知先LINE ID設定 -->
+                <div class="form-group" style="margin-bottom: 18px;">
+                    <label style="font-weight: bold; font-size: 13px; color: #1e293b; display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                        <span><i class="fa-brands fa-line" style="color: #06C755; margin-right: 4px;"></i> 通知先 管理者LINEユーザーID (UID)</span>
+                        <span style="font-size: 11px; color: #64748b; font-weight: normal;">改行またはカンマで複数人登録可能</span>
+                    </label>
+                    <textarea id="adminLineUidsInput" rows="3" placeholder="例: U1234567890abcdef1234567890abcdef&#10;※Uから始まる33文字のLINEユーザーIDを入力してください" style="width: 100%; box-sizing: border-box; padding: 10px; font-family: monospace; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 8px; line-height: 1.5;"></textarea>
+                    
+                    <!-- UIDの確認方法・ヒント -->
+                    <div style="margin-top: 8px; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 11.5px; color: #475569;">
+                        <div style="font-weight: bold; color: #0284c7; margin-bottom: 4px;"><i class="fa-solid fa-circle-question"></i> ご自身のLINEユーザーID (UID) の調べ方</div>
+                        <ol style="margin: 0; padding-left: 18px; line-height: 1.6;">
+                            <li>店舗のLINE公式アカウントをご自身のLINEで「友だち追加」します。</li>
+                            <li>顧客一覧の「<strong><i class="fa-brands fa-line"></i> LINE友だち一括同期</strong>」ボタンを押します。</li>
+                            <li>顧客一覧にあるご自身の行の「<i class="fa-solid fa-id-card"></i>」アイコンをクリックしてUIDをコピー、または編集画面の「<strong>通知先管理者に登録</strong>」を押すと自動反映されます。</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <!-- テスト通知送信セクション -->
+                <div style="margin-bottom: 20px; padding: 12px 14px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                    <div>
+                        <div style="font-weight: bold; font-size: 12.5px; color: #166534;"><i class="fa-solid fa-paper-plane" style="margin-right: 4px;"></i> 動作テスト</div>
+                        <div style="font-size: 11px; color: #15803d; margin-top: 2px;">登録・入力されたUIDのLINEへテストメッセージを即座に送信して受信確認できます。</div>
+                    </div>
+                    <button type="button" class="btn-secondary" id="testAdminLineNotificationBtn" style="background: #16a34a; color: #fff; border: none; font-size: 12px; font-weight: bold; padding: 8px 14px; white-space: nowrap; cursor: pointer; border-radius: 6px;">
+                        <i class="fa-solid fa-bell"></i> テスト送信
+                    </button>
+                </div>
+
+                <!-- 通知種別のON/OFFスイッチ -->
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label style="font-weight: bold; font-size: 13px; color: #1e293b; margin-bottom: 8px; display: block;">
+                        <i class="fa-solid fa-sliders" style="margin-right: 4px; color: #6366f1;"></i> 通知するイベントの選択
+                    </label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 12px;">
+                            <input type="checkbox" id="notifyInquiryCheck" checked style="accent-color: #0284c7; width: 16px; height: 16px;">
+                            <span>🚗 <strong>車両問い合わせ</strong><br><small style="color: #64748b;">在庫確認・見積依頼など</small></span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 12px;">
+                            <input type="checkbox" id="notifyBookingCheck" checked style="accent-color: #0284c7; width: 16px; height: 16px;">
+                            <span>🛠️ <strong>来店・点検予約</strong><br><small style="color: #64748b;">オイル交換・車検予約など</small></span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 12px;">
+                            <input type="checkbox" id="notifyNewCustomerCheck" checked style="accent-color: #0284c7; width: 16px; height: 16px;">
+                            <span>🆕 <strong>新規顧客登録</strong><br><small style="color: #64748b;">マイカー点検連携時</small></span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 12px;">
+                            <input type="checkbox" id="notifyReminderCheck" checked style="accent-color: #0284c7; width: 16px; height: 16px;">
+                            <span>⏰ <strong>定期リマインド結果</strong><br><small style="color: #64748b;">毎朝の自動送信レポート</small></span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 12px; grid-column: span 2;">
+                            <input type="checkbox" id="notifyNewCarsCheck" style="accent-color: #0284c7; width: 16px; height: 16px;">
+                            <span>✨ <strong>新着在庫車両の入荷検知</strong><br><small style="color: #64748b;">グーネット掲載の新着車検知時に管理者へ通知</small></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 12px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                <span id="adminLineSaveStatus" style="font-size: 12px; color: #16a34a; font-weight: bold;"></span>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn-cancel" id="cancelAdminLineSettingsBtn">閉じる</button>
+                    <button type="button" class="btn-save" id="saveAdminLineSettingsBtn" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+                        <i class="fa-solid fa-floppy-disk"></i> 設定を保存する
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260907_menu_title_v1"></script>
+    <script src="admin.js?v=20260907_admin_notify_v1"></script>
 </body>
 </html>

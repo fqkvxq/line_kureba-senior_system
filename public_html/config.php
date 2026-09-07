@@ -1450,6 +1450,13 @@ function sendDiscordInquiryNotification(array $car, string $inquiryType, ?array 
     ]);
     curl_exec($ch);
     curl_close($ch);
+
+    // 管理者LINEアカウントへも通知
+    try {
+        sendAdminLineInquiryNotification($car, $inquiryType, $userProfile, $rawUserId);
+    } catch (Throwable $e) {
+        writeDebugLog("sendAdminLineInquiryNotification失敗", ['error' => $e->getMessage()]);
+    }
 }
 
 /**
@@ -1516,6 +1523,13 @@ function sendDiscordMaintenanceBookingNotification(string $bookingType, string $
     ]);
     curl_exec($ch);
     curl_close($ch);
+
+    // 管理者LINEアカウントへも通知
+    try {
+        sendAdminLineMaintenanceBookingNotification($bookingType, $carModel, $prefTime, $userProfile, $rawUserId);
+    } catch (Throwable $e) {
+        writeDebugLog("sendAdminLineMaintenanceBookingNotification失敗", ['error' => $e->getMessage()]);
+    }
 }
 
 /**
@@ -1564,12 +1578,26 @@ function sendDiscordNewCarsNotification(array $newCars) {
     ]);
     curl_exec($ch);
     curl_close($ch);
+
+    // 管理者LINEアカウントへも通知
+    try {
+        sendAdminLineNewCarsNotification($newCars);
+    } catch (Throwable $e) {
+        writeDebugLog("sendAdminLineNewCarsNotification失敗", ['error' => $e->getMessage()]);
+    }
 }
 
 /**
  * リマインド定期配信実行結果の Discord レポート
  */
 function sendDiscordReminderReport(int $oilCount, int $periodicCount, int $shakenCount, array $details = []) {
+    // 管理者LINEアカウントへも通知
+    try {
+        sendAdminLineReminderReport($oilCount, $periodicCount, $shakenCount, $details);
+    } catch (Throwable $e) {
+        writeDebugLog("sendAdminLineReminderReport失敗", ['error' => $e->getMessage()]);
+    }
+
     if (empty(DISCORD_WEBHOOK_URL) || DISCORD_WEBHOOK_URL === 'YOUR_DISCORD_WEBHOOK_URL_HERE') {
         return;
     }
@@ -1617,6 +1645,13 @@ function sendDiscordReminderReport(int $oilCount, int $periodicCount, int $shake
  * マイカー点検パスポートを開いた新規ユーザーの Discord 通知
  */
 function sendDiscordNewCustomerNotification(string $userId, string $userName) {
+    // 管理者LINEアカウントへも通知
+    try {
+        sendAdminLineNewCustomerNotification($userId, $userName);
+    } catch (Throwable $e) {
+        writeDebugLog("sendAdminLineNewCustomerNotification失敗", ['error' => $e->getMessage()]);
+    }
+
     if (empty(DISCORD_WEBHOOK_URL) || DISCORD_WEBHOOK_URL === 'YOUR_DISCORD_WEBHOOK_URL_HERE') {
         return;
     }
@@ -1662,4 +1697,297 @@ function writeDebugLog(string $message, array $context = []) {
     $contextStr = !empty($context) ? ' ' . json_encode($context, JSON_UNESCAPED_UNICODE) : '';
     $logLine = "[{$time}] {$message}{$contextStr}\n";
     @file_put_contents($logFile, $logLine, FILE_APPEND | LOCK_EX);
+}
+
+// ==========================================
+// 管理者向けLINE通知エンジン
+// ==========================================
+
+/**
+ * 管理者LINE通知設定を取得
+ */
+function getAdminLineSettings(?PDO $pdo = null): array {
+    if (!$pdo) {
+        $pdo = getDbConnection();
+    }
+    $defaults = [
+        'admin_uids' => [],
+        'notify_inquiry' => true,
+        'notify_booking' => true,
+        'notify_new_customer' => true,
+        'notify_new_cars' => false,
+        'notify_reminder' => true
+    ];
+    try {
+        $stmt = $pdo->prepare("SELECT value FROM system_settings WHERE key = 'admin_line_settings' LIMIT 1");
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row && !empty($row['value'])) {
+            $saved = json_decode($row['value'], true);
+            if (is_array($saved)) {
+                return array_merge($defaults, $saved);
+            }
+        }
+    } catch (Throwable $e) {
+        writeDebugLog("getAdminLineSettings例外", ['error' => $e->getMessage()]);
+    }
+    return $defaults;
+}
+
+/**
+ * 管理者LINE通知設定を保存
+ */
+function saveAdminLineSettings(array $settings, ?PDO $pdo = null): bool {
+    if (!$pdo) {
+        $pdo = getDbConnection();
+    }
+    try {
+        $cleanUids = [];
+        if (!empty($settings['admin_uids']) && is_array($settings['admin_uids'])) {
+            foreach ($settings['admin_uids'] as $uid) {
+                $uid = trim($uid);
+                if (!empty($uid) && str_starts_with($uid, 'U') && !in_array($uid, $cleanUids)) {
+                    $cleanUids[] = $uid;
+                }
+            }
+        }
+        $dataToSave = [
+            'admin_uids' => $cleanUids,
+            'notify_inquiry' => isset($settings['notify_inquiry']) ? (bool)$settings['notify_inquiry'] : true,
+            'notify_booking' => isset($settings['notify_booking']) ? (bool)$settings['notify_booking'] : true,
+            'notify_new_customer' => isset($settings['notify_new_customer']) ? (bool)$settings['notify_new_customer'] : true,
+            'notify_new_cars' => isset($settings['notify_new_cars']) ? (bool)$settings['notify_new_cars'] : false,
+            'notify_reminder' => isset($settings['notify_reminder']) ? (bool)$settings['notify_reminder'] : true,
+            'updated_at' => date('Y-m-d H:i:s')
+        ];
+        $json = json_encode($dataToSave, JSON_UNESCAPED_UNICODE);
+
+        $stmt = $pdo->prepare("
+            INSERT INTO system_settings (key, value, updated_at) 
+            VALUES ('admin_line_settings', :val, datetime('now', '+9 hours'))
+            ON CONFLICT(key) DO UPDATE SET value = :val, updated_at = datetime('now', '+9 hours')
+        ");
+        return $stmt->execute([':val' => $json]);
+    } catch (Throwable $e) {
+        writeDebugLog("saveAdminLineSettings例外", ['error' => $e->getMessage()]);
+        return false;
+    }
+}
+
+/**
+ * 登録されている全管理者へLINEメッセージをPush送信
+ */
+function sendAdminLineBroadcast(array $messages, ?PDO $pdo = null): array {
+    $settings = getAdminLineSettings($pdo);
+    $adminUids = $settings['admin_uids'] ?? [];
+    if (empty($adminUids)) {
+        writeDebugLog("管理者LINE通知スキップ: 管理者UID未登録");
+        return ['success' => false, 'sent_count' => 0, 'error' => '管理者LINEアカウントが登録されていません'];
+    }
+
+    $results = [];
+    $successCount = 0;
+    foreach ($adminUids as $uid) {
+        $res = sendLinePushMessage($uid, $messages);
+        $results[$uid] = $res;
+        if (!empty($res['success'])) {
+            $successCount++;
+        }
+    }
+
+    writeDebugLog("管理者LINE通知送信結果", [
+        'total' => count($adminUids),
+        'success' => $successCount,
+        'results' => $results
+    ]);
+
+    return [
+        'success' => ($successCount > 0),
+        'sent_count' => $successCount,
+        'total' => count($adminUids),
+        'results' => $results
+    ];
+}
+
+/**
+ * 車両問い合わせ時の管理者LINE通知
+ */
+function sendAdminLineInquiryNotification(array $car, string $inquiryType, ?array $userProfile = null, ?string $rawUserId = null, ?PDO $pdo = null): array {
+    $settings = getAdminLineSettings($pdo);
+    if (empty($settings['notify_inquiry'])) {
+        return ['success' => false, 'reason' => '通知OFF'];
+    }
+
+    $title = $car['title'] ?? '車両問い合わせ';
+    $totalPrice = $car['total_price_text'] ?? '要問合せ';
+    $year = $car['year'] ?? '-';
+    $distance = $car['distance'] ?? '-';
+    $detailUrl = $car['detail_url'] ?? SHOP_GOO_URL;
+
+    $userName = 'お客様 (名称未設定)';
+    if (!empty($userProfile['displayName'])) {
+        $userName = $userProfile['displayName'] . ' 様';
+    } elseif (!empty($rawUserId)) {
+        $userName = "お客様 (ID: " . substr($rawUserId, 0, 8) . "...)";
+    }
+
+    $textMsg = "🚨【車両お問い合わせ】\n"
+             . "━━━━━━━━━━━━━━\n"
+             . "👤 お客様: {$userName}\n"
+             . "🎯 ご希望: {$inquiryType}\n"
+             . "🚗 車両: {$title}\n"
+             . "💰 総額: {$totalPrice} (年式:{$year} / 走行:{$distance})\n"
+             . "━━━━━━━━━━━━━━\n"
+             . "LINE公式アカウントのチャット等で詳細をご確認ください。\n"
+             . "🔗 車両詳細: {$detailUrl}";
+
+    $messages = [
+        ['type' => 'text', 'text' => $textMsg]
+    ];
+
+    return sendAdminLineBroadcast($messages, $pdo);
+}
+
+/**
+ * 来店・点検予約時の管理者LINE通知
+ */
+function sendAdminLineMaintenanceBookingNotification(string $bookingType, string $carModel, string $prefTime, ?array $userProfile = null, ?string $rawUserId = null, ?PDO $pdo = null): array {
+    $settings = getAdminLineSettings($pdo);
+    if (empty($settings['notify_booking'])) {
+        return ['success' => false, 'reason' => '通知OFF'];
+    }
+
+    $userName = 'お客様 (名称未設定)';
+    if (!empty($userProfile['displayName'])) {
+        $userName = $userProfile['displayName'] . ' 様';
+    } elseif (!empty($rawUserId)) {
+        $userName = "お客様 (ID: " . substr($rawUserId, 0, 8) . "...)";
+    }
+
+    $textMsg = "🛠️【来店・点検予約のお申し込み】\n"
+             . "━━━━━━━━━━━━━━\n"
+             . "👤 お客様: {$userName}\n"
+             . "📋 種別: {$bookingType}\n"
+             . "🚗 愛車: {$carModel}\n"
+             . "📅 ご希望: {$prefTime}\n"
+             . "━━━━━━━━━━━━━━\n"
+             . "ピット状況を確認し、LINEチャットにて確定日程やお見積もりをご案内してください。";
+
+    $messages = [
+        ['type' => 'text', 'text' => $textMsg]
+    ];
+
+    return sendAdminLineBroadcast($messages, $pdo);
+}
+
+/**
+ * 新規顧客LINE連携時の管理者LINE通知
+ */
+function sendAdminLineNewCustomerNotification(string $userId, string $userName, ?PDO $pdo = null): array {
+    $settings = getAdminLineSettings($pdo);
+    if (empty($settings['notify_new_customer'])) {
+        return ['success' => false, 'reason' => '通知OFF'];
+    }
+
+    $displayName = $userName ?: '名称未設定のお客様';
+
+    $textMsg = "🆕【新規顧客登録 (LINE連携)】\n"
+             . "━━━━━━━━━━━━━━\n"
+             . "👤 お客様: {$displayName} 様\n"
+             . "🆔 LINE UID: {$userId}\n"
+             . "━━━━━━━━━━━━━━\n"
+             . "マイカー点検パスポートが開かれました。\n店舗管理画面より車両情報や車検日をご登録いただけます。";
+
+    $messages = [
+        ['type' => 'text', 'text' => $textMsg]
+    ];
+
+    return sendAdminLineBroadcast($messages, $pdo);
+}
+
+/**
+ * 新着在庫車両検知時の管理者LINE通知
+ */
+function sendAdminLineNewCarsNotification(array $newCars, ?PDO $pdo = null): array {
+    $settings = getAdminLineSettings($pdo);
+    if (empty($settings['notify_new_cars'])) {
+        return ['success' => false, 'reason' => '通知OFF'];
+    }
+
+    $count = count($newCars);
+    if ($count === 0) return ['success' => false, 'reason' => '0件'];
+
+    $lines = ["🚗✨【新着在庫情報】グーネットに新着車両が {$count}台 掲載されました！\n━━━━━━━━━━━━━━"];
+    foreach (array_slice($newCars, 0, 5) as $c) {
+        $t = $c['title'] ?? '車両';
+        $p = $c['total_price_text'] ?? '要問合せ';
+        $lines[] = "• {$t} [{$p}]";
+    }
+    $lines[] = "━━━━━━━━━━━━━━\n店舗在庫一覧: " . SHOP_GOO_URL;
+
+    $messages = [
+        ['type' => 'text', 'text' => implode("\n", $lines)]
+    ];
+
+    return sendAdminLineBroadcast($messages, $pdo);
+}
+
+/**
+ * リマインド定期配信結果の管理者LINE通知
+ */
+function sendAdminLineReminderReport(int $oilCount, int $periodicCount, int $shakenCount, array $details = [], ?PDO $pdo = null): array {
+    $settings = getAdminLineSettings($pdo);
+    if (empty($settings['notify_reminder'])) {
+        return ['success' => false, 'reason' => '通知OFF'];
+    }
+
+    $total = $oilCount + $periodicCount + $shakenCount;
+    if ($total === 0) return ['success' => false, 'reason' => '0件'];
+
+    $lines = [
+        "⏰【定期配信完了レポート】\n"
+        . "本日 {$total}名様へメンテナンス通知を自動送信しました。\n"
+        . "━━━━━━━━━━━━━━\n"
+        . "🛢️ オイル交換: {$oilCount}件\n"
+        . "📋 12ヶ月点検: {$periodicCount}件\n"
+        . "🚗 車検満了: {$shakenCount}件\n"
+        . "━━━━━━━━━━━━━━"
+    ];
+    if (!empty($details)) {
+        $lines[] = "送信先（一部）:";
+        foreach (array_slice($details, 0, 5) as $d) {
+            $lines[] = "• {$d['name']}様 ({$d['car']}) ➡ {$d['type']}";
+        }
+    }
+
+    $messages = [
+        ['type' => 'text', 'text' => implode("\n", $lines)]
+    ];
+
+    return sendAdminLineBroadcast($messages, $pdo);
+}
+
+/**
+ * 管理者LINE通知テスト送信
+ */
+function sendAdminLineTestNotification(string $targetUid, ?PDO $pdo = null): array {
+    $targetUid = trim($targetUid);
+    if (empty($targetUid) || !str_starts_with($targetUid, 'U')) {
+        return ['success' => false, 'error' => '有効なLINE UID (Uから始まる33文字のID) を指定してください'];
+    }
+
+    $time = date('Y/m/d H:i:s');
+    $textMsg = "🔔【管理者LINE通知 テスト送信】\n"
+             . "━━━━━━━━━━━━━━\n"
+             . "このメッセージはアップファーレン店舗管理システムの動作確認テストです。\n"
+             . "送信日時: {$time}\n"
+             . "━━━━━━━━━━━━━━\n"
+             . "✅ 設定は正常に動作しています！\n"
+             . "お客様からの「車両問い合わせ」「点検・来店予約」「新規顧客登録」などの重要通知が、このアカウントへ自動でプッシュ通知されます。";
+
+    $messages = [
+        ['type' => 'text', 'text' => $textMsg]
+    ];
+
+    return sendLinePushMessage($targetUid, $messages);
 }

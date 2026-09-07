@@ -2679,6 +2679,125 @@ try {
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
+        // --- 18. 管理者LINE通知設定: 設定取得 ---
+        case 'admin_get_line_notification_settings':
+            $authPass = $_POST['password'] ?? ($_GET['password'] ?? '');
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
+                exit;
+            }
+
+            $settings = getAdminLineSettings($db);
+            $settings['admin_line_uids'] = $settings['admin_uids'] ?? [];
+            echo json_encode([
+                'success' => true,
+                'settings' => $settings
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
+        // --- 18-2. 管理者LINE通知設定: 設定保存 ---
+        case 'admin_save_line_notification_settings':
+            $authPass = $_POST['password'] ?? '';
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
+                exit;
+            }
+
+            $rawUids = $_POST['admin_uids'] ?? ($_POST['admin_line_uids'] ?? '');
+            $uids = [];
+            if (is_array($rawUids)) {
+                $uids = $rawUids;
+            } elseif (is_string($rawUids)) {
+                // 改行、カンマ、スペース区切り対応
+                $lines = preg_split('/[\r\n,、\s]+/u', $rawUids);
+                foreach ($lines as $l) {
+                    $l = trim($l);
+                    if (!empty($l)) {
+                        $uids[] = $l;
+                    }
+                }
+            }
+
+            $settingsToSave = [
+                'admin_uids' => $uids,
+                'notify_inquiry' => isset($_POST['notify_inquiry']) ? filter_var($_POST['notify_inquiry'], FILTER_VALIDATE_BOOLEAN) : true,
+                'notify_booking' => isset($_POST['notify_booking']) ? filter_var($_POST['notify_booking'], FILTER_VALIDATE_BOOLEAN) : true,
+                'notify_new_customer' => isset($_POST['notify_new_customer']) ? filter_var($_POST['notify_new_customer'], FILTER_VALIDATE_BOOLEAN) : true,
+                'notify_new_cars' => isset($_POST['notify_new_cars']) ? filter_var($_POST['notify_new_cars'], FILTER_VALIDATE_BOOLEAN) : false,
+                'notify_reminder' => isset($_POST['notify_reminder']) ? filter_var($_POST['notify_reminder'], FILTER_VALIDATE_BOOLEAN) : true
+            ];
+
+            $saved = saveAdminLineSettings($settingsToSave, $db);
+            if ($saved) {
+                $updated = getAdminLineSettings($db);
+                $updated['admin_line_uids'] = $updated['admin_uids'] ?? [];
+                echo json_encode([
+                    'success' => true,
+                    'message' => '管理者LINE通知設定を保存しました！',
+                    'settings' => $updated
+                ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            } else {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => '設定の保存に失敗しました']);
+            }
+            break;
+
+        // --- 18-3. 管理者LINE通知設定: テスト通知送信 ---
+        case 'admin_test_line_notification':
+            $authPass = $_POST['password'] ?? '';
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
+                exit;
+            }
+
+            $rawTarget = $_POST['uid'] ?? ($_POST['admin_line_uids'] ?? ($_POST['admin_uids'] ?? ''));
+            $targetUids = [];
+            if (is_array($rawTarget)) {
+                $targetUids = $rawTarget;
+            } elseif (is_string($rawTarget)) {
+                $lines = preg_split('/[\r\n,、\s]+/u', $rawTarget);
+                foreach ($lines as $l) {
+                    $l = trim($l);
+                    if (!empty($l) && str_starts_with($l, 'U')) {
+                        $targetUids[] = $l;
+                    }
+                }
+            }
+
+            if (empty($targetUids)) {
+                $cur = getAdminLineSettings($db);
+                $targetUids = $cur['admin_uids'] ?? [];
+            }
+
+            if (empty($targetUids)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => '送信先の管理者LINE UID（Uから始まる33文字）が入力されていないか無効です']);
+                exit;
+            }
+
+            $results = [];
+            $successCount = 0;
+            foreach ($targetUids as $uid) {
+                $res = sendAdminLineTestNotification($uid, $db);
+                $isOk = !empty($res['success']);
+                if ($isOk) $successCount++;
+                $results[] = [
+                    'uid' => $uid,
+                    'success' => $isOk,
+                    'error' => $res['error'] ?? null
+                ];
+            }
+
+            echo json_encode([
+                'success' => ($successCount > 0),
+                'message' => "{$successCount} 件のアカウントへテスト通知を送信しました！",
+                'results' => $results
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
         default:
             http_response_code(400);
             echo json_encode(['success' => false, 'error' => '無効なアクションです。']);

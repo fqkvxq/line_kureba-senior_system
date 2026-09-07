@@ -116,6 +116,22 @@ const elements = {
     userMenuShowTapHint: document.getElementById('userMenuShowTapHint'),
     syncLineFollowersBtn: document.getElementById('syncLineFollowersBtn'),
 
+    // 管理者LINE通知設定モーダル
+    openAdminLineSettingsBtn: document.getElementById('openAdminLineSettingsBtn'),
+    adminLineSettingsModal: document.getElementById('adminLineSettingsModal'),
+    closeAdminLineSettingsModalBtn: document.getElementById('closeAdminLineSettingsModalBtn'),
+    cancelAdminLineSettingsBtn: document.getElementById('cancelAdminLineSettingsBtn'),
+    saveAdminLineSettingsBtn: document.getElementById('saveAdminLineSettingsBtn'),
+    testAdminLineNotificationBtn: document.getElementById('testAdminLineNotificationBtn'),
+    adminLineUidsInput: document.getElementById('adminLineUidsInput'),
+    adminLineSaveStatus: document.getElementById('adminLineSaveStatus'),
+    notifyInquiryCheck: document.getElementById('notifyInquiryCheck'),
+    notifyBookingCheck: document.getElementById('notifyBookingCheck'),
+    notifyNewCustomerCheck: document.getElementById('notifyNewCustomerCheck'),
+    notifyNewCarsCheck: document.getElementById('notifyNewCarsCheck'),
+    notifyReminderCheck: document.getElementById('notifyReminderCheck'),
+    btnQuickAddAdminFromEdit: document.getElementById('btnQuickAddAdminFromEdit'),
+
     toast: document.getElementById('adminToast')
 };
 
@@ -136,6 +152,14 @@ function initAuth() {
 }
 
 function initEventListeners() {
+    // 管理者LINE通知設定モーダル開閉 & 操作
+    if (elements.openAdminLineSettingsBtn) elements.openAdminLineSettingsBtn.addEventListener('click', openAdminLineSettingsModal);
+    if (elements.closeAdminLineSettingsModalBtn) elements.closeAdminLineSettingsModalBtn.addEventListener('click', closeAdminLineSettingsModal);
+    if (elements.cancelAdminLineSettingsBtn) elements.cancelAdminLineSettingsBtn.addEventListener('click', closeAdminLineSettingsModal);
+    if (elements.saveAdminLineSettingsBtn) elements.saveAdminLineSettingsBtn.addEventListener('click', saveAdminLineSettings);
+    if (elements.testAdminLineNotificationBtn) elements.testAdminLineNotificationBtn.addEventListener('click', testAdminLineNotification);
+    if (elements.btnQuickAddAdminFromEdit) elements.btnQuickAddAdminFromEdit.addEventListener('click', quickAddAdminUidFromEdit);
+
     // ログイン
     elements.loginBtn.addEventListener('click', () => attemptLogin());
     elements.adminPasswordInput.addEventListener('keypress', (e) => {
@@ -563,7 +587,17 @@ function renderTable() {
                         `}
                         <div style="min-width: 0;">
                             <div class="cust-name">${escapeHtml(c.user_name || '名前なし')}</div>
-                            <div class="cust-uid">${escapeHtml(c.user_id || '')}</div>
+                            <div class="cust-uid" style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                                <span>${escapeHtml(c.user_id || '')}</span>
+                                ${c.user_id && c.user_id.startsWith('U') ? `
+                                    <button class="btn-copy-uid" title="UIDをクリップボードにコピー" onclick="event.stopPropagation(); copyCustUid('${escapeHtml(c.user_id)}');" style="background: none; border: none; color: #64748b; cursor: pointer; padding: 2px 4px; font-size: 11px; border-radius: 4px;" onmouseover="this.style.color='#1e293b'; this.style.background='#f1f5f9';" onmouseout="this.style.color='#64748b'; this.style.background='none';">
+                                        <i class="fa-regular fa-copy"></i>
+                                    </button>
+                                    <button class="btn-add-admin-uid" title="このアカウントを管理者LINE通知先に登録" onclick="event.stopPropagation(); addAdminUidDirectly('${escapeHtml(c.user_id)}', '${escapeHtml(c.user_name || '')}');" style="background: none; border: none; color: #0284c7; cursor: pointer; padding: 2px 4px; font-size: 11px; border-radius: 4px;" onmouseover="this.style.color='#0369a1'; this.style.background='#e0f2fe';" onmouseout="this.style.color='#0284c7'; this.style.background='none';">
+                                        <i class="fa-solid fa-bell"></i> 通知先に登録
+                                    </button>
+                                ` : ''}
+                            </div>
                             <div style="margin-top: 4px;">${menuBadgeHtml}</div>
                         </div>
                     </div>
@@ -1861,3 +1895,204 @@ async function unlinkUserRichMenu() {
         alert('通信エラーが発生しました: ' + e.message);
     }
 }
+
+// ==========================================================================
+// 管理者LINE通知設定 & UIDヘルパー
+// ==========================================================================
+
+window.copyCustUid = function(uid) {
+    if (!uid) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(uid).then(() => {
+            showToast('📋 LINE User ID をコピーしました');
+        }).catch(() => {
+            prompt('以下のLINE User IDをコピーしてください:', uid);
+        });
+    } else {
+        prompt('以下のLINE User IDをコピーしてください:', uid);
+    }
+};
+
+window.addAdminUidDirectly = function(uid, name) {
+    if (!uid || !uid.startsWith('U')) {
+        alert('有効なLINE User ID（Uから始まる33桁）ではありません。');
+        return;
+    }
+    openAdminLineSettingsModal().then(() => {
+        const textarea = elements.adminLineUidsInput;
+        if (!textarea) return;
+        const currentVal = textarea.value.trim();
+        const lines = currentVal ? currentVal.split('\n').map(l => l.trim()).filter(l => l) : [];
+        if (!lines.includes(uid)) {
+            lines.push(uid);
+            textarea.value = lines.join('\n');
+            showToast(`🔔 【${name || '管理者'} 様】のUIDを通知先に追加しました。「設定を保存」で有効化してください。`);
+        } else {
+            showToast(`ℹ️ このUIDはすでに通知先リストに含まれています。`);
+        }
+        textarea.focus();
+    });
+};
+
+function quickAddAdminUidFromEdit() {
+    const uid = elements.editUserUid ? elements.editUserUid.value.trim() : '';
+    const name = elements.editUserName ? elements.editUserName.value.trim() : '';
+    if (!uid || !uid.startsWith('U')) {
+        alert('この顧客データには有効なLINE User ID（Uから始まる33桁）がありません。\nLINE友だち登録済みの顧客から追加してください。');
+        return;
+    }
+    window.addAdminUidDirectly(uid, name);
+}
+
+async function openAdminLineSettingsModal() {
+    if (!elements.adminLineSettingsModal) return;
+    elements.adminLineSettingsModal.classList.add('active');
+    
+    if (elements.adminLineSaveStatus) {
+        elements.adminLineSaveStatus.textContent = '設定を読み込み中...';
+        elements.adminLineSaveStatus.style.color = '#64748b';
+    }
+
+    try {
+        const res = await fetch(`../api.php?action=admin_get_line_notification_settings&password=${encodeURIComponent(state.password)}`);
+        const data = await res.json();
+        
+        if (data.success && data.settings) {
+            const s = data.settings;
+            if (elements.adminLineUidsInput) {
+                const rawArr = s.admin_line_uids || s.admin_uids || [];
+                const uids = Array.isArray(rawArr) ? rawArr : [];
+                elements.adminLineUidsInput.value = uids.join('\n');
+            }
+            if (elements.notifyInquiryCheck) elements.notifyInquiryCheck.checked = Boolean(s.notify_inquiry);
+            if (elements.notifyBookingCheck) elements.notifyBookingCheck.checked = Boolean(s.notify_booking);
+            if (elements.notifyNewCustomerCheck) elements.notifyNewCustomerCheck.checked = Boolean(s.notify_new_customer);
+            if (elements.notifyNewCarsCheck) elements.notifyNewCarsCheck.checked = Boolean(s.notify_new_cars);
+            if (elements.notifyReminderCheck) elements.notifyReminderCheck.checked = Boolean(s.notify_reminder);
+
+            if (elements.adminLineSaveStatus) {
+                elements.adminLineSaveStatus.textContent = '';
+            }
+        } else {
+            if (elements.adminLineSaveStatus) {
+                elements.adminLineSaveStatus.textContent = data.error || '設定の取得に失敗しました';
+                elements.adminLineSaveStatus.style.color = '#ef4444';
+            }
+        }
+    } catch (e) {
+        console.error('Failed to load admin line settings:', e);
+        if (elements.adminLineSaveStatus) {
+            elements.adminLineSaveStatus.textContent = '通信エラーが発生しました';
+            elements.adminLineSaveStatus.style.color = '#ef4444';
+        }
+    }
+}
+
+function closeAdminLineSettingsModal() {
+    if (elements.adminLineSettingsModal) {
+        elements.adminLineSettingsModal.classList.remove('active');
+    }
+}
+
+async function saveAdminLineSettings() {
+    const btn = elements.saveAdminLineSettingsBtn;
+    const originalHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 保存中...';
+    }
+
+    const rawUids = elements.adminLineUidsInput ? elements.adminLineUidsInput.value : '';
+    const formData = new FormData();
+    formData.append('password', state.password);
+    formData.append('admin_line_uids', rawUids);
+    formData.append('notify_inquiry', elements.notifyInquiryCheck && elements.notifyInquiryCheck.checked ? '1' : '0');
+    formData.append('notify_booking', elements.notifyBookingCheck && elements.notifyBookingCheck.checked ? '1' : '0');
+    formData.append('notify_new_customer', elements.notifyNewCustomerCheck && elements.notifyNewCustomerCheck.checked ? '1' : '0');
+    formData.append('notify_new_cars', elements.notifyNewCarsCheck && elements.notifyNewCarsCheck.checked ? '1' : '0');
+    formData.append('notify_reminder', elements.notifyReminderCheck && elements.notifyReminderCheck.checked ? '1' : '0');
+
+    try {
+        const res = await fetch('../api.php?action=admin_save_line_notification_settings', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            showToast('✅ 管理者LINE通知設定を保存しました！');
+            if (elements.adminLineSaveStatus) {
+                elements.adminLineSaveStatus.textContent = `保存完了 (${new Date().toLocaleTimeString('ja-JP')})`;
+                elements.adminLineSaveStatus.style.color = '#059669';
+            }
+            if (data.settings && elements.adminLineUidsInput) {
+                elements.adminLineUidsInput.value = (data.settings.admin_line_uids || []).join('\n');
+            }
+        } else {
+            alert('保存に失敗しました: ' + (data.error || ''));
+            if (elements.adminLineSaveStatus) {
+                elements.adminLineSaveStatus.textContent = data.error || '保存エラー';
+                elements.adminLineSaveStatus.style.color = '#ef4444';
+            }
+        }
+    } catch (e) {
+        console.error('Save admin line settings error:', e);
+        alert('通信エラーが発生しました: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    }
+}
+
+async function testAdminLineNotification() {
+    const rawUids = elements.adminLineUidsInput ? elements.adminLineUidsInput.value.trim() : '';
+    if (!rawUids) {
+        alert('テスト送信する管理者LINE User ID（U...）を入力してください。');
+        return;
+    }
+
+    const btn = elements.testAdminLineNotificationBtn;
+    const originalHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 送信中...';
+    }
+
+    const formData = new FormData();
+    formData.append('password', state.password);
+    formData.append('admin_line_uids', rawUids);
+
+    try {
+        const res = await fetch('../api.php?action=admin_test_line_notification', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            const results = data.results || [];
+            const successCount = results.filter(r => r.success).length;
+            const failCount = results.length - successCount;
+
+            let msg = `【テスト送信結果】\n成功: ${successCount} 件 / 失敗: ${failCount} 件\n\n`;
+            results.forEach(r => {
+                msg += `・UID: ${r.uid.substring(0, 10)}... → ${r.success ? '✅ 送信成功' : '❌ 失敗: ' + (r.error || '')}\n`;
+            });
+            alert(msg);
+            showToast(`🔔 テスト通知を送信しました (${successCount}件成功)`);
+        } else {
+            alert('テスト送信に失敗しました: ' + (data.error || ''));
+        }
+    } catch (e) {
+        console.error('Test admin notification error:', e);
+        alert('通信エラーが発生しました: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    }
+}
+

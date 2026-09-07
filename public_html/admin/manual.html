@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260907_manual_v2">
+    <link rel="stylesheet" href="manual.css?v=20260907_admin_notify_v1">
 </head>
 <body>
     <!-- ログインモーダル -->
@@ -74,7 +74,8 @@
                         <li class="toc-item"><a href="#sec-user-richmenu"><i class="fa-solid fa-table-cells-large"></i> 5. 専用リッチメニュー設定</a></li>
                         <li class="toc-item"><a href="#sec-line-reminder"><i class="fa-solid fa-paper-plane"></i> 6. LINEリマインド個別送信</a></li>
                         <li class="toc-item"><a href="#sec-global-richmenu"><i class="fa-solid fa-sliders"></i> 7. 全体リッチメニュー管理</a></li>
-                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 8. よくある質問・注意点</a></li>
+                        <li class="toc-item"><a href="#sec-admin-notify"><i class="fa-solid fa-bell" style="color:#0284c7;"></i> 8. 管理者向けLINE通知設定</a></li>
+                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 9. よくある質問・注意点</a></li>
                     </ul>
                 </div>
             </aside>
@@ -120,13 +121,13 @@
                         </div>
                     </a>
 
-                    <a href="#sec-line-reminder" class="summary-card">
-                        <div class="summary-icon-wrap" style="background: #fffbeb; color: #d97706;">
-                            <i class="fa-solid fa-paper-plane"></i>
+                    <a href="#sec-admin-notify" class="summary-card">
+                        <div class="summary-icon-wrap" style="background: #e0f2fe; color: #0284c7;">
+                            <i class="fa-solid fa-bell"></i>
                         </div>
                         <div class="summary-card-content">
-                            <h3>個別LINEリマインド</h3>
-                            <p>車検満了やオイル交換時期を迎えたお客様へ、ワンクリックで親切な案内通知を送信。</p>
+                            <h3>管理者LINE通知</h3>
+                            <p>問い合わせや来店予約の通知を、管理者の個人LINEへ即座にプッシュ通知。</p>
                         </div>
                     </a>
                 </div>
@@ -472,19 +473,89 @@
                     </div>
                 </section>
 
-                <!-- 8. よくある質問・注意点 -->
+                <!-- 8. 管理者向けLINE通知設定 -->
+                <section class="manual-section" id="sec-admin-notify">
+                    <div class="section-header">
+                        <div class="section-header-icon" style="background: #e0f2fe; color: #0284c7;">
+                            <i class="fa-solid fa-bell"></i>
+                        </div>
+                        <div class="section-header-text">
+                            <h2>8. 管理者向けLINE通知機能（個人LINEへのプッシュ通知）</h2>
+                            <p>お客様からの問い合わせ・予約をスタッフのLINEへ即時配信</p>
+                        </div>
+                    </div>
+
+                    <p>従来Discordチャンネルに送信していた管理者向け通知（車両問い合わせ、点検・オイル交換の来店予約、新規マイカー連携、新着車検知、定期リマインド結果など）を、<strong>スタッフ・管理者の個人LINEアカウント宛てにプッシュ通知</strong>する機能です。外出中やスマホ作業時でも、重要なお客様アクションをリアルタイムに確認できます。</p>
+
+                    <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <div class="step-body">
+                                <h4>設定モーダルを開く</h4>
+                                <p>顧客管理画面（`index.html`）右上のヘッダーにある「<strong><i class="fa-solid fa-bell"></i> 管理者LINE通知</strong>」ボタンをクリックすると、設定画面が開きます。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <div class="step-body">
+                                <h4>通知を受信する管理者のLINE User ID（UID）を登録</h4>
+                                <p>通知を受け取りたいスタッフのLINE User ID（<code>U</code>から始まる33桁の英数字）を入力します。<strong>改行することで複数人の管理者を登録可能</strong>です。</p>
+                                <div class="tip-box" style="margin-top: 10px; background: #f0fdf4; border-left: 4px solid #16a34a; padding: 10px 14px; border-radius: 4px; font-size: 13px;">
+                                    <strong>💡 かんたん登録Tips:</strong><br>
+                                    ・顧客一覧テーブルの各友だちのUID横にある「<strong><i class="fa-solid fa-bell"></i> 通知先に登録</strong>」ボタンを押すと、ワンクリックで設定欄にUIDが追加されます。<br>
+                                    ・顧客編集モーダル（ペンアイコン）内の「<strong>🔔 このアカウントを通知先管理者に登録</strong>」リンクからも即座に追加可能です。<br>
+                                    ・クリップボードへのコピーアイコン（<i class="fa-regular fa-copy"></i>）も利用できます。
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">3</div>
+                            <div class="step-body">
+                                <h4>通知イベントの選択（ON/OFF）</h4>
+                                <p>LINEで受信したい通知内容をチェックボックスで個別にON/OFF切り替えできます：</p>
+                                <ul style="margin: 8px 0 0 18px; font-size: 13px; color: #475569; line-height: 1.7;">
+                                    <li><strong>📩 車両問い合わせ</strong>：お客様が在庫車やお知らせから問い合わせLINEを送信した時</li>
+                                    <li><strong>📅 来店予約（車検・オイル）</strong>：お客様がマイカー画面から来店希望日時を選択・送信した時</li>
+                                    <li><strong>🆕 新規顧客登録</strong>：友だち追加後にお客様がマイカー点検連携を完了した時</li>
+                                    <li><strong>⏰ 定期リマインド結果</strong>：毎朝9時に自動実行される定期リマインド配信の完了レポート</li>
+                                    <li><strong>✨ 新着在庫車両の入荷検知</strong>：グーネット上の新着在庫車をシステムが自動検知した時</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">4</div>
+                            <div class="step-body">
+                                <h4>テスト送信と設定の保存</h4>
+                                <p>「<strong><i class="fa-solid fa-paper-plane"></i> テスト送信</strong>」ボタンを押すと、入力中のUID宛てにテストLINEメッセージが届くか動作確認できます。<br>
+                                確認後、「<strong><i class="fa-solid fa-floppy-disk"></i> 設定を保存する</strong>」をクリックして完了です。</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 9. よくある質問・注意点 -->
                 <section class="manual-section" id="sec-faq">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #fef2f2; color: #ef4444;">
                             <i class="fa-solid fa-circle-question"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>8. よくある質問・トラブルシューティング</h2>
+                            <h2>9. よくある質問・トラブルシューティング</h2>
                             <p>困ったときの解決方法</p>
                         </div>
                     </div>
 
                     <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">Q</div>
+                            <div class="step-body">
+                                <h4>管理者のLINE User ID（UID）はどのように確認すればよいですか？</h4>
+                                <p>管理者・スタッフ様ご自身のアカウントで店舗LINE公式アカウントを友だち追加し、管理画面右上の「LINE友だち一括同期」ボタンを押してください。顧客一覧にご自身のLINEアカウント名が表示され、その名前の下にある <code>U...</code> から始まる英数字がLINE User IDです。その横の「通知先に登録」アイコンをクリックするだけで、簡単に設定へ追加できます。</p>
+                            </div>
+                        </div>
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
@@ -543,6 +614,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260907_manual_v2"></script>
+    <script src="manual.js?v=20260907_admin_notify_v1"></script>
 </body>
 </html>
