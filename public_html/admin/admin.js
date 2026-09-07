@@ -174,6 +174,11 @@ function initEventListeners() {
     if (elements.saveProlineSettingsBtn) elements.saveProlineSettingsBtn.addEventListener('click', saveProlineSettings);
     if (elements.testProlineRelayBtn) elements.testProlineRelayBtn.addEventListener('click', testProlineRelay);
     if (elements.btnRefreshProlineLogs) elements.btnRefreshProlineLogs.addEventListener('click', loadProlineSettings);
+    if (elements.prolineSettingsModal) {
+        elements.prolineSettingsModal.addEventListener('click', (e) => {
+            if (e.target === elements.prolineSettingsModal) closeProlineSettingsModal();
+        });
+    }
 
     // 管理者LINE通知設定モーダル開閉 & 操作
     if (elements.openAdminLineSettingsBtn) elements.openAdminLineSettingsBtn.addEventListener('click', openAdminLineSettingsModal);
@@ -2134,6 +2139,9 @@ async function testAdminLineNotification() {
 async function openProlineSettingsModal() {
     if (!elements.prolineSettingsModal) return;
     elements.prolineSettingsModal.style.display = 'flex';
+    requestAnimationFrame(() => {
+        elements.prolineSettingsModal.classList.add('active');
+    });
     if (elements.prolineSaveStatus) elements.prolineSaveStatus.textContent = '';
     if (elements.prolineTestResultBanner) elements.prolineTestResultBanner.style.display = 'none';
 
@@ -2148,7 +2156,12 @@ async function openProlineSettingsModal() {
 
 function closeProlineSettingsModal() {
     if (elements.prolineSettingsModal) {
-        elements.prolineSettingsModal.style.display = 'none';
+        elements.prolineSettingsModal.classList.remove('active');
+        setTimeout(() => {
+            if (elements.prolineSettingsModal && !elements.prolineSettingsModal.classList.contains('active')) {
+                elements.prolineSettingsModal.style.display = 'none';
+            }
+        }, 200);
     }
 }
 
