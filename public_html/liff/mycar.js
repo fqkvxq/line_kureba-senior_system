@@ -16,13 +16,20 @@ function getEl(id) {
 
 document.addEventListener('DOMContentLoaded', async () => {
     await initLiff();
+
+    // URLパラメータでカレンダー直接ジャンプが指定されている場合（リッチメニューからの直行など）
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'calendar' || urlParams.get('jump') === 'calendar') {
+        openProlineCalendar();
+        return;
+    }
+
     initEventListeners();
     if (state.userId) {
         await fetchCustomerData();
     }
 
     // URLパラメータでシェアが指定されている場合、即座に友だち選択ピッカーを起動
-    const urlParams = new URLSearchParams(window.location.search);
     const shareTopic = urlParams.get('share') || urlParams.get('share_topic');
     if (shareTopic) {
         setTimeout(async () => {
@@ -32,6 +39,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 const LIFF_ID = '2000276344-YL1wXh0h';
+const PROLINE_DEFAULT_CALENDAR_URL = 'https://d0o2pa7q.autosns.app/cp/A9xhz7MWZF';
+
+// プロライン予約カレンダー連携（受講生UID・お名前を自動付与して転送）
+function openProlineCalendar() {
+    const calendarBaseUrl = PROLINE_DEFAULT_CALENDAR_URL;
+    const sep = calendarBaseUrl.includes('?') ? '&' : '?';
+    let url = `${calendarBaseUrl}${sep}uid=${encodeURIComponent(state.userId || '')}`;
+    if (state.userName && state.userName !== 'お客様') {
+        url += `&name=${encodeURIComponent(state.userName)}`;
+    }
+    window.location.replace(url);
+}
 
 async function initLiff() {
     // 1. ローカルストレージから永続IDを取得または生成
@@ -135,16 +154,6 @@ function initEventListeners() {
     bookingModal?.addEventListener('click', (e) => {
         if (e.target === bookingModal) closeModal();
     });
-
-    // プロライン予約カレンダー連携 (プロライン公式LIFF起動)
-    function openProlineCalendar() {
-        const prolineLiffUrl = 'https://liff.line.me/2000276344-XlmvL9qZ';
-        if (typeof liff !== 'undefined' && liff.openWindow) {
-            liff.openWindow({ url: prolineLiffUrl, external: false });
-        } else {
-            window.location.href = prolineLiffUrl;
-        }
-    }
 
     getEl('btnOpenProlineCalendarCard')?.addEventListener('click', openProlineCalendar);
     getEl('btnOpenProlineCalendarFromModal')?.addEventListener('click', () => {
