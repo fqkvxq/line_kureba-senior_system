@@ -307,6 +307,20 @@
                                 <span class="field-help-text" style="display: block; margin-top: 6px; font-size: 11px; color: var(--gray-600);">
                                     <i class="fa-solid fa-bolt" style="color: #06C755;"></i> タップした瞬間に、待ち時間0秒で指定のリッチメニューにシームレスに切り替わります（LINE公式 richmenuswitch 仕様）。
                                 </span>
+
+                                <!-- 専用メッセージ自動分岐オプション -->
+                                <div style="margin-top: 10px; padding: 10px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px;">
+                                    <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 12px; font-weight: bold; color: #166534; margin: 0;">
+                                        <input type="checkbox" id="switchBranchCustomCheck" checked style="accent-color: #16a34a; width: 16px; height: 16px; margin-top: 2px;">
+                                        <span>
+                                            <span>🔀 専用メッセージ設定者と通常友だちの自動分岐（推奨）</span>
+                                            <small style="display: block; font-weight: normal; color: #15803d; margin-top: 2px; line-height: 1.4;">
+                                                ・専用メッセージ設定中の友だち ➡ <strong>専用メッセージ帯付きメニュー</strong>へ自動復帰<br>
+                                                ・通常メニューの友だち ➡ 選択した<strong>通常メニュー</strong>を表示
+                                            </small>
+                                        </span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -552,6 +566,6 @@
     <!-- トースト通知 -->
     <div class="toast-notification" id="adminToast"></div>
 
-    <script src="richmenu.js?v=20260904_silent_v2"></script>
+    <script src="richmenu.js?v=20260907_branch_custom_v1"></script>
 </body>
 </html>

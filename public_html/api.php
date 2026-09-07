@@ -1751,11 +1751,18 @@ try {
                     $aliasId = trim($a['action']['richMenuAliasId'] ?? '');
                     $action['richMenuAliasId'] = $aliasId;
                     $dataVal = trim($a['action']['data'] ?? '');
-                    if (empty($dataVal) || $dataVal === 'action=richmenu_switched') {
-                        $action['data'] = !empty($aliasId) ? 'action=richmenu_switched&to_alias=' . urlencode($aliasId) : 'action=richmenu_switched';
-                    } else {
-                        $action['data'] = $dataVal;
+                    $branchCustom = !empty($a['action']['branchCustom']) || !empty($isNotice) || str_contains($dataVal, 'branch_custom=1');
+                    
+                    if (empty($dataVal) || $dataVal === 'action=richmenu_switched' || !str_contains($dataVal, 'to_alias=')) {
+                        $dataVal = !empty($aliasId) ? 'action=richmenu_switched&to_alias=' . urlencode($aliasId) : 'action=richmenu_switched';
                     }
+                    if ($branchCustom && !str_contains($dataVal, 'branch_custom=1')) {
+                        $dataVal .= '&branch_custom=1';
+                    }
+                    if (!empty($isNotice) && !str_contains($dataVal, 'from_notice=1')) {
+                        $dataVal .= '&from_notice=1';
+                    }
+                    $action['data'] = $dataVal;
                 }
 
                 $lineAreas[] = [
@@ -2260,11 +2267,18 @@ try {
                     if (!empty($alias)) {
                         $cleanAction['richMenuAliasId'] = $alias;
                         $dataVal = trim($act['data'] ?? '');
-                        if (empty($dataVal) || $dataVal === 'action=richmenu_switched') {
-                            $cleanAction['data'] = 'action=richmenu_switched&to_alias=' . urlencode($alias);
-                        } else {
-                            $cleanAction['data'] = $dataVal;
+                        $branchCustom = !empty($act['branchCustom']) || !empty($isNotice) || str_contains($dataVal, 'branch_custom=1');
+
+                        if (empty($dataVal) || $dataVal === 'action=richmenu_switched' || !str_contains($dataVal, 'to_alias=')) {
+                            $dataVal = 'action=richmenu_switched&to_alias=' . urlencode($alias);
                         }
+                        if ($branchCustom && !str_contains($dataVal, 'branch_custom=1')) {
+                            $dataVal .= '&branch_custom=1';
+                        }
+                        if (!empty($isNotice) && !str_contains($dataVal, 'from_notice=1')) {
+                            $dataVal .= '&from_notice=1';
+                        }
+                        $cleanAction['data'] = $dataVal;
                     } else {
                         $cleanAction = ['type' => 'postback', 'data' => 'action=search_all'];
                     }

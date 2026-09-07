@@ -419,16 +419,21 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             }
             break;
 
-        // --- 9-6. リッチメニュー切替アクション (タブ切替・エイリアス切替等の完了通知) ---
+        // --- 9-6. リッチメニュー切替アクション (タブ切替・エイリアス切替・お知らせ復帰等の完了通知) ---
         case 'richmenu_switched':
         case 'richmenu_switch':
         case 'switch_tab':
         case 'tab_switch':
+        case 'close_notice':
+        case 'back_main':
         case 'none':
             $targetAlias = trim($params['to_alias'] ?? ($params['alias'] ?? ($postbackParams['newRichMenuAliasId'] ?? '')));
+            $isBranchCustom = !empty($params['branch_custom']) || !empty($params['from_notice']) || ($action === 'close_notice') || ($action === 'back_main');
+
             writeDebugLog("リッチメニュー切替通知受信", [
                 'action' => $action,
                 'targetAlias' => $targetAlias,
+                'isBranchCustom' => $isBranchCustom,
                 'userId' => $userId,
                 'params' => $postbackParams
             ]);
@@ -437,26 +442,29 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
                 // 切替先がお知らせメニューである場合はお知らせ表示中のため何もしない
                 $isTargetNotice = !empty($targetAlias) && isNoticeMenu($db, $targetAlias);
                 if (!$isTargetNotice) {
-                    // 直前にユーザーへ紐付けられていたメニューがお知らせメニューだったか判定
-                    $currentMenuId = lineGetUserRichMenuId($userId);
-                    $wasNotice = !empty($currentMenuId) && isNoticeMenu($db, $currentMenuId);
+                    // 専用リッチメニュー（専用メッセージ帯付き）が設定されている顧客か判定
+                    $customMenuId = getUserCustomRichMenuId($db, $userId);
 
-                    if ($wasNotice) {
-                        // お知らせメニューから通常メニューへの復帰操作（OKボタン押下等）と判定
-                        // 専用メッセージ設定顧客には専用メニューを即座に再リンク復帰！
-                        writeDebugLog("お知らせメニューからの復帰検知（切替アクション経由）: 専用メニュー復帰処理を実行", [
+                    if (!empty($customMenuId)) {
+                        // 専用メッセージ設定顧客には、専用メッセージ帯付きメニューを即座に再リンク復帰！
+                        writeDebugLog("リッチメニュー切替: 専用メッセージ設定顧客を検知したため専用メニューを復帰", [
                             'userId' => $userId,
-                            'currentMenuId' => $currentMenuId,
-                            'targetAlias' => $targetAlias
+                            'customMenuId' => $customMenuId,
+                            'targetAlias' => $targetAlias,
+                            'isBranchCustom' => $isBranchCustom
                         ]);
                         handleCloseNoticeMenu($db, '', $userId);
                     } else {
-                        // 通常メニュー同士のタブ切替（タブA ⇔ タブB）の場合はクライアント操作を尊重しサーバー側の上書きは行わない
-                        writeDebugLog("通常メニュー間のタブ切替を検知: クライアント操作尊重（サーバー上書きなし）", [
+                        // 専用メニューがない通常顧客
+                        writeDebugLog("リッチメニュー切替: 通常顧客のため通常メニューを維持", [
                             'userId' => $userId,
-                            'currentMenuId' => $currentMenuId,
                             'targetAlias' => $targetAlias
                         ]);
+                        // もし過去にお知らせ個別紐付けが残っていれば解除して全体本番メニューを表示
+                        $currentMenuId = lineGetUserRichMenuId($userId);
+                        if (!empty($currentMenuId) && isNoticeMenu($db, $currentMenuId)) {
+                            handleCloseNoticeMenu($db, '', $userId);
+                        }
                     }
                 }
             }
@@ -616,16 +624,25 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): ar
             if (!empty($userId)) {
                 $isTargetNotice = !empty($targetAlias) && isNoticeMenu($db, $targetAlias);
                 if (!$isTargetNotice) {
-                    $currentMenuId = lineGetUserRichMenuId($userId);
-                    $wasNotice = !empty($currentMenuId) && isNoticeMenu($db, $currentMenuId);
-                    if ($wasNotice) {
-                        writeDebugLog("executeSilentPostbackPush: お知らせからの復帰検知により専用メニュー復帰処理を実行", ['userId' => $userId]);
+                    $customMenuId = getUserCustomRichMenuId($db, $userId);
+                    if (!empty($customMenuId)) {
+                        writeDebugLog("executeSilentPostbackPush: 専用メッセージ設定顧客を検知したため専用メニュー復帰処理を実行", [
+                            'userId' => $userId,
+                            'customMenuId' => $customMenuId,
+                            'targetAlias' => $targetAlias
+                        ]);
                         handleCloseNoticeMenu($db, '', $userId);
                         return ['success' => true, 'message' => 'お知らせ復帰・専用メニュー復元完了'];
+                    } else {
+                        $currentMenuId = lineGetUserRichMenuId($userId);
+                        if (!empty($currentMenuId) && isNoticeMenu($db, $currentMenuId)) {
+                            handleCloseNoticeMenu($db, '', $userId);
+                            return ['success' => true, 'message' => 'お知らせ復帰・通常メニュー復帰完了'];
+                        }
                     }
                 }
             }
-            writeDebugLog("リッチメニュー切替/サイレントPostback受信(タブ切替尊重・サーバー上書きなし)", ['action' => $action, 'userId' => $userId]);
+            writeDebugLog("リッチメニュー切替/サイレントPostback受信(通常メニュー維持)", ['action' => $action, 'userId' => $userId]);
             return ['success' => true, 'message' => 'サイレント処理完了'];
 
         case 'search_all':

@@ -106,6 +106,7 @@ const elements = {
     fieldMessage: document.getElementById('fieldMessage'),
     fieldRichMenuSwitch: document.getElementById('fieldRichMenuSwitch'),
     switchMenuSelect: document.getElementById('switchMenuSelect'),
+    switchBranchCustomCheck: document.getElementById('switchBranchCustomCheck'),
     postbackDataInput: document.getElementById('postbackDataInput'),
     postbackDisplayTextInput: document.getElementById('postbackDisplayTextInput'),
     uriInput: document.getElementById('uriInput'),
@@ -325,6 +326,9 @@ function initEventListeners() {
     elements.messageTextInput.addEventListener('input', syncCurrentAreaFromForm);
     if (elements.switchMenuSelect) {
         elements.switchMenuSelect.addEventListener('change', syncCurrentAreaFromForm);
+    }
+    if (elements.switchBranchCustomCheck) {
+        elements.switchBranchCustomCheck.addEventListener('change', syncCurrentAreaFromForm);
     }
 
     // 座標直接入力の同期
@@ -1065,20 +1069,36 @@ function updateAreaConfigForm() {
     // 切替先メニューのプルダウン一覧を更新
     if (elements.switchMenuSelect) {
         elements.switchMenuSelect.innerHTML = '<option value="">-- 切替先メニューを選択 --</option>';
+        
+        // お知らせメニュー編集時、または自動分岐を推奨するオプション
+        const autoBranchOpt = document.createElement('option');
+        autoBranchOpt.value = 'default_branch';
+        autoBranchOpt.textContent = '🔀 【自動分岐】専用メッセージ者は専用帯付き / 通常の方は本番メニューへ (推奨)';
+        elements.switchMenuSelect.appendChild(autoBranchOpt);
+
         (state.historyList || []).forEach(m => {
             const aliasVal = m.alias_id || ('rm_' + m.id);
             const isLive = (m.is_active == 1 || (m.line_menu_id && m.line_menu_id === state.currentLineDefaultId));
             const opt = document.createElement('option');
             opt.value = aliasVal;
-            opt.textContent = (isLive ? '★ [本番中] ' : '') + m.title;
+            opt.textContent = (isLive ? '★ [本番中] ' : '') + m.title + (m.is_notice == 1 ? ' (お知らせ)' : '');
             if (area.action.richMenuAliasId === aliasVal) {
                 opt.selected = true;
             }
             elements.switchMenuSelect.appendChild(opt);
         });
-        if (area.action.type === 'richmenuswitch' && area.action.richMenuAliasId) {
-            elements.switchMenuSelect.value = area.action.richMenuAliasId;
+
+        if (area.action.type === 'richmenuswitch') {
+            if (area.action.richMenuAliasId) {
+                elements.switchMenuSelect.value = area.action.richMenuAliasId;
+            } else if (state.isNotice) {
+                elements.switchMenuSelect.value = 'default_branch';
+            }
         }
+    }
+
+    if (elements.switchBranchCustomCheck) {
+        elements.switchBranchCustomCheck.checked = (area.action.branchCustom !== false);
     }
 
     // 2. アクション種別のラジオボタンを選択
@@ -1161,9 +1181,23 @@ function syncCurrentAreaFromForm() {
     } else if (selectedType === 'message') {
         area.action.text = elements.messageTextInput.value.trim() || 'メニュー';
     } else if (selectedType === 'richmenuswitch') {
-        const swAlias = (elements.switchMenuSelect ? elements.switchMenuSelect.value : '') || '';
+        let swAlias = (elements.switchMenuSelect ? elements.switchMenuSelect.value : '') || '';
+        const branchCustom = elements.switchBranchCustomCheck ? elements.switchBranchCustomCheck.checked : true;
+        
+        // default_branch が選ばれた場合、本番公開中メニューのエイリアス、または最初の通常メニューのエイリアスを自動特定
+        if (swAlias === 'default_branch' || !swAlias) {
+            const normalLiveMenu = (state.historyList || []).find(m => (!m.is_notice || m.is_notice == 0) && (m.is_active == 1 || m.line_menu_id === state.currentLineDefaultId)) 
+                || (state.historyList || []).find(m => (!m.is_notice || m.is_notice == 0));
+            swAlias = normalLiveMenu ? (normalLiveMenu.alias_id || ('rm_' + normalLiveMenu.id)) : '';
+        }
+
         area.action.richMenuAliasId = swAlias;
-        area.action.data = swAlias ? `action=richmenu_switched&to_alias=${encodeURIComponent(swAlias)}` : 'action=richmenu_switched';
+        area.action.branchCustom = branchCustom;
+        const fromNoticeFlag = (state.isNotice ? '&from_notice=1' : '');
+        const branchFlag = (branchCustom ? '&branch_custom=1' : '');
+        area.action.data = swAlias 
+            ? `action=richmenu_switched&to_alias=${encodeURIComponent(swAlias)}${fromNoticeFlag}${branchFlag}` 
+            : `action=richmenu_switched${fromNoticeFlag}${branchFlag}`;
     }
 
     updateAreaBadgeAndPill(area);
@@ -1618,7 +1652,8 @@ function renderTextOverlayControls() {
                 const swAlias = actionSwitchSelect.value || '';
                 overlay.action = overlay.action || {};
                 overlay.action.richMenuAliasId = swAlias;
-                overlay.action.data = swAlias ? `action=richmenu_switched&to_alias=${encodeURIComponent(swAlias)}` : 'action=richmenu_switched';
+                const fromNoticeFlag = (state.isNotice ? '&from_notice=1' : '');
+                overlay.action.data = swAlias ? `action=richmenu_switched&to_alias=${encodeURIComponent(swAlias)}${fromNoticeFlag}&branch_custom=1` : `action=richmenu_switched${fromNoticeFlag}&branch_custom=1`;
                 renderTextOverlays();
             });
         }
@@ -2022,7 +2057,8 @@ async function saveRichMenu(publish, asCopy = false) {
                 } else if (ov.action.type === 'richmenuswitch') {
                     const swAlias = ov.action.richMenuAliasId || '';
                     actionObj.richMenuAliasId = swAlias;
-                    actionObj.data = ov.action.data || (swAlias ? `action=richmenu_switched&to_alias=${encodeURIComponent(swAlias)}` : 'action=richmenu_switched');
+                    const fromNoticeFlag = (state.isNotice ? '&from_notice=1' : '');
+                    actionObj.data = ov.action.data || (swAlias ? `action=richmenu_switched&to_alias=${encodeURIComponent(swAlias)}${fromNoticeFlag}&branch_custom=1` : `action=richmenu_switched${fromNoticeFlag}&branch_custom=1`);
                 }
 
                 overlayAreas.push({
