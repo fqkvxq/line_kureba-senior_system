@@ -3338,3 +3338,15 @@ function publishNoticeMenu() {
         });
     }, 'image/png');
 }
+
+// プロラインメニュー同期ボタン
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btnSyncLineMenus')?.addEventListener('click', () => {
+        showLoading('LINE公式アカウントからプロラインの最新メニューを同期中...');
+        loadHistoryList();
+        setTimeout(() => {
+            hideLoading();
+            showToast('LINE公式アカウントからプロラインの最新メニューを同期しました！', 'success');
+        }, 1500);
+    });
+});

@@ -943,6 +943,45 @@ function lineGetRichMenu(string $richMenuId): ?array {
 }
 
 /**
+ * LINE Messaging API: LINEサーバー上の全リッチメニュー一覧取得
+ * GET https://api.line.me/v2/bot/richmenu/list
+ */
+function lineGetRichMenuList(): array {
+    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+        return ['success' => false, 'error' => 'LINEアクセストークン未設定', 'richmenus' => []];
+    }
+
+    $url = "https://api.line.me/v2/bot/richmenu/list";
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 15,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+        ]
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    if ($httpCode === 200) {
+        $json = json_decode($res, true);
+        return [
+            'success' => true,
+            'richmenus' => $json['richmenus'] ?? []
+        ];
+    }
+
+    return [
+        'success' => false,
+        'httpCode' => $httpCode,
+        'error' => $curlErr ?: $res,
+        'richmenus' => []
+    ];
+}
+
+/**
  * LINE Messaging API: リッチメニュー削除
  */
 function lineDeleteRichMenu(string $richMenuId): array {

@@ -1488,6 +1488,56 @@ try {
             // LINE公式アカウントの現在のデフォルトリッチメニューIDを取得
             $currentLineDefaultId = lineGetDefaultRichMenuId();
 
+            // LINEサーバー上の全リッチメニューを自動取得し、プロライン等の未登録メニューがあれば自動インポート
+            $remoteList = lineGetRichMenuList();
+            if (!empty($remoteList['success']) && !empty($remoteList['richmenus'])) {
+                foreach ($remoteList['richmenus'] as $rm) {
+                    $lmid = $rm['richMenuId'] ?? '';
+                    if (empty($lmid)) continue;
+
+                    // すでにDBに登録済みかチェック
+                    $chk = $db->prepare("SELECT id FROM rich_menus WHERE line_menu_id = :lmid LIMIT 1");
+                    $chk->execute([':lmid' => $lmid]);
+                    if (!$chk->fetch()) {
+                        // LINEから画像バイナリを自動取得してローカル保存
+                        $imgBin = lineGetRichMenuImage($lmid);
+                        $imgFileName = 'line_imported_' . substr(md5($lmid), 0, 10) . '.jpg';
+                        $imgRelUrl = 'uploads/richmenu/' . $imgFileName;
+                        if (!empty($imgBin)) {
+                            @file_put_contents(RICHMENU_UPLOAD_DIR . '/' . $imgFileName, $imgBin);
+                        }
+
+                        $isDef = ($lmid === $currentLineDefaultId) ? 1 : 0;
+                        $menuTitle = $rm['name'] ?? 'プロライン公式メニュー';
+                        if ($isDef) {
+                            $menuTitle = '★ [現在LINE公開中] ' . $menuTitle;
+                        }
+
+                        $db->prepare("
+                            INSERT INTO rich_menus (
+                                title, line_menu_id, image_url, base_image_url,
+                                areas_json, width, height, chat_bar_text,
+                                is_active, is_notice, created_at, updated_at
+                            ) VALUES (
+                                :title, :lmid, :img_url, :base_img_url,
+                                :areas_json, :width, :height, :chat_bar_text,
+                                :is_active, 0, datetime('now', '+9 hours'), datetime('now', '+9 hours')
+                            )
+                        ")->execute([
+                            ':title' => $menuTitle,
+                            ':lmid' => $lmid,
+                            ':img_url' => $imgRelUrl,
+                            ':base_img_url' => $imgRelUrl,
+                            ':areas_json' => json_encode($rm['areas'] ?? [], JSON_UNESCAPED_UNICODE),
+                            ':width' => $rm['size']['width'] ?? 2500,
+                            ':height' => $rm['size']['height'] ?? 1686,
+                            ':chat_bar_text' => $rm['chatBarText'] ?? 'メニュー',
+                            ':is_active' => $isDef
+                        ]);
+                    }
+                }
+            }
+
             // 履歴一覧取得
             $stmt = $db->query("SELECT * FROM rich_menus ORDER BY id DESC");
             $menus = $stmt->fetchAll(PDO::FETCH_ASSOC);
