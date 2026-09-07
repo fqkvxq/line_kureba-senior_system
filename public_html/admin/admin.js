@@ -1926,7 +1926,7 @@ window.addAdminUidDirectly = function(uid, name) {
         if (!lines.includes(uid)) {
             lines.push(uid);
             textarea.value = lines.join('\n');
-            showToast(`🔔 【${name || '管理者'} 様】のUIDを通知先に追加しました。「設定を保存」で有効化してください。`);
+            showToast(`🔔 【${name || '管理者'} 様】のUIDを追加しました。モーダル右下の「設定を保存する」を押してください。`);
         } else {
             showToast(`ℹ️ このUIDはすでに通知先リストに含まれています。`);
         }
@@ -1946,7 +1946,10 @@ function quickAddAdminUidFromEdit() {
 
 async function openAdminLineSettingsModal() {
     if (!elements.adminLineSettingsModal) return;
-    elements.adminLineSettingsModal.classList.add('active');
+    elements.adminLineSettingsModal.style.display = 'flex';
+    requestAnimationFrame(() => {
+        elements.adminLineSettingsModal.classList.add('active');
+    });
     
     if (elements.adminLineSaveStatus) {
         elements.adminLineSaveStatus.textContent = '設定を読み込み中...';
@@ -1991,6 +1994,11 @@ async function openAdminLineSettingsModal() {
 function closeAdminLineSettingsModal() {
     if (elements.adminLineSettingsModal) {
         elements.adminLineSettingsModal.classList.remove('active');
+        setTimeout(() => {
+            if (elements.adminLineSettingsModal && !elements.adminLineSettingsModal.classList.contains('active')) {
+                elements.adminLineSettingsModal.style.display = 'none';
+            }
+        }, 200);
     }
 }
 
