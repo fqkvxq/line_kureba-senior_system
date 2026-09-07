@@ -1167,14 +1167,15 @@ try {
                 exit;
             }
 
-            $userName = $cust['user_name'] ?: 'お客様';
-            $carModel = $cust['car_model'] ?: '愛車';
+            $userName = $cust['user_name'] ?: '受講生';
+            $courseName = $cust['car_model'] ?: '受講コース';
+            $deviceInfo = $cust['car_number'] ?: '登録機器';
 
             if ($type === 'oil') {
-                $oilDate = $cust['oil_next_date'] ?: '近日中';
+                $lessonDate = $cust['oil_next_date'] ?: '近日中';
                 $flexMessage = [
                     'type' => 'flex',
-                    'altText' => "【オイル交換のお知らせ】{$carModel}の交換時期が近づいています",
+                    'altText' => "【次回レッスンのご案内】{$courseName}の受講予定日のお知らせ",
                     'contents' => [
                         'type' => 'bubble',
                         'size' => 'mega',
@@ -1183,16 +1184,16 @@ try {
                             'layout' => 'vertical',
                             'paddingAll' => '20px',
                             'contents' => [
-                                ['type' => 'text', 'text' => '🛢 オイル交換のお知らせ', 'weight' => 'bold', 'size' => 'sm', 'color' => '#f59e0b'],
+                                ['type' => 'text', 'text' => '💻 次回レッスンのご案内', 'weight' => 'bold', 'size' => 'sm', 'color' => '#0284c7'],
                                 ['type' => 'text', 'text' => "{$userName} 様", 'weight' => 'bold', 'size' => 'xl', 'margin' => 'sm', 'color' => '#1e293b'],
-                                ['type' => 'text', 'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n愛車の次回オイル交換予定日をお知らせいたします。", 'size' => 'xs', 'color' => '#475569', 'margin' => 'sm', 'wrap' => true],
+                                ['type' => 'text', 'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n次回レッスンの予定日をお知らせいたします。", 'size' => 'xs', 'color' => '#475569', 'margin' => 'sm', 'wrap' => true],
                                 ['type' => 'separator', 'margin' => 'md'],
                                 [
                                     'type' => 'box',
                                     'layout' => 'vertical',
                                     'margin' => 'md',
                                     'spacing' => 'sm',
-                                    'backgroundColor' => '#f8fafc',
+                                    'backgroundColor' => '#f0f9ff',
                                     'paddingAll' => '12px',
                                     'cornerRadius' => 'md',
                                     'contents' => [
@@ -1200,29 +1201,29 @@ try {
                                             'type' => 'box',
                                             'layout' => 'baseline',
                                             'contents' => [
-                                                ['type' => 'text', 'text' => '対象車両', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
-                                                ['type' => 'text', 'text' => $carModel, 'size' => 'xs', 'weight' => 'bold', 'color' => '#1e293b', 'flex' => 6]
+                                                ['type' => 'text', 'text' => '受講コース', 'color' => '#0369a1', 'size' => 'xs', 'flex' => 3],
+                                                ['type' => 'text', 'text' => $courseName, 'size' => 'xs', 'weight' => 'bold', 'color' => '#0f172a', 'flex' => 6]
                                             ]
                                         ],
                                         [
                                             'type' => 'box',
                                             'layout' => 'baseline',
                                             'contents' => [
-                                                ['type' => 'text', 'text' => '次回予定日', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
-                                                ['type' => 'text', 'text' => $oilDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#e02424', 'flex' => 6]
+                                                ['type' => 'text', 'text' => '次回レッスン日', 'color' => '#0369a1', 'size' => 'xs', 'flex' => 3],
+                                                ['type' => 'text', 'text' => $lessonDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#e02424', 'flex' => 6]
                                             ]
                                         ],
                                         [
                                             'type' => 'box',
                                             'layout' => 'baseline',
                                             'contents' => [
-                                                ['type' => 'text', 'text' => '交換の目安', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
-                                                ['type' => 'text', 'text' => "5,000〜10,000km / 半年〜1年", 'size' => 'xs', 'color' => '#475569', 'flex' => 6]
+                                                ['type' => 'text', 'text' => '持ち物', 'color' => '#0369a1', 'size' => 'xs', 'flex' => 3],
+                                                ['type' => 'text', 'text' => "筆記用具・使用機器（ノートPC/スマホなど）", 'size' => 'xs', 'color' => '#475569', 'flex' => 6]
                                             ]
                                         ]
                                     ]
                                 ],
-                                ['type' => 'text', 'text' => "※目安：走行5,000km〜10,000km、または半年〜1年のどちらか早い方での交換を推奨しております。\nご予約・空き状況のご相談は下のボタンよりお気軽にどうぞ！", 'size' => 'xxs', 'color' => '#64748b', 'margin' => 'md', 'wrap' => true]
+                                ['type' => 'text', 'text' => "※ご都合が悪くなった場合の日程変更やご相談は、下のボタンよりお気軽にご連絡くださいませ。", 'size' => 'xxs', 'color' => '#64748b', 'margin' => 'md', 'wrap' => true]
                             ]
                         ],
                         'footer' => [
@@ -1234,13 +1235,13 @@ try {
                                 [
                                     'type' => 'button',
                                     'style' => 'primary',
-                                    'color' => '#06C755',
+                                    'color' => '#0284c7',
                                     'height' => 'sm',
                                     'action' => [
                                         'type' => 'postback',
-                                        'label' => '📅 オイル交換の予約・相談',
-                                        'data' => 'action=ask_maintenance&type=oil&car=' . urlencode($carModel) . '&date=' . urlencode($oilDate),
-                                        'displayText' => "【{$carModel}】のオイル交換を予約・相談したい"
+                                        'label' => '📅 レッスンの予約・日程変更',
+                                        'data' => 'action=ask_class&type=lesson&course=' . urlencode($courseName) . '&date=' . urlencode($lessonDate),
+                                        'displayText' => "【{$courseName}】のレッスン予約・日程について相談したい"
                                     ]
                                 ]
                             ]
@@ -1248,10 +1249,10 @@ try {
                     ]
                 ];
             } elseif ($type === 'periodic') {
-                $inspDate = $cust['periodic_insp_next_date'] ?: '近日中';
+                $diagDate = $cust['periodic_insp_next_date'] ?: '近日中';
                 $flexMessage = [
                     'type' => 'flex',
-                    'altText' => "【12ヶ月定期点検のお知らせ】{$carModel}の点検時期が近づいています",
+                    'altText' => "【定期PC健康診断のお知らせ】パソコン・スマホの点検時期です",
                     'contents' => [
                         'type' => 'bubble',
                         'size' => 'mega',
@@ -1260,16 +1261,16 @@ try {
                             'layout' => 'vertical',
                             'paddingAll' => '20px',
                             'contents' => [
-                                ['type' => 'text', 'text' => '📋 12ヶ月定期点検のご案内', 'weight' => 'bold', 'size' => 'sm', 'color' => '#10b981'],
+                                ['type' => 'text', 'text' => '🔍 定期パソコン健康診断のご案内', 'weight' => 'bold', 'size' => 'sm', 'color' => '#10b981'],
                                 ['type' => 'text', 'text' => "{$userName} 様", 'weight' => 'bold', 'size' => 'xl', 'margin' => 'sm', 'color' => '#1e293b'],
-                                ['type' => 'text', 'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n愛車【{$carModel}】の法定12ヶ月定期点検の時期をお知らせいたします。", 'size' => 'xs', 'color' => '#475569', 'margin' => 'sm', 'wrap' => true],
+                                ['type' => 'text', 'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n定期的なパソコン・スマホの健康診断・セキュリティ点検のご案内です。", 'size' => 'xs', 'color' => '#475569', 'margin' => 'sm', 'wrap' => true],
                                 ['type' => 'separator', 'margin' => 'md'],
                                 [
                                     'type' => 'box',
                                     'layout' => 'vertical',
                                     'margin' => 'md',
                                     'spacing' => 'sm',
-                                    'backgroundColor' => '#f8fafc',
+                                    'backgroundColor' => '#ecfdf5',
                                     'paddingAll' => '12px',
                                     'cornerRadius' => 'md',
                                     'contents' => [
@@ -1277,29 +1278,29 @@ try {
                                             'type' => 'box',
                                             'layout' => 'baseline',
                                             'contents' => [
-                                                ['type' => 'text', 'text' => '対象車両', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
-                                                ['type' => 'text', 'text' => $carModel, 'size' => 'xs', 'weight' => 'bold', 'color' => '#1e293b', 'flex' => 6]
+                                                ['type' => 'text', 'text' => '対象機器', 'color' => '#047857', 'size' => 'xs', 'flex' => 3],
+                                                ['type' => 'text', 'text' => ($deviceInfo ?: 'ご利用端末'), 'size' => 'xs', 'weight' => 'bold', 'color' => '#0f172a', 'flex' => 6]
                                             ]
                                         ],
                                         [
                                             'type' => 'box',
                                             'layout' => 'baseline',
                                             'contents' => [
-                                                ['type' => 'text', 'text' => '次回点検日', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
-                                                ['type' => 'text', 'text' => $inspDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#e02424', 'flex' => 6]
+                                                ['type' => 'text', 'text' => '点検推奨日', 'color' => '#047857', 'size' => 'xs', 'flex' => 3],
+                                                ['type' => 'text', 'text' => $diagDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#e02424', 'flex' => 6]
                                             ]
                                         ],
                                         [
                                             'type' => 'box',
                                             'layout' => 'baseline',
                                             'contents' => [
-                                                ['type' => 'text', 'text' => '点検の目安', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
-                                                ['type' => 'text', 'text' => "1年に1回 (前回の車検/点検から1年)", 'size' => 'xs', 'color' => '#475569', 'flex' => 6]
+                                                ['type' => 'text', 'text' => '点検内容', 'color' => '#047857', 'size' => 'xs', 'flex' => 3],
+                                                ['type' => 'text', 'text' => "動作改善・ウイルス対策・OS更新チェック", 'size' => 'xs', 'color' => '#475569', 'flex' => 6]
                                             ]
                                         ]
                                     ]
                                 ],
-                                ['type' => 'text', 'text' => "※目安：1年に1回受ける法律で定められた点検です。愛車のコンディション維持や故障の早期発見のため受検をおすすめしております。\nご予約・日程相談は下のボタンよりお気軽にどうぞ！", 'size' => 'xxs', 'color' => '#64748b', 'margin' => 'md', 'wrap' => true]
+                                ['type' => 'text', 'text' => "「最近パソコンが重い」「怪しい警告画面が出る」「容量がいっぱい」などのお悩みも教室スタッフにお気軽にご相談ください！", 'size' => 'xxs', 'color' => '#64748b', 'margin' => 'md', 'wrap' => true]
                             ]
                         ],
                         'footer' => [
@@ -1315,9 +1316,9 @@ try {
                                     'height' => 'sm',
                                     'action' => [
                                         'type' => 'postback',
-                                        'label' => '📅 12ヶ月点検の予約・相談',
-                                        'data' => 'action=ask_maintenance&type=periodic&car=' . urlencode($carModel) . '&date=' . urlencode($inspDate),
-                                        'displayText' => "【{$carModel}】の12ヶ月点検を予約・相談したい"
+                                        'label' => '🛠 パソコン診断の予約・相談',
+                                        'data' => 'action=ask_class&type=diagnosis&device=' . urlencode($deviceInfo) . '&date=' . urlencode($diagDate),
+                                        'displayText' => "【{$deviceInfo}】の定期点検・診断を相談したい"
                                     ]
                                 ]
                             ]
@@ -1325,10 +1326,10 @@ try {
                     ]
                 ];
             } else {
-                $inspDate = $cust['inspection_next_date'] ?: '未定';
+                $renewDate = $cust['inspection_next_date'] ?: '未定';
                 $flexMessage = [
                     'type' => 'flex',
-                    'altText' => "【車検満了のお知らせ】{$carModel}の満了日が近づいています",
+                    'altText' => "【受講・会員更新のお知らせ】月謝・会員期限のご案内",
                     'contents' => [
                         'type' => 'bubble',
                         'size' => 'mega',
@@ -1337,16 +1338,16 @@ try {
                             'layout' => 'vertical',
                             'paddingAll' => '20px',
                             'contents' => [
-                                ['type' => 'text', 'text' => '🚗 車検満了のご案内', 'weight' => 'bold', 'size' => 'sm', 'color' => '#3b82f6'],
+                                ['type' => 'text', 'text' => '🗓️ 会員更新・月謝期日のご案内', 'weight' => 'bold', 'size' => 'sm', 'color' => '#f59e0b'],
                                 ['type' => 'text', 'text' => "{$userName} 様", 'weight' => 'bold', 'size' => 'xl', 'margin' => 'sm', 'color' => '#1e293b'],
-                                ['type' => 'text', 'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n愛車【{$carModel}】の車検満了日が近づいております。", 'size' => 'xs', 'color' => '#475569', 'margin' => 'sm', 'wrap' => true],
+                                ['type' => 'text', 'text' => "いつも【" . SHOP_NAME . "】をご愛顧いただき誠にありがとうございます。\n受講プラン・会員有効期限（月謝）のお知らせです。", 'size' => 'xs', 'color' => '#475569', 'margin' => 'sm', 'wrap' => true],
                                 ['type' => 'separator', 'margin' => 'md'],
                                 [
                                     'type' => 'box',
                                     'layout' => 'vertical',
                                     'margin' => 'md',
                                     'spacing' => 'sm',
-                                    'backgroundColor' => '#f8fafc',
+                                    'backgroundColor' => '#fffbeb',
                                     'paddingAll' => '12px',
                                     'cornerRadius' => 'md',
                                     'contents' => [
@@ -1354,21 +1355,21 @@ try {
                                             'type' => 'box',
                                             'layout' => 'baseline',
                                             'contents' => [
-                                                ['type' => 'text', 'text' => '対象車両', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
-                                                ['type' => 'text', 'text' => $carModel, 'size' => 'xs', 'weight' => 'bold', 'color' => '#1e293b', 'flex' => 6]
+                                                ['type' => 'text', 'text' => '受講プラン', 'color' => '#b45309', 'size' => 'xs', 'flex' => 3],
+                                                ['type' => 'text', 'text' => $courseName, 'size' => 'xs', 'weight' => 'bold', 'color' => '#1e293b', 'flex' => 6]
                                             ]
                                         ],
                                         [
                                             'type' => 'box',
                                             'layout' => 'baseline',
                                             'contents' => [
-                                                ['type' => 'text', 'text' => '車検満了日', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
-                                                ['type' => 'text', 'text' => $inspDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#e02424', 'flex' => 6]
+                                                ['type' => 'text', 'text' => '更新・期日', 'color' => '#b45309', 'size' => 'xs', 'flex' => 3],
+                                                ['type' => 'text', 'text' => $renewDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#e02424', 'flex' => 6]
                                             ]
                                         ]
                                     ]
                                 ],
-                                ['type' => 'text', 'text' => "車検満了日の約1ヶ月前より受検が可能です。\n代車の手配や事前お見積もりも承っておりますので、お気軽にご連絡ください！", 'size' => 'xxs', 'color' => '#64748b', 'margin' => 'md', 'wrap' => true]
+                                ['type' => 'text', 'text' => "コース変更や受講回数の追加、ご不明な点がございましたら教室受付またはLINEトークよりお気軽にお問い合わせください。", 'size' => 'xxs', 'color' => '#64748b', 'margin' => 'md', 'wrap' => true]
                             ]
                         ],
                         'footer' => [
@@ -1380,13 +1381,13 @@ try {
                                 [
                                     'type' => 'button',
                                     'style' => 'primary',
-                                    'color' => '#3b82f6',
+                                    'color' => '#f59e0b',
                                     'height' => 'sm',
                                     'action' => [
                                         'type' => 'postback',
-                                        'label' => '📅 車検の予約・見積もり',
-                                        'data' => 'action=ask_maintenance&type=inspection&car=' . urlencode($carModel) . '&date=' . urlencode($inspDate),
-                                        'displayText' => "【{$carModel}】の車検を予約・相談したい"
+                                        'label' => '💬 コース・更新について相談',
+                                        'data' => 'action=ask_class&type=renew&course=' . urlencode($courseName) . '&date=' . urlencode($renewDate),
+                                        'displayText' => "【{$courseName}】の受講更新・プランについて相談したい"
                                     ]
                                 ]
                             ]
@@ -1397,7 +1398,7 @@ try {
 
             $res = sendLinePushMessage($userId, [$flexMessage]);
             if (!empty($res['success'])) {
-                $remindLabel = ($type === 'oil') ? 'オイル交換' : (($type === 'periodic') ? '12ヶ月点検' : '車検満了');
+                $remindLabel = ($type === 'oil') ? '次回レッスン' : (($type === 'periodic') ? '定期PC診断' : '会員更新');
                 if ($carId) {
                     if ($type === 'oil') {
                         $db->prepare("UPDATE customer_cars SET oil_reminded_at = datetime('now', '+9 hours') WHERE id = :id")->execute([':id' => $carId]);
@@ -1415,7 +1416,7 @@ try {
                         $db->prepare("UPDATE customer_cars SET inspection_reminded_at = datetime('now', '+9 hours') WHERE user_id = :uid")->execute([':uid' => $userId]);
                     }
                 }
-                recordCustomerInteraction($db, $userId, 'admin_reminder', "{$remindLabel}リマインド送信: {$carModel}", $carId);
+                recordCustomerInteraction($db, $userId, 'admin_reminder', "{$remindLabel}リマインド送信: {$courseName}", $carId);
                 echo json_encode(['success' => true, 'message' => "{$userName} 様へLINEリマインドを送信しました！"], JSON_UNESCAPED_UNICODE);
             } else {
                 http_response_code(500);
@@ -2812,6 +2813,117 @@ try {
                 'success' => ($successCount > 0),
                 'message' => "{$successCount} 件のアカウントへテスト通知を送信しました！",
                 'results' => $results
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
+        // --- 19. プロライン連携設定取得 ---
+        case 'admin_get_proline_settings':
+            $authPass = $_POST['password'] ?? ($_GET['password'] ?? '');
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗']);
+                exit;
+            }
+
+            $settings = getProlineSettings($db);
+            $logFile = __DIR__ . '/proline_relay.log';
+            $recentLogs = [];
+            if (file_exists($logFile)) {
+                $lines = array_map('trim', file($logFile));
+                $lines = array_filter($lines);
+                $recentLogs = array_slice(array_reverse($lines), 0, 15);
+            }
+
+            echo json_encode([
+                'success' => true,
+                'settings' => $settings,
+                'recent_logs' => $recentLogs
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
+        // --- 20. プロライン連携設定保存 ---
+        case 'admin_save_proline_settings':
+            $authPass = $_POST['password'] ?? '';
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗']);
+                exit;
+            }
+
+            $url = $_POST['url'] ?? '';
+            $enabled = isset($_POST['relay_enabled']) ? (bool)(int)$_POST['relay_enabled'] : true;
+
+            $result = saveProlineSettings($url, $enabled, $db);
+            echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
+        // --- 21. プロラインWebhook中継 疎通テスト送信 ---
+        case 'admin_test_proline_relay':
+            $authPass = $_POST['password'] ?? '';
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗']);
+                exit;
+            }
+
+            $targetUrl = trim($_POST['url'] ?? '');
+            if (empty($targetUrl)) {
+                $cur = getProlineSettings($db);
+                $targetUrl = $cur['webhook_url'];
+            }
+
+            if (empty($targetUrl)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => '転送先のプロラインWebhook URLを入力してください']);
+                exit;
+            }
+
+            // LINE DevelopersからのPingモックペイロード
+            $mockPayload = json_encode([
+                'destination' => 'U' . str_repeat('0', 32),
+                'events' => []
+            ], JSON_UNESCAPED_UNICODE);
+
+            $mockSignature = base64_encode(hash_hmac('sha256', $mockPayload, LINE_CHANNEL_SECRET, true));
+
+            // 一時的に指定URLへテスト中継送信
+            $startTime = microtime(true);
+            $ch = curl_init($targetUrl);
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $mockPayload,
+                CURLOPT_HTTPHEADER => [
+                    'Content-Type: application/json; charset=UTF-8',
+                    'X-Line-Signature: ' . $mockSignature,
+                    'User-Agent: LineBot-ProLine-Relay-Proxy-Test/1.0'
+                ],
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 6,
+                CURLOPT_CONNECTTIMEOUT => 4,
+                CURLOPT_SSL_VERIFYPEER => true
+            ]);
+            $res = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlErr = curl_error($ch);
+            $durationMs = round((microtime(true) - $startTime) * 1000, 2);
+            curl_close($ch);
+
+            $isSuccess = ($httpCode >= 200 && $httpCode < 400);
+
+            // ログ追記
+            $nowJst = date('Y-m-d H:i:s');
+            $statusText = $isSuccess ? "TEST OK ({$durationMs}ms)" : "TEST FAIL ({$httpCode}: {$curlErr})";
+            @file_put_contents(__DIR__ . '/proline_relay.log', "[{$nowJst}] MANUAL_TEST: {$statusText} | URL: {$targetUrl}\n", FILE_APPEND | LOCK_EX);
+
+            echo json_encode([
+                'success' => $isSuccess,
+                'http_code' => $httpCode,
+                'duration_ms' => $durationMs,
+                'error' => $curlErr,
+                'response_snippet' => mb_substr((string)$res, 0, 200),
+                'message' => $isSuccess 
+                    ? "✅ プロラインへの疎通テストに成功しました！(HTTP {$httpCode} / {$durationMs}ms)"
+                    : "⚠️ プロラインからの応答エラー (HTTP {$httpCode}): " . ($curlErr ?: '応答ステータスをご確認ください')
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 

@@ -1,12 +1,12 @@
 <?php
 /**
- * 定期点検・オイル交換・車検 自動リマインド配信スクリプト (PHP版)
+ * シニア向けパソコン教室 自動リマインド配信スクリプト (PHP版)
  * XserverのCronで毎朝9:00に実行 (例: 0 9 * * *)
  * 
  * 判定条件 (上から順に処理):
- * 1. オイル交換: 次回予定日の7日前 & 当日
- * 2. 12ヶ月定期点検: 次回予定日の14日前 & 7日前 & 当日
- * 3. 車検満了: 次回満了日の30日前 & 14日前 & 当日
+ * 1. 次回レッスン予約: 次回予定日の7日前 & 1日前 & 当日
+ * 2. 定期パソコン健康診断: 次回予定日の14日前 & 7日前 & 当日
+ * 3. 会員更新・月謝期日: 次回満了日の30日前 & 14日前 & 当日
  */
 
 date_default_timezone_set('Asia/Tokyo');
@@ -27,7 +27,7 @@ foreach ($configPaths as $cp) {
     }
 }
 
-echo "[" . date('Y-m-d H:i:s') . "] === メンテナンス自動リマインド処理を開始します ===\n";
+echo "[" . date('Y-m-d H:i:s') . "] === パソコン教室 自動リマインド処理を開始します ===\n";
 
 try {
     $db = getDbConnection();
@@ -36,46 +36,49 @@ try {
 }
 
 $today = date('Y-m-d');
+$tomorrow = date('Y-m-d', strtotime('+1 day'));
 $in7days = date('Y-m-d', strtotime('+7 days'));
 $in14days = date('Y-m-d', strtotime('+14 days'));
 $in30days = date('Y-m-d', strtotime('+30 days'));
 
-$oilSentCount = 0;
-$inspectionSentCount = 0;
+$lessonSentCount = 0;
+$diagnosisSentCount = 0;
+$renewSentCount = 0;
 $reportDetails = [];
 
 // ==========================================
-// 1. オイル交換リマインド判定 & 送信
+// 1. 次回レッスン予約リマインド判定 & 送信
 // ==========================================
 $stmt = $db->prepare("
     SELECT * FROM customer_cars 
     WHERE oil_next_date IS NOT NULL 
-      AND (oil_next_date = :today OR oil_next_date = :in7days OR oil_next_date < :today)
+      AND (oil_next_date = :today OR oil_next_date = :tomorrow OR oil_next_date = :in7days OR oil_next_date < :today)
       AND (oil_reminded_at IS NULL OR date(oil_reminded_at) != :today)
 ");
-$stmt->execute([':today' => $today, ':in7days' => $in7days]);
-$oilTargetCustomers = $stmt->fetchAll();
+$stmt->execute([':today' => $today, ':tomorrow' => $tomorrow, ':in7days' => $in7days]);
+$lessonTargetCustomers = $stmt->fetchAll();
 
-echo "🛢 オイル交換リマインド対象: " . count($oilTargetCustomers) . " 名\n";
+echo "💻 次回レッスンリマインド対象: " . count($lessonTargetCustomers) . " 名\n";
 
-foreach ($oilTargetCustomers as $cust) {
+foreach ($lessonTargetCustomers as $cust) {
     $userId = $cust['user_id'];
     if (!str_starts_with($userId, 'U')) {
-        echo "  [スキップ] 手動登録顧客のためLINE Pushスキップ: {$cust['user_name']}\n";
+        echo "  [スキップ] 手動登録受講生のためLINE Pushスキップ: {$cust['user_name']}\n";
         continue;
     }
 
-    $userName = $cust['user_name'] ?: 'お客様';
-    $carModel = $cust['car_model'] ?: '愛車';
-    $oilDate = $cust['oil_next_date'];
+    $userName = $cust['user_name'] ?: '受講生';
+    $courseName = $cust['car_model'] ?: '受講コース';
+    $lessonDate = $cust['oil_next_date'];
 
-    $isToday = ($oilDate === $today);
-    $isPast = ($oilDate < $today);
-    $statusBadge = $isToday ? "本日が予定日です！" : ($isPast ? "予定日を過ぎています" : "まもなく予定日です（あと7日）");
+    $isToday = ($lessonDate === $today);
+    $isTomorrow = ($lessonDate === $tomorrow);
+    $isPast = ($lessonDate < $today);
+    $statusBadge = $isToday ? "本日がレッスン日です！" : ($isTomorrow ? "明日がレッスン日です！" : ($isPast ? "予定日を過ぎています" : "まもなく受講日です（あと7日）"));
 
     $flexMessage = [
         'type' => 'flex',
-        'altText' => "【オイル交換のお知らせ】{$carModel}の交換時期が近づいています",
+        'altText' => "【次回レッスンのご案内】{$courseName}の受講予定日のお知らせ",
         'contents' => [
             'type' => 'bubble',
             'size' => 'mega',
@@ -90,10 +93,10 @@ foreach ($oilTargetCustomers as $cust) {
                         'contents' => [
                             [
                                 'type' => 'text',
-                                'text' => '🛢 オイル交換のお知らせ',
+                                'text' => '💻 次回レッスンのご案内',
                                 'weight' => 'bold',
                                 'size' => 'sm',
-                                'color' => '#f59e0b'
+                                'color' => '#0284c7'
                             ]
                         ]
                     ],
@@ -107,7 +110,7 @@ foreach ($oilTargetCustomers as $cust) {
                     ],
                     [
                         'type' => 'text',
-                        'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n愛車の次回オイル交換予定日をお知らせいたします。",
+                        'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n次回レッスンの予定日をお知らせいたします。",
                         'size' => 'xs',
                         'color' => '#475569',
                         'margin' => 'sm',
@@ -117,13 +120,12 @@ foreach ($oilTargetCustomers as $cust) {
                         'type' => 'separator',
                         'margin' => 'md'
                     ],
-                    // スペック枠
                     [
                         'type' => 'box',
                         'layout' => 'vertical',
                         'margin' => 'md',
                         'spacing' => 'sm',
-                        'backgroundColor' => '#f8fafc',
+                        'backgroundColor' => '#f0f9ff',
                         'paddingAll' => '12px',
                         'cornerRadius' => 'md',
                         'contents' => [
@@ -131,31 +133,31 @@ foreach ($oilTargetCustomers as $cust) {
                                 'type' => 'box',
                                 'layout' => 'baseline',
                                 'contents' => [
-                                    ['type' => 'text', 'text' => '対象車両', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
-                                    ['type' => 'text', 'text' => $carModel, 'size' => 'xs', 'weight' => 'bold', 'color' => '#1e293b', 'flex' => 6]
+                                    ['type' => 'text', 'text' => '受講コース', 'color' => '#0369a1', 'size' => 'xs', 'flex' => 3],
+                                    ['type' => 'text', 'text' => $courseName, 'size' => 'xs', 'weight' => 'bold', 'color' => '#0f172a', 'flex' => 6]
                                 ]
                             ],
                             [
                                 'type' => 'box',
                                 'layout' => 'baseline',
                                 'contents' => [
-                                    ['type' => 'text', 'text' => '次回予定日', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
-                                    ['type' => 'text', 'text' => "{$oilDate} ({$statusBadge})", 'size' => 'xs', 'weight' => 'bold', 'color' => '#e02424', 'flex' => 6]
+                                    ['type' => 'text', 'text' => '次回予定日', 'color' => '#0369a1', 'size' => 'xs', 'flex' => 3],
+                                    ['type' => 'text', 'text' => "{$lessonDate} ({$statusBadge})", 'size' => 'xs', 'weight' => 'bold', 'color' => '#e02424', 'flex' => 6]
                                 ]
                             ],
                             [
                                 'type' => 'box',
                                 'layout' => 'baseline',
                                 'contents' => [
-                                    ['type' => 'text', 'text' => '交換の目安', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
-                                    ['type' => 'text', 'text' => "5,000〜10,000km / 半年〜1年", 'size' => 'xs', 'color' => '#475569', 'flex' => 6]
+                                    ['type' => 'text', 'text' => '持ち物', 'color' => '#0369a1', 'size' => 'xs', 'flex' => 3],
+                                    ['type' => 'text', 'text' => "筆記用具・ノートPCやスマホ", 'size' => 'xs', 'color' => '#475569', 'flex' => 6]
                                 ]
                             ]
                         ]
                     ],
                     [
                         'type' => 'text',
-                        'text' => "※目安：走行5,000km〜10,000km、または半年〜1年のどちらか早い方での交換を推奨しております。\nご予約・空き状況のご相談は下のボタンよりお気軽にどうぞ！",
+                        'text' => "※ご都合が悪くなった場合の日程変更やご相談は、下のボタンよりお気軽にご連絡くださいませ。",
                         'size' => 'xxs',
                         'color' => '#64748b',
                         'margin' => 'md',
@@ -172,13 +174,13 @@ foreach ($oilTargetCustomers as $cust) {
                     [
                         'type' => 'button',
                         'style' => 'primary',
-                        'color' => '#06C755',
+                        'color' => '#0284c7',
                         'height' => 'sm',
                         'action' => [
                             'type' => 'postback',
-                            'label' => '📅 オイル交換の予約・相談',
-                            'data' => 'action=ask_maintenance&type=oil&car=' . urlencode($carModel) . '&date=' . urlencode($oilDate),
-                            'displayText' => "【{$carModel}】のオイル交換を予約・相談したい"
+                            'label' => '📅 レッスンの予約・日程変更',
+                            'data' => 'action=ask_class&type=lesson&course=' . urlencode($courseName) . '&date=' . urlencode($lessonDate),
+                            'displayText' => "【{$courseName}】のレッスン予約・日程について相談したい"
                         ]
                     ]
                 ]
@@ -190,21 +192,21 @@ foreach ($oilTargetCustomers as $cust) {
     if (!empty($res['success'])) {
         $updateStmt = $db->prepare("UPDATE customer_cars SET oil_reminded_at = datetime('now', '+9 hours') WHERE id = :id");
         $updateStmt->execute([':id' => $cust['id']]);
-        $oilSentCount++;
+        $lessonSentCount++;
         $reportDetails[] = [
             'name' => $userName,
-            'car' => $carModel,
-            'type' => '🛢 オイル交換リマインド',
-            'date' => $oilDate
+            'car' => $courseName,
+            'type' => '💻 レッスン予約リマインド',
+            'date' => $lessonDate
         ];
-        echo "  [送信成功] {$userName} 様 ({$carModel}) -> {$oilDate}\n";
+        echo "  [送信成功] {$userName} 様 ({$courseName}) -> {$lessonDate}\n";
     } else {
         echo "  [送信失敗] {$userName} 様: " . ($res['error'] ?? 'APIエラー') . "\n";
     }
 }
 
 // ==========================================
-// 2. 12ヶ月定期点検リマインド判定 & 送信
+// 2. 定期パソコン健康診断リマインド判定 & 送信
 // ==========================================
 $stmt = $db->prepare("
     SELECT * FROM customer_cars 
@@ -213,24 +215,23 @@ $stmt = $db->prepare("
       AND (periodic_reminded_at IS NULL OR date(periodic_reminded_at) != :today)
 ");
 $stmt->execute([':today' => $today, ':in7days' => $in7days, ':in14days' => $in14days]);
-$periodicTargetCustomers = $stmt->fetchAll();
+$diagTargetCustomers = $stmt->fetchAll();
 
-$periodicSentCount = 0;
-echo "📋 12ヶ月定期点検リマインド対象: " . count($periodicTargetCustomers) . " 名\n";
+echo "🔍 定期パソコン健康診断リマインド対象: " . count($diagTargetCustomers) . " 名\n";
 
-foreach ($periodicTargetCustomers as $cust) {
+foreach ($diagTargetCustomers as $cust) {
     $userId = $cust['user_id'];
     if (!str_starts_with($userId, 'U')) {
         continue;
     }
 
-    $userName = $cust['user_name'] ?: 'お客様';
-    $carModel = $cust['car_model'] ?: '愛車';
-    $inspDate = $cust['periodic_insp_next_date'];
+    $userName = $cust['user_name'] ?: '受講生';
+    $deviceInfo = $cust['car_number'] ?: ($cust['car_model'] ?: 'ご登録機器');
+    $diagDate = $cust['periodic_insp_next_date'];
 
     $flexMessage = [
         'type' => 'flex',
-        'altText' => "【12ヶ月定期点検のお知らせ】{$carModel}の点検時期が近づいています",
+        'altText' => "【定期PC健康診断のお知らせ】パソコン・スマホの点検時期です",
         'contents' => [
             'type' => 'bubble',
             'size' => 'mega',
@@ -245,7 +246,7 @@ foreach ($periodicTargetCustomers as $cust) {
                         'contents' => [
                             [
                                 'type' => 'text',
-                                'text' => '📋 12ヶ月定期点検のご案内',
+                                'text' => '🔍 定期パソコン健康診断のご案内',
                                 'weight' => 'bold',
                                 'size' => 'sm',
                                 'color' => '#10b981'
@@ -262,7 +263,7 @@ foreach ($periodicTargetCustomers as $cust) {
                     ],
                     [
                         'type' => 'text',
-                        'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n愛車【{$carModel}】の12ヶ月定期点検の時期が近づいております。",
+                        'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n定期的なパソコン・スマホの動作チェック・セキュリティ点検のご案内です。",
                         'size' => 'xs',
                         'color' => '#475569',
                         'margin' => 'sm',
@@ -277,7 +278,7 @@ foreach ($periodicTargetCustomers as $cust) {
                         'layout' => 'vertical',
                         'margin' => 'md',
                         'spacing' => 'sm',
-                        'backgroundColor' => '#f8fafc',
+                        'backgroundColor' => '#ecfdf5',
                         'paddingAll' => '12px',
                         'cornerRadius' => 'md',
                         'contents' => [
@@ -285,31 +286,31 @@ foreach ($periodicTargetCustomers as $cust) {
                                 'type' => 'box',
                                 'layout' => 'baseline',
                                 'contents' => [
-                                    ['type' => 'text', 'text' => '対象愛車', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
-                                    ['type' => 'text', 'text' => $carModel, 'size' => 'xs', 'weight' => 'bold', 'color' => '#1e293b', 'flex' => 6]
+                                    ['type' => 'text', 'text' => '対象機器', 'color' => '#047857', 'size' => 'xs', 'flex' => 3],
+                                    ['type' => 'text', 'text' => $deviceInfo, 'size' => 'xs', 'weight' => 'bold', 'color' => '#0f172a', 'flex' => 6]
                                 ]
                             ],
                             [
                                 'type' => 'box',
                                 'layout' => 'baseline',
                                 'contents' => [
-                                    ['type' => 'text', 'text' => '次回点検予定', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
-                                    ['type' => 'text', 'text' => $inspDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#10b981', 'flex' => 6]
+                                    ['type' => 'text', 'text' => '点検推奨日', 'color' => '#047857', 'size' => 'xs', 'flex' => 3],
+                                    ['type' => 'text', 'text' => $diagDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#e02424', 'flex' => 6]
                                 ]
                             ],
                             [
                                 'type' => 'box',
                                 'layout' => 'baseline',
                                 'contents' => [
-                                    ['type' => 'text', 'text' => '点検の目安', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
-                                    ['type' => 'text', 'text' => "1年に1回 (前回の車検/点検から1年)", 'size' => 'xs', 'color' => '#475569', 'flex' => 6]
+                                    ['type' => 'text', 'text' => '点検内容', 'color' => '#047857', 'size' => 'xs', 'flex' => 3],
+                                    ['type' => 'text', 'text' => "動作改善・ウイルス対策・OS更新チェック", 'size' => 'xs', 'color' => '#475569', 'flex' => 6]
                                 ]
                             ]
                         ]
                     ],
                     [
                         'type' => 'text',
-                        'text' => "※目安：1年に1回受ける法律で定められた点検です。愛車のコンディション維持や故障の早期発見のため受検をおすすめしております。\nご予約・日程相談は下のボタンよりお気軽にどうぞ！",
+                        'text' => "「最近パソコンが重い」「怪しい警告画面が出る」などのお悩みも教室スタッフにお気軽にご相談ください！",
                         'size' => 'xxs',
                         'color' => '#64748b',
                         'margin' => 'md',
@@ -330,9 +331,9 @@ foreach ($periodicTargetCustomers as $cust) {
                         'height' => 'sm',
                         'action' => [
                             'type' => 'postback',
-                            'label' => '📅 12ヶ月点検の予約・相談',
-                            'data' => 'action=ask_maintenance&type=periodic&car=' . urlencode($carModel) . '&date=' . urlencode($inspDate),
-                            'displayText' => "【{$carModel}】の12ヶ月点検を予約・相談したい"
+                            'label' => '🛠 パソコン診断の予約・相談',
+                            'data' => 'action=ask_class&type=diagnosis&device=' . urlencode($deviceInfo) . '&date=' . urlencode($diagDate),
+                            'displayText' => "【{$deviceInfo}】の定期点検・診断を相談したい"
                         ]
                     ]
                 ]
@@ -344,21 +345,21 @@ foreach ($periodicTargetCustomers as $cust) {
     if (!empty($res['success'])) {
         $updateStmt = $db->prepare("UPDATE customer_cars SET periodic_reminded_at = datetime('now', '+9 hours') WHERE id = :id");
         $updateStmt->execute([':id' => $cust['id']]);
-        $periodicSentCount++;
+        $diagnosisSentCount++;
         $reportDetails[] = [
             'name' => $userName,
-            'car' => $carModel,
-            'type' => '📋 12ヶ月定期点検',
-            'date' => $inspDate
+            'car' => $deviceInfo,
+            'type' => '🔍 定期パソコン健康診断',
+            'date' => $diagDate
         ];
-        echo "  [送信成功] {$userName} 様 ({$carModel}) -> {$inspDate}\n";
+        echo "  [送信成功] {$userName} 様 ({$deviceInfo}) -> {$diagDate}\n";
     } else {
         echo "  [送信失敗] {$userName} 様: " . ($res['error'] ?? 'APIエラー') . "\n";
     }
 }
 
 // ==========================================
-// 3. 車検満了リマインド判定 & 送信
+// 3. 会員更新・月謝期日リマインド判定 & 送信
 // ==========================================
 $stmt = $db->prepare("
     SELECT * FROM customer_cars 
@@ -367,24 +368,23 @@ $stmt = $db->prepare("
       AND (inspection_reminded_at IS NULL OR date(inspection_reminded_at) != :today)
 ");
 $stmt->execute([':today' => $today, ':in14days' => $in14days, ':in30days' => $in30days]);
-$inspTargetCustomers = $stmt->fetchAll();
+$renewTargetCustomers = $stmt->fetchAll();
 
-$shakenSentCount = 0;
-echo "🚗 車検満了リマインド対象: " . count($inspTargetCustomers) . " 名\n";
+echo "🗓️ 会員更新・月謝期日リマインド対象: " . count($renewTargetCustomers) . " 名\n";
 
-foreach ($inspTargetCustomers as $cust) {
+foreach ($renewTargetCustomers as $cust) {
     $userId = $cust['user_id'];
     if (!str_starts_with($userId, 'U')) {
         continue;
     }
 
-    $userName = $cust['user_name'] ?: 'お客様';
-    $carModel = $cust['car_model'] ?: '愛車';
-    $inspDate = $cust['inspection_next_date'];
+    $userName = $cust['user_name'] ?: '受講生';
+    $courseName = $cust['car_model'] ?: '受講プラン';
+    $renewDate = $cust['inspection_next_date'];
 
     $flexMessage = [
         'type' => 'flex',
-        'altText' => "【車検満了のお知らせ】{$carModel}の満了日が近づいています",
+        'altText' => "【受講・会員更新のお知らせ】月謝・会員期限のご案内",
         'contents' => [
             'type' => 'bubble',
             'size' => 'mega',
@@ -399,10 +399,10 @@ foreach ($inspTargetCustomers as $cust) {
                         'contents' => [
                             [
                                 'type' => 'text',
-                                'text' => '🚗 車検満了のご案内',
+                                'text' => '🗓️ 会員更新・月謝期日のご案内',
                                 'weight' => 'bold',
                                 'size' => 'sm',
-                                'color' => '#3b82f6'
+                                'color' => '#f59e0b'
                             ]
                         ]
                     ],
@@ -416,7 +416,7 @@ foreach ($inspTargetCustomers as $cust) {
                     ],
                     [
                         'type' => 'text',
-                        'text' => "いつも【" . SHOP_NAME . "】をご利用いただきありがとうございます！\n愛車【{$carModel}】の車検満了日が近づいております。",
+                        'text' => "いつも【" . SHOP_NAME . "】をご愛顧いただき誠にありがとうございます。\n受講プラン・会員有効期限（月謝）のお知らせです。",
                         'size' => 'xs',
                         'color' => '#475569',
                         'margin' => 'sm',
@@ -431,7 +431,7 @@ foreach ($inspTargetCustomers as $cust) {
                         'layout' => 'vertical',
                         'margin' => 'md',
                         'spacing' => 'sm',
-                        'backgroundColor' => '#f8fafc',
+                        'backgroundColor' => '#fffbeb',
                         'paddingAll' => '12px',
                         'cornerRadius' => 'md',
                         'contents' => [
@@ -439,31 +439,23 @@ foreach ($inspTargetCustomers as $cust) {
                                 'type' => 'box',
                                 'layout' => 'baseline',
                                 'contents' => [
-                                    ['type' => 'text', 'text' => '対象車両', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
-                                    ['type' => 'text', 'text' => $carModel, 'size' => 'xs', 'weight' => 'bold', 'color' => '#1e293b', 'flex' => 6]
+                                    ['type' => 'text', 'text' => '受講プラン', 'color' => '#b45309', 'size' => 'xs', 'flex' => 3],
+                                    ['type' => 'text', 'text' => $courseName, 'size' => 'xs', 'weight' => 'bold', 'color' => '#1e293b', 'flex' => 6]
                                 ]
                             ],
                             [
                                 'type' => 'box',
                                 'layout' => 'baseline',
                                 'contents' => [
-                                    ['type' => 'text', 'text' => '車検満了日', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
-                                    ['type' => 'text', 'text' => $inspDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#3b82f6', 'flex' => 6]
-                                ]
-                            ],
-                            [
-                                'type' => 'box',
-                                'layout' => 'baseline',
-                                'contents' => [
-                                    ['type' => 'text', 'text' => '受検の目安', 'color' => '#94a3b8', 'size' => 'xs', 'flex' => 3],
-                                    ['type' => 'text', 'text' => "満了日の約1ヶ月前〜受検可能", 'size' => 'xs', 'color' => '#475569', 'flex' => 6]
+                                    ['type' => 'text', 'text' => '更新・期日', 'color' => '#b45309', 'size' => 'xs', 'flex' => 3],
+                                    ['type' => 'text', 'text' => $renewDate, 'size' => 'xs', 'weight' => 'bold', 'color' => '#e02424', 'flex' => 6]
                                 ]
                             ]
                         ]
                     ],
                     [
                         'type' => 'text',
-                        'text' => "※満了日の約1ヶ月前より受検が可能です。\n代車の手配や事前お見積もりも承っておりますので、お気軽にご連絡ください！",
+                        'text' => "コース変更や受講回数の追加、ご不明な点がございましたら教室受付またはLINEトークよりお気軽にお問い合わせください。",
                         'size' => 'xxs',
                         'color' => '#64748b',
                         'margin' => 'md',
@@ -480,13 +472,13 @@ foreach ($inspTargetCustomers as $cust) {
                     [
                         'type' => 'button',
                         'style' => 'primary',
-                        'color' => '#3b82f6',
+                        'color' => '#f59e0b',
                         'height' => 'sm',
                         'action' => [
                             'type' => 'postback',
-                            'label' => '📅 車検の予約・見積もり',
-                            'data' => 'action=ask_maintenance&type=inspection&car=' . urlencode($carModel) . '&date=' . urlencode($inspDate),
-                            'displayText' => "【{$carModel}】の車検を予約・相談したい"
+                            'label' => '💬 コース・更新について相談',
+                            'data' => 'action=ask_class&type=renew&course=' . urlencode($courseName) . '&date=' . urlencode($renewDate),
+                            'displayText' => "【{$courseName}】の受講更新・プランについて相談したい"
                         ]
                     ]
                 ]
@@ -498,25 +490,25 @@ foreach ($inspTargetCustomers as $cust) {
     if (!empty($res['success'])) {
         $updateStmt = $db->prepare("UPDATE customer_cars SET inspection_reminded_at = datetime('now', '+9 hours') WHERE id = :id");
         $updateStmt->execute([':id' => $cust['id']]);
-        $shakenSentCount++;
+        $renewSentCount++;
         $reportDetails[] = [
             'name' => $userName,
-            'car' => $carModel,
-            'type' => '🚗 車検満了リマインド',
-            'date' => $inspDate
+            'car' => $courseName,
+            'type' => '🗓️ 会員更新・月謝リマインド',
+            'date' => $renewDate
         ];
-        echo "  [送信成功] {$userName} 様 ({$carModel}) -> {$inspDate}\n";
+        echo "  [送信成功] {$userName} 様 ({$courseName}) -> {$renewDate}\n";
     } else {
         echo "  [送信失敗] {$userName} 様: " . ($res['error'] ?? 'APIエラー') . "\n";
     }
 }
 
 // ==========================================
-// 4. Discord レポート通知
+// 4. 管理者通知 (Discord / LINE)
 // ==========================================
-if ($oilSentCount > 0 || $periodicSentCount > 0 || $shakenSentCount > 0) {
-    sendDiscordReminderReport($oilSentCount, $periodicSentCount, $shakenSentCount, $reportDetails);
-    echo "[" . date('Y-m-d H:i:s') . "] Discordへ配信レポートを送信しました (合計: " . ($oilSentCount + $periodicSentCount + $shakenSentCount) . " 件)\n";
+$totalSent = $lessonSentCount + $diagnosisSentCount + $renewSentCount;
+if ($totalSent > 0) {
+    echo "[" . date('Y-m-d H:i:s') . "] 合計 {$totalSent} 件のリマインドを送信しました。\n";
 } else {
     echo "[" . date('Y-m-d H:i:s') . "] 本日送信対象のリマインドはありませんでした。\n";
 }

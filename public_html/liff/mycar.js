@@ -87,7 +87,7 @@ async function initLiff() {
     if (uNameEl) uNameEl.textContent = state.userName + ' 様';
 }
 
-let currentBookingType = 'オイル交換';
+let currentBookingType = '次回レッスン';
 
 function initEventListeners() {
     const saveBtn = getEl('saveCustBtn');
@@ -118,7 +118,7 @@ function initEventListeners() {
 
     function openModal(type) {
         currentBookingType = type;
-        if (modalTitle) modalTitle.textContent = `【${type}】来店予約・相談の確認`;
+        if (modalTitle) modalTitle.textContent = `【${type}】予約・相談の確認`;
         if (bookingModal) bookingModal.style.display = 'flex';
     }
 
@@ -126,9 +126,9 @@ function initEventListeners() {
         if (bookingModal) bookingModal.style.display = 'none';
     }
 
-    getEl('bookOilBtn')?.addEventListener('click', () => openModal('オイル交換'));
-    getEl('bookPeriodicBtn')?.addEventListener('click', () => openModal('12ヶ月定期点検'));
-    getEl('bookInspBtn')?.addEventListener('click', () => openModal('車検'));
+    getEl('bookOilBtn')?.addEventListener('click', () => openModal('次回レッスン'));
+    getEl('bookPeriodicBtn')?.addEventListener('click', () => openModal('PC健康診断'));
+    getEl('bookInspBtn')?.addEventListener('click', () => openModal('会員更新・月謝'));
 
     closeBtn?.addEventListener('click', closeModal);
     cancelBtn?.addEventListener('click', closeModal);
@@ -780,17 +780,17 @@ async function triggerInitialLink() {
 
 async function submitMaintenanceBooking(bookingType, prefTime) {
     const currentCar = getCurrentActiveCar();
-    const car = currentCar?.car_model || getEl('inputCarModel')?.value || '愛車';
+    const course = currentCar?.car_model || getEl('inputCarModel')?.value || 'パソコン受講コース';
     let date = '未定';
-    if (bookingType === 'オイル交換') {
+    if (bookingType === '次回レッスン') {
         date = currentCar?.oil_next_date || getEl('inputOilNextDate')?.value || '近日中';
-    } else if (bookingType === '12ヶ月定期点検') {
+    } else if (bookingType === 'PC健康診断') {
         date = currentCar?.periodic_insp_next_date || getEl('inputPeriodicNextDate')?.value || '近日中';
     } else {
         date = currentCar?.inspection_next_date || getEl('inputInspNextDate')?.value || '未定';
     }
 
-    const msg = `【${bookingType}の来店予約】\n愛車: ${car}\n予定・満了日: ${date}\n希望日時: ${prefTime}\n\n上記の日程で予約・相談をお願いいたします。`;
+    const msg = `【${bookingType}の予約・相談】\n受講コース: ${course}\n予定日: ${date}\n希望時間帯: ${prefTime}\n\n上記の日程で予約・相談をお願いいたします。`;
 
     showToast('予約相談を送信中...');
     sendLineChatMessage(msg);
@@ -798,12 +798,12 @@ async function submitMaintenanceBooking(bookingType, prefTime) {
 
 async function submitGeneralInquiry() {
     const submitBtn = getEl('submitGeneralInquiryBtn');
-    const inquiryType = getEl('inquiryTypeSelect')?.value || 'ご来店・ご相談';
-    const carModel = getEl('inquiryCarModelInput')?.value.trim() || getCurrentActiveCar()?.car_model || '愛車';
+    const inquiryType = getEl('inquiryTypeSelect')?.value || '受講・相談';
+    const carModel = getEl('inquiryCarModelInput')?.value.trim() || getCurrentActiveCar()?.car_model || 'パソコン・スマホ';
     const preferredDate = getEl('inquiryPreferredDate')?.value || '指定なし';
     const preferredTime = getEl('inquiryPreferredTime')?.value || 'いつでも';
     const details = getEl('inquiryDetailsInput')?.value.trim() || '';
-    const needLoanCar = document.querySelector('input[name="needLoanCar"]:checked')?.value || '不要';
+    const needLoanCar = document.querySelector('input[name="needLoanCar"]:checked')?.value || '教室に来校';
 
     if (submitBtn) {
         submitBtn.disabled = true;
@@ -832,10 +832,10 @@ async function submitGeneralInquiry() {
 
         if (data.success) {
             getEl('generalInquiryModal').style.display = 'none';
-            showToast('✅ ご来店予約・相談を送信しました！店舗より折り返しご連絡いたします。');
+            showToast('✅ 受講予約・相談を送信しました！教室より折り返しご連絡いたします。');
 
             // LINEトークへのチャット送信
-            const chatMsg = `【ご来店・ご相談の受付】\nご用件: ${inquiryType}\n愛車: ${carModel}\n希望日時: ${preferredDate} (${preferredTime})\n代車希望: ${needLoanCar}` + (details ? `\n\n【相談内容】\n${details}` : '');
+            const chatMsg = `【受講・PC相談の受付】\nご用件: ${inquiryType}\nご利用機器: ${carModel}\n希望日時: ${preferredDate} (${preferredTime})\nサポート形態: ${needLoanCar}` + (details ? `\n\n【相談内容】\n${details}` : '');
             sendLineChatMessage(chatMsg);
         } else {
             showToast('⚠️ ' + (data.error || '送信に失敗しました'));
@@ -846,7 +846,7 @@ async function submitGeneralInquiry() {
     } finally {
         if (submitBtn) {
             submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> この内容で来店予約・相談を送る';
+            submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> この内容で受講・相談を送信する';
         }
     }
 }
@@ -928,8 +928,8 @@ function renderCarTabs() {
     state.cars.forEach((car, idx) => {
         const btn = document.createElement('button');
         btn.className = `car-tab-item ${idx === state.activeCarIndex ? 'active' : ''}`;
-        const carTitle = car.car_model || `愛車 ${idx + 1}`;
-        btn.innerHTML = `<i class="fa-solid fa-car-side"></i> <span>${escapeHtml(carTitle)}</span>`;
+        const carTitle = car.car_model || `受講コース ${idx + 1}`;
+        btn.innerHTML = `<i class="fa-solid fa-graduation-cap"></i> <span>${escapeHtml(carTitle)}</span>`;
         btn.addEventListener('click', () => {
             state.activeCarIndex = idx;
             renderCarTabs();
@@ -938,10 +938,10 @@ function renderCarTabs() {
         container.appendChild(btn);
     });
 
-    // 「+ 愛車を追加」ボタン
+    // 「+ コースを追加」ボタン
     const addBtn = document.createElement('button');
     addBtn.className = 'car-tab-add';
-    addBtn.innerHTML = '<i class="fa-solid fa-plus"></i> 愛車を追加';
+    addBtn.innerHTML = '<i class="fa-solid fa-plus"></i> コースを追加';
     addBtn.addEventListener('click', () => {
         showNewCarForm();
     });
@@ -962,7 +962,7 @@ function showNewCarForm() {
     getEl('inputInspNextDate').value = '';
 
     const carModelEl = getEl('carModelDisplay');
-    if (carModelEl) carModelEl.textContent = '新規登録の愛車';
+    if (carModelEl) carModelEl.textContent = '新規登録のコース/機器';
     const carNumEl = getEl('carNumDisplay');
     if (carNumEl) carNumEl.textContent = '--';
 
@@ -977,7 +977,7 @@ function showNewCarForm() {
 
     // フォーカス
     getEl('inputCarModel')?.focus();
-    showToast('🚗 新しい愛車の情報を入力してください');
+    showToast('💻 受講コースや機器の情報を入力してください');
 }
 
 function resetBadge(badgeEl, displayEl) {
@@ -1084,7 +1084,7 @@ async function saveCustomerData() {
     const inspDate = getEl('inputInspNextDate')?.value || '';
 
     if (!carModel) {
-        showToast('⚠️ 愛車の車種名を入力してください');
+        showToast('⚠️ 受講コース名を入力してください');
         return;
     }
 
@@ -1106,7 +1106,7 @@ async function saveCustomerData() {
         inspection_next_date: inspDate
     });
 
-    console.log('Saving car with payload:', payload.toString());
+    console.log('Saving course with payload:', payload.toString());
 
     try {
         const res = await fetch('../api.php', {
@@ -1137,7 +1137,7 @@ async function deleteActiveCar() {
     const car = getCurrentActiveCar();
     if (!car || !car.id) return;
 
-    if (!confirm(`愛車「${car.car_model || '選択中の車両'}」を削除してもよろしいですか？`)) {
+    if (!confirm(`受講コース「${car.car_model || '選択中のコース'}」を削除してもよろしいですか？`)) {
         return;
     }
 
@@ -1155,7 +1155,7 @@ async function deleteActiveCar() {
         });
         const data = await res.json();
         if (data.success) {
-            showToast('🗑️ 愛車を削除しました');
+            showToast('🗑️ コース情報を削除しました');
             state.activeCarIndex = 0;
             await fetchCustomerData();
         } else {

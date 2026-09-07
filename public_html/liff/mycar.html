@@ -7,7 +7,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>マイカー点検パスポート | アップファーレン</title>
+    <title>受講生マイページ・受講カルテ | シニア向けパソコン教室</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,15 +16,15 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <link rel="stylesheet" href="style.css?v=20260831_3">
+    <link rel="stylesheet" href="style.css?v=20260907_senior_v1">
     <style>
         .passport-header {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
             color: #fff;
             padding: 24px 20px 20px;
             border-bottom-left-radius: 24px;
             border-bottom-right-radius: 24px;
-            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.2);
+            box-shadow: 0 10px 25px -5px rgba(30, 27, 75, 0.25);
         }
         .user-profile-row {
             display: flex;
@@ -33,27 +33,27 @@
             margin-bottom: 16px;
         }
         .user-avatar-img {
-            width: 46px;
-            height: 46px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
-            border: 2px solid #06C755;
+            border: 2px solid #38bdf8;
             object-fit: cover;
-            background: #334155;
+            background: #475569;
         }
         .user-info h2 {
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 800;
             margin: 0;
             color: #fff;
         }
         .user-info p {
-            font-size: 11px;
-            color: #94a3b8;
+            font-size: 12px;
+            color: #c7d2fe;
             margin: 2px 0 0;
         }
         .car-summary-card {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
             border-radius: 16px;
             padding: 14px 16px;
@@ -63,18 +63,17 @@
         }
         .car-summary-title {
             font-size: 11px;
-            color: #94a3b8;
+            color: #c7d2fe;
         }
         .car-summary-name {
             font-size: 16px;
             font-weight: 800;
-            color: #f8fafc;
+            color: #ffffff;
             margin-top: 2px;
         }
         .car-summary-num {
-            font-size: 12px;
-            color: #cbd5e1;
-            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            color: #e0e7ff;
             font-weight: 600;
         }
         
@@ -101,9 +100,9 @@
             width: 6px;
             height: 100%;
         }
-        .maint-card.oil::before { background: #f59e0b; }
+        .maint-card.oil::before { background: #0284c7; }
         .maint-card.periodic::before { background: #10b981; }
-        .maint-card.shaken::before { background: #3b82f6; }
+        .maint-card.shaken::before { background: #f59e0b; }
 
         .maint-card-header {
             display: flex;
@@ -115,12 +114,12 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 800;
             color: #1e293b;
         }
         .maint-badge {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 700;
             padding: 4px 10px;
             border-radius: 20px;
@@ -132,26 +131,26 @@
         .maint-date-row {
             display: flex;
             align-items: baseline;
-            gap: 6px;
+            gap: 8px;
             margin: 10px 0;
         }
         .maint-date-label {
-            font-size: 11px;
+            font-size: 12px;
             color: #64748b;
         }
         .maint-date-val {
-            font-family: 'Outfit', sans-serif;
-            font-size: 20px;
+            font-family: 'Outfit', 'Noto Sans JP', sans-serif;
+            font-size: 22px;
             font-weight: 900;
             color: #0f172a;
         }
         
         .maint-action-btn {
             width: 100%;
-            height: 42px;
+            height: 44px;
             border-radius: 10px;
             border: none;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 700;
             display: flex;
             align-items: center;
@@ -162,12 +161,12 @@
             text-decoration: none;
             transition: all 0.2s;
         }
-        .btn-oil { background: #fef3c7; color: #92400e; }
-        .btn-oil:active { background: #fde68a; }
+        .btn-oil { background: #e0f2fe; color: #0369a1; }
+        .btn-oil:active { background: #bae6fd; }
         .btn-periodic { background: #d1fae5; color: #065f46; }
         .btn-periodic:active { background: #a7f3d0; }
-        .btn-shaken { background: #dbeafe; color: #1e40af; }
-        .btn-shaken:active { background: #bfdbfe; }
+        .btn-shaken { background: #fef3c7; color: #92400e; }
+        .btn-shaken:active { background: #fde68a; }
 
         /* 編集フォーム */
         .edit-section {
@@ -186,20 +185,20 @@
             width: 100%;
         }
         .form-label {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 700;
-            color: #475569;
+            color: #334155;
             margin-bottom: 6px;
             display: block;
         }
         .form-input {
             width: 100%;
             max-width: 100%;
-            height: 44px;
+            height: 46px;
             padding: 0 12px;
             border-radius: 10px;
             border: 1px solid #cbd5e1;
-            font-size: 14px;
+            font-size: 15px;
             background: #f8fafc;
             box-sizing: border-box;
             display: block;
@@ -210,37 +209,37 @@
             color: #1e293b;
         }
         input[type="date"].form-input {
-            min-height: 44px;
+            min-height: 46px;
             padding: 8px 12px;
             line-height: normal;
         }
         .form-input:focus {
             outline: none;
-            border-color: #06C755;
+            border-color: #4f46e5;
             background: #fff;
         }
         .btn-save-cust {
             width: 100%;
-            height: 46px;
-            background: #06C755;
+            height: 48px;
+            background: #4f46e5;
             color: #fff;
             border: none;
             border-radius: 12px;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 800;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            box-shadow: 0 4px 12px rgba(6, 199, 85, 0.25);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
         }
         .btn-save-cust:active {
-            background: #05a847;
+            background: #4338ca;
         }
         .btn-delete-car {
-            width: 46px;
-            height: 46px;
+            width: 48px;
+            height: 48px;
             background: #fee2e2;
             color: #ef4444;
             border: 1px solid #fca5a5;
@@ -250,7 +249,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0;
         }
         .btn-delete-car:active {
             background: #fecaca;
@@ -284,10 +282,10 @@
             transition: all 0.2s ease;
         }
         .car-tab-item.active {
-            background: #06C755;
+            background: #38bdf8;
             color: #fff;
-            border-color: #06C755;
-            box-shadow: 0 4px 12px rgba(6, 199, 85, 0.35);
+            border-color: #38bdf8;
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.35);
         }
         .car-tab-add {
             flex-shrink: 0;
@@ -326,19 +324,19 @@
         <div class="user-profile-row">
             <img id="userAvatar" class="user-avatar-img" src="https://img.goo-net.com/goo/usedcar/nophoto_big.jpg" alt="ユーザー">
             <div class="user-info">
-                <h2 id="userNameText">お客様</h2>
-                <p>アップファーレン メンテナンスパスポート</p>
+                <h2 id="userNameText">受講生様</h2>
+                <p>シニア向けパソコン教室 受講生マイページ</p>
             </div>
         </div>
 
-        <!-- 複数台切り替えタブ -->
+        <!-- 複数コース・機器切り替えタブ -->
         <div class="car-tabs-scroll" id="carTabsContainer">
             <!-- JSで動的生成 -->
         </div>
 
         <div class="car-summary-card">
             <div>
-                <div class="car-summary-title">選択中の愛車</div>
+                <div class="car-summary-title">現在選択中のコース</div>
                 <div class="car-summary-name" id="carModelDisplay">未設定（下部より登録）</div>
             </div>
             <div class="car-summary-num" id="carNumDisplay">--</div>
@@ -347,140 +345,140 @@
 
     <!-- コンテンツ -->
     <div class="section-container">
-        <!-- 未登録ユーザー用: 愛車点検手帳開始バナー -->
-        <div class="init-link-card" id="initLinkCard" style="display: none; background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #6ee7b7; border-radius: 16px; padding: 20px; margin-bottom: 20px; text-align: center;">
-            <div style="font-size: 32px; margin-bottom: 8px;">🚗💨</div>
-            <h3 style="font-size: 16px; font-weight: 800; color: #065f46; margin: 0 0 6px;">愛車点検手帳を開始する</h3>
-            <p style="font-size: 12px; color: #047857; margin: 0 0 14px; line-height: 1.4;">
-                下のボタンを押すと店舗とLINEが連携され、店舗スタッフが愛車や点検予定日（オイル・定期点検・車検）の登録・管理をお手伝いできます！
+        <!-- 未登録ユーザー用: 受講生証連携開始バナー -->
+        <div class="init-link-card" id="initLinkCard" style="display: none; background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); border: 1px solid #c7d2fe; border-radius: 16px; padding: 20px; margin-bottom: 20px; text-align: center;">
+            <div style="font-size: 32px; margin-bottom: 8px;">💻✨</div>
+            <h3 style="font-size: 16px; font-weight: 800; color: #3730a3; margin: 0 0 6px;">受講生マイページを開始する</h3>
+            <p style="font-size: 13px; color: #4338ca; margin: 0 0 14px; line-height: 1.5;">
+                下のボタンを押すと教室とLINEが連携され、次回レッスン日やパソコンの定期点検サポートをスマホでいつでも確認できます！
             </p>
-            <button class="btn-init-link" id="initLinkBtn" style="width: 100%; height: 46px; background: #06C755; color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(6,199,85,0.3);">
-                <i class="fa-solid fa-play"></i> 愛車点検手帳を開始する
+            <button class="btn-init-link" id="initLinkBtn" style="width: 100%; height: 46px; background: #4f46e5; color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(79,70,229,0.3);">
+                <i class="fa-solid fa-play"></i> マイページを有効化する
             </button>
         </div>
 
-        <!-- その他・修理・カスタム・一般ご来店相談カード（いつでも受付） -->
+        <!-- パソコン・スマホのお悩み相談カード（いつでも受付） -->
         <div class="maint-card general-inquiry" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 18px; padding: 18px; margin-bottom: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.05); position: relative; overflow: hidden;">
-            <div style="position: absolute; top: 0; left: 0; width: 6px; height: 100%; background: #8b5cf6;"></div>
+            <div style="position: absolute; top: 0; left: 0; width: 6px; height: 100%; background: #6366f1;"></div>
             <div class="maint-card-header" style="margin-bottom: 8px;">
-                <div class="maint-title" style="color: #1e293b; font-weight: 800; font-size: 14px;">
-                    <i class="fa-solid fa-screwdriver-wrench" style="color: #8b5cf6;"></i>
-                    <span>修理・点検・カスタム来店相談</span>
+                <div class="maint-title" style="color: #1e293b; font-weight: 800; font-size: 15px;">
+                    <i class="fa-solid fa-comments" style="color: #6366f1;"></i>
+                    <span>パソコン・スマホ 個別相談・予約</span>
                 </div>
-                <span class="maint-badge" style="background: #f3e8ff; color: #7c3aed; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px;">いつでも受付</span>
+                <span class="maint-badge" style="background: #e0e7ff; color: #4338ca; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px;">いつでも受付</span>
             </div>
-            <p style="font-size: 12px; color: #64748b; margin: 0 0 14px; line-height: 1.4;">
-                キズ・ヘコミの板金修理、タイヤ交換、ドラレコ・ETC取付、異音やエアコンの不具合点検など、お気軽にご来店・ご相談いただけます。
+            <p style="font-size: 12.5px; color: #64748b; margin: 0 0 14px; line-height: 1.5;">
+                「操作でわからないところがある」「プリンターがつながらない」「スマホの買い替え相談をしたい」など、お気軽に教室スタッフへご相談ください。
             </p>
-            <button class="maint-action-btn" id="openGeneralInquiryBtn" style="background: #ede9fe; color: #5b21b6; width: 100%; height: 42px; border-radius: 10px; border: none; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
-                <i class="fa-solid fa-clipboard-list"></i>
-                <span>ご来店・ご相談フォームを開く</span>
+            <button class="maint-action-btn" id="openGeneralInquiryBtn" style="background: #eef2ff; color: #3730a3; width: 100%; height: 42px; border-radius: 10px; border: none; font-size: 13.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
+                <i class="fa-solid fa-clipboard-question"></i>
+                <span>ご相談・質問フォームを開く</span>
             </button>
         </div>
 
-        <!-- オイル交換カード -->
+        <!-- 次回レッスンカード -->
         <div class="maint-card oil">
             <div class="maint-card-header">
                 <div class="maint-title">
-                    <i class="fa-solid fa-oil-can" style="color: #f59e0b;"></i>
-                    <span>オイル交換</span>
+                    <i class="fa-solid fa-laptop" style="color: #0284c7;"></i>
+                    <span>次回レッスン予定</span>
                 </div>
                 <span class="maint-badge badge-safe" id="oilStatusBadge">予定あり</span>
             </div>
             <div class="maint-date-row">
-                <span class="maint-date-label">次回予定日:</span>
+                <span class="maint-date-label">次回受講日:</span>
                 <span class="maint-date-val" id="oilNextDateDisplay">未設定</span>
             </div>
-            <p style="font-size: 11px; color: #94a3b8; margin: 0 0 10px; line-height: 1.3;">
-                📢 予定日の<strong>7日前</strong>と<strong>当日朝</strong>にLINEリマインドをお届けします。
+            <p style="font-size: 12px; color: #64748b; margin: 0 0 10px; line-height: 1.4;">
+                📢 予定日の<strong>7日前</strong>、<strong>前日</strong>、<strong>当日朝</strong>にLINEでお知らせをお届けします。
             </p>
             <button class="maint-action-btn btn-oil" id="bookOilBtn">
                 <i class="fa-brands fa-line"></i>
-                <span>LINEでオイル交換の来店予約・相談</span>
+                <span>LINEでレッスンの予約・日程変更</span>
             </button>
         </div>
 
-        <!-- 12ヶ月定期点検カード -->
+        <!-- 定期パソコン健康診断カード -->
         <div class="maint-card periodic">
             <div class="maint-card-header">
                 <div class="maint-title">
-                    <i class="fa-solid fa-clipboard-check" style="color: #10b981;"></i>
-                    <span>12ヶ月 定期点検</span>
+                    <i class="fa-solid fa-shield-virus" style="color: #10b981;"></i>
+                    <span>定期パソコン健康診断</span>
                 </div>
                 <span class="maint-badge badge-safe" id="periodicStatusBadge">予定あり</span>
             </div>
             <div class="maint-date-row">
-                <span class="maint-date-label">次回予定日:</span>
+                <span class="maint-date-label">点検推奨日:</span>
                 <span class="maint-date-val" id="periodicNextDateDisplay">未設定</span>
             </div>
-            <p style="font-size: 11px; color: #94a3b8; margin: 0 0 10px; line-height: 1.3;">
-                📢 予定日の<strong>14日前</strong>と<strong>7日前</strong>にLINEリマインドをお届けします。
+            <p style="font-size: 12px; color: #64748b; margin: 0 0 10px; line-height: 1.4;">
+                📢 ウイルス対策ソフトの更新やパソコン動作のお手入れ時期をお知らせします。
             </p>
             <button class="maint-action-btn btn-periodic" id="bookPeriodicBtn">
                 <i class="fa-brands fa-line"></i>
-                <span>LINEで12ヶ月点検の来店予約・相談</span>
+                <span>LINEでパソコン診断の予約・相談</span>
             </button>
         </div>
 
-        <!-- 車検満了カード -->
+        <!-- 会員更新・月謝期日カード -->
         <div class="maint-card shaken">
             <div class="maint-card-header">
                 <div class="maint-title">
-                    <i class="fa-solid fa-shield-halved" style="color: #3b82f6;"></i>
-                    <span>車検満了日</span>
+                    <i class="fa-solid fa-calendar-check" style="color: #f59e0b;"></i>
+                    <span>会員有効期限・月謝期日</span>
                 </div>
                 <span class="maint-badge badge-safe" id="inspStatusBadge">予定あり</span>
             </div>
             <div class="maint-date-row">
-                <span class="maint-date-label">車検満了日:</span>
+                <span class="maint-date-label">更新期日:</span>
                 <span class="maint-date-val" id="inspNextDateDisplay">未設定</span>
             </div>
-            <p style="font-size: 11px; color: #94a3b8; margin: 0 0 10px; line-height: 1.3;">
-                📢 満了日の<strong>30日前</strong>と<strong>14日前</strong>にLINEリマインドをお届けします。
+            <p style="font-size: 12px; color: #64748b; margin: 0 0 10px; line-height: 1.4;">
+                📢 受講プランや月謝の更新時期をお知らせします。
             </p>
             <button class="maint-action-btn btn-shaken" id="bookInspBtn">
                 <i class="fa-brands fa-line"></i>
-                <span>LINEで車検の予約・お見積もり相談</span>
+                <span>LINEで受講プラン・更新の相談</span>
             </button>
         </div>
 
-        <!-- 愛車・メンテナンス情報の編集フォーム -->
+        <!-- 受講コース・機器情報の登録・変更フォーム -->
         <div class="edit-section">
-            <h3 style="font-size: 14px; font-weight: 800; color: #1e293b; margin: 0 0 14px;">
-                <i class="fa-solid fa-pen-to-square" style="color: #06C755;"></i> 愛車・点検日の変更・登録
+            <h3 style="font-size: 15px; font-weight: 800; color: #1e293b; margin: 0 0 14px;">
+                <i class="fa-solid fa-pen-to-square" style="color: #4f46e5;"></i> 受講コース・予定日の登録・変更
             </h3>
             
             <div class="form-group">
-                <label class="form-label">愛車の車種名</label>
-                <input type="text" id="inputCarModel" class="form-input" placeholder="例: ワゴンR スティングレー">
+                <label class="form-label">受講コース名</label>
+                <input type="text" id="inputCarModel" class="form-input" placeholder="例: はじめてのパソコン・スマホ安心コース">
             </div>
 
             <div class="form-group">
-                <label class="form-label">ナンバープレート（下4桁など）</label>
-                <input type="text" id="inputCarNumber" class="form-input" placeholder="例: 12-34">
+                <label class="form-label">使用機器 / 会員番号</label>
+                <input type="text" id="inputCarNumber" class="form-input" placeholder="例: Windows 11 ノートPC / No.0102">
             </div>
 
             <div class="form-group">
-                <label class="form-label">次回 オイル交換 予定日</label>
+                <label class="form-label">次回 レッスン予定日</label>
                 <input type="date" id="inputOilNextDate" class="form-input">
-                <p style="font-size: 11px; color: #64748b; margin: 6px 0 0; line-height: 1.4;">
-                    💡 <strong>オイル交換の目安:</strong> 走行距離 5,000km〜10,000km、または 半年〜1年（前回の交換からどちらか早い方）
+                <p style="font-size: 12px; color: #64748b; margin: 6px 0 0; line-height: 1.4;">
+                    💡 予定日を登録すると、前日や当日にLINEで自動リマインダーが届きます。
                 </p>
             </div>
 
             <div class="form-group">
-                <label class="form-label">次回 12ヶ月定期点検 予定日</label>
+                <label class="form-label">定期 パソコン健康診断 予定日</label>
                 <input type="date" id="inputPeriodicNextDate" class="form-input">
-                <p style="font-size: 11px; color: #64748b; margin: 6px 0 0; line-height: 1.4;">
-                    💡 <strong>定期点検の目安:</strong> 1年に1回実施する法律で定められた点検です（前回の車検・点検から1年後が目安）。トラブルの早期発見と安全維持のために推奨されています。
+                <p style="font-size: 12px; color: #64748b; margin: 6px 0 0; line-height: 1.4;">
+                    💡 パソコンやスマホの動作チェック・セキュリティ診断の目安時期です。
                 </p>
             </div>
 
             <div class="form-group">
-                <label class="form-label">次回 車検満了日</label>
+                <label class="form-label">会員有効期限・月謝期日</label>
                 <input type="date" id="inputInspNextDate" class="form-input">
-                <p style="font-size: 11px; color: #64748b; margin: 6px 0 0; line-height: 1.4;">
-                    💡 <strong>車検の目安:</strong> 車検満了日の約1ヶ月前より受検が可能です。
+                <p style="font-size: 12px; color: #64748b; margin: 6px 0 0; line-height: 1.4;">
+                    💡 受講パック・会員更新の期日です。
                 </p>
             </div>
 
@@ -490,156 +488,94 @@
                 <button class="btn-save-cust" id="saveCustBtn" style="flex: 1;">
                     <i class="fa-solid fa-check"></i> この内容で保存する
                 </button>
-                <button class="btn-delete-car" id="deleteCarBtn" title="この愛車を削除" style="display: none;">
+                <button class="btn-delete-car" id="deleteCarBtn" title="このコースを削除" style="display: none;">
                     <i class="fa-solid fa-trash-can"></i>
                 </button>
             </div>
         </div>
 
-        <!-- カーライフお役立ち豆知識ガイド セクション -->
+        <!-- シニア向けお役立ち豆知識ガイド セクション -->
         <div style="background: #fff; border-radius: 18px; padding: 18px; margin-bottom: 20px; border: 1px solid #e2e8f0; box-shadow: 0 4px 14px rgba(0,0,0,0.05);">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                <h3 style="font-size: 14px; font-weight: 800; color: #1e293b; margin: 0; display: flex; align-items: center; gap: 6px;">
-                    <i class="fa-solid fa-book-open-reader" style="color: #3b82f6;"></i>
-                    <span>クルマのお役立ち豆知識</span>
+                <h3 style="font-size: 15px; font-weight: 800; color: #1e293b; margin: 0; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-book-open-reader" style="color: #4f46e5;"></i>
+                    <span>パソコン・スマホのお役立ち豆知識</span>
                 </h3>
-                <span style="font-size: 10px; font-weight: 700; color: #3b82f6; background: #eff6ff; padding: 2px 8px; border-radius: 12px;">LINEマガジン</span>
-            </div>
-            <p style="font-size: 12px; color: #64748b; margin: 0 0 12px; line-height: 1.4;">
-                中古車の賢い選び方やオイル交換・点検・車検の基礎知識をLINEで分かりやすく解説しています。
+            <p style="font-size: 12.5px; color: #64748b; margin: 0 0 12px; line-height: 1.5;">
+                シニアの皆様からよくいただくご質問や、知っておくと毎日がもっと便利・安心になる使い方のヒントです。
             </p>
-            <!-- カテゴリ1: 車選び＆購入・手続き -->
-            <div style="font-size: 11px; font-weight: 800; color: #3b82f6; margin: 8px 0 6px; display: flex; align-items: center; gap: 4px;">
-                <i class="fa-solid fa-car"></i> <span>車選び・購入＆手続きガイド（①〜⑦）</span>
+            <!-- カテゴリ1: スマホ・タブレット活用 -->
+            <div style="font-size: 12px; font-weight: 800; color: #4f46e5; margin: 8px 0 6px; display: flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-mobile-screen"></i> <span>スマホ・タブレット活用編</span>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px;">
-                <button class="btn-knowledge-item" data-topic="used_car" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>🚗</span> <span>① 中古車選びのコツ</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="kei_vs_compact" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>🚙</span> <span>② 軽 vs 普通車比較</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="body_type_guide" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>🚐</span> <span>③ ボディタイプ選び</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="car_loan" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>💳</span> <span>④ ローンの賢い選び方</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="best_timing" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>💰</span> <span>⑤ お得な買い時・時期</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="car_paperwork" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>📄</span> <span>⑥ 必要書類・納車流れ</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="trade_in" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>🛡️</span> <span>⑦ 高く売る査定のコツ</span>
-                </button>
+                <div style="padding: 10px 8px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 12px; font-weight: 700; color: #334155; text-align: left; display: flex; align-items: center; gap: 6px;">
+                    <span>📱</span> <span>① 文字・アイコンを大きく</span>
+                </div>
+                <div style="padding: 10px 8px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 12px; font-weight: 700; color: #334155; text-align: left; display: flex; align-items: center; gap: 6px;">
+                    <span>📸</span> <span>② 家族へ写真を送る方法</span>
+                </div>
+                <div style="padding: 10px 8px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 12px; font-weight: 700; color: #334155; text-align: left; display: flex; align-items: center; gap: 6px;">
+                    <span>🎤</span> <span>③ 音声でラクラク文字入力</span>
+                </div>
+                <div style="padding: 10px 8px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 12px; font-weight: 700; color: #334155; text-align: left; display: flex; align-items: center; gap: 6px;">
+                    <span>🗺️</span> <span>④ 地図アプリで道案内</span>
+                </div>
             </div>
 
-            <!-- カテゴリ2: メンテナンス・点検＆ケア -->
-            <div style="font-size: 11px; font-weight: 800; color: #10b981; margin: 8px 0 6px; display: flex; align-items: center; gap: 4px;">
-                <i class="fa-solid fa-wrench"></i> <span>メンテナンス・点検＆ケアガイド（⑧〜⑭）</span>
+            <!-- カテゴリ2: パソコン基本・安心操作 -->
+            <div style="font-size: 12px; font-weight: 800; color: #0284c7; margin: 8px 0 6px; display: flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-laptop"></i> <span>パソコン基本・安心操作編</span>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px;">
-                <button class="btn-knowledge-item" data-topic="oil" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>🛢️</span> <span>⑧ オイル交換の真実</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="periodic" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>📋</span> <span>⑨ 12ヶ月点検とは？</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="inspection" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>🔍</span> <span>⑩ 安心の車検ガイド</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="battery_tire" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>⚠️</span> <span>⑪ バッテリー・タイヤ</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="brake_care" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>🛑</span> <span>⑫ ブレーキ点検と寿命</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="aircon_care" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>❄️</span> <span>⑬ エアコン冷え＆消臭</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="car_wash_care" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>🧼</span> <span>⑭ 洗車＆美観キープ</span>
-                </button>
+                <div style="padding: 10px 8px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 12px; font-weight: 700; color: #334155; text-align: left; display: flex; align-items: center; gap: 6px;">
+                    <span>💻</span> <span>⑤ 電源の正しい切り方</span>
+                </div>
+                <div style="padding: 10px 8px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 12px; font-weight: 700; color: #334155; text-align: left; display: flex; align-items: center; gap: 6px;">
+                    <span>⌨️</span> <span>⑥ キーボード入力のコツ</span>
+                </div>
+                <div style="padding: 10px 8px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 12px; font-weight: 700; color: #334155; text-align: left; display: flex; align-items: center; gap: 6px;">
+                    <span>📁</span> <span>⑦ 写真やファイルの保存</span>
+                </div>
+                <div style="padding: 10px 8px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 12px; font-weight: 700; color: #334155; text-align: left; display: flex; align-items: center; gap: 6px;">
+                    <span>🖨️</span> <span>⑧ 年賀状・写真の印刷</span>
+                </div>
             </div>
 
-            <!-- カテゴリ3: 安全運転・トラブル対処＆便利知識 -->
-            <div style="font-size: 11px; font-weight: 800; color: #ef4444; margin: 8px 0 6px; display: flex; align-items: center; gap: 4px;">
-                <i class="fa-solid fa-shield-halved"></i> <span>安全運転・トラブル対処＆便利知識（⑮〜㉑）</span>
+            <!-- カテゴリ3: セキュリティ・詐欺対策 -->
+            <div style="font-size: 12px; font-weight: 800; color: #dc2626; margin: 8px 0 6px; display: flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-shield-virus"></i> <span>セキュリティ・詐欺対策編</span>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-                <button class="btn-knowledge-item" data-topic="winter_driving" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>❄️</span> <span>⑮ 雪道・冬タイヤ極意</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="warning_lights" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>🚨</span> <span>⑯ 警告灯の意味・対処</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="rain_driving" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>🌧️</span> <span>⑰ 雨天安全＆冠水対策</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="accident_guide" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>💥</span> <span>⑱ 事故・故障の初動</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="fuel_economy" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>⛽</span> <span>⑲ 燃費＆節約のコツ</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="beginner_driver" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>🔰</span> <span>⑳ 初心者・駐車のコツ</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="car_accessories" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>🔌</span> <span>㉑ ドラレコ・ETC知識</span>
-                </button>
-            </div>
-
-            <!-- カテゴリ4: 愛車長持ち・査定UP＆トラブルレスキュー -->
-            <div style="font-size: 11px; font-weight: 800; color: #d97706; margin: 12px 0 6px; display: flex; align-items: center; gap: 4px;">
-                <i class="fa-solid fa-gem"></i> <span>愛車長持ち・査定UP＆トラブル（㉒〜㉘）</span>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-                <button class="btn-knowledge-item" data-topic="car_appraisal" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>💴</span> <span>㉒ 愛車高価売却・査定</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="tire_rotation" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>🛞</span> <span>㉓ タイヤ位置交換術</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="disaster_car_stay" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>🏕️</span> <span>㉔ 車中泊＆防災手帳</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="headlight_yellowing" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>✨</span> <span>㉕ ライト黄ばみ除去</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="smart_key_battery" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>🔑</span> <span>㉖ スマートキー電池切</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="hybrid_battery_care" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>🔋</span> <span>㉗ ハイブリッド延命</span>
-                </button>
-                <button class="btn-knowledge-item" data-topic="daily_car_check" style="padding: 8px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #334155; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 4px;">
-                    <span>🔍</span> <span>㉘ 5分セルフ点検術</span>
-                </button>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px;">
+                <div style="padding: 10px 8px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 12px; font-weight: 700; color: #334155; text-align: left; display: flex; align-items: center; gap: 6px;">
+                    <span>🚨</span> <span>⑨ 偽の警告画面の消し方</span>
+                </div>
+                <div style="padding: 10px 8px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 12px; font-weight: 700; color: #334155; text-align: left; display: flex; align-items: center; gap: 6px;">
+                    <span>✉️</span> <span>⑩ 迷惑メールの見分け方</span>
+                </div>
+                <div style="padding: 10px 8px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 12px; font-weight: 700; color: #334155; text-align: left; display: flex; align-items: center; gap: 6px;">
+                    <span>🔑</span> <span>⑪ パスワードの安全管理</span>
+                </div>
+                <div style="padding: 10px 8px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 12px; font-weight: 700; color: #334155; text-align: left; display: flex; align-items: center; gap: 6px;">
+                    <span>💡</span> <span>⑫ 困った時の教室相談</span>
+                </div>
             </div>
         </div>
-
-        <!-- 在庫検索へ戻るリンク -->
-        <a href="index.html" class="nav-back-link">
-            <i class="fa-solid fa-arrow-left"></i> 在庫車両検索に戻る
-        </a>
     </div>
 
     <!-- 予約相談 確認モーダル (誤タップ防止) -->
     <div class="modal-backdrop" id="bookingModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: flex-end; padding: 0;">
         <div style="background: #fff; width: 100%; max-width: 480px; border-radius: 20px 20px 0 0; padding: 24px; box-sizing: border-box; animation: slideUp 0.25s ease-out;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h3 id="modalBookingTitle" style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0;">来店予約・相談の確認</h3>
+                <h3 id="modalBookingTitle" style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0;">受講予約・相談の確認</h3>
                 <button id="closeBookingModalBtn" style="background: none; border: none; font-size: 18px; color: #94a3b8; cursor: pointer;">✕</button>
             </div>
-            <p style="font-size: 12px; color: #64748b; margin: 0 0 16px;">ご希望の日程・時間帯を選択してください。<br>店舗スタッフが確認の上、LINEトークにてご返信いたします。</p>
+            <p style="font-size: 12px; color: #64748b; margin: 0 0 16px;">ご希望の時間帯を選択してください。<br>教室スタッフが確認の上、LINEトークにてご返信いたします。</p>
 
             <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
-                <button class="maint-choice-btn" data-pref="平日（午前中）" style="width: 100%; height: 44px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; font-weight: 700; font-size: 13px; color: #1e293b; cursor: pointer; text-align: left; padding: 0 14px;">☀️ 平日（午前中）に来店希望</button>
-                <button class="maint-choice-btn" data-pref="平日（午後）" style="width: 100%; height: 44px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; font-weight: 700; font-size: 13px; color: #1e293b; cursor: pointer; text-align: left; padding: 0 14px;">🌤️ 平日（午後）に来店希望</button>
-                <button class="maint-choice-btn" data-pref="土日・祝日" style="width: 100%; height: 44px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; font-weight: 700; font-size: 13px; color: #1e293b; cursor: pointer; text-align: left; padding: 0 14px;">🎈 土日・祝日に来店希望</button>
+                <button class="maint-choice-btn" data-pref="午前レッスン (10:00〜12:00)" style="width: 100%; height: 44px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; font-weight: 700; font-size: 13px; color: #1e293b; cursor: pointer; text-align: left; padding: 0 14px;">☀️ 午前レッスン (10:00〜12:00) を希望</button>
+                <button class="maint-choice-btn" data-pref="午後レッスン (13:30〜15:30)" style="width: 100%; height: 44px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; font-weight: 700; font-size: 13px; color: #1e293b; cursor: pointer; text-align: left; padding: 0 14px;">🌤️ 午後レッスン (13:30〜15:30) を希望</button>
+                <button class="maint-choice-btn" data-pref="夕方レッスン (16:00〜18:00)" style="width: 100%; height: 44px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; font-weight: 700; font-size: 13px; color: #1e293b; cursor: pointer; text-align: left; padding: 0 14px;">🌆 夕方レッスン (16:00〜18:00) を希望</button>
                 <button class="maint-choice-btn" data-pref="日程を個別に相談したい" style="width: 100%; height: 44px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; font-weight: 700; font-size: 13px; color: #1e293b; cursor: pointer; text-align: left; padding: 0 14px;">💬 日程を個別にLINE相談</button>
             </div>
 
@@ -647,13 +583,13 @@
         </div>
     </div>
 
-    <!-- 一般来店・修理・カスタム相談モーダル -->
+    <!-- レッスン予約・PCトラブル相談モーダル -->
     <div class="modal-backdrop" id="generalInquiryModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 9999; justify-content: center; align-items: flex-end; padding: 0; backdrop-filter: blur(4px);">
         <div style="background: #fff; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; border-radius: 24px 24px 0 0; padding: 24px 20px 30px; box-sizing: border-box; animation: slideUp 0.25s ease-out; box-shadow: 0 -10px 25px rgba(0,0,0,0.15);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <div>
-                    <h3 style="font-size: 17px; font-weight: 800; color: #1e293b; margin: 0;">🛠️ ご来店予約・ご相談フォーム</h3>
-                    <p style="font-size: 11px; color: #64748b; margin: 2px 0 0;">要件をご入力いただくと、店舗スタッフよりLINEにて折り返し日程等をご案内いたします。</p>
+                    <h3 style="font-size: 17px; font-weight: 800; color: #1e293b; margin: 0;">💻 受講予約・PCお困りごと相談</h3>
+                    <p style="font-size: 11px; color: #64748b; margin: 2px 0 0;">要件をご入力いただくと、教室スタッフよりLINEにて折り返しご案内いたします。</p>
                 </div>
                 <button id="closeGeneralInquiryBtn" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
             </div>
@@ -662,21 +598,68 @@
             <div class="form-group" style="margin-bottom: 14px;">
                 <label class="form-label" style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px; display: block;">ご用件・相談内容 <span style="color: #ef4444;">*</span></label>
                 <select id="inquiryTypeSelect" class="form-input" style="font-weight: 700;">
-                    <option value="一般修理・異音や不具合の点検">🔧 一般修理・異音や不具合の点検</option>
-                    <option value="タイヤ交換・ホイールのご相談">🛞 タイヤ交換・ホイールのご相談</option>
-                    <option value="ドラレコ・ナビ等のパーツ取付">🚙 ドラレコ・ナビ等のパーツ取付</option>
-                    <option value="キズ・ヘコミの板金・塗装見積り">🎨 キズ・ヘコミの板金・塗装見積り</option>
-                    <option value="車検・構造変更等の事前見積り">📋 車検等の事前お見積もり</option>
-                    <option value="オイル交換の来店予約">🛢️ オイル交換の来店予約</option>
-                    <option value="12ヶ月定期点検の来店予約">📋 12ヶ月定期点検の来店予約</option>
-                    <option value="その他のお問い合わせ・カスタム相談">💡 その他のお問い合わせ・カスタム相談</option>
+                    <option value="パソコン個別レッスンの受講予約">💻 パソコン個別レッスンの受講予約</option>
+                    <option value="スマホ・タブレット操作の相談">📱 スマホ・タブレット操作の相談</option>
+                    <option value="PC定期健康診断・メンテナンス予約">🩺 PC定期健康診断・メンテナンス予約</option>
+                    <option value="パソコンの動作が遅い・不具合の点検">⚠️ パソコンの動作が遅い・不具合の点検</option>
+                    <option value="不審な警告画面・ウイルスの駆除相談">🚨 不審な警告画面・ウイルスの駆除相談</option>
+                    <option value="プリンターやWi-Fi接続トラブルの相談">🖨️ プリンターやWi-Fi接続トラブルの相談</option>
+                    <option value="受講コースの変更・プラン相談">📚 受講コースの変更・プラン相談</option>
+                    <option value="その他のお問い合わせ">💡 その他のお問い合わせ</option>
                 </select>
             </div>
 
-            <!-- ② 対象愛車 -->
+            <!-- ② 対象機器 -->
             <div class="form-group" style="margin-bottom: 14px;">
-                <label class="form-label" style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px; display: block;">対象のお車</label>
-                <input type="text" id="inquiryCarModelInput" class="form-input" placeholder="例: ワゴンR、N-BOX等">
+                <label class="form-label" style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px; display: block;">ご利用中の機器・OS</label>
+                <input type="text" id="inquiryCarModelInput" class="form-input" placeholder="例: Windows 11 ノートパソコン、iPad、Androidスマホ等">
+            </div>
+
+            <!-- ③ ご希望日時 -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px; display: block;">ご希望日</label>
+                    <input type="date" id="inquiryPreferredDate" class="form-input">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px; display: block;">ご希望の時間帯</label>
+                    <select id="inquiryPreferredTime" class="form-input">
+                        <option value="午前中 (10:00〜12:00)">午前中 (10:00〜12:00)</option>
+                        <option value="午後前半 (13:30〜15:30)">午後前半 (13:30〜15:30)</option>
+                        <option value="午後後半 (16:00〜18:00)">午後後半 (16:00〜18:00)</option>
+                        <option value="終日いつでも可">終日いつでも可</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- ④ 詳しい症状・ご相談内容 -->
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label class="form-label" style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px; display: block;">詳しい状況・ご相談内容 (任意)</label>
+                <textarea id="inquiryDetailsInput" class="form-input" rows="3" style="height: auto; padding: 10px 12px; resize: none;" placeholder="例: 画面に突然『ウイルスに感染しました』という警告が出て消えない、年賀状の宛名印刷を教えてほしい、等"></textarea>
+            </div>
+
+            <!-- ⑤ サポート形態 -->
+            <div class="form-group" style="margin-bottom: 18px;">
+                <label class="form-label" style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px; display: block;">受講・サポート方法</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <label class="loan-radio-label" style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; font-size: 12px; font-weight: 700; cursor: pointer;">
+                        <input type="radio" name="needLoanCar" value="教室に来校" checked>
+                        <span>🏫 教室に来校受講</span>
+                    </label>
+                    <label class="loan-radio-label" style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; font-size: 12px; font-weight: 700; cursor: pointer;">
+                        <input type="radio" name="needLoanCar" value="ご自宅出張・リモート希望">
+                        <span>🏠 出張/リモート希望</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 送信ボタン -->
+            <button id="submitGeneralInquiryBtn" class="btn-save-cust" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);">
+                <i class="fa-solid fa-paper-plane"></i> この内容で受講・相談を送信する
+            </button>
+            <button id="cancelGeneralInquiryBtn" style="width: 100%; height: 38px; border: none; background: transparent; color: #64748b; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 6px;">閉じる</button>
+        </div>
+    </div>"例: ワゴンR、N-BOX等">
             </div>
 
             <!-- ③ ご希望日時 -->

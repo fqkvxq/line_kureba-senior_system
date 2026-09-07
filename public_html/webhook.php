@@ -12,13 +12,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     
     // DB状態確認
     $dbStatus = 'エラー';
-    $carCount = 0;
+    $studentCount = 0;
     $dbPath = DB_PATH;
+    $db = null;
     try {
         $db = getDbConnection();
-        $stmt = $db->query("SELECT COUNT(*) as cnt FROM cars WHERE is_active = 1");
-        $carCount = (int)$stmt->fetch()['cnt'];
-        $dbStatus = "正常稼働中 (有効在庫: {$carCount}台)";
+        $stmt = $db->query("SELECT COUNT(*) as cnt FROM customer_cars");
+        $studentCount = (int)$stmt->fetch()['cnt'];
+        $dbStatus = "正常稼働中 (受講生登録: {$studentCount}名)";
     } catch (Exception $e) {
         $dbStatus = "接続失敗: " . htmlspecialchars($e->getMessage());
     }
@@ -26,36 +27,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $tokenConfigured = (LINE_CHANNEL_ACCESS_TOKEN !== 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') ? '<span style="color:green;">設定済み</span>' : '<span style="color:red;">未設定 (config.phpに貼り付けてください)</span>';
     $secretConfigured = (LINE_CHANNEL_SECRET !== 'YOUR_CHANNEL_SECRET_HERE') ? '<span style="color:green;">設定済み</span>' : '<span style="color:red;">未設定</span>';
     
+    // プロライン連携状態
+    $proline = getProlineSettings($db);
+    $prolineStatusBadge = empty($proline['webhook_url'])
+        ? '<span style="color:#64748b;">未設定 (中継OFF)</span>'
+        : ($proline['relay_enabled'] 
+            ? '<span style="color:green;font-weight:bold;">中継稼働中 (有効)</span>' 
+            : '<span style="color:#d97706;font-weight:bold;">中継一時停止中 (無効)</span>');
+    $prolineUrlDisplay = !empty($proline['webhook_url']) ? htmlspecialchars($proline['webhook_url']) : '（未登録）';
+    $prolineLastRelay = !empty($proline['last_relay_at']) ? "{$proline['last_relay_at']} / {$proline['last_relay_status']}" : 'まだ転送履歴はありません';
+
     echo <<<HTML
     <!DOCTYPE html>
     <html lang="ja">
-    <head><meta charset="utf-8"><title>LINE Car Search Webhook 診断</title>
+    <head><meta charset="utf-8"><title>LINE受講生管理 ＆ プロライン中継 診断</title>
     <style>body{font-family:sans-serif;padding:30px;line-height:1.6;background:#f8fafc;color:#1e293b}
-    .card{background:#fff;padding:24px;border-radius:12px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);max-width:600px;margin:0 auto}
+    .card{background:#fff;padding:24px;border-radius:12px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);max-width:680px;margin:0 auto}
     h2{margin-top:0;color:#06C755}table{width:100%;border-collapse:collapse;margin:16px 0}
     td,th{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:14px}
     .log-box{background:#0f172a;color:#a5f3fc;padding:12px;border-radius:8px;font-family:monospace;font-size:12px;max-height:260px;overflow-y:auto;white-space:pre-wrap}
+    .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;background:#e2e8f0}
     </style></head>
     <body>
     <div class="card">
-        <h2>🚗 LINE Webhook 稼働ステータス</h2>
+        <h2>💻 シニア向けパソコン教室 LINE Webhook 稼働ステータス</h2>
         <table>
             <tr><th>項目</th><th>状態</th></tr>
             <tr><td>Webhook エンドポイント</td><td>正常応答中 (200 OK)</td></tr>
             <tr><td>チャネルアクセストークン</td><td>{$tokenConfigured}</td></tr>
             <tr><td>チャネルシークレット</td><td>{$secretConfigured}</td></tr>
-            <tr><td>DBパス</td><td><code>{$dbPath}</code></td></tr>
-            <tr><td>データベース状態</td><td><strong>{$dbStatus}</strong></td></tr>
+            <tr><td>受講生データベース状態</td><td><strong>{$dbStatus}</strong></td></tr>
+            <tr><td>プロライン中継ステータス</td><td>{$prolineStatusBadge}</td></tr>
+            <tr><td>プロライン転送先URL</td><td><small style="word-break:break-all;"><code>{$prolineUrlDisplay}</code></small></td></tr>
+            <tr><td>直近の転送結果</td><td><small>{$prolineLastRelay}</small></td></tr>
         </table>
-        <h3>📋 最近のログ (最新35件)</h3>
+        <h3>📋 プロライン転送ログ (最新20件)</h3>
+        <div class="log-box">
+HTML;
+    $prolineLogFile = __DIR__ . '/proline_relay.log';
+    if (file_exists($prolineLogFile)) {
+        $lines = array_slice(file($prolineLogFile), -20);
+        echo htmlspecialchars(implode('', $lines));
+    } else {
+        echo "プロラインへの転送ログはまだありません。LINEでイベントが発生すると記録されます。\n";
+    }
+    echo <<<HTML
+        </div>
+        <h3 style="margin-top:20px;">📋 システムデバッグログ (最新20件)</h3>
         <div class="log-box">
 HTML;
     $logFile = __DIR__ . '/webhook_debug.log';
     if (file_exists($logFile)) {
-        $lines = array_slice(file($logFile), -35);
+        $lines = array_slice(file($logFile), -20);
         echo htmlspecialchars(implode('', $lines));
     } else {
-        echo "ログはまだありません。LINEでメッセージを送信すると記録されます。";
+        echo "ログはまだありません。";
     }
     echo <<<HTML
         </div>
@@ -69,26 +95,18 @@ HTML;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?? '') === 'webhook.php' || basename($_SERVER['PHP_SELF'] ?? '') === 'webhook.php')) {
     // 生のリクエストボディを取得
     $rawInput = file_get_contents('php://input');
+    $lineSignature = $_SERVER['HTTP_X_LINE_SIGNATURE'] ?? '';
     writeDebugLog("Webhook受信", ['bytes' => strlen($rawInput)]);
 
     // 署名検証 (Channel Secretが設定されている場合)
-    if (LINE_CHANNEL_SECRET !== 'YOUR_CHANNEL_SECRET_HERE' && !empty($_SERVER['HTTP_X_LINE_SIGNATURE'])) {
-        $signature = $_SERVER['HTTP_X_LINE_SIGNATURE'];
+    if (LINE_CHANNEL_SECRET !== 'YOUR_CHANNEL_SECRET_HERE' && !empty($lineSignature)) {
         $hash = base64_encode(hash_hmac('sha256', $rawInput, LINE_CHANNEL_SECRET, true));
-        if (!hash_equals($hash, $signature)) {
+        if (!hash_equals($hash, $lineSignature)) {
             writeDebugLog("署名検証エラー (Signature mismatch)");
             http_response_code(403);
             echo 'Invalid signature';
             exit;
         }
-    }
-
-    $data = json_decode($rawInput, true);
-    if (empty($data['events'])) {
-        writeDebugLog("イベントなし (検証Pingなど)");
-        http_response_code(200);
-        echo 'OK (No events)';
-        exit;
     }
 
     try {
@@ -99,28 +117,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
         exit;
     }
 
+    // 【最重要】プロライン (ProLine) へリクエストを即座に完全中継（プロキシPOST）
+    // LINE公式アカウントから届いた生のJSONおよび署名をそのままプロラインのWebhook URLへ転送
+    $prolineRelayResult = relayWebhookToProline($rawInput, $lineSignature, $db);
+    writeDebugLog("プロライン中継実行", $prolineRelayResult);
+
+    $data = json_decode($rawInput, true);
+    if (empty($data['events'])) {
+        writeDebugLog("イベントなし (検証Pingなど)");
+        http_response_code(200);
+        echo 'OK (No events)';
+        exit;
+    }
+
+    $prolineSettings = getProlineSettings($db);
+    $isProlineActive = (!empty($prolineSettings['webhook_url']) && $prolineSettings['relay_enabled']);
+
     foreach ($data['events'] as $event) {
         $replyToken = $event['replyToken'] ?? null;
-        if (!$replyToken) continue;
-
         $userId = $event['source']['userId'] ?? '';
         $type = $event['type'] ?? '';
-        writeDebugLog("イベント処理開始", ['type' => $type, 'userId' => $userId]);
+        writeDebugLog("イベント処理開始", ['type' => $type, 'userId' => $userId, 'prolineActive' => $isProlineActive]);
 
         try {
-            // 友だち追加・ボタン操作・メッセージ送信時に自動で顧客管理へ登録＆名前同期
+            // 友だち追加・メッセージ送信・ボタン操作時に自動で受講生管理へ登録＆名前同期
             if (!empty($userId) && str_starts_with($userId, 'U')) {
                 ensureCustomerExists($db, $userId);
             }
 
-            if ($type === 'message') {
+            if ($type === 'follow') {
+                // 友だち追加時: 受講生登録、管理者通知、リッチメニュー自動適用など
+                recordCustomerInteraction($db, $userId, 'follow', "友だち登録");
+                notifyAdminOfEvent('follow', [
+                    'user_id' => $userId,
+                    'user_name' => '受講生（新規友だち）'
+                ], $db);
+            } elseif ($type === 'message') {
                 $msgType = $event['message']['type'] ?? '';
                 if ($msgType === 'text') {
                     $userText = trim($event['message']['text'] ?? '');
                     writeDebugLog("テキスト受信", ['text' => $userText, 'userId' => $userId]);
                     $preview = mb_substr($userText, 0, 45);
                     recordCustomerInteraction($db, $userId, 'user_message', "💬 {$preview}");
-                    handleTextMessage($db, $replyToken, $userText, $userId);
+
+                    // プロラインが有効な場合はプロライン側がチャット・ステップ配信・自動応答を行うため、
+                    // ReplyTokenの二重消費を防ぐために本システムの自動テキスト返信はスキップ
+                    if ($isProlineActive) {
+                        writeDebugLog("プロライン中継モードのため本システムの自動テキスト返信はスキップ（プロラインへ委譲）");
+                    } else {
+                        if ($replyToken) {
+                            handleTextMessage($db, $replyToken, $userText, $userId);
+                        }
+                    }
                 } elseif ($msgType === 'sticker') {
                     writeDebugLog("スタンプ受信", ['userId' => $userId]);
                     recordCustomerInteraction($db, $userId, 'user_message', "🎨 スタンプを受信");

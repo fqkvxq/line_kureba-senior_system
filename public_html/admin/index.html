@@ -6,22 +6,22 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>メンテナンス顧客管理ダッシュボード | アップファーレン</title>
+    <title>受講生・レッスン管理ダッシュボード | シニア向けパソコン教室</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260906_auto_nearest_v3">
+    <link rel="stylesheet" href="admin.css?v=20260907_senior_proline_v1">
 </head>
 <body>
     <!-- ログインモーダル (初期表示) -->
     <div class="login-overlay" id="loginModal">
         <div class="login-card">
-            <div class="login-icon"><i class="fa-solid fa-shield-halved"></i></div>
-            <h2>店舗管理ログイン</h2>
-            <p>アップファーレン メンテナンス管理システム</p>
+            <div class="login-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+            <h2>教室管理ログイン</h2>
+            <p>シニア向けパソコン教室 受講生・レッスン管理システム</p>
             <div class="login-form">
                 <input type="password" id="adminPasswordInput" placeholder="管理者パスワードを入力" autofocus>
                 <button id="loginBtn">ログイン</button>
@@ -35,29 +35,32 @@
         <!-- サイドバー/ヘッダー -->
         <header class="admin-header">
             <div class="admin-brand">
-                <div class="brand-badge"><i class="fa-solid fa-car"></i></div>
+                <div class="brand-badge" style="background: #4f46e5; color: #fff;"><i class="fa-solid fa-laptop"></i></div>
                 <div>
-                    <h1>アップファーレン 顧客管理</h1>
-                    <span>オイル交換・定期点検 リマインドダッシュボード</span>
+                    <h1>シニア向けパソコン教室 受講生管理</h1>
+                    <span>次回レッスン・定期サポート リマインドダッシュボード</span>
                 </div>
             </div>
 
             <!-- ナビゲーションリンク -->
             <nav class="admin-nav-links">
-                <a href="index.html" class="nav-link active"><i class="fa-solid fa-users"></i> 顧客・点検管理</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-users"></i> 受講生・カルテ管理</a>
                 <a href="richmenu.html" class="nav-link"><i class="fa-solid fa-table-cells-large"></i> リッチメニュー管理</a>
                 <a href="manual.html" class="nav-link"><i class="fa-solid fa-book-open"></i> 操作マニュアル</a>
             </nav>
 
             <div class="admin-header-actions">
-                <button class="btn-secondary" id="openAdminLineSettingsBtn" title="管理者へのLINE通知設定（問い合わせ・来店予約・新規顧客等）" style="background: #1e293b; color: #ffffff; border: 1px solid #334155; font-weight: 600;">
+                <button class="btn-secondary" id="openProlineSettingsBtn" title="プロライン(ProLine)へのWebhook中継設定・テスト" style="background: #4338ca; color: #ffffff; border: 1px solid #6366f1; font-weight: 600;">
+                    <i class="fa-solid fa-network-wired" style="color: #a5b4fc; margin-right: 4px;"></i> プロライン連携
+                </button>
+                <button class="btn-secondary" id="openAdminLineSettingsBtn" title="管理者へのLINE通知設定（問い合わせ・新規受講生等）" style="background: #1e293b; color: #ffffff; border: 1px solid #334155; font-weight: 600;">
                     <i class="fa-solid fa-bell" style="color: #38bdf8; margin-right: 4px;"></i> 管理者LINE通知
                 </button>
-                <button class="btn-secondary" id="syncLineFollowersBtn" title="LINE公式アカウントの全友だちを取得して顧客一覧に一括登録・更新します" style="background: #06C755; color: #ffffff; border: none; font-weight: bold; box-shadow: 0 2px 4px rgba(6,199,85,0.2);">
+                <button class="btn-secondary" id="syncLineFollowersBtn" title="LINE公式アカウントの全友だちを取得して受講生一覧に一括登録・更新します" style="background: #06C755; color: #ffffff; border: none; font-weight: bold; box-shadow: 0 2px 4px rgba(6,199,85,0.2);">
                     <i class="fa-brands fa-line" style="font-size: 16px; margin-right: 4px;"></i> LINE友だち一括同期
                 </button>
                 <button class="btn-primary" id="openAddCustomerModalBtn">
-                    <i class="fa-solid fa-user-plus"></i> 新規顧客登録
+                    <i class="fa-solid fa-user-plus"></i> 新規受講生登録
                 </button>
                 <button class="btn-logout" id="logoutBtn" title="ログアウト">
                     <i class="fa-solid fa-arrow-right-from-bracket"></i>
@@ -72,28 +75,28 @@
                 <div class="stat-card" data-filter="all">
                     <div class="stat-icon icon-users"><i class="fa-solid fa-users"></i></div>
                     <div class="stat-info">
-                        <span class="stat-label">登録顧客数</span>
+                        <span class="stat-label">登録受講生数</span>
                         <span class="stat-value" id="statTotalUsers">0</span>
                     </div>
                 </div>
                 <div class="stat-card" data-filter="oil_soon">
-                    <div class="stat-icon icon-oil"><i class="fa-solid fa-oil-can"></i></div>
+                    <div class="stat-icon icon-oil" style="background:#e0f2fe; color:#0284c7;"><i class="fa-solid fa-laptop"></i></div>
                     <div class="stat-info">
-                        <span class="stat-label">オイル期日近し (30日以内)</span>
+                        <span class="stat-label">レッスン期日近し (30日以内)</span>
                         <span class="stat-value" id="statOilSoon">0</span>
                     </div>
                 </div>
                 <div class="stat-card" data-filter="periodic_soon">
-                    <div class="stat-icon icon-periodic" style="background:#ecfdf5; color:#059669;"><i class="fa-solid fa-clipboard-check"></i></div>
+                    <div class="stat-icon icon-periodic" style="background:#ecfdf5; color:#059669;"><i class="fa-solid fa-shield-virus"></i></div>
                     <div class="stat-info">
-                        <span class="stat-label">12ヶ月点検近し (30日以内)</span>
+                        <span class="stat-label">定期PC診断近し (30日以内)</span>
                         <span class="stat-value" id="statPeriodicSoon">0</span>
                     </div>
                 </div>
                 <div class="stat-card" data-filter="inspection_soon">
-                    <div class="stat-icon icon-insp"><i class="fa-solid fa-shield-halved"></i></div>
+                    <div class="stat-icon icon-insp" style="background:#fffbeb; color:#d97706;"><i class="fa-solid fa-calendar-check"></i></div>
                     <div class="stat-info">
-                        <span class="stat-label">車検満了近し (30日以内)</span>
+                        <span class="stat-label">会員更新・月謝近し (30日以内)</span>
                         <span class="stat-value" id="statInspSoon">0</span>
                     </div>
                 </div>
@@ -103,13 +106,13 @@
             <div class="toolbar-card">
                 <div class="search-box">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="adminSearchInput" placeholder="顧客名、車種、ナンバー、メモで検索...">
+                    <input type="text" id="adminSearchInput" placeholder="受講生名、コース名、使用機器、メモで検索...">
                 </div>
                 <div class="filter-tabs">
-                    <button class="tab-btn active" data-filter="all">全顧客 (<span id="tabCountAll">0</span>)</button>
-                    <button class="tab-btn" data-filter="oil_soon">🛢 オイル (<span id="tabCountOil">0</span>)</button>
-                    <button class="tab-btn" data-filter="periodic_soon">📋 12ヶ月点検 (<span id="tabCountPeriodic">0</span>)</button>
-                    <button class="tab-btn" data-filter="inspection_soon">🚗 車検 (<span id="tabCountInsp">0</span>)</button>
+                    <button class="tab-btn active" data-filter="all">全受講生 (<span id="tabCountAll">0</span>)</button>
+                    <button class="tab-btn" data-filter="oil_soon">💻 次回レッスン (<span id="tabCountOil">0</span>)</button>
+                    <button class="tab-btn" data-filter="periodic_soon">🔍 定期PC診断 (<span id="tabCountPeriodic">0</span>)</button>
+                    <button class="tab-btn" data-filter="inspection_soon">🗓️ 会員更新・月謝 (<span id="tabCountInsp">0</span>)</button>
                 </div>
                 <div class="sort-box">
                     <label for="adminSortSelect">
@@ -117,9 +120,9 @@
                     </label>
                     <select id="adminSortSelect" class="form-select sort-select">
                         <option value="last_interaction" selected>💬 最終チャット・やり取り順</option>
-                        <option value="insp_soon">🚗 次回車検が近い順</option>
-                        <option value="oil_soon">🛢️ 次回オイルが近い順</option>
-                        <option value="periodic_soon">📋 12ヶ月点検が近い順</option>
+                        <option value="oil_soon">💻 次回レッスンが近い順</option>
+                        <option value="periodic_soon">🔍 定期PC診断が近い順</option>
+                        <option value="insp_soon">🗓️ 会員更新が近い順</option>
                         <option value="name_asc">👤 お名前順 (五十音)</option>
                         <option value="created_desc">🆕 友だち登録が新しい順</option>
                     </select>
@@ -132,12 +135,12 @@
                     <thead>
                         <tr>
                             <th>お名前</th>
-                            <th>愛車・ナンバー</th>
-                            <th>次回オイル</th>
-                            <th>12ヶ月点検</th>
-                            <th>車検満了</th>
+                            <th>受講コース・使用機器</th>
+                            <th>次回レッスン</th>
+                            <th>定期PC診断</th>
+                            <th>会員更新・月謝</th>
                             <th style="min-width: 155px;"><i class="fa-regular fa-comment-dots"></i> 最終やり取り</th>
-                            <th>店舗メモ</th>
+                            <th>指導カルテ・特記事項</th>
                             <th>操作</th>
                         </tr>
                     </thead>
@@ -147,17 +150,17 @@
                 </table>
                 <div class="empty-placeholder" id="emptyTablePlaceholder" style="display: none;">
                     <i class="fa-solid fa-inbox"></i>
-                    <p>該当する顧客データが見つかりませんでした。</p>
+                    <p>該当する受講生データが見つかりませんでした。</p>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- 顧客登録・編集モーダル -->
+    <!-- 受講生登録・編集モーダル -->
     <div class="modal-overlay" id="customerEditModal">
         <div class="modal-card">
             <div class="modal-header">
-                <h3 id="modalTitle">顧客メンテナンス情報の編集</h3>
+                <h3 id="modalTitle">受講生カルテ情報の編集</h3>
                 <button class="modal-close" id="closeEditModalBtn"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="modal-body">
@@ -165,7 +168,7 @@
 
                 <div class="form-row">
                     <div class="form-col">
-                        <label>お名前 (LINE表示名)</label>
+                        <label>受講生のお名前 (LINE表示名)</label>
                         <input type="text" id="editUserName" placeholder="例: 山田 太郎" required>
                     </div>
                     <div class="form-col">
@@ -181,64 +184,64 @@
 
                 <div class="form-row">
                     <div class="form-col">
-                        <label>愛車の車種名</label>
-                        <input type="text" id="editCarModel" placeholder="例: ワゴンR スティングレー" required>
+                        <label>受講コース名</label>
+                        <input type="text" id="editCarModel" placeholder="例: はじめてのパソコン・スマホ安心コース" required>
                     </div>
                     <div class="form-col">
-                        <label>ナンバープレート</label>
-                        <input type="text" id="editCarNumber" placeholder="例: 静岡580 あ 12-34">
+                        <label>使用機器 / 会員番号</label>
+                        <input type="text" id="editCarNumber" placeholder="例: No.0102 / Windows 11 ノートPC">
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-col">
-                        <label>前回 オイル交換日</label>
+                        <label>前回 受講日</label>
                         <input type="date" id="editOilLastDate">
                     </div>
                     <div class="form-col">
-                        <label>次回 オイル交換予定日</label>
+                        <label>次回 レッスン予定日</label>
                         <input type="date" id="editOilNextDate">
                         <span style="font-size: 11px; color: #64748b; margin-top: 3px; display: block;">
-                            ※ 目安: 5,000km〜10,000km または 半年〜1年（7日前・当日に自動LINE配信）
+                            ※ 予定日の7日前・前日・当日に自動でLINEリマインド配信されます
                         </span>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-col">
-                        <label>次回 12ヶ月定期点検 予定日</label>
+                        <label>定期 パソコン健康診断日</label>
                         <input type="date" id="editPeriodicNextDate">
                         <span style="font-size: 11px; color: #64748b; margin-top: 3px; display: block;">
-                            ※ 目安: 1年に1回（前回の車検・点検から1年後）。14日前・7日前に自動LINE配信
+                            ※ 端末のセキュリティ・動作診断時期（14日前・7日前に自動配信）
                         </span>
                     </div>
                     <div class="form-col">
-                        <label>次回 車検満了日</label>
+                        <label>会員更新・月謝期日</label>
                         <input type="date" id="editInspectionNextDate">
                         <span style="font-size: 11px; color: #64748b; margin-top: 3px; display: block;">
-                            ※ 目安: 満了日の約1ヶ月前〜。30日前・14日前に自動LINE配信
+                            ※ 月謝・受講パックの更新期日（30日前・14日前に自動配信）
                         </span>
                     </div>
                 </div>
 
                 <div class="form-row full">
-                    <!-- 直近点検期限サマリー -->
+                    <!-- 直近期日サマリー -->
                     <div class="nearest-maint-summary" id="editNearestMaintSummary" style="display: none;">
                         <div class="nearest-maint-icon"><i class="fa-solid fa-bell"></i></div>
                         <div class="nearest-maint-content">
-                            <div class="nearest-maint-title">最も期限が近いメンテナンス</div>
-                            <div class="nearest-maint-text" id="editNearestMaintText">次回オイル交換 (あと14日)</div>
+                            <div class="nearest-maint-title">直近の予定・期日</div>
+                            <div class="nearest-maint-text" id="editNearestMaintText">次回レッスン (あと3日)</div>
                         </div>
                     </div>
 
-                    <label>店舗用スタッフメモ (エレメント推奨、走行距離など)</label>
-                    <textarea id="editStaffMemo" rows="3" placeholder="例: 次回エレメント同時交換推奨。走行距離: 5.2万km"></textarea>
+                    <label>指導カルテ・特記事項メモ (学習進度、シニア配慮事項など)</label>
+                    <textarea id="editStaffMemo" rows="3" placeholder="例: キーボード操作ゆっくり。スマホのLINEアルバム機能の復習希望。次回プリンター印刷実践。"></textarea>
 
                     <!-- 専用リッチメニュー自動更新オプション -->
                     <div class="auto-apply-menu-row" id="editAutoApplyMenuRow" style="display: none;">
                         <label class="auto-apply-menu-label">
                             <input type="checkbox" id="editAutoApplyMenuCheckbox" checked>
-                            <span><i class="fa-solid fa-wand-magic-sparkles" style="color: #4f46e5;"></i> 保存と同時に、直近の期限メッセージで専用リッチメニューをLINEに自動適用する</span>
+                            <span><i class="fa-solid fa-wand-magic-sparkles" style="color: #4f46e5;"></i> 保存と同時に、直近の期日案内メッセージで専用リッチメニューをLINEに自動適用する</span>
                         </label>
                     </div>
                 </div>
@@ -572,9 +575,113 @@
         </div>
     </div>
 
+    <!-- プロライン連携設定モーダル -->
+    <div class="modal-overlay" id="prolineSettingsModal" style="z-index: 1100;">
+        <div class="modal-card" style="max-width: 660px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #312e81 0%, #4338ca 100%); color: #fff;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center; color: #c7d2fe; font-size: 20px;">
+                        <i class="fa-solid fa-network-wired"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #fff;">プロライン (ProLine) Webhook中継設定</h3>
+                        <p style="margin: 2px 0 0; font-size: 11.5px; color: #c7d2fe;">LINE公式アカウントとプロラインの間に本システムを挟み込んで共存</p>
+                    </div>
+                </div>
+                <button class="modal-close" id="closeProlineSettingsModalBtn" style="color: #c7d2fe;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <!-- 仕組み解説ボックス -->
+                <div style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 10px; padding: 12px 14px; margin-bottom: 18px; font-size: 12px; color: #3730a3; line-height: 1.6;">
+                    <div style="font-weight: bold; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                        <i class="fa-solid fa-circle-info"></i> プロライン共存・中継（Webhook Proxy）の仕組み
+                    </div>
+                    LINE公式アカウントから届くメッセージや友だち登録イベントを本システムで受け取り、<strong>プロラインのWebhook URLへ即座に完全転送（中継）</strong>します。<br>
+                    プロライン側のステップ配信・チャット・自動応答はそのまま動作し、同時に本システムで<strong>受講生カルテの自動蓄積・次回レッスンリマインダー・専用リッチメニュー</strong>を活用できます。
+                </div>
+
+                <!-- Webhook URL 設定 -->
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="font-weight: bold; font-size: 13px; color: #1e293b; display: block; margin-bottom: 6px;">
+                        <span><i class="fa-solid fa-link" style="color: #4f46e5; margin-right: 4px;"></i> 転送先 プロライン Webhook URL</span>
+                    </label>
+                    <input type="url" id="prolineWebhookUrlInput" placeholder="例: https://autosns.pro/api/webhook/..." style="width: 100%; box-sizing: border-box; padding: 10px 12px; font-family: monospace; font-size: 12.5px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                    <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
+                        ※ プロライン管理画面（「初期設定」や「LINE公式アカウント連携」）で案内されるWebhook URLを貼り付けてください。
+                    </div>
+                </div>
+
+                <!-- 中継有効化トグル -->
+                <div style="margin-bottom: 18px; padding: 12px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="prolineRelayEnabledCheck" checked style="accent-color: #4338ca; width: 18px; height: 18px;">
+                        <div>
+                            <div style="font-weight: bold; font-size: 13px; color: #1e293b;">プロラインへのWebhook自動中継を有効にする</div>
+                            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
+                                チェックを入れると、LINEから受信した全イベントをプロラインへリアルタイム転送します。
+                            </div>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- 疎通テスト送信エリア -->
+                <div style="margin-bottom: 18px; padding: 14px; background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 8px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px;">
+                        <div>
+                            <div style="font-weight: bold; font-size: 12.5px; color: #6b21a8;">
+                                <i class="fa-solid fa-paper-plane" style="margin-right: 4px;"></i> プロライン疎通テスト
+                            </div>
+                            <div style="font-size: 11px; color: #7e22ce;">
+                                入力されたプロラインWebhook URLへテスト通信を行い、正常に応答が返るか検証します。
+                            </div>
+                        </div>
+                        <button type="button" class="btn-secondary" id="testProlineRelayBtn" style="background: #7c3aed; color: #fff; border: none; font-size: 12px; font-weight: bold; padding: 8px 14px; white-space: nowrap; cursor: pointer; border-radius: 6px;">
+                            <i class="fa-solid fa-rotate"></i> 疎通テスト
+                        </button>
+                    </div>
+                    <div id="prolineTestResultBanner" style="display: none; padding: 8px 12px; border-radius: 6px; font-size: 11.5px; line-height: 1.5; margin-top: 8px;"></div>
+                </div>
+
+                <!-- LINE Developers 設定手順リンク/ガイダンス -->
+                <div style="margin-bottom: 16px; padding: 12px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 11.5px; color: #475569;">
+                    <div style="font-weight: bold; color: #0f172a; margin-bottom: 4px;">
+                        <i class="fa-brands fa-line" style="color: #06C755;"></i> LINE Developers での設定
+                    </div>
+                    <ol style="margin: 0; padding-left: 18px; line-height: 1.6;">
+                        <li><a href="https://developers.line.biz/" target="_blank" style="color: #4f46e5; text-decoration: underline;">LINE Developers コンソール</a> にログイン。</li>
+                        <li>「Messaging API設定」タブの <strong>Webhook URL</strong> に以下を登録します：<br>
+                            <code id="displayOurWebhookUrl" style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 11px; user-select: all;">https://あなたのドメイン/webhook.php</code>
+                        </li>
+                        <li>「Webhookの利用」を <strong>ON</strong> にします。</li>
+                    </ol>
+                </div>
+
+                <!-- 直近の転送ログプレビュー -->
+                <div>
+                    <label style="font-weight: bold; font-size: 12px; color: #475569; display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                        <span><i class="fa-solid fa-clock-rotate-left"></i> 直近の転送履歴</span>
+                        <button type="button" id="btnRefreshProlineLogs" style="background: none; border: none; color: #4f46e5; font-size: 11px; cursor: pointer; padding: 0;">
+                            <i class="fa-solid fa-rotate-right"></i> 更新
+                        </button>
+                    </label>
+                    <div id="prolineRecentLogsWrap" style="background: #0f172a; color: #a5b4fc; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 11px; max-height: 120px; overflow-y: auto; white-space: pre-wrap;">転送ログを読み込み中...</div>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 12px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                <span id="prolineSaveStatus" style="font-size: 12px; color: #16a34a; font-weight: bold;"></span>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn-cancel" id="closeProlineSettingsBtn">閉じる</button>
+                    <button type="button" class="btn-save" id="saveProlineSettingsBtn" style="background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);">
+                        <i class="fa-solid fa-floppy-disk"></i> 設定を保存する
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260907_stable_v1"></script>
+    <script src="admin.js?v=20260907_senior_proline_v2"></script>
 </body>
 </html>

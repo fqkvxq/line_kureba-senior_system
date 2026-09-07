@@ -132,6 +132,21 @@ const elements = {
     notifyReminderCheck: document.getElementById('notifyReminderCheck'),
     btnQuickAddAdminFromEdit: document.getElementById('btnQuickAddAdminFromEdit'),
 
+    // プロライン連携設定モーダル
+    openProlineSettingsBtn: document.getElementById('openProlineSettingsBtn'),
+    prolineSettingsModal: document.getElementById('prolineSettingsModal'),
+    closeProlineSettingsModalBtn: document.getElementById('closeProlineSettingsModalBtn'),
+    closeProlineSettingsBtn: document.getElementById('closeProlineSettingsBtn'),
+    saveProlineSettingsBtn: document.getElementById('saveProlineSettingsBtn'),
+    testProlineRelayBtn: document.getElementById('testProlineRelayBtn'),
+    prolineWebhookUrlInput: document.getElementById('prolineWebhookUrlInput'),
+    prolineRelayEnabledCheck: document.getElementById('prolineRelayEnabledCheck'),
+    prolineTestResultBanner: document.getElementById('prolineTestResultBanner'),
+    prolineRecentLogsWrap: document.getElementById('prolineRecentLogsWrap'),
+    prolineSaveStatus: document.getElementById('prolineSaveStatus'),
+    btnRefreshProlineLogs: document.getElementById('btnRefreshProlineLogs'),
+    displayOurWebhookUrl: document.getElementById('displayOurWebhookUrl'),
+
     toast: document.getElementById('adminToast')
 };
 
@@ -152,6 +167,14 @@ function initAuth() {
 }
 
 function initEventListeners() {
+    // プロライン連携設定モーダル開閉 & 操作
+    if (elements.openProlineSettingsBtn) elements.openProlineSettingsBtn.addEventListener('click', openProlineSettingsModal);
+    if (elements.closeProlineSettingsModalBtn) elements.closeProlineSettingsModalBtn.addEventListener('click', closeProlineSettingsModal);
+    if (elements.closeProlineSettingsBtn) elements.closeProlineSettingsBtn.addEventListener('click', closeProlineSettingsModal);
+    if (elements.saveProlineSettingsBtn) elements.saveProlineSettingsBtn.addEventListener('click', saveProlineSettings);
+    if (elements.testProlineRelayBtn) elements.testProlineRelayBtn.addEventListener('click', testProlineRelay);
+    if (elements.btnRefreshProlineLogs) elements.btnRefreshProlineLogs.addEventListener('click', loadProlineSettings);
+
     // 管理者LINE通知設定モーダル開閉 & 操作
     if (elements.openAdminLineSettingsBtn) elements.openAdminLineSettingsBtn.addEventListener('click', openAdminLineSettingsModal);
     if (elements.closeAdminLineSettingsModalBtn) elements.closeAdminLineSettingsModalBtn.addEventListener('click', closeAdminLineSettingsModal);
@@ -616,14 +639,14 @@ function renderTable() {
                         <button class="btn-user-richmenu ${isCustomized ? 'is-active' : ''}" data-action="custom-menu" data-idx="${idx}" title="リッチメニューの確認・個別指定・メッセージ設定">
                             <i class="fa-solid fa-table-cells-large"></i> メニュー設定
                         </button>
-                        <button class="btn-remind-oil" data-action="remind-oil" data-idx="${idx}" title="オイル交換リマインドをLINE送信">
-                            <i class="fa-solid fa-oil-can"></i> オイル
+                        <button class="btn-remind-oil" data-action="remind-oil" data-idx="${idx}" title="次回レッスン案内リマインドをLINE送信" style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd;">
+                            <i class="fa-solid fa-laptop"></i> レッスン
                         </button>
-                        <button class="btn-remind-periodic" data-action="remind-periodic" data-idx="${idx}" title="12ヶ月点検リマインドをLINE送信">
-                            <i class="fa-solid fa-clipboard-check"></i> 点検
+                        <button class="btn-remind-periodic" data-action="remind-periodic" data-idx="${idx}" title="定期PC健康診断リマインドをLINE送信" style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0;">
+                            <i class="fa-solid fa-shield-virus"></i> PC診断
                         </button>
-                        <button class="btn-remind-insp" data-action="remind-insp" data-idx="${idx}" title="車検リマインドをLINE送信">
-                            <i class="fa-solid fa-shield-halved"></i> 車検
+                        <button class="btn-remind-insp" data-action="remind-insp" data-idx="${idx}" title="会員更新・月謝期日リマインドをLINE送信" style="background:#fffbeb; color:#d97706; border:1px solid #fde68a;">
+                            <i class="fa-solid fa-calendar-check"></i> 更新期日
                         </button>
                         <button class="btn-edit" data-action="edit" data-idx="${idx}" title="編集">
                             <i class="fa-solid fa-pen"></i>
@@ -665,15 +688,15 @@ function renderTable() {
 
 window.sendManualReminder = async function(carId, userId, type, userName, carModel) {
     if (!userId || !userId.startsWith('U')) {
-        alert('この顧客は手動登録（LINE未連携）のため、LINEメッセージを送信できません。');
+        alert('この受講生は手動登録（LINE未連携）のため、LINEメッセージを送信できません。');
         return;
     }
 
-    let typeLabel = '🛢 オイル交換リマインド';
-    if (type === 'periodic') typeLabel = '📋 12ヶ月定期点検リマインド';
-    if (type === 'inspection') typeLabel = '🚗 車検満了リマインド';
+    let typeLabel = '💻 次回レッスン案内リマインド';
+    if (type === 'periodic') typeLabel = '🔍 定期パソコン健康診断リマインド';
+    if (type === 'inspection') typeLabel = '🗓️ 会員更新・月謝期日リマインド';
 
-    if (!confirm(`【${userName || 'お客様'} 様 (${carModel || '愛車'})】へ\n「${typeLabel}」のLINEメッセージを今すぐ送信しますか？`)) {
+    if (!confirm(`【${userName || '受講生'} 様 (${carModel || '受講コース'})】へ\n「${typeLabel}」のLINEメッセージを今すぐ送信しますか？`)) {
         return;
     }
 
@@ -2103,4 +2126,165 @@ async function testAdminLineNotification() {
         }
     }
 }
+
+// ==========================================
+// プロライン (ProLine) Webhook中継・連携設定
+// ==========================================
+
+async function openProlineSettingsModal() {
+    if (!elements.prolineSettingsModal) return;
+    elements.prolineSettingsModal.style.display = 'flex';
+    if (elements.prolineSaveStatus) elements.prolineSaveStatus.textContent = '';
+    if (elements.prolineTestResultBanner) elements.prolineTestResultBanner.style.display = 'none';
+
+    // 本システムのWebhook URL（LINE Developersに登録するURL）を自動生成表示
+    if (elements.displayOurWebhookUrl) {
+        const fullUrl = window.location.origin + window.location.pathname.replace(/\/admin\/.*$/, '/webhook.php');
+        elements.displayOurWebhookUrl.textContent = fullUrl;
+    }
+
+    await loadProlineSettings();
+}
+
+function closeProlineSettingsModal() {
+    if (elements.prolineSettingsModal) {
+        elements.prolineSettingsModal.style.display = 'none';
+    }
+}
+
+async function loadProlineSettings() {
+    if (!elements.prolineRecentLogsWrap) return;
+    try {
+        elements.prolineRecentLogsWrap.textContent = '設定と中継ログを読み込み中...';
+        const res = await fetch(`../api.php?action=admin_get_proline_settings&password=${encodeURIComponent(state.password)}`);
+        const data = await res.json();
+        if (data.success) {
+            if (elements.prolineWebhookUrlInput) {
+                elements.prolineWebhookUrlInput.value = data.settings.webhook_url || '';
+            }
+            if (elements.prolineRelayEnabledCheck) {
+                elements.prolineRelayEnabledCheck.checked = Boolean(data.settings.relay_enabled);
+            }
+            
+            if (data.recent_logs && data.recent_logs.length > 0) {
+                elements.prolineRecentLogsWrap.textContent = data.recent_logs.join('\n');
+            } else {
+                elements.prolineRecentLogsWrap.textContent = 'まだ転送ログはありません。LINEメッセージや友だち追加があると記録されます。';
+            }
+        } else {
+            showToast('プロライン設定の読み込みに失敗しました: ' + (data.error || ''));
+        }
+    } catch (e) {
+        elements.prolineRecentLogsWrap.textContent = '通信エラーが発生しました';
+    }
+}
+
+async function saveProlineSettings() {
+    const url = elements.prolineWebhookUrlInput ? elements.prolineWebhookUrlInput.value.trim() : '';
+    const enabled = elements.prolineRelayEnabledCheck && elements.prolineRelayEnabledCheck.checked ? 1 : 0;
+
+    try {
+        if (elements.saveProlineSettingsBtn) elements.saveProlineSettingsBtn.disabled = true;
+        if (elements.prolineSaveStatus) elements.prolineSaveStatus.textContent = '保存中...';
+
+        const payload = new URLSearchParams({
+            action: 'admin_save_proline_settings',
+            password: state.password,
+            url: url,
+            relay_enabled: enabled
+        });
+
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await res.json();
+        if (data.success) {
+            if (elements.prolineSaveStatus) elements.prolineSaveStatus.textContent = '✅ 設定を保存しました！';
+            showToast('✅ プロライン連携設定を保存しました');
+            setTimeout(() => {
+                if (elements.prolineSaveStatus) elements.prolineSaveStatus.textContent = '';
+            }, 3000);
+        } else {
+            alert('保存に失敗しました: ' + (data.error || ''));
+            if (elements.prolineSaveStatus) elements.prolineSaveStatus.textContent = '❌ 保存エラー';
+        }
+    } catch (e) {
+        alert('通信エラーが発生しました');
+        if (elements.prolineSaveStatus) elements.prolineSaveStatus.textContent = '❌ 通信エラー';
+    } finally {
+        if (elements.saveProlineSettingsBtn) elements.saveProlineSettingsBtn.disabled = false;
+    }
+}
+
+async function testProlineRelay() {
+    const url = elements.prolineWebhookUrlInput ? elements.prolineWebhookUrlInput.value.trim() : '';
+    if (!url) {
+        alert('転送先のプロラインWebhook URLを入力してください');
+        return;
+    }
+
+    const btn = elements.testProlineRelayBtn;
+    const banner = elements.prolineTestResultBanner;
+
+    try {
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> テスト中...';
+        }
+        if (banner) {
+            banner.style.display = 'block';
+            banner.style.background = '#f1f5f9';
+            banner.style.color = '#475569';
+            banner.style.border = '1px solid #cbd5e1';
+            banner.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> プロラインへテストWebhook（Pingペイロード）を転送しています...';
+        }
+
+        const payload = new URLSearchParams({
+            action: 'admin_test_proline_relay',
+            password: state.password,
+            url: url
+        });
+
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            if (banner) {
+                banner.style.background = '#ecfdf5';
+                banner.style.color = '#065f46';
+                banner.style.border = '1px solid #a7f3d0';
+                banner.innerHTML = `<strong>${escapeHtml(data.message)}</strong><br><span style="font-size:11px;">応答所要時間: ${data.duration_ms}ms / HTTPステータス: ${data.http_code}</span>`;
+            }
+            showToast('✅ プロライン疎通テスト成功！');
+            loadProlineSettings();
+        } else {
+            if (banner) {
+                banner.style.background = '#fef2f2';
+                banner.style.color = '#991b1b';
+                banner.style.border = '1px solid #fecaca';
+                banner.innerHTML = `<strong>⚠️ 疎通エラー: ${escapeHtml(data.message || data.error)}</strong><br><span style="font-size:11px;">詳細: ${escapeHtml(data.error || '')} (HTTP: ${data.http_code || 0})</span>`;
+            }
+            showToast('⚠️ 疎通テスト失敗');
+        }
+    } catch (e) {
+        if (banner) {
+            banner.style.background = '#fef2f2';
+            banner.style.color = '#991b1b';
+            banner.style.border = '1px solid #fecaca';
+            banner.innerHTML = '<strong>❌ 通信エラーが発生しました</strong>';
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-rotate"></i> 疎通テスト';
+        }
+    }
+}
+
 

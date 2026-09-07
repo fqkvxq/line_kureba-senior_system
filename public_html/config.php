@@ -25,10 +25,15 @@ define('ADMIN_PASSWORD', '1020143'); // 店舗用管理画面（/admin/）のロ
 // --- Discord 通知設定 ---
 define('DISCORD_WEBHOOK_URL', 'https://discord.com/api/webhooks/1543636005582667776/8hnE-kLsB545xgS923mTvgIUaBuTz8TQQLrJXFvqB-A0oh92LmqC8Zn-1jaOIhW20YEZ');
 
-// --- 店舗・システム設定 ---
+// --- 店舗・教室・システム設定 ---
 define('SHOP_CODE', '0601492');
-define('SHOP_NAME', 'アップファーレン');
-define('SHOP_GOO_URL', 'https://www.goo-net.com/usedcar_shop/0601492/stock.html');
+define('SHOP_NAME', 'シニア向けパソコン教室');
+define('SHOP_GOO_URL', '');
+
+// --- プロライン (ProLine) Webhook中継・連携設定 ---
+define('PROLINE_WEBHOOK_URL', ''); // プロラインのWebhook URL (例: https://autosns.pro/.../webhook/...)
+define('PROLINE_RELAY_ENABLED', true); // プロラインへのWebhook転送を有効にするか (true: 有効, false: 無効)
+
 
 // --- リッチメニュー画像保存ディレクトリ ---
 define('RICHMENU_UPLOAD_DIR', __DIR__ . '/uploads/richmenu');
@@ -416,8 +421,8 @@ function ensureCustomerExists(PDO $db, string $userId): ?array {
                 last_interaction_at, last_interaction_type, last_interaction_preview,
                 created_at, updated_at
             ) VALUES (
-                :uid, :uname, :pic, '【未登録】愛車登録待ち', '',
-                :now_jst1, 'follow', '友だち登録',
+                :uid, :uname, :pic, '【未設定】受講コース未設定', '',
+                :now_jst1, 'follow', 'LINE受講生登録',
                 :now_jst2, :now_jst3
             )
         ");
@@ -2013,3 +2018,149 @@ function sendAdminLineTestNotification(string $targetUid, ?PDO $pdo = null): arr
 
     return sendLinePushMessage($targetUid, $messages);
 }
+
+/**
+ * プロライン連携設定を取得 (DB優先、未設定時は定数デフォルト)
+ */
+function getProlineSettings(?PDO $pdo = null): array {
+    if (!$pdo) {
+        try {
+            $pdo = getDbConnection();
+        } catch (Exception $e) {
+            return [
+                'webhook_url' => defined('PROLINE_WEBHOOK_URL') ? PROLINE_WEBHOOK_URL : '',
+                'relay_enabled' => defined('PROLINE_RELAY_ENABLED') ? PROLINE_RELAY_ENABLED : true,
+                'last_relay_at' => '',
+                'last_relay_status' => '',
+                'last_relay_http_code' => 0
+            ];
+        }
+    }
+
+    try {
+        $stmt = $pdo->prepare("SELECT key, value FROM system_settings WHERE key LIKE 'proline_%'");
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+
+        $url = isset($rows['proline_webhook_url']) ? $rows['proline_webhook_url'] : (defined('PROLINE_WEBHOOK_URL') ? PROLINE_WEBHOOK_URL : '');
+        $enabled = isset($rows['proline_relay_enabled']) ? (bool)(int)$rows['proline_relay_enabled'] : (defined('PROLINE_RELAY_ENABLED') ? PROLINE_RELAY_ENABLED : true);
+
+        return [
+            'webhook_url' => trim($url),
+            'relay_enabled' => $enabled,
+            'last_relay_at' => $rows['proline_last_relay_at'] ?? '',
+            'last_relay_status' => $rows['proline_last_relay_status'] ?? '',
+            'last_relay_http_code' => (int)($rows['proline_last_relay_http_code'] ?? 0)
+        ];
+    } catch (Exception $e) {
+        return [
+            'webhook_url' => defined('PROLINE_WEBHOOK_URL') ? PROLINE_WEBHOOK_URL : '',
+            'relay_enabled' => defined('PROLINE_RELAY_ENABLED') ? PROLINE_RELAY_ENABLED : true,
+            'last_relay_at' => '',
+            'last_relay_status' => '',
+            'last_relay_http_code' => 0
+        ];
+    }
+}
+
+/**
+ * プロライン連携設定を保存
+ */
+function saveProlineSettings(string $url, bool $enabled, ?PDO $pdo = null): array {
+    if (!$pdo) {
+        $pdo = getDbConnection();
+    }
+
+    $url = trim($url);
+    if (!empty($url) && !filter_var($url, FILTER_VALIDATE_URL)) {
+        return ['success' => false, 'error' => '有効なURL形式（https://...）を入力してください'];
+    }
+
+    $nowJst = date('Y-m-d H:i:s');
+    $stmt = $pdo->prepare("INSERT OR REPLACE INTO system_settings (key, value, updated_at) VALUES (:key, :val, :updated_at)");
+    
+    $stmt->execute([':key' => 'proline_webhook_url', ':val' => $url, ':updated_at' => $nowJst]);
+    $stmt->execute([':key' => 'proline_relay_enabled', ':val' => $enabled ? '1' : '0', ':updated_at' => $nowJst]);
+
+    return ['success' => true, 'settings' => getProlineSettings($pdo)];
+}
+
+/**
+ * プロラインへWebhookリクエストを完全中継（プロキシPOST）
+ * 
+ * @param string $rawBody LINEから受信した生のJSONペイロード
+ * @param string $signature LINE署名（X-Line-Signature）
+ * @param PDO|null $pdo DB接続インスタンス
+ * @return array 中継結果
+ */
+function relayWebhookToProline(string $rawBody, string $signature = '', ?PDO $pdo = null): array {
+    $settings = getProlineSettings($pdo);
+    $url = $settings['webhook_url'];
+    $enabled = $settings['relay_enabled'];
+
+    if (!$enabled || empty($url)) {
+        return [
+            'success' => false,
+            'relayed' => false,
+            'reason' => empty($url) ? 'Proline Webhook URL is empty' : 'Proline Relay is disabled',
+            'http_code' => 0
+        ];
+    }
+
+    $startTime = microtime(true);
+    $headers = [
+        'Content-Type: application/json; charset=UTF-8',
+        'User-Agent: LineBot-ProLine-Relay-Proxy/1.0'
+    ];
+    if (!empty($signature)) {
+        $headers[] = 'X-Line-Signature: ' . $signature;
+        $headers[] = 'x-line-signature: ' . $signature;
+    }
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $rawBody,
+        CURLOPT_HTTPHEADER => $headers,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 5,           // LINEのタイムアウト対策のため短めに設定
+        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_FOLLOWLOCATION => true
+    ]);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErrNo = curl_errno($ch);
+    $curlError = curl_error($ch);
+    $durationMs = round((microtime(true) - $startTime) * 1000, 2);
+    curl_close($ch);
+
+    $nowJst = date('Y-m-d H:i:s');
+    $isSuccess = ($curlErrNo === 0 && $httpCode >= 200 && $httpCode < 400);
+    $statusText = $isSuccess ? "OK ({$durationMs}ms)" : "FAIL ({$httpCode}: {$curlError})";
+
+    // ログ記録
+    $logLine = "[{$nowJst}] PROLINE_RELAY: {$statusText} | URL: {$url} | Bytes: " . strlen($rawBody) . "\n";
+    @file_put_contents(__DIR__ . '/proline_relay.log', $logLine, FILE_APPEND | LOCK_EX);
+
+    // DBに直近の中継状況を保存
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("INSERT OR REPLACE INTO system_settings (key, value, updated_at) VALUES (:key, :val, :updated_at)");
+            $stmt->execute([':key' => 'proline_last_relay_at', ':val' => $nowJst, ':updated_at' => $nowJst]);
+            $stmt->execute([':key' => 'proline_last_relay_status', ':val' => $statusText, ':updated_at' => $nowJst]);
+            $stmt->execute([':key' => 'proline_last_relay_http_code', ':val' => (string)$httpCode, ':updated_at' => $nowJst]);
+        } catch (Exception $e) {}
+    }
+
+    return [
+        'success' => $isSuccess,
+        'relayed' => true,
+        'http_code' => $httpCode,
+        'duration_ms' => $durationMs,
+        'error' => $curlError,
+        'response' => $response
+    ];
+}
+
