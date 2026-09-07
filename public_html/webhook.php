@@ -425,15 +425,41 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
         case 'switch_tab':
         case 'tab_switch':
         case 'none':
-            // LINEクライアント自身がすでに目的のリッチメニュー（エイリアス）に切り替え済み
-            // サーバー側から上書き再リンクを行うとユーザーが切り替えたメニューが強制的に戻ってしまうため、記録のみ行う
             $targetAlias = trim($params['to_alias'] ?? ($params['alias'] ?? ($postbackParams['newRichMenuAliasId'] ?? '')));
-            writeDebugLog("リッチメニュー切替完了通知受信(クライアント操作尊重・サーバー上書きなし)", [
+            writeDebugLog("リッチメニュー切替通知受信", [
                 'action' => $action,
                 'targetAlias' => $targetAlias,
                 'userId' => $userId,
                 'params' => $postbackParams
             ]);
+
+            if (!empty($userId)) {
+                // 切替先がお知らせメニューである場合はお知らせ表示中のため何もしない
+                $isTargetNotice = !empty($targetAlias) && isNoticeMenu($db, $targetAlias);
+                if (!$isTargetNotice) {
+                    // 直前にユーザーへ紐付けられていたメニューがお知らせメニューだったか判定
+                    $currentMenuId = lineGetUserRichMenuId($userId);
+                    $wasNotice = !empty($currentMenuId) && isNoticeMenu($db, $currentMenuId);
+
+                    if ($wasNotice) {
+                        // お知らせメニューから通常メニューへの復帰操作（OKボタン押下等）と判定
+                        // 専用メッセージ設定顧客には専用メニューを即座に再リンク復帰！
+                        writeDebugLog("お知らせメニューからの復帰検知（切替アクション経由）: 専用メニュー復帰処理を実行", [
+                            'userId' => $userId,
+                            'currentMenuId' => $currentMenuId,
+                            'targetAlias' => $targetAlias
+                        ]);
+                        handleCloseNoticeMenu($db, '', $userId);
+                    } else {
+                        // 通常メニュー同士のタブ切替（タブA ⇔ タブB）の場合はクライアント操作を尊重しサーバー側の上書きは行わない
+                        writeDebugLog("通常メニュー間のタブ切替を検知: クライアント操作尊重（サーバー上書きなし）", [
+                            'userId' => $userId,
+                            'currentMenuId' => $currentMenuId,
+                            'targetAlias' => $targetAlias
+                        ]);
+                    }
+                }
+            }
             break;
 
         // --- 10. サイレント検索: 在庫全台一覧 ---
@@ -585,8 +611,21 @@ function executeSilentPostbackPush(PDO $db, string $userId, string $dataStr): ar
         case 'switch_tab':
         case 'tab_switch':
         case 'none':
-            // リッチメニュー切り替え完了通知等（クライアント操作尊重・サーバー上書きなし）
-            writeDebugLog("リッチメニュー切替/サイレントPostback受信(サーバー上書きなし)", ['action' => $action, 'userId' => $userId]);
+            // リッチメニュー切り替え完了通知等
+            $targetAlias = trim($params['to_alias'] ?? ($params['alias'] ?? ($postbackParams['newRichMenuAliasId'] ?? '')));
+            if (!empty($userId)) {
+                $isTargetNotice = !empty($targetAlias) && isNoticeMenu($db, $targetAlias);
+                if (!$isTargetNotice) {
+                    $currentMenuId = lineGetUserRichMenuId($userId);
+                    $wasNotice = !empty($currentMenuId) && isNoticeMenu($db, $currentMenuId);
+                    if ($wasNotice) {
+                        writeDebugLog("executeSilentPostbackPush: お知らせからの復帰検知により専用メニュー復帰処理を実行", ['userId' => $userId]);
+                        handleCloseNoticeMenu($db, '', $userId);
+                        return ['success' => true, 'message' => 'お知らせ復帰・専用メニュー復元完了'];
+                    }
+                }
+            }
+            writeDebugLog("リッチメニュー切替/サイレントPostback受信(タブ切替尊重・サーバー上書きなし)", ['action' => $action, 'userId' => $userId]);
             return ['success' => true, 'message' => 'サイレント処理完了'];
 
         case 'search_all':

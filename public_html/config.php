@@ -551,7 +551,7 @@ function getUserCustomRichMenuId(?PDO $db, string $userId): ?string {
             FROM customer_cars 
             WHERE user_id = :uid 
               AND custom_line_menu_id IS NOT NULL 
-              AND custom_line_menu_id != '' 
+              AND TRIM(custom_line_menu_id) != '' 
             ORDER BY COALESCE(custom_menu_set_at, updated_at) DESC, id DESC 
             LIMIT 1
         ");

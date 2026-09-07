@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260906_manual_v2">
+    <link rel="stylesheet" href="manual.css?v=20260907_manual_v1">
 </head>
 <body>
     <!-- ログインモーダル -->
@@ -386,8 +386,9 @@
                         <div class="step-card">
                             <div class="step-number">E</div>
                             <div class="step-body">
-                                <h4>LINEアプリ側でのタブ切り替え操作の尊重</h4>
-                                <p>LINEアプリ上でユーザー自身がタブ切り替えボタンやメニュー切り替えアクションを実行した際、サーバーから元のメニューへ強制的に再リンクして上書きしてしまうことのないよう設計されています。お客様の選択したタブ・メニュー表示が保たれます。</p>
+                                <h4>タブ切り替え操作の尊重とお知らせからの専用メニュー確実復帰</h4>
+                                <p>LINEアプリ上でユーザー自身が通常メニュー内のタブ切り替え（タブA ⇔ タブB）を行った際は、お客様の選択したタブ表示が尊重され、サーバーから勝手に元のメニューに戻されることはありません。</p>
+                                <p>一方、「📢 お知らせメニュー」を閲覧した後に「OK（通常メニューに戻る）」ボタンを押した際は、直前の状態がお知らせであったことをシステムが自動判定し、<strong>専用メッセージが設定されているお客様には「専用メッセージ付きメニュー」へ確実に自動復帰</strong>させます（一般のお客様は全体共通メニューへ復帰）。</p>
                             </div>
                         </div>
                     </div>
@@ -527,8 +528,8 @@
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
-                                <h4>お客様側でリッチメニューのタブを切り替えたとき、勝手に元のメニューに戻ることはありませんか？</h4>
-                                <p>LINE公式アカウントのリッチメニュータブ切り替え機能（エイリアス切替）を使用する際、LINEアプリ側の操作が尊重されます。Webhookによる過度な強制再リンクを排除しているため、お客様がタブを切り替えた後に勝手に元のリッチメニューへ戻ってしまうことはありません。</p>
+                                <h4>専用メッセージを表示中のお客様がお知らせを開いて戻った時、専用メッセージは消えませんか？</h4>
+                                <p>消えません。お客様がお知らせメニューを閲覧した後に「OK（通常メニューに戻る）」ボタンやタブ切替で復帰した際、システムが直前のお届け状態を判定し、専用メッセージ設定者には専用メッセージ付きリッチメニューを即座に再リンク復帰します。通常メニュー同士のタブ切替操作を邪魔することなく、お知らせ閲覧後の専用メッセージ復帰も100%安全に両立しています。</p>
                             </div>
                         </div>
                     </div>
@@ -542,6 +543,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260906_manual_v4"></script>
+    <script src="manual.js?v=20260907_manual_v1"></script>
 </body>
 </html>
