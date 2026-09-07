@@ -13,7 +13,8 @@ const state = {
     loadedBaseImg: null,
     userMenuBannerBounds: null,
     lineBasicId: '@ayr0183o',
-    lineChatUrl: 'https://manager.line.biz/account/@ayr0183o/chat'
+    lineChatAccountId: 'U6c5ea2fca97147e21959b70c23790713',
+    lineChatUrl: 'https://chat.line.biz/U6c5ea2fca97147e21959b70c23790713/chat/'
 };
 
 const elements = {
@@ -324,6 +325,7 @@ async function attemptLogin() {
             elements.loginModal.style.display = 'none';
             elements.adminApp.style.display = 'block';
             state.allCustomers = data.customers || [];
+            if (data.line_chat_account_id) state.lineChatAccountId = data.line_chat_account_id;
             if (data.line_chat_url) state.lineChatUrl = data.line_chat_url;
             if (data.line_basic_id) state.lineBasicId = data.line_basic_id;
             updateStats();
@@ -353,6 +355,7 @@ async function fetchCustomers() {
         const data = await res.json();
         if (data.success) {
             state.allCustomers = data.customers || [];
+            if (data.line_chat_account_id) state.lineChatAccountId = data.line_chat_account_id;
             if (data.line_chat_url) state.lineChatUrl = data.line_chat_url;
             if (data.line_basic_id) state.lineBasicId = data.line_basic_id;
             updateStats();
@@ -1918,26 +1921,29 @@ async function unlinkUserRichMenu() {
 }
 
 // ==========================================================================
-// LINE公式アカウント チャット画面への遷移 & お客様名自動コピー
+// LINE公式アカウント チャット画面への個別直接遷移 (chat.line.biz)
 // ==========================================================================
 
 window.openLineOfficialChat = async function(userName, userId) {
     const isLineUser = Boolean(userId && userId.startsWith('U'));
-    if (!isLineUser) {
-        if (!confirm('この顧客は手動登録（LINE未連携）です。\nLINE公式アカウントのチャット管理画面を開きますか？')) {
+    const chatAccountId = state.lineChatAccountId || 'U6c5ea2fca97147e21959b70c23790713';
+    let targetChatUrl = '';
+
+    if (isLineUser) {
+        // お客様ごとの個別チャットルームへダイレクト遷移
+        targetChatUrl = `https://chat.line.biz/${chatAccountId}/chat/${encodeURIComponent(userId)}`;
+    } else {
+        if (!confirm('この顧客は手動登録（LINE未連携）です。\nLINE公式アカウントのチャット一覧画面を開きますか？')) {
             return;
         }
+        targetChatUrl = `https://chat.line.biz/${chatAccountId}/chat/`;
     }
 
-    const chatUrl = state.lineChatUrl || 'https://manager.line.biz/account/@ayr0183o/chat';
     const targetName = (userName || '').trim();
-    let copied = false;
-
     if (targetName) {
         try {
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 await navigator.clipboard.writeText(targetName);
-                copied = true;
             } else {
                 const tmpInput = document.createElement('input');
                 tmpInput.value = targetName;
@@ -1945,18 +1951,17 @@ window.openLineOfficialChat = async function(userName, userId) {
                 tmpInput.select();
                 document.execCommand('copy');
                 document.body.removeChild(tmpInput);
-                copied = true;
             }
         } catch (e) {
             console.warn('Clipboard copy failed:', e);
         }
     }
 
-    // LINE Official Account Manager チャット管理画面を別タブで開く
-    window.open(chatUrl, '_blank');
+    // LINE Official Web Chat（個別チャットルーム）を別タブで直接開く
+    window.open(targetChatUrl, '_blank');
 
-    if (copied) {
-        showToast(`💬 「${targetName}」様のお名前をコピーしました！検索窓に貼り付けてトークを開いてください`);
+    if (isLineUser) {
+        showToast(`💬 【${targetName || 'お客様'} 様】のLINE個別チャットを開きました！`);
     } else {
         showToast(`💬 LINE公式アカウントのチャット画面を開きました`);
     }
