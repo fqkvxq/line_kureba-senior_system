@@ -2070,16 +2070,87 @@ try {
             $stmt = $db->prepare("SELECT * FROM rich_menus WHERE id = :id");
             $stmt->execute([':id' => $id]);
             $menu = $stmt->fetch(PDO::FETCH_ASSOC);
-            if (!$menu || empty($menu['line_menu_id'])) {
+            if (!$menu) {
                 http_response_code(404);
                 echo json_encode(['success' => false, 'error' => '対象のリッチメニューが見つかりません']);
                 exit;
             }
 
-            $setRes = lineSetDefaultRichMenu($menu['line_menu_id']);
+            $targetLineMenuId = $menu['line_menu_id'] ?? '';
+            $setRes = !empty($targetLineMenuId) ? lineSetDefaultRichMenu($targetLineMenuId) : ['success' => false, 'error' => 'richmenu not found'];
+
+            // LINEサーバー上でメニューが見つからない（richmenu not found）場合、自動自己修復（Auto-Recreate）
             if (!$setRes['success']) {
-                http_response_code(500);
-                echo json_encode(['success' => false, 'error' => 'LINEデフォルト設定エラー: ' . ($setRes['error'] ?? '')]);
+                $errStr = $setRes['error'] ?? '';
+                if (empty($targetLineMenuId) || stripos($errStr, 'not found') !== false || stripos($errStr, 'NotFound') !== false || stripos($errStr, '404') !== false) {
+                    $localFileName = basename(parse_url($menu['image_url'] ?? '', PHP_URL_PATH) ?? '');
+                    $imgFilePath = !empty($localFileName) ? (RICHMENU_UPLOAD_DIR . '/' . $localFileName) : '';
+                    if (empty($imgFilePath) || !file_exists($imgFilePath) || filesize($imgFilePath) === 0) {
+                        $baseFileName = basename(parse_url($menu['base_image_url'] ?? '', PHP_URL_PATH) ?? '');
+                        $imgFilePath = !empty($baseFileName) ? (RICHMENU_UPLOAD_DIR . '/' . $baseFileName) : '';
+                    }
+
+                    // areas 設定
+                    $areas = json_decode($menu['areas_json'] ?? '[]', true) ?: [];
+                    $lineAreas = [];
+                    foreach ($areas as $a) {
+                        if (empty($a['bounds']) || empty($a['action'])) continue;
+                        $lineAreas[] = [
+                            'bounds' => [
+                                'x' => (int)($a['bounds']['x'] ?? 0),
+                                'y' => (int)($a['bounds']['y'] ?? 0),
+                                'width' => (int)($a['bounds']['width'] ?? 100),
+                                'height' => (int)($a['bounds']['height'] ?? 100)
+                            ],
+                            'action' => $a['action']
+                        ];
+                    }
+                    if (empty($lineAreas)) {
+                        $lineAreas[] = [
+                            'bounds' => ['x' => 0, 'y' => 0, 'width' => 2500, 'height' => 1686],
+                            'action' => ['type' => 'postback', 'data' => 'action=open_mycar', 'label' => 'メニュー']
+                        ];
+                    }
+
+                    $lineMenuData = [
+                        'size' => [
+                            'width' => (int)($menu['width'] ?: 2500),
+                            'height' => (int)($menu['height'] ?: 1686)
+                        ],
+                        'selected' => true,
+                        'name' => mb_substr($menu['title'] ?: '本番メニュー', 0, 300),
+                        'chatBarText' => mb_substr($menu['chat_bar_text'] ?: 'メニュー', 0, 14),
+                        'areas' => array_slice($lineAreas, 0, 20)
+                    ];
+
+                    $recreateRes = lineCreateRichMenu($lineMenuData);
+                    if (!empty($recreateRes['success']) && !empty($recreateRes['richMenuId'])) {
+                        $recreatedLmid = $recreateRes['richMenuId'];
+                        $uploadedOk = false;
+                        if (!empty($imgFilePath) && file_exists($imgFilePath) && filesize($imgFilePath) > 0) {
+                            $ext = strtolower(pathinfo($imgFilePath, PATHINFO_EXTENSION));
+                            $cType = ($ext === 'png') ? 'image/png' : 'image/jpeg';
+                            $upRes = lineUploadRichMenuImage($recreatedLmid, $imgFilePath, $cType);
+                            $uploadedOk = !empty($upRes['success']);
+                        }
+
+                        if ($uploadedOk) {
+                            $targetLineMenuId = $recreatedLmid;
+                            $db->prepare("UPDATE rich_menus SET line_menu_id = :lmid, updated_at = datetime('now', '+9 hours') WHERE id = :id")
+                               ->execute([':lmid' => $targetLineMenuId, ':id' => $id]);
+                            // 再度デフォルト適用実行
+                            $setRes = lineSetDefaultRichMenu($targetLineMenuId);
+                        }
+                    }
+                }
+            }
+
+            if (!$setRes['success']) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'LINEデフォルト設定エラー: 選択されたメニューはLINEサーバー上に存在せず、画像ファイルもないため復元できませんでした。画像を設定して再度お試しください。詳細: ' . ($setRes['error'] ?? '')
+                ], JSON_UNESCAPED_UNICODE);
                 exit;
             }
 
