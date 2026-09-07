@@ -246,16 +246,14 @@
                         <div class="step-card">
                             <div class="step-number">5</div>
                             <div class="step-body">
-                                <h4>プロライン カレンダー予約連携（受講生UID自動付与 & 0秒直通）</h4>
-                                <p>受講生が面倒な名前や連絡先の入力をすることなく、<strong>LINE内の1タップで自分のアカウントが自動認識されたプロラインのカレンダー予約画面を開く</strong>連携機能です。</p>
+                                <h4>プロライン カレンダー予約連携（公式予約URLとリッチメニュー設定）</h4>
+                                <p>プロラインのカレンダー予約（<code>https://d0o2pa7q.autosns.app/cl/QaOK41fkzp</code>）と連携し、受講生がLINE内から1タップでレッスン日時を選んで予約できるようにします。</p>
                                 <ul>
-                                    <li><strong>リッチメニューからの直通予約</strong>:<br>
-                                        リッチメニュー管理エディタ（<code>richmenu.html</code>）のチップ「<strong>📅 プロライン カレンダー予約 (UID自動付与)</strong>」をクリックすると、<code>https://liff.line.me/2000276344-YL1wXh0h?action=calendar</code> がセットされます。<br>
-                                        受講生がタップすると、LINEが瞬時に受講生UID・お名前を取得し、0秒で <code>https://d0o2pa7q.autosns.app/cp/A9xhz7MWZF?uid=...</code> へ安全に自動転送されます。</li>
+                                    <li><strong>リッチメニューでの予約設定</strong>:<br>
+                                        リッチメニュー管理エディタ（<code>richmenu.html</code>）のチップ「<strong>📅 プロライン カレンダー予約</strong>」をクリックすると、プロライン公式の予約カレンダーURL <code>https://d0o2pa7q.autosns.app/cl/QaOK41fkzp</code> がセットされます。<br>
+                                        受講生がタップすると、プロラインが自動的に受講生のLINEログイン・認証を行い、正規のカレンダー予約画面へ直接案内されます。</li>
                                     <li><strong>受講生マイカルテ（<code>mycar.html</code>）からの連動予約</strong>:<br>
-                                        マイカルテ画面内の「📅 プロライン予約カレンダーで日時を選ぶ」ボタンを押した場合も、自動的に受講生UIDが付与されてプロラインのカレンダー画面が開きます。</li>
-                                    <li><strong>プロラインの「友だち追加に失敗しました」エラーを完全防止</strong>:<br>
-                                        プロライン内部の紹介用LIFF（<code>2000276344-XlmvL9qZ</code>）を直接開くと、紹介パラメータ不足により「友だち追加に失敗しました。紹介用URLを開き直してください」というエラーが発生します。当システムを経由することでこのエラーを完全に回避し、受講生本人の正規予約画面を直接開くことができます。</li>
+                                        受講生マイカルテ画面内の「📅 プロライン予約カレンダーで日時を選ぶ」ボタンを押した場合も、この公式予約URLへ自動直結されるため、受講生はカルテを見ながらスムーズに次回レッスンを予約できます。</li>
                                 </ul>
                             </div>
                         </div>
@@ -562,19 +560,11 @@
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
-                                <h4>「友だち追加に失敗しました。お手数ですが、紹介用URLを開き直してください」と表示される原因は？</h4>
-                                <p>プロライン内部の紹介用LIFF（<code>2000276344-XlmvL9qZ</code>）を直接開いたことが原因です。このLIFFは友だち紹介キャンペーン用の紹介パラメータを必要とするため、単体で開くとこのエラー画面になります。<br>
-                                <strong>【解決策】</strong>: カレンダー予約を開く際は、リッチメニューのボタンURLに <code>https://liff.line.me/2000276344-YL1wXh0h?action=calendar</code> を設定してください。本システムが受講生のUIDとお名前を自動付与してプロライン予約カレンダーへ瞬時に直通させるため、エラーなく確実に予約画面が開きます。</p>
-                            </div>
-                        </div>
-
-                        <div class="step-card">
-                            <div class="step-number">Q</div>
-                            <div class="step-body">
-                                <h4>本システム用マイカルテとプロライン予約のURLはどう設定しますか？</h4>
+                                <h4>リッチメニューに設定する「予約」と「マイカルテ」のURLは何を指定すれば良いですか？</h4>
                                 <p>リッチメニュー管理エディタ（<code>richmenu.html</code>）のチップからワンクリックで設定できます：<br>
-                                <strong>・カレンダー予約ボタン</strong>: チップ「📅 プロライン カレンダー予約」をクリック（<code>https://liff.line.me/2000276344-YL1wXh0h?action=calendar</code>）<br>
-                                <strong>・マイカルテボタン</strong>: チップ「💻 受講生マイカルテ・相談」をクリック（<code>https://liff.line.me/2000276344-YL1wXh0h</code>）</p>
+                                <strong>・カレンダー予約ボタン</strong>: <code>https://d0o2pa7q.autosns.app/cl/QaOK41fkzp</code>（チップ「📅 プロライン カレンダー予約」をクリック）<br>
+                                <strong>・マイカルテボタン</strong>: <code>https://liff.line.me/2000276344-YL1wXh0h</code>（チップ「💻 受講生マイカルテ・相談」をクリック）<br>
+                                この2つのURLを設定するだけで、プロラインのカレンダー予約と本システムの受講生マイカルテの両方がLINE上で完璧に動作します。</p>
                             </div>
                         </div>
 
@@ -623,6 +613,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260907_senior_proline_v4"></script>
+    <script src="manual.js?v=20260907_senior_proline_v5"></script>
 </body>
 </html>
