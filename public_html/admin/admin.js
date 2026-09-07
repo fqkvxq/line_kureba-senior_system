@@ -1254,11 +1254,25 @@ function updateDirectAssignSelect(preferredMenuId) {
     }
 
     let foundMatch = false;
-    state.richMenus.forEach(m => {
-        const isLive = (m.is_active == 1);
+    // LINE実存・公開中メニューを優先ソート
+    const sortedMenus = [...state.richMenus].sort((a, b) => {
+        if (a.is_active && !b.is_active) return -1;
+        if (!a.is_active && b.is_active) return 1;
+        if (a.is_line_synced && !b.is_line_synced) return -1;
+        if (!a.is_line_synced && b.is_line_synced) return 1;
+        return b.id - a.id;
+    });
+
+    sortedMenus.forEach(m => {
+        const isLive = (m.is_active == 1 || m.is_line_default);
+        const isSynced = (m.is_line_synced !== false);
         const opt = document.createElement('option');
         opt.value = m.id;
-        opt.textContent = (isLive ? '★ [全社公開中] ' : '') + m.title + ` (ボタン${(m.areas || []).length}個)`;
+        let prefix = '';
+        if (isLive) prefix = '★ [LINE公開中] ';
+        else if (!isSynced) prefix = '⚠️ [LINE側未同期] ';
+
+        opt.textContent = prefix + m.title + ` (ボタン${(m.areas || []).length}個)`;
         if (preferredMenuId && (String(m.id) === String(preferredMenuId) || String(m.line_menu_id) === String(preferredMenuId))) {
             opt.selected = true;
             foundMatch = true;
@@ -1266,8 +1280,8 @@ function updateDirectAssignSelect(preferredMenuId) {
         elements.directAssignMenuSelect.appendChild(opt);
     });
 
-    if (!foundMatch && state.richMenus.length > 0) {
-        const defaultMenu = state.richMenus.find(m => m.is_active == 1) || state.richMenus[0];
+    if (!foundMatch && sortedMenus.length > 0) {
+        const defaultMenu = sortedMenus.find(m => m.is_active == 1) || sortedMenus[0];
         if (defaultMenu) {
             elements.directAssignMenuSelect.value = defaultMenu.id;
         }
@@ -1288,14 +1302,21 @@ function updateDirectAssignPreview() {
     }
 
     if (elements.directAssignMenuPreviewImg) {
-        elements.directAssignMenuPreviewImg.src = menu.image_url || menu.base_image_url || '';
+        // 画像エラーハンドラー
+        elements.directAssignMenuPreviewImg.onerror = function() {
+            this.onerror = null;
+            this.src = `../api.php?action=richmenu_image&id=${menu.id}&password=${encodeURIComponent(state.password)}`;
+        };
+        elements.directAssignMenuPreviewImg.src = menu.image_url || menu.base_image_url || `../api.php?action=richmenu_image&id=${menu.id}`;
     }
     if (elements.directAssignMenuMeta) {
-        const isLiveBadge = (menu.is_active == 1) ? '<span style="color:#059669; font-weight:700;">★ LINE公式全体のデフォルト公開中</span>' : '<span style="color:#64748b;">個別専用/下書き</span>';
+        const isLive = (menu.is_active == 1 || menu.is_line_default);
+        const isLiveBadge = isLive ? '<span style="color:#059669; font-weight:700;">★ LINE公式全体の公開中メニュー</span>' : '<span style="color:#64748b;">個別専用 / 保存済み</span>';
+        const syncBadge = (menu.is_line_synced !== false) ? '<span style="color:#2563eb; font-weight:600;"><i class="fa-solid fa-circle-check"></i> LINE接続OK</span>' : '<span style="color:#d97706;"><i class="fa-solid fa-triangle-exclamation"></i> LINE同期推奨</span>';
         const buttonCount = (menu.areas || []).length;
         elements.directAssignMenuMeta.innerHTML = `
             <strong>${escapeHtml(menu.title)}</strong> （${menu.width || 2500} × ${menu.height || 1686}px / アクション枠: ${buttonCount}箇所）<br>
-            <span style="font-size: 11px;">状態: ${isLiveBadge} | LINE Menu ID: <code>${escapeHtml(menu.line_menu_id || '未発行')}</code></span>
+            <span style="font-size: 11px;">状態: ${isLiveBadge} | ${syncBadge} | LINE Menu ID: <code>${escapeHtml(menu.line_menu_id || '未発行')}</code></span>
         `;
     }
 }

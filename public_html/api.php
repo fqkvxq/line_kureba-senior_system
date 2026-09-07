@@ -1488,12 +1488,18 @@ try {
             // LINE公式アカウントの現在のデフォルトリッチメニューIDを取得
             $currentLineDefaultId = lineGetDefaultRichMenuId();
 
+            // 基本URLの定義
+            $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'];
+            $publicBase = rtrim($baseUrl . dirname($_SERVER['SCRIPT_NAME']), '/\\');
+
             // LINEサーバー上の全リッチメニューを自動取得し、プロライン等の未登録メニューがあれば自動インポート
             $remoteList = lineGetRichMenuList();
+            $validRemoteLmids = [];
             if (!empty($remoteList['success']) && !empty($remoteList['richmenus'])) {
                 foreach ($remoteList['richmenus'] as $rm) {
                     $lmid = $rm['richMenuId'] ?? '';
                     if (empty($lmid)) continue;
+                    $validRemoteLmids[$lmid] = true;
 
                     // すでにDBに登録済みかチェック
                     $chk = $db->prepare("SELECT id FROM rich_menus WHERE line_menu_id = :lmid LIMIT 1");
@@ -1502,10 +1508,15 @@ try {
                         // LINEから画像バイナリを自動取得してローカル保存
                         $imgBin = lineGetRichMenuImage($lmid);
                         $imgFileName = 'line_imported_' . substr(md5($lmid), 0, 10) . '.jpg';
-                        $imgRelUrl = 'uploads/richmenu/' . $imgFileName;
+                        $imgSaved = false;
                         if (!empty($imgBin)) {
-                            @file_put_contents(RICHMENU_UPLOAD_DIR . '/' . $imgFileName, $imgBin);
+                            if (!is_dir(RICHMENU_UPLOAD_DIR)) {
+                                @mkdir(RICHMENU_UPLOAD_DIR, 0777, true);
+                            }
+                            $imgSaved = (@file_put_contents(RICHMENU_UPLOAD_DIR . '/' . $imgFileName, $imgBin) !== false);
                         }
+
+                        $fullImgUrl = $imgSaved ? ($publicBase . '/uploads/richmenu/' . $imgFileName) : '';
 
                         $isDef = ($lmid === $currentLineDefaultId) ? 1 : 0;
                         $menuTitle = $rm['name'] ?? 'プロライン公式メニュー';
@@ -1526,8 +1537,8 @@ try {
                         ")->execute([
                             ':title' => $menuTitle,
                             ':lmid' => $lmid,
-                            ':img_url' => $imgRelUrl,
-                            ':base_img_url' => $imgRelUrl,
+                            ':img_url' => $fullImgUrl,
+                            ':base_img_url' => $fullImgUrl,
                             ':areas_json' => json_encode($rm['areas'] ?? [], JSON_UNESCAPED_UNICODE),
                             ':width' => $rm['size']['width'] ?? 2500,
                             ':height' => $rm['size']['height'] ?? 1686,
@@ -1553,6 +1564,8 @@ try {
                 $m['areas'] = $cleanAreas;
                 $m['text_overlays'] = !empty($m['text_overlays_json']) ? (json_decode($m['text_overlays_json'], true) ?: []) : [];
                 $m['is_line_default'] = (!empty($m['line_menu_id']) && $m['line_menu_id'] === $currentLineDefaultId);
+                $m['is_line_synced'] = (!empty($m['line_menu_id']) && (isset($validRemoteLmids[$m['line_menu_id']]) || $m['is_line_default']));
+
                 // DBのis_activeとLINE実状態の整合性を取る
                 if ($m['is_line_default'] && !$m['is_active']) {
                     $db->prepare("UPDATE rich_menus SET is_active = 1 WHERE id = :id")->execute([':id' => $m['id']]);
@@ -1572,17 +1585,21 @@ try {
                 }
                 $m['is_notice'] = (int)($m['is_notice'] ?? 0);
 
-                // ローカル画像ファイルの存在チェック & 存在しなければLINE自動復元URLにフォールバック
-                $localFileName = basename(parse_url($m['image_url'], PHP_URL_PATH) ?? '');
-                $localFilePath = RICHMENU_UPLOAD_DIR . '/' . $localFileName;
-                if (empty($localFileName) || !file_exists($localFilePath) || filesize($localFilePath) === 0) {
+                // 画像URLの完全正規化（フルURL化または動的配信フォールバック）
+                $localFileName = basename(parse_url($m['image_url'] ?? '', PHP_URL_PATH) ?? '');
+                $localFilePath = !empty($localFileName) ? (RICHMENU_UPLOAD_DIR . '/' . $localFileName) : '';
+                if (!empty($localFilePath) && file_exists($localFilePath) && filesize($localFilePath) > 0) {
+                    $m['image_url'] = $publicBase . '/uploads/richmenu/' . $localFileName;
+                } else {
                     $m['image_url'] = '../api.php?action=richmenu_image&id=' . $m['id'];
                 }
 
                 if (!empty($m['base_image_url'])) {
                     $baseFileName = basename(parse_url($m['base_image_url'], PHP_URL_PATH) ?? '');
-                    $baseFilePath = RICHMENU_UPLOAD_DIR . '/' . $baseFileName;
-                    if (empty($baseFileName) || !file_exists($baseFilePath) || filesize($baseFilePath) === 0) {
+                    $baseFilePath = !empty($baseFileName) ? (RICHMENU_UPLOAD_DIR . '/' . $baseFileName) : '';
+                    if (!empty($baseFilePath) && file_exists($baseFilePath) && filesize($baseFilePath) > 0) {
+                        $m['base_image_url'] = $publicBase . '/uploads/richmenu/' . $baseFileName;
+                    } else {
                         $m['base_image_url'] = $m['image_url'];
                     }
                 } else {
@@ -2709,8 +2726,77 @@ try {
             // LINE API: 個別リンク実行
             $linkRes = lineLinkUserRichMenu($userId, $newLineMenuId);
             if (!$linkRes['success']) {
-                http_response_code(500);
-                echo json_encode(['success' => false, 'error' => 'ユーザーへのメニュー割当失敗: ' . ($linkRes['error'] ?? '')]);
+                $errStr = $linkRes['error'] ?? '';
+                // LINEサーバー上でメニューが見つからない（richmenu not found / 削除済み）場合、自動自己修復（Auto-Recreate）
+                if (stripos($errStr, 'not found') !== false || stripos($errStr, 'NotFound') !== false || stripos($errStr, '404') !== false) {
+                    $localFileName = basename(parse_url($targetMenu['image_url'] ?? '', PHP_URL_PATH) ?? '');
+                    $imgFilePath = !empty($localFileName) ? (RICHMENU_UPLOAD_DIR . '/' . $localFileName) : '';
+                    if (empty($imgFilePath) || !file_exists($imgFilePath) || filesize($imgFilePath) === 0) {
+                        $baseFileName = basename(parse_url($targetMenu['base_image_url'] ?? '', PHP_URL_PATH) ?? '');
+                        $imgFilePath = !empty($baseFileName) ? (RICHMENU_UPLOAD_DIR . '/' . $baseFileName) : '';
+                    }
+
+                    // areas 設定
+                    $areas = json_decode($targetMenu['areas_json'] ?? '[]', true) ?: [];
+                    $lineAreas = [];
+                    foreach ($areas as $a) {
+                        if (empty($a['bounds']) || empty($a['action'])) continue;
+                        $lineAreas[] = [
+                            'bounds' => [
+                                'x' => (int)($a['bounds']['x'] ?? 0),
+                                'y' => (int)($a['bounds']['y'] ?? 0),
+                                'width' => (int)($a['bounds']['width'] ?? 100),
+                                'height' => (int)($a['bounds']['height'] ?? 100)
+                            ],
+                            'action' => $a['action']
+                        ];
+                    }
+                    if (empty($lineAreas)) {
+                        $lineAreas[] = [
+                            'bounds' => ['x' => 0, 'y' => 0, 'width' => 2500, 'height' => 1686],
+                            'action' => ['type' => 'postback', 'data' => 'action=open_mycar', 'label' => 'メニュー']
+                        ];
+                    }
+
+                    $lineMenuData = [
+                        'size' => [
+                            'width' => (int)($targetMenu['width'] ?: 2500),
+                            'height' => (int)($targetMenu['height'] ?: 1686)
+                        ],
+                        'selected' => false,
+                        'name' => mb_substr($targetMenu['title'] ?: '復元メニュー', 0, 300),
+                        'chatBarText' => mb_substr($targetMenu['chat_bar_text'] ?: 'メニュー', 0, 14),
+                        'areas' => array_slice($lineAreas, 0, 20)
+                    ];
+
+                    $recreateRes = lineCreateRichMenu($lineMenuData);
+                    if (!empty($recreateRes['success']) && !empty($recreateRes['richMenuId'])) {
+                        $recreatedLmid = $recreateRes['richMenuId'];
+                        $uploadedOk = false;
+                        if (!empty($imgFilePath) && file_exists($imgFilePath) && filesize($imgFilePath) > 0) {
+                            $ext = strtolower(pathinfo($imgFilePath, PATHINFO_EXTENSION));
+                            $cType = ($ext === 'png') ? 'image/png' : 'image/jpeg';
+                            $upRes = lineUploadRichMenuImage($recreatedLmid, $imgFilePath, $cType);
+                            $uploadedOk = !empty($upRes['success']);
+                        }
+
+                        if ($uploadedOk) {
+                            $newLineMenuId = $recreatedLmid;
+                            $db->prepare("UPDATE rich_menus SET line_menu_id = :lmid, updated_at = datetime('now', '+9 hours') WHERE id = :id")
+                               ->execute([':lmid' => $newLineMenuId, ':id' => $targetMenu['id']]);
+                            // 再試行
+                            $linkRes = lineLinkUserRichMenu($userId, $newLineMenuId);
+                        }
+                    }
+                }
+            }
+
+            if (!$linkRes['success']) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'error' => "メニュー割当失敗: 選択されたメニューはLINEサーバー上に存在しないか期限切れです。\nリッチメニュー管理画面で「プロラインからメニュー同期」を実行するか、「専用メッセージ帯付きメニュー」タブから適用してください。（LINEエラー: " . ($linkRes['error'] ?? '') . "）"
+                ], JSON_UNESCAPED_UNICODE);
                 exit;
             }
 
