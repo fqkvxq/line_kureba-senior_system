@@ -552,7 +552,7 @@ function applyPreset(presetType) {
             { type: 'postback', data: 'action=show_price_menu', displayText: '価格で探す' },
             { type: 'postback', data: 'action=open_mycar', displayText: '点検受付' },
             { type: 'postback', data: 'action=search_all', displayText: '在庫全台' },
-            { type: 'uri', uri: 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html' }
+            { type: 'uri', uri: 'https://liff.line.me/2000276344-YL1wXh0h/mycar.html' }
         ];
 
         for (let row = 0; row < 2; row++) {

@@ -1510,7 +1510,7 @@ function generateMyCarMenuMessages(PDO $db, string $userId = ''): array {
         }
     }
 
-    $liffId = defined('LIFF_ID') ? LIFF_ID : (defined('LINE_LIFF_ID') ? LINE_LIFF_ID : '2011340718-OaRM8tV4');
+    $liffId = defined('LIFF_ID') ? LIFF_ID : (defined('LINE_LIFF_ID') ? LINE_LIFF_ID : '2000276344-YL1wXh0h');
     $liffUrl = "https://liff.line.me/{$liffId}/mycar.html";
 
     $bodyContents = [
@@ -2801,7 +2801,7 @@ function generateKnowledgeDetailMessage(string $topic): array {
                 'summary' => '少しでも「いつもと違う音や振動」を感じたら、放置せずお気軽にご相談ください！',
                 'action_btn' => [
                     'label' => '🛠️ 来店・点検相談フォームを開く',
-                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
+                    'uri' => 'https://liff.line.me/2000276344-YL1wXh0h/mycar.html'
                 ]
             ];
             break;
@@ -2832,7 +2832,7 @@ function generateKnowledgeDetailMessage(string $topic): array {
                 'summary' => 'アップファーレンではブレーキの残量測定・フルード点検を迅速に実施いたします！',
                 'action_btn' => [
                     'label' => '🛠️ ブレーキ点検を予約・相談',
-                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
+                    'uri' => 'https://liff.line.me/2000276344-YL1wXh0h/mycar.html'
                 ]
             ];
             break;
@@ -2863,7 +2863,7 @@ function generateKnowledgeDetailMessage(string $topic): array {
                 'summary' => '「冷えが悪い」「カビ臭い」と感じたら、本格的な夏・冬の前にメンテナンスをおすすめします！',
                 'action_btn' => [
                     'label' => '🛠️ エアコン点検・相談をする',
-                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
+                    'uri' => 'https://liff.line.me/2000276344-YL1wXh0h/mycar.html'
                 ]
             ];
             break;
@@ -2894,7 +2894,7 @@ function generateKnowledgeDetailMessage(string $topic): array {
                 'summary' => 'アップファーレンでは納車時のプロコーティング施工やボディケアのご相談も承っております！',
                 'action_btn' => [
                     'label' => '🛠️ コーティング・洗車相談をする',
-                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
+                    'uri' => 'https://liff.line.me/2000276344-YL1wXh0h/mycar.html'
                 ]
             ];
             break;
@@ -2925,7 +2925,7 @@ function generateKnowledgeDetailMessage(string $topic): array {
                 'summary' => 'アップファーレンでは冬タイヤの履き替え・下回り防錆点検も随時承っております！',
                 'action_btn' => [
                     'label' => '🛠️ タイヤ交換・冬点検を相談',
-                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
+                    'uri' => 'https://liff.line.me/2000276344-YL1wXh0h/mycar.html'
                 ]
             ];
             break;
@@ -2956,7 +2956,7 @@ function generateKnowledgeDetailMessage(string $topic): array {
                 'summary' => '警告灯が点灯したり普段と違う異音を感じたら、無理に走行を続けずすぐにご連絡ください！',
                 'action_btn' => [
                     'label' => '🛠️ 異音・不具合の点検を相談',
-                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
+                    'uri' => 'https://liff.line.me/2000276344-YL1wXh0h/mycar.html'
                 ]
             ];
             break;
@@ -2987,7 +2987,7 @@ function generateKnowledgeDetailMessage(string $topic): array {
                 'summary' => '雨天時の視界不良やスリップが気になる方は、ワイパー交換やガラス撥水施工をお気軽にご相談ください！',
                 'action_btn' => [
                     'label' => '🛠️ ワイパー・撥水コーティング相談',
-                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
+                    'uri' => 'https://liff.line.me/2000276344-YL1wXh0h/mycar.html'
                 ]
             ];
             break;
@@ -3121,7 +3121,7 @@ function generateKnowledgeDetailMessage(string $topic): array {
                 'summary' => 'アップファーレンでは持ち込みドラレコやETC・ナビ・LEDの取り付け・配線加工もプロが丁寧に行います！',
                 'action_btn' => [
                     'label' => '🛠️ パーツ取付・カスタム相談',
-                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
+                    'uri' => 'https://liff.line.me/2000276344-YL1wXh0h/mycar.html'
                 ]
             ];
             break;
@@ -3157,7 +3157,7 @@ function generateKnowledgeDetailMessage(string $topic): array {
                 'summary' => 'アップファーレンでは愛車の無料出張査定・高価下取りをいつでも承っております！',
                 'action_btn' => [
                     'label' => '💬 愛車の無料査定・相談をする',
-                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
+                    'uri' => 'https://liff.line.me/2000276344-YL1wXh0h/mycar.html'
                 ]
             ];
             break;
@@ -3188,7 +3188,7 @@ function generateKnowledgeDetailMessage(string $topic): array {
                 'summary' => 'タイヤの無料残溝チェックやローテーション作業もお気軽にご用命ください！',
                 'action_btn' => [
                     'label' => '🛠️ タイヤ点検・交換を相談',
-                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
+                    'uri' => 'https://liff.line.me/2000276344-YL1wXh0h/mycar.html'
                 ]
             ];
             break;
@@ -3250,7 +3250,7 @@ function generateKnowledgeDetailMessage(string $topic): array {
                 'summary' => 'アップファーレンではヘッドライトのクリーニング＆プロコーティングも施工可能です！',
                 'action_btn' => [
                     'label' => '🛠️ ヘッドライト磨きを相談',
-                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
+                    'uri' => 'https://liff.line.me/2000276344-YL1wXh0h/mycar.html'
                 ]
             ];
             break;
@@ -3281,7 +3281,7 @@ function generateKnowledgeDetailMessage(string $topic): array {
                 'summary' => 'スマートキーの電池交換も店頭で数十秒で対応いたしますのでお気軽にどうぞ！',
                 'action_btn' => [
                     'label' => '🛠️ 愛車の相談・点検予約',
-                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
+                    'uri' => 'https://liff.line.me/2000276344-YL1wXh0h/mycar.html'
                 ]
             ];
             break;
@@ -3349,7 +3349,7 @@ function generateKnowledgeDetailMessage(string $topic): array {
                 'summary' => 'お出かけ前の無料安心点検も店頭でいつでも承っております！お気軽にお立ち寄りください。',
                 'action_btn' => [
                     'label' => '🛠️ 店舗で無料点検を受ける',
-                    'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/mycar.html'
+                    'uri' => 'https://liff.line.me/2000276344-YL1wXh0h/mycar.html'
                 ]
             ];
             break;
@@ -3482,7 +3482,7 @@ function generateKnowledgeDetailMessage(string $topic): array {
                     'action' => [
                         'type' => 'uri',
                         'label' => '👥 この豆知識を友だちにシェア',
-                        'uri' => 'https://liff.line.me/2011340718-OaRM8tV4/share.html?topic=' . urlencode($topic)
+                        'uri' => 'https://liff.line.me/2000276344-YL1wXh0h/share.html?topic=' . urlencode($topic)
                     ]
                 ],
                 [

@@ -2302,11 +2302,11 @@ try {
             if ($bannerActionType !== 'none' && !empty($bannerBounds) && is_array($bannerBounds)) {
                 $bannerCleanAction = null;
                 if ($bannerActionType === 'mycar_liff') {
-                    $liffId = defined('LINE_LIFF_ID') ? LINE_LIFF_ID : (defined('LIFF_ID') ? LIFF_ID : '2011340718-OaRM8tV4');
+                    $liffId = defined('LINE_LIFF_ID') ? LINE_LIFF_ID : (defined('LIFF_ID') ? LIFF_ID : '2000276344-YL1wXh0h');
                     $bannerCleanAction = [
                         'type' => 'uri',
                         'uri' => "https://liff.line.me/{$liffId}/mycar.html",
-                        'label' => '点検予約'
+                        'label' => '受講予約・相談'
                     ];
                 } elseif ($bannerActionType === 'open_mycar') {
                     $bannerCleanAction = [

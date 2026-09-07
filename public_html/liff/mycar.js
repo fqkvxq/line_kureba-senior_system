@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-const LIFF_ID = '2011340718-OaRM8tV4';
+const LIFF_ID = '2000276344-YL1wXh0h';
 
 async function initLiff() {
     // 1. ローカルストレージから永続IDを取得または生成
@@ -328,18 +328,8 @@ async function shareKnowledgeToFriends(topic) {
                         height: 'sm',
                         action: {
                             type: 'uri',
-                            label: '📚 他の豆知識ガイドも見る',
-                            uri: 'https://liff.line.me/2011340718-OaRM8tV4/trigger.html?action=show_knowledge_menu'
-                        }
-                    },
-                    {
-                        type: 'button',
-                        style: 'secondary',
-                        height: 'sm',
-                        action: {
-                            type: 'uri',
-                            label: '🚗 アップファーレンの在庫を見る',
-                            uri: 'https://liff.line.me/2011340718-OaRM8tV4/index.html'
+                            label: '📚 豆知識ガイドを見る',
+                            uri: 'https://liff.line.me/2000276344-YL1wXh0h/mycar.html'
                         }
                     }
                 ]
@@ -366,7 +356,7 @@ async function shareKnowledgeToFriends(topic) {
     }
 
     // 2. ブラウザや未対応環境時のフォールバック (LINE URLスキーム共有)
-    const shareText = `【クルマのお役立ち豆知識】\n${data.title}\n\n${data.subtitle}\n\n▼豆知識ガイド一覧はこちら\nhttps://liff.line.me/2011340718-OaRM8tV4/trigger.html?action=show_knowledge_menu\n\n▼アップファーレンの展示在庫を見る\nhttps://liff.line.me/2011340718-OaRM8tV4/index.html`;
+    const shareText = `【パソコン教室のお役立ち豆知識】\n${data.title}\n\n${data.subtitle}\n\n▼受講生マイカルテ・相談はこちら\nhttps://liff.line.me/2000276344-YL1wXh0h/mycar.html`;
     const lineShareUrl = `https://line.me/R/msg/text/?${encodeURIComponent(shareText)}`;
     
     if (navigator.share) {
