@@ -254,7 +254,12 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
 
     // --- お役立ち情報の明示キーワード応答 ---
     $cleanText = trim(mb_convert_kana($text, 'asKV', 'UTF-8'));
-    if (in_array($cleanText, ['お役立ち', 'お役立ち情報', '豆知識', '知恵袋', 'スマホ', 'パソコン', 'ガイド', '使い方'], true)) {
+    if (in_array(mb_strtolower($cleanText), ['pdf', 'pdf詐欺', 'pdf広告', '偽広告'], true)) {
+        recordCustomerInteraction($db, $userId, 'user_action', "📄 偽PDF注意カード呼出: {$cleanText}");
+        sendKnowledgeDetailMessage($replyToken, 'scam_fake_pdf', $userId, $db);
+        return;
+    }
+    if (in_array($cleanText, ['お役立ち', 'お役立ち情報', '豆知識', '知恵袋', 'スマホ', 'パソコン', 'ガイド', '使い方', '防犯', '詐欺'], true)) {
         recordCustomerInteraction($db, $userId, 'user_action', "💡 お役立ちガイド呼出: {$cleanText}");
         sendKnowledgeMenuMessage($replyToken);
         return;
