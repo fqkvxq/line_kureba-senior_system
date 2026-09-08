@@ -1633,6 +1633,13 @@ try {
                 ];
             }
             if (!empty($btn2Label)) {
+                // LINE postback action の data は最大300バイト制限（URLエンコード後）
+                $shortTopic = mb_substr($title, 0, 15);
+                $encodedTopic = urlencode($shortTopic);
+                while (strlen("action=ask_class&topic={$encodedTopic}") > 250 && mb_strlen($shortTopic) > 0) {
+                    $shortTopic = mb_substr($shortTopic, 0, -1);
+                    $encodedTopic = urlencode($shortTopic);
+                }
                 $footerButtons[] = [
                     'type' => 'button',
                     'style' => 'secondary',
@@ -1640,8 +1647,8 @@ try {
                     'action' => [
                         'type' => 'postback',
                         'label' => mb_substr($btn2Label, 0, 20),
-                        'data' => 'action=ask_class&type=knowledge_question&topic=' . urlencode(mb_substr($title, 0, 30)),
-                        'displayText' => mb_substr("「{$title}」について教室に質問・相談したい", 0, 300)
+                        'data' => "action=ask_class&topic={$encodedTopic}",
+                        'displayText' => mb_substr("「{$title}」について教室に質問・相談したい", 0, 100)
                     ]
                 ];
             }
