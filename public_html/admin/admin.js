@@ -825,7 +825,12 @@ function renderTable() {
             if (action === 'custom-menu') {
                 openUserRichMenuModal(cust);
             } else if (action === 'knowledge-send') {
-                openKnowledgeBroadcastModal(cust.user_id);
+                if (!cust.user_id || !cust.user_id.startsWith('U')) {
+                    alert('この受講生は手動登録（LINE未連携）のため個別送信できません。\n配信スタジオを起動し、全体一斉配信または他の受講生を選択して送信できます。');
+                    openKnowledgeBroadcastModal();
+                } else {
+                    openKnowledgeBroadcastModal(cust.user_id);
+                }
             } else if (action === 'remind-oil') {
                 sendManualReminder(cust.id, cust.user_id, 'oil', cust.user_name, cust.car_model);
             } else if (action === 'remind-periodic') {
@@ -2733,9 +2738,17 @@ function initKnowledgeBroadcastStudio() {
     if (!elements.knowledgeBroadcastModal) return;
 
     // 開閉イベント
-    elements.openKnowledgeBroadcastModalBtn?.addEventListener('click', () => openKnowledgeBroadcastModal());
+    const openBtn = document.getElementById('openKnowledgeBroadcastModalBtn') || elements.openKnowledgeBroadcastModalBtn;
+    openBtn?.addEventListener('click', () => openKnowledgeBroadcastModal());
     elements.closeKnowledgeBroadcastModalBtn?.addEventListener('click', closeKnowledgeBroadcastModal);
     elements.cancelKnowledgeBroadcastBtn?.addEventListener('click', closeKnowledgeBroadcastModal);
+
+    // モーダル背景クリックで閉じる
+    elements.knowledgeBroadcastModal.addEventListener('click', (e) => {
+        if (e.target === elements.knowledgeBroadcastModal) {
+            closeKnowledgeBroadcastModal();
+        }
+    });
 
     // プリセットチップの動的生成
     if (elements.kbPresetChipsWrap) {
@@ -2784,7 +2797,8 @@ function initKnowledgeBroadcastStudio() {
 }
 
 function openKnowledgeBroadcastModal(targetUserId = null) {
-    if (!elements.knowledgeBroadcastModal) return;
+    const modal = document.getElementById('knowledgeBroadcastModal') || elements.knowledgeBroadcastModal;
+    if (!modal) return;
 
     // 受講生選択肢の更新
     populateKbTargetUsers(targetUserId);
@@ -2800,12 +2814,13 @@ function openKnowledgeBroadcastModal(targetUserId = null) {
     updateKnowledgeTargetUI();
     updateKnowledgeLivePreview();
 
-    elements.knowledgeBroadcastModal.style.display = 'flex';
+    modal.classList.add('active');
 }
 
 function closeKnowledgeBroadcastModal() {
-    if (elements.knowledgeBroadcastModal) {
-        elements.knowledgeBroadcastModal.style.display = 'none';
+    const modal = document.getElementById('knowledgeBroadcastModal') || elements.knowledgeBroadcastModal;
+    if (modal) {
+        modal.classList.remove('active');
     }
 }
 
@@ -2995,5 +3010,9 @@ async function submitKnowledgeBroadcast() {
         }
     }
 }
+
+window.openKnowledgeBroadcastModal = openKnowledgeBroadcastModal;
+window.closeKnowledgeBroadcastModal = closeKnowledgeBroadcastModal;
+
 
 

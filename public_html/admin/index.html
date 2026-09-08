@@ -59,7 +59,7 @@
                 <button class="btn-secondary" id="syncLineFollowersBtn" title="LINE公式アカウントの全友だちを取得して受講生一覧に一括登録・更新します" style="background: #06C755; color: #ffffff; border: none; font-weight: bold; box-shadow: 0 2px 4px rgba(6,199,85,0.2);">
                     <i class="fa-brands fa-line" style="font-size: 16px; margin-right: 4px;"></i> LINE友だち一括同期
                 </button>
-                <button class="btn-secondary" id="openKnowledgeBroadcastModalBtn" title="シニア向けスマホ・PC役立つ情報（詐欺対策・便利ワザ等）をリッチメッセージ配信します" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: #ffffff; border: none; font-weight: 700; box-shadow: 0 2px 6px rgba(2,132,199,0.25);">
+                <button class="btn-secondary" id="openKnowledgeBroadcastModalBtn" onclick="window.openKnowledgeBroadcastModal && window.openKnowledgeBroadcastModal()" title="シニア向けスマホ・PC役立つ情報（詐欺対策・便利ワザ等）をリッチメッセージ配信します" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: #ffffff; border: none; font-weight: 700; box-shadow: 0 2px 6px rgba(2,132,199,0.25);">
                     <i class="fa-solid fa-bullhorn" style="margin-right: 4px;"></i> お役立ち情報配信
                 </button>
                 <button class="btn-primary" id="openAddCustomerModalBtn">
@@ -739,7 +739,7 @@
     </div>
 
     <!-- シニアお役立ち情報 配信スタジオ モーダル -->
-    <div class="modal-overlay" id="knowledgeBroadcastModal" style="z-index: 1200; display: none;">
+    <div class="modal-overlay" id="knowledgeBroadcastModal" style="z-index: 1200;">
         <div class="modal-card" style="max-width: 960px; width: 95%; max-height: 92vh; display: flex; flex-direction: column;">
             <div class="modal-header" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #fff; flex-shrink: 0;">
                 <div style="display: flex; align-items: center; gap: 10px;">
@@ -940,6 +940,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260908_hex_v1"></script>
+    <script src="admin.js?v=20260908_fix_kb_v2"></script>
 </body>
 </html>
