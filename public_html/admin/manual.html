@@ -702,6 +702,17 @@
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
+                                <h4>お役立ち情報配信で「送信失敗」と表示される場合はどうすればいいですか？</h4>
+                                <p>以下の点をご確認ください：<br>
+                                <strong>1. LINE公式アカウントの月間配信通数上限</strong>：LINE公式アカウント（無料プラン等）で月間の無料メッセージ通数枠（例: 月200通など）を超過している場合、LINEサーバーから配信制限エラーが返されます。その場合はLINE Official Account Managerより配信可能残数をご確認ください。<br>
+                                <strong>2. LINE未連携の受講生への個別送信</strong>：手動登録などでLINEと未連携（UIDが<code>MANUAL_</code>から始まる）の受講生には個別プッシュ送信ができません。「LINE友だち全員へ一斉配信」を利用するか、受講生に友だち登録およびマイカルテ連携をご案内ください。<br>
+                                <strong>3. エラー詳細の確認</strong>：送信失敗時には、LINEサーバーから返された具体的なエラー内容がダイアログに明示されます。内容をご確認のうえご対応ください。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">Q</div>
+                            <div class="step-body">
                                 <h4>日時の表示がずれていることはありませんか？</h4>
                                 <p>当システムはWebサーバー設定（`.htaccess`, `.user.ini`）、PHPスクリプト、データベース（SQLite）のすべてで<strong>日本標準時（JST / Asia/Tokyo）</strong>に統一されています。受講生のLINE操作やリマインド送信など、すべて日本時間で正確に記録・配信されます。</p>
                             </div>
@@ -717,6 +728,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260908_hex_v1"></script>
+    <script src="manual.js?v=20260908_fix_kb_send"></script>
 </body>
 </html>

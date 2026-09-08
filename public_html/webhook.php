@@ -338,6 +338,20 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             sendReplyMessage($replyToken, $messages);
             break;
 
+        // --- 5-0. 教室への質問・相談 (お役立ち情報からの質問) ---
+        case 'ask_class':
+            $topic = $params['topic'] ?? 'シニアお役立ち情報';
+            $replyText = "「{$topic}」についてのお問い合わせ・ご質問を受け付けました！\n\n教室スタッフがメッセージを確認後、順次ご案内・回答いたします。\nそのまま気になる点やお困りの内容を、このトーク画面にメッセージ送信してお知らせください😊";
+            $messages = [
+                [
+                    'type' => 'text',
+                    'text' => $replyText
+                ]
+            ];
+            sendReplyMessage($replyToken, $messages);
+            recordCustomerInteraction($db, $userId, 'knowledge_inquiry', "質問受付: {$topic}");
+            break;
+
         // --- 5-1. お知らせリッチメニュー表示 ---
         case 'show_notice_menu':
         case 'show_notice':

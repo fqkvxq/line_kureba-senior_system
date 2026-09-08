@@ -1466,11 +1466,10 @@ try {
                 $ptText = trim((string)$pt);
                 if (empty($ptText)) continue;
                 $icon = $numIcons[$idx] ?? '・';
-                $pointBoxContents[] = [
+                $item = [
                     'type' => 'box',
-                    'layout' => 'baseline',
+                    'layout' => 'horizontal',
                     'spacing' => 'sm',
-                    'margin' => ($idx > 0) ? 'md' : 'none',
                     'contents' => [
                         [
                             'type' => 'text',
@@ -1491,29 +1490,39 @@ try {
                         ]
                     ]
                 ];
+                if ($idx > 0) {
+                    $item['margin'] = 'md';
+                }
+                $pointBoxContents[] = $item;
             }
 
             // Flex Message 本体の構築（シニアに優しい大文字・高コントラスト設計）
             $bodyContents = [
-                // カテゴリバッジ
+                // カテゴリバッジ（LINE Flex仕様に準拠したflex:0によるピルバッジ）
                 [
                     'type' => 'box',
                     'layout' => 'horizontal',
                     'contents' => [
                         [
-                            'type' => 'text',
-                            'text' => '💡 ' . $category,
-                            'size' => 'xs',
-                            'weight' => 'bold',
-                            'color' => '#ffffff'
+                            'type' => 'box',
+                            'layout' => 'baseline',
+                            'contents' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => '💡 ' . $category,
+                                    'size' => 'xs',
+                                    'weight' => 'bold',
+                                    'color' => '#ffffff'
+                                ]
+                            ],
+                            'backgroundColor' => $badgeColor,
+                            'paddingAll' => '5px',
+                            'paddingStart' => '12px',
+                            'paddingEnd' => '12px',
+                            'cornerRadius' => 'xxl',
+                            'flex' => 0
                         ]
-                    ],
-                    'backgroundColor' => $badgeColor,
-                    'paddingAll' => '5px',
-                    'paddingStart' => '10px',
-                    'paddingEnd' => '10px',
-                    'cornerRadius' => 'xxl',
-                    'width' => 'fit-content'
+                    ]
                 ],
                 // 大見出しタイトル
                 [
@@ -1558,8 +1567,7 @@ try {
                             'text' => '【覚えておきたいポイント】',
                             'weight' => 'bold',
                             'size' => 'xs',
-                            'color' => '#64748b',
-                            'margin' => 'none'
+                            'color' => '#64748b'
                         ],
                         [
                             'type' => 'separator',
@@ -1633,31 +1641,35 @@ try {
                         'type' => 'postback',
                         'label' => mb_substr($btn2Label, 0, 20),
                         'data' => 'action=ask_class&type=knowledge_question&topic=' . urlencode(mb_substr($title, 0, 30)),
-                        'displayText' => "「{$title}」について教室に質問・相談したい"
+                        'displayText' => mb_substr("「{$title}」について教室に質問・相談したい", 0, 300)
                     ]
+                ];
+            }
+
+            $bubble = [
+                'type' => 'bubble',
+                'size' => 'mega',
+                'body' => [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'paddingAll' => '18px',
+                    'contents' => $bodyContents
+                ]
+            ];
+            if (!empty($footerButtons)) {
+                $bubble['footer'] = [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'spacing' => 'sm',
+                    'paddingAll' => '14px',
+                    'contents' => $footerButtons
                 ];
             }
 
             $flexMessage = [
                 'type' => 'flex',
-                'altText' => "【シニアお役立ち情報】{$title}",
-                'contents' => [
-                    'type' => 'bubble',
-                    'size' => 'mega',
-                    'body' => [
-                        'type' => 'box',
-                        'layout' => 'vertical',
-                        'paddingAll' => '18px',
-                        'contents' => $bodyContents
-                    ],
-                    'footer' => [
-                        'type' => 'box',
-                        'layout' => 'vertical',
-                        'spacing' => 'sm',
-                        'paddingAll' => '14px',
-                        'contents' => $footerButtons
-                    ]
-                ]
+                'altText' => mb_substr("【シニアお役立ち情報】{$title}", 0, 400),
+                'contents' => $bubble
             ];
 
             if ($targetType === 'all') {
@@ -1670,10 +1682,11 @@ try {
                         'message' => "LINE公式アカウントの友だち全員へ「{$title}」を一斉配信しました！"
                     ], JSON_UNESCAPED_UNICODE);
                 } else {
+                    $errMsg = !empty($res['error']) ? $res['error'] : (!empty($res['response']) ? $res['response'] : 'APIエラー');
                     http_response_code(500);
                     echo json_encode([
                         'success' => false,
-                        'error' => "一斉配信失敗: " . ($res['error'] ?? 'APIエラー')
+                        'error' => "一斉配信失敗: " . $errMsg
                     ], JSON_UNESCAPED_UNICODE);
                 }
             } else {
@@ -1686,10 +1699,11 @@ try {
                         'message' => "指定された受講生へ「{$title}」を送信しました！"
                     ], JSON_UNESCAPED_UNICODE);
                 } else {
+                    $errMsg = !empty($res['error']) ? $res['error'] : (!empty($res['response']) ? $res['response'] : 'APIエラー');
                     http_response_code(500);
                     echo json_encode([
                         'success' => false,
-                        'error' => "送信失敗: " . ($res['error'] ?? 'APIエラー')
+                        'error' => "送信失敗: " . $errMsg
                     ], JSON_UNESCAPED_UNICODE);
                 }
             }

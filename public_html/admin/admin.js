@@ -2991,18 +2991,24 @@ async function submitKnowledgeBroadcast() {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: payload.toString()
         });
-        const data = await res.json();
+        let data;
+        try {
+            data = await res.json();
+        } catch (jsonErr) {
+            const raw = await res.text().catch(() => '');
+            throw new Error(raw ? raw.substring(0, 300) : 'サーバーからの応答の解析に失敗しました');
+        }
 
-        if (data.success) {
+        if (data && data.success) {
             showToast(data.message || 'お役立ち情報をLINE送信しました！');
             closeKnowledgeBroadcastModal();
             await fetchCustomers();
         } else {
-            alert(data.error || '送信に失敗しました');
+            alert((data && data.error) ? data.error : '送信に失敗しました');
         }
     } catch (e) {
         console.error('Knowledge broadcast error:', e);
-        alert('通信エラーが発生しました: ' + e.message);
+        alert('送信エラーが発生しました: ' + e.message);
     } finally {
         if (btn) {
             btn.disabled = false;

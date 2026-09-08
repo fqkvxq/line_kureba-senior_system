@@ -687,11 +687,30 @@ function sendLinePushMessage(string $userId, array $messages): array {
         'curlError' => $curlErr
     ]);
 
+    $errorMsg = $curlErr;
+    if (empty($errorMsg) && $httpCode !== 200) {
+        $json = json_decode((string)$res, true);
+        if (is_array($json) && !empty($json['message'])) {
+            $errorMsg = $json['message'];
+            if (!empty($json['details']) && is_array($json['details'])) {
+                $details = [];
+                foreach ($json['details'] as $d) {
+                    $details[] = (!empty($d['property']) ? $d['property'] . ': ' : '') . ($d['message'] ?? '');
+                }
+                $errorMsg .= ' [' . implode(', ', $details) . ']';
+            }
+        } elseif (!empty($res)) {
+            $errorMsg = substr((string)$res, 0, 300);
+        } else {
+            $errorMsg = "HTTPエラー {$httpCode}";
+        }
+    }
+
     return [
         'success' => ($httpCode === 200),
         'httpCode' => $httpCode,
         'response' => $res,
-        'error' => $curlErr
+        'error' => $errorMsg
     ];
 }
 
@@ -713,7 +732,7 @@ function sendLineBroadcastMessage(array $messages): array {
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 10,
+        CURLOPT_TIMEOUT => 15,
         CURLOPT_HTTPHEADER => [
             'Content-Type: application/json; charset=utf-8',
             'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
@@ -731,11 +750,30 @@ function sendLineBroadcastMessage(array $messages): array {
         'curlError' => $curlErr
     ]);
 
+    $errorMsg = $curlErr;
+    if (empty($errorMsg) && $httpCode !== 200) {
+        $json = json_decode((string)$res, true);
+        if (is_array($json) && !empty($json['message'])) {
+            $errorMsg = $json['message'];
+            if (!empty($json['details']) && is_array($json['details'])) {
+                $details = [];
+                foreach ($json['details'] as $d) {
+                    $details[] = (!empty($d['property']) ? $d['property'] . ': ' : '') . ($d['message'] ?? '');
+                }
+                $errorMsg .= ' [' . implode(', ', $details) . ']';
+            }
+        } elseif (!empty($res)) {
+            $errorMsg = substr((string)$res, 0, 300);
+        } else {
+            $errorMsg = "HTTPエラー {$httpCode}";
+        }
+    }
+
     return [
         'success' => ($httpCode === 200),
         'httpCode' => $httpCode,
         'response' => $res,
-        'error' => $curlErr
+        'error' => $errorMsg
     ];
 }
 
