@@ -106,7 +106,13 @@ const elements = {
     chipCustNotice: document.getElementById('chipCustNotice'),
     btnReloadBaseMenus: document.getElementById('btnReloadBaseMenus'),
     userMenuFontSizeInput: document.getElementById('userMenuFontSizeInput'),
+    userMenuFontSizeNumber: document.getElementById('userMenuFontSizeNumber'),
     userMenuFontSizeVal: document.getElementById('userMenuFontSizeVal'),
+    userMenuBgColorPicker: document.getElementById('userMenuBgColorPicker'),
+    userMenuBgColorHex: document.getElementById('userMenuBgColorHex'),
+    userMenuTextColorPicker: document.getElementById('userMenuTextColorPicker'),
+    userMenuTextColorHex: document.getElementById('userMenuTextColorHex'),
+    userMenuGradientToggle: document.getElementById('userMenuGradientToggle'),
     userMenuBannerHeightSelect: document.getElementById('userMenuBannerHeightSelect'),
     userMenuBannerActionType: document.getElementById('userMenuBannerActionType'),
     userMenuBannerUriRow: document.getElementById('userMenuBannerUriRow'),
@@ -320,17 +326,118 @@ function initEventListeners() {
 
     // プレビュー変更トリガー
     if (elements.userMenuTextInput) elements.userMenuTextInput.addEventListener('input', renderUserMenuPreview);
-    if (elements.userMenuThemeSelect) elements.userMenuThemeSelect.addEventListener('change', renderUserMenuPreview);
     if (elements.userMenuPosSelect) elements.userMenuPosSelect.addEventListener('change', renderUserMenuPreview);
     if (elements.userMenuBaseSelect) elements.userMenuBaseSelect.addEventListener('change', () => loadAndRenderUserMenuBaseImage());
+    if (elements.userMenuGradientToggle) elements.userMenuGradientToggle.addEventListener('change', renderUserMenuPreview);
 
-    // 文字サイズ & 帯の高さ & リッチメニュー再読み込み
+    // 文字サイズ (スライダー ⇄ 数値直接入力の双方向連動)
     if (elements.userMenuFontSizeInput) {
         elements.userMenuFontSizeInput.addEventListener('input', (e) => {
-            if (elements.userMenuFontSizeVal) elements.userMenuFontSizeVal.textContent = e.target.value + 'px';
+            const val = parseInt(e.target.value, 10) || 65;
+            if (elements.userMenuFontSizeNumber) elements.userMenuFontSizeNumber.value = val;
+            if (elements.userMenuFontSizeVal) elements.userMenuFontSizeVal.textContent = val + 'px';
+            document.querySelectorAll('.btn-size-quick-chip').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.size, 10) === val);
+            });
             renderUserMenuPreview();
         });
     }
+    if (elements.userMenuFontSizeNumber) {
+        elements.userMenuFontSizeNumber.addEventListener('input', (e) => {
+            const val = Math.max(20, Math.min(220, parseInt(e.target.value, 10) || 65));
+            if (elements.userMenuFontSizeInput) elements.userMenuFontSizeInput.value = val;
+            if (elements.userMenuFontSizeVal) elements.userMenuFontSizeVal.textContent = val + 'px';
+            document.querySelectorAll('.btn-size-quick-chip').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.size, 10) === val);
+            });
+            renderUserMenuPreview();
+        });
+    }
+    // 文字サイズ クイックチップ
+    document.querySelectorAll('.btn-size-quick-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const size = parseInt(btn.dataset.size, 10);
+            if (!size) return;
+            if (elements.userMenuFontSizeInput) elements.userMenuFontSizeInput.value = size;
+            if (elements.userMenuFontSizeNumber) elements.userMenuFontSizeNumber.value = size;
+            if (elements.userMenuFontSizeVal) elements.userMenuFontSizeVal.textContent = size + 'px';
+            document.querySelectorAll('.btn-size-quick-chip').forEach(b => b.classList.toggle('active', b === btn));
+            renderUserMenuPreview();
+        });
+    });
+
+    // 帯の背景色 (カラーピッカー ⇄ HEX入力の双方向連動)
+    if (elements.userMenuBgColorPicker) {
+        elements.userMenuBgColorPicker.addEventListener('input', (e) => {
+            const hex = e.target.value.toUpperCase();
+            if (elements.userMenuBgColorHex) elements.userMenuBgColorHex.value = hex;
+            document.querySelectorAll('.btn-color-quick-chip').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.bg.toUpperCase() === hex);
+            });
+            renderUserMenuPreview();
+        });
+    }
+    if (elements.userMenuBgColorHex) {
+        elements.userMenuBgColorHex.addEventListener('input', (e) => {
+            let val = e.target.value.trim();
+            if (!val.startsWith('#') && val.length > 0) val = '#' + val;
+            if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(val)) {
+                if (elements.userMenuBgColorPicker) elements.userMenuBgColorPicker.value = (val.length === 4 ? `#${val[1]}${val[1]}${val[2]}${val[2]}${val[3]}${val[3]}` : val);
+                document.querySelectorAll('.btn-color-quick-chip').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.bg.toUpperCase() === val.toUpperCase());
+                });
+                renderUserMenuPreview();
+            }
+        });
+    }
+    // 背景色 クイックチップ
+    document.querySelectorAll('.btn-color-quick-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const bg = btn.dataset.bg;
+            if (!bg) return;
+            if (elements.userMenuBgColorPicker) elements.userMenuBgColorPicker.value = bg;
+            if (elements.userMenuBgColorHex) elements.userMenuBgColorHex.value = bg.toUpperCase();
+            document.querySelectorAll('.btn-color-quick-chip').forEach(b => b.classList.toggle('active', b === btn));
+            renderUserMenuPreview();
+        });
+    });
+
+    // 帯の文字色 (カラーピッカー ⇄ HEX入力の双方向連動)
+    if (elements.userMenuTextColorPicker) {
+        elements.userMenuTextColorPicker.addEventListener('input', (e) => {
+            const hex = e.target.value.toUpperCase();
+            if (elements.userMenuTextColorHex) elements.userMenuTextColorHex.value = hex;
+            document.querySelectorAll('.btn-text-color-quick-chip').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.color.toUpperCase() === hex);
+            });
+            renderUserMenuPreview();
+        });
+    }
+    if (elements.userMenuTextColorHex) {
+        elements.userMenuTextColorHex.addEventListener('input', (e) => {
+            let val = e.target.value.trim();
+            if (!val.startsWith('#') && val.length > 0) val = '#' + val;
+            if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(val)) {
+                if (elements.userMenuTextColorPicker) elements.userMenuTextColorPicker.value = (val.length === 4 ? `#${val[1]}${val[1]}${val[2]}${val[2]}${val[3]}${val[3]}` : val);
+                document.querySelectorAll('.btn-text-color-quick-chip').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.color.toUpperCase() === val.toUpperCase());
+                });
+                renderUserMenuPreview();
+            }
+        });
+    }
+    // 文字色 クイックチップ
+    document.querySelectorAll('.btn-text-color-quick-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const color = btn.dataset.color;
+            if (!color) return;
+            if (elements.userMenuTextColorPicker) elements.userMenuTextColorPicker.value = color;
+            if (elements.userMenuTextColorHex) elements.userMenuTextColorHex.value = color.toUpperCase();
+            document.querySelectorAll('.btn-text-color-quick-chip').forEach(b => b.classList.toggle('active', b === btn));
+            renderUserMenuPreview();
+        });
+    });
+
     if (elements.userMenuBannerHeightSelect) {
         elements.userMenuBannerHeightSelect.addEventListener('change', renderUserMenuPreview);
     }
@@ -1506,12 +1613,27 @@ async function openUserRichMenuModal(cust) {
 
     // メッセージ入力の初期値（保存済みメッセージがあれば優先、なければ最も期限の近い点検メッセージを自動セット）
     const nearest = getNearestMaintenanceInfo(cust);
+    const THEME_HEX_MAP = {
+        red: '#E11D48',
+        blue: '#2563EB',
+        green: '#059669',
+        amber: '#D97706',
+        orange: '#EA580C',
+        emerald: '#059669',
+        gold: '#D97706',
+        dark: '#0F172A'
+    };
     if (cust.custom_menu_text) {
         elements.userMenuTextInput.value = cust.custom_menu_text;
     } else if (nearest) {
         elements.userMenuTextInput.value = nearest.phrase;
-        if (elements.userMenuThemeSelect && nearest.theme) {
-            elements.userMenuThemeSelect.value = nearest.theme;
+        if (nearest.theme) {
+            const hex = THEME_HEX_MAP[nearest.theme] || '#E11D48';
+            if (elements.userMenuBgColorPicker) elements.userMenuBgColorPicker.value = hex;
+            if (elements.userMenuBgColorHex) elements.userMenuBgColorHex.value = hex;
+            document.querySelectorAll('.btn-color-quick-chip').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.bg.toUpperCase() === hex.toUpperCase());
+            });
         }
     } else {
         elements.userMenuTextInput.value = getDefaultCustomPhrase(cust, 'insp');
@@ -1575,8 +1697,23 @@ function applyNearestPhraseToCustomMenu() {
     const nearest = getNearestMaintenanceInfo(state.activeUserMenuCust);
     if (nearest) {
         elements.userMenuTextInput.value = nearest.phrase;
-        if (elements.userMenuThemeSelect && nearest.theme) {
-            elements.userMenuThemeSelect.value = nearest.theme;
+        if (nearest.theme) {
+            const THEME_HEX_MAP = {
+                red: '#E11D48',
+                blue: '#2563EB',
+                green: '#059669',
+                amber: '#D97706',
+                orange: '#EA580C',
+                emerald: '#059669',
+                gold: '#D97706',
+                dark: '#0F172A'
+            };
+            const hex = THEME_HEX_MAP[nearest.theme] || '#E11D48';
+            if (elements.userMenuBgColorPicker) elements.userMenuBgColorPicker.value = hex;
+            if (elements.userMenuBgColorHex) elements.userMenuBgColorHex.value = hex;
+            document.querySelectorAll('.btn-color-quick-chip').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.bg.toUpperCase() === hex.toUpperCase());
+            });
         }
         renderUserMenuPreview();
         showToast(`✨ 最も期限が近い「${nearest.shortLabel}」のメッセージをセットしました！`);
@@ -1636,6 +1773,43 @@ function loadAndRenderUserMenuBaseImage() {
     img.src = base.base_image_url || base.image_url;
 }
 
+// --- HEXカラー & 明度計算ヘルパー ---
+function sanitizeHexColor(hex, fallback) {
+    if (!hex || typeof hex !== 'string') return fallback;
+    let val = hex.trim();
+    if (!val.startsWith('#') && val.length > 0) val = '#' + val;
+    return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(val) ? val : fallback;
+}
+
+function adjustHexBrightness(hex, percent) {
+    if (!hex || typeof hex !== 'string') return hex;
+    let cleanHex = hex.replace(/^#/, '');
+    if (cleanHex.length === 3) {
+        cleanHex = cleanHex.split('').map(c => c + c).join('');
+    }
+    if (cleanHex.length !== 6) return hex;
+    const num = parseInt(cleanHex, 16);
+    let r = (num >> 16) + Math.round(255 * (percent / 100));
+    let g = ((num >> 8) & 0x00FF) + Math.round(255 * (percent / 100));
+    let b = (num & 0x0000FF) + Math.round(255 * (percent / 100));
+    r = Math.min(255, Math.max(0, r));
+    g = Math.min(255, Math.max(0, g));
+    b = Math.min(255, Math.max(0, b));
+    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
+
+function isHexColorLight(hex) {
+    if (!hex) return false;
+    let cleanHex = hex.replace(/^#/, '');
+    if (cleanHex.length === 3) cleanHex = cleanHex.split('').map(c => c + c).join('');
+    if (cleanHex.length !== 6) return false;
+    const r = parseInt(cleanHex.substr(0, 2), 16);
+    const g = parseInt(cleanHex.substr(2, 2), 16);
+    const b = parseInt(cleanHex.substr(4, 2), 16);
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    return yiq >= 135;
+}
+
 function renderUserMenuPreview() {
     const canvas = elements.userMenuPreviewCanvas;
     if (!canvas) return;
@@ -1665,9 +1839,25 @@ function renderUserMenuPreview() {
     const rawText = elements.userMenuTextInput.value.trim();
     if (!rawText) return;
 
-    const theme = elements.userMenuThemeSelect ? elements.userMenuThemeSelect.value : 'red';
+    // HEXカラー設定の取得 (背景色 & 文字色)
+    const rawBgHex = elements.userMenuBgColorHex ? elements.userMenuBgColorHex.value : (elements.userMenuBgColorPicker ? elements.userMenuBgColorPicker.value : '#e11d48');
+    const bgHex = sanitizeHexColor(rawBgHex, '#e11d48');
+
+    const rawTextHex = elements.userMenuTextColorHex ? elements.userMenuTextColorHex.value : (elements.userMenuTextColorPicker ? elements.userMenuTextColorPicker.value : '#ffffff');
+    const textHex = sanitizeHexColor(rawTextHex, '#ffffff');
+
+    const useGradient = elements.userMenuGradientToggle ? elements.userMenuGradientToggle.checked : true;
     const pos = elements.userMenuPosSelect ? elements.userMenuPosSelect.value : 'top';
-    const fontSize = elements.userMenuFontSizeInput ? parseInt(elements.userMenuFontSizeInput.value, 10) : 65;
+
+    // 文字フォントサイズ (20px 〜 220px)
+    let fontSize = 65;
+    if (elements.userMenuFontSizeNumber && elements.userMenuFontSizeNumber.value) {
+        fontSize = parseInt(elements.userMenuFontSizeNumber.value, 10) || 65;
+    } else if (elements.userMenuFontSizeInput && elements.userMenuFontSizeInput.value) {
+        fontSize = parseInt(elements.userMenuFontSizeInput.value, 10) || 65;
+    }
+    fontSize = Math.max(20, Math.min(220, fontSize));
+
     const heightSetting = elements.userMenuBannerHeightSelect ? elements.userMenuBannerHeightSelect.value : 'auto';
 
     // 複数行テキストの分解
@@ -1680,18 +1870,18 @@ function renderUserMenuPreview() {
 
     // 帯の高さ計算（文字サイズ・行数・帯の太さ・タップ案内設定を考慮）
     let bannerH;
-    const extraHintH = (hasTapAction && showTapHint) ? Math.round(fontSize * 0.75) : 0;
+    const extraHintH = (hasTapAction && showTapHint) ? Math.round(fontSize * 0.72) : 0;
     if (heightSetting === 'compact') {
-        bannerH = Math.max(Math.round(fontSize * 1.5) + extraHintH, 140);
+        bannerH = Math.max(Math.round(fontSize * 1.5) + extraHintH, 130);
     } else if (heightSetting === 'standard') {
-        bannerH = Math.max(Math.round(fontSize * 1.8) + extraHintH, 185);
+        bannerH = Math.max(Math.round(fontSize * 1.8) + extraHintH, 175);
     } else if (heightSetting === 'wide') {
-        bannerH = Math.max(Math.round(fontSize * 2.2) + extraHintH, 240);
+        bannerH = Math.max(Math.round(fontSize * 2.3) + extraHintH, 230);
     } else {
         // auto: 行数とフォントサイズに応じて余白を最適化
         const lineSpacing = fontSize * 1.32;
         const textBlockH = (lines.length * lineSpacing) + extraHintH;
-        bannerH = Math.max(150, Math.round(textBlockH + (fontSize * 0.95)));
+        bannerH = Math.max(140, Math.round(textBlockH + (fontSize * 0.92)));
     }
 
     const bannerY = (pos === 'top') ? 0 : (h - bannerH);
@@ -1704,38 +1894,25 @@ function renderUserMenuPreview() {
         height: bannerH
     };
 
-    // テーマカラー設定
-    let bgGrad;
-    let accentBorder = 'rgba(255, 255, 255, 0.35)';
-    if (theme === 'red') {
-        bgGrad = ctx.createLinearGradient(0, bannerY, w, bannerY);
-        bgGrad.addColorStop(0, '#e11d48');
-        bgGrad.addColorStop(1, '#be123c');
-    } else if (theme === 'blue') {
-        bgGrad = ctx.createLinearGradient(0, bannerY, w, bannerY);
-        bgGrad.addColorStop(0, '#2563eb');
-        bgGrad.addColorStop(1, '#1d4ed8');
-    } else if (theme === 'green') {
-        bgGrad = ctx.createLinearGradient(0, bannerY, w, bannerY);
-        bgGrad.addColorStop(0, '#059669');
-        bgGrad.addColorStop(1, '#047857');
-    } else if (theme === 'gold') {
-        bgGrad = ctx.createLinearGradient(0, bannerY, w, bannerY);
-        bgGrad.addColorStop(0, '#d97706');
-        bgGrad.addColorStop(1, '#b45309');
+    // 背景の塗り（立体グラデーション または フラット単色）
+    let bgFill;
+    if (useGradient) {
+        bgFill = ctx.createLinearGradient(0, bannerY, w, bannerY + bannerH);
+        bgFill.addColorStop(0, bgHex);
+        bgFill.addColorStop(1, adjustHexBrightness(bgHex, -14));
     } else {
-        // dark
-        bgGrad = ctx.createLinearGradient(0, bannerY, w, bannerY);
-        bgGrad.addColorStop(0, '#0f172a');
-        bgGrad.addColorStop(1, '#1e293b');
+        bgFill = bgHex;
     }
+
+    const isBgLight = isHexColorLight(bgHex);
+    const accentBorder = isBgLight ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.35)';
 
     // 背景ドロップシャドウ & 帯の描画
     ctx.save();
     ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
     ctx.shadowBlur = 24;
     ctx.shadowOffsetY = (pos === 'top') ? 8 : -8;
-    ctx.fillStyle = bgGrad;
+    ctx.fillStyle = bgFill;
     ctx.fillRect(0, bannerY, w, bannerH);
     ctx.restore();
 
@@ -1754,19 +1931,27 @@ function renderUserMenuPreview() {
 
     // テキスト描画
     ctx.save();
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = textHex;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-    ctx.shadowBlur = 12;
-    ctx.shadowOffsetY = 2;
+
+    const isTextLight = isHexColorLight(textHex);
+    if (isTextLight) {
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
+        ctx.shadowBlur = Math.min(16, Math.max(6, Math.round(fontSize * 0.16)));
+        ctx.shadowOffsetY = 2;
+    } else {
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.6)';
+        ctx.shadowBlur = Math.min(10, Math.max(4, Math.round(fontSize * 0.12)));
+        ctx.shadowOffsetY = 1;
+    }
 
     ctx.font = `bold ${fontSize}px "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif`;
 
     const lineSpacing = fontSize * 1.32;
     const totalLinesH = (lines.length - 1) * lineSpacing;
     // タップガイド表示がある場合は少し上寄りに配置
-    const shiftY = (hasTapAction && showTapHint) ? -Math.round(extraHintH * 0.4) : 0;
+    const shiftY = (hasTapAction && showTapHint) ? -Math.round(extraHintH * 0.38) : 0;
     const startY = ((bannerY + bannerH / 2) - (totalLinesH / 2)) + shiftY;
 
     lines.forEach((line, idx) => {
@@ -1778,16 +1963,16 @@ function renderUserMenuPreview() {
     if (hasTapAction && showTapHint) {
         let hintLabel = '👆 タップして詳細を見る';
         if (actionType === 'mycar_liff' || actionType === 'open_mycar') {
-            hintLabel = '👆 タップして点検・予約を開く';
+            hintLabel = '👆 タップして予約・相談を開く';
         } else if (actionType === 'search_all') {
-            hintLabel = '👆 タップして在庫車両を見る';
+            hintLabel = '👆 タップして在庫を見る';
         } else if (actionType === 'notice') {
             hintLabel = '👆 タップしてお知らせを見る';
         } else if (actionType === 'uri') {
             hintLabel = '👆 タップしてリンクを開く';
         }
 
-        const hintFontSize = Math.max(26, Math.round(fontSize * 0.48));
+        const hintFontSize = Math.max(24, Math.round(fontSize * 0.46));
         ctx.font = `bold ${hintFontSize}px "Noto Sans JP", -apple-system, sans-serif`;
         const hintY = startY + totalLinesH + (fontSize * 0.95);
 
@@ -1795,15 +1980,23 @@ function renderUserMenuPreview() {
         const textWidth = ctx.measureText(hintLabel).width;
         const pillW = textWidth + 40;
         const pillH = hintFontSize * 1.5;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+        
         ctx.beginPath();
         const pillX = (w - pillW) / 2;
         const pillY = hintY - (pillH / 2);
         ctx.roundRect ? ctx.roundRect(pillX, pillY, pillW, pillH, pillH / 2) : ctx.rect(pillX, pillY, pillW, pillH);
-        ctx.fill();
 
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-        ctx.fillText(hintLabel, w / 2, hintY);
+        if (isTextLight) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.32)';
+            ctx.fill();
+            ctx.fillStyle = textHex;
+            ctx.fillText(hintLabel, w / 2, hintY);
+        } else {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+            ctx.fill();
+            ctx.fillStyle = textHex;
+            ctx.fillText(hintLabel, w / 2, hintY);
+        }
     }
 
     ctx.restore();

@@ -1454,12 +1454,20 @@ function renderTextOverlayControls() {
                 <div>
                     <span class="option-group-label">カラーテーマ:</span>
                     <div class="color-chips-group">
-                        <button type="button" class="color-chip-btn theme-red ${overlay.theme === 'red' ? 'active' : ''}" data-theme="red" title="赤 (注目・緊急)"></button>
-                        <button type="button" class="color-chip-btn theme-green ${overlay.theme === 'green' ? 'active' : ''}" data-theme="green" title="緑 (LINE・新着)"></button>
-                        <button type="button" class="color-chip-btn theme-dark ${overlay.theme === 'dark' ? 'active' : ''}" data-theme="dark" title="黒 (シック・高級)"></button>
-                        <button type="button" class="color-chip-btn theme-blue ${overlay.theme === 'blue' ? 'active' : ''}" data-theme="blue" title="青 (案内)"></button>
-                        <button type="button" class="color-chip-btn theme-yellow ${overlay.theme === 'yellow' ? 'active' : ''}" data-theme="yellow" title="黄 (警告・セール)"></button>
-                        <button type="button" class="color-chip-btn theme-white ${overlay.theme === 'white' ? 'active' : ''}" data-theme="white" title="白 (シンプル)"></button>
+                        <button type="button" class="color-chip-btn theme-red ${overlay.theme === 'red' && !overlay.bg_hex ? 'active' : ''}" data-theme="red" title="赤 (注目・緊急)"></button>
+                        <button type="button" class="color-chip-btn theme-green ${overlay.theme === 'green' && !overlay.bg_hex ? 'active' : ''}" data-theme="green" title="緑 (LINE・新着)"></button>
+                        <button type="button" class="color-chip-btn theme-dark ${overlay.theme === 'dark' && !overlay.bg_hex ? 'active' : ''}" data-theme="dark" title="黒 (シック・高級)"></button>
+                        <button type="button" class="color-chip-btn theme-blue ${overlay.theme === 'blue' && !overlay.bg_hex ? 'active' : ''}" data-theme="blue" title="青 (案内)"></button>
+                        <button type="button" class="color-chip-btn theme-yellow ${overlay.theme === 'yellow' && !overlay.bg_hex ? 'active' : ''}" data-theme="yellow" title="黄 (警告・セール)"></button>
+                        <button type="button" class="color-chip-btn theme-white ${overlay.theme === 'white' && !overlay.bg_hex ? 'active' : ''}" data-theme="white" title="白 (シンプル)"></button>
+                    </div>
+                    <!-- HEX直接指定 -->
+                    <div style="display: flex; gap: 6px; align-items: center; margin-top: 5px;">
+                        <span style="font-size: 10px; color: #64748b; font-weight: 700;">HEX指定:</span>
+                        <input type="color" class="overlay-bg-color-picker" value="${overlay.bg_hex || (overlay.theme === 'blue' ? '#2563eb' : (overlay.theme === 'green' ? '#06C755' : (overlay.theme === 'dark' ? '#0f172a' : (overlay.theme === 'yellow' ? '#f59e0b' : (overlay.theme === 'white' ? '#ffffff' : '#dc2626')))))}" style="width: 20px; height: 20px; border: none; padding: 0; cursor: pointer; border-radius: 3px;" title="背景色">
+                        <input type="text" class="overlay-bg-hex-input" value="${overlay.bg_hex || ''}" placeholder="背景#HEX" maxlength="7" style="width: 62px; font-size: 10px; font-family: monospace; padding: 2px 4px; border: 1px solid #cbd5e1; border-radius: 4px; text-transform: uppercase;" title="背景色HEX">
+                        <input type="color" class="overlay-text-color-picker" value="${overlay.text_hex || '#ffffff'}" style="width: 20px; height: 20px; border: none; padding: 0; cursor: pointer; border-radius: 3px;" title="文字色">
+                        <input type="text" class="overlay-text-hex-input" value="${overlay.text_hex || ''}" placeholder="文字#HEX" maxlength="7" style="width: 62px; font-size: 10px; font-family: monospace; padding: 2px 4px; border: 1px solid #cbd5e1; border-radius: 4px; text-transform: uppercase;" title="文字色HEX">
                     </div>
                 </div>
             </div>
@@ -1467,12 +1475,16 @@ function renderTextOverlayControls() {
             <div class="overlay-options-grid" style="margin-top: 8px;">
                 <div>
                     <span class="option-group-label">文字サイズ:</span>
-                    <select class="select-xs overlay-size-select">
-                        <option value="sm" ${overlay.size === 'sm' ? 'selected' : ''}>小 (標準・すっきり)</option>
-                        <option value="md" ${overlay.size === 'md' || !overlay.size ? 'selected' : ''}>中 (おすすめ・見やすい)</option>
-                        <option value="lg" ${overlay.size === 'lg' ? 'selected' : ''}>大 (目立つ・アピール)</option>
-                        <option value="xl" ${overlay.size === 'xl' ? 'selected' : ''}>特大 (超特大テロップ)</option>
-                    </select>
+                    <div style="display: flex; gap: 5px; align-items: center;">
+                        <select class="select-xs overlay-size-select" style="flex: 1;">
+                            <option value="sm" ${overlay.size === 'sm' ? 'selected' : ''}>小 (45px)</option>
+                            <option value="md" ${overlay.size === 'md' || !overlay.size ? 'selected' : ''}>中 (65px)</option>
+                            <option value="lg" ${overlay.size === 'lg' ? 'selected' : ''}>大 (90px)</option>
+                            <option value="xl" ${overlay.size === 'xl' ? 'selected' : ''}>特大 (130px)</option>
+                            <option value="custom" ${overlay.size === 'custom' ? 'selected' : ''}>任意 (px指定)</option>
+                        </select>
+                        <input type="number" class="coord-field-xs overlay-custom-size-input" value="${overlay.custom_font_size || 65}" min="20" max="220" step="1" style="width: 50px; font-size: 11px; padding: 3px; border: 1px solid #cbd5e1; border-radius: 4px; display: ${overlay.size === 'custom' ? 'inline-block' : 'none'};" title="フォントサイズ (px)">
+                    </div>
                 </div>
                 ${(overlay.type === 'badge' || overlay.type === 'free') ? `
                 <div style="display: flex; gap: 6px; align-items: flex-end; flex-wrap: wrap;">
@@ -1577,17 +1589,74 @@ function renderTextOverlayControls() {
         card.querySelectorAll('.color-chip-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 overlay.theme = btn.dataset.theme;
+                delete overlay.bg_hex;
+                delete overlay.text_hex;
                 renderTextOverlayControls();
                 renderTextOverlays();
             });
         });
 
+        // イベント: 背景色HEX & ピッカー
+        const bgPicker = card.querySelector('.overlay-bg-color-picker');
+        const bgHexInput = card.querySelector('.overlay-bg-hex-input');
+        if (bgPicker && bgHexInput) {
+            bgPicker.addEventListener('input', (e) => {
+                overlay.bg_hex = e.target.value;
+                bgHexInput.value = e.target.value.toUpperCase();
+                renderTextOverlays();
+            });
+            bgHexInput.addEventListener('input', (e) => {
+                let v = e.target.value.trim();
+                if (!v.startsWith('#') && v.length > 0) v = '#' + v;
+                if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(v)) {
+                    overlay.bg_hex = v;
+                    bgPicker.value = (v.length === 4 ? `#${v[1]}${v[1]}${v[2]}${v[2]}${v[3]}${v[3]}` : v);
+                    renderTextOverlays();
+                }
+            });
+        }
+
+        // イベント: 文字色HEX & ピッカー
+        const textPicker = card.querySelector('.overlay-text-color-picker');
+        const textHexInput = card.querySelector('.overlay-text-hex-input');
+        if (textPicker && textHexInput) {
+            textPicker.addEventListener('input', (e) => {
+                overlay.text_hex = e.target.value;
+                textHexInput.value = e.target.value.toUpperCase();
+                renderTextOverlays();
+            });
+            textHexInput.addEventListener('input', (e) => {
+                let v = e.target.value.trim();
+                if (!v.startsWith('#') && v.length > 0) v = '#' + v;
+                if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(v)) {
+                    overlay.text_hex = v;
+                    textPicker.value = (v.length === 4 ? `#${v[1]}${v[1]}${v[2]}${v[2]}${v[3]}${v[3]}` : v);
+                    renderTextOverlays();
+                }
+            });
+        }
+
         // イベント: サイズ選択
         const sizeSelect = card.querySelector('.overlay-size-select');
-        sizeSelect.addEventListener('change', () => {
-            overlay.size = sizeSelect.value;
-            renderTextOverlays();
-        });
+        const customSizeInput = card.querySelector('.overlay-custom-size-input');
+        if (sizeSelect) {
+            sizeSelect.addEventListener('change', () => {
+                overlay.size = sizeSelect.value;
+                if (customSizeInput) {
+                    customSizeInput.style.display = (sizeSelect.value === 'custom') ? 'inline-block' : 'none';
+                    if (sizeSelect.value === 'custom') {
+                        overlay.custom_font_size = parseInt(customSizeInput.value, 10) || 65;
+                    }
+                }
+                renderTextOverlays();
+            });
+        }
+        if (customSizeInput) {
+            customSizeInput.addEventListener('input', () => {
+                overlay.custom_font_size = Math.max(20, Math.min(220, parseInt(customSizeInput.value, 10) || 65));
+                renderTextOverlays();
+            });
+        }
 
         // イベント: X/Y座標入力
         const posXInput = card.querySelector('.overlay-pos-x');
@@ -1778,9 +1847,16 @@ async function compositeRichMenuImage() {
         const text = (overlay.text || '').trim();
         if (!text) return;
 
-        const theme = themeColors[overlay.theme] || themeColors.red;
+        const defaultTheme = themeColors[overlay.theme] || themeColors.red;
+        const theme = {
+            bg: overlay.bg_hex || defaultTheme.bg,
+            text: overlay.text_hex || defaultTheme.text,
+            border: overlay.bg_hex ? 'rgba(255,255,255,0.35)' : defaultTheme.border
+        };
         const canvasScale = W / 2500;
-        const baseFontSize = OVERLAY_FONT_SIZES[overlay.size] || OVERLAY_FONT_SIZES.md;
+        const baseFontSize = (overlay.size === 'custom' && overlay.custom_font_size) 
+            ? overlay.custom_font_size 
+            : (OVERLAY_FONT_SIZES[overlay.size] || OVERLAY_FONT_SIZES.md);
         const fontSize = Math.round(baseFontSize * canvasScale);
         const type = overlay.type || 'banner_top';
 

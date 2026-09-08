@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260908_knowledge_v1">
+    <link rel="stylesheet" href="admin.css?v=20260908_hex_v1">
 </head>
 <body>
     <!-- ログインモーダル (初期表示) -->
@@ -381,48 +381,94 @@
                             </div>
 
                             <!-- 文字サイズ & 帯の太さ設定 -->
-                            <div class="form-row" style="display: flex; gap: 10px; margin-bottom: 12px; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                                <div style="flex: 1.2;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                        <label style="font-size: 11px; font-weight: 700; color: #475569; margin: 0;">
-                                            <i class="fa-solid fa-text-height"></i> 文字サイズ
-                                        </label>
-                                        <span id="userMenuFontSizeVal" style="font-size: 11px; font-weight: 800; color: #4f46e5; background: #e0e7ff; padding: 1px 6px; border-radius: 4px;">65px</span>
-                                    </div>
-                                    <input type="range" id="userMenuFontSizeInput" min="30" max="120" step="2" value="65" style="width: 100%; accent-color: #4f46e5; cursor: pointer;">
-                                    <div style="display: flex; justify-content: space-between; font-size: 9.5px; color: #94a3b8; margin-top: 2px;">
-                                        <span>小 (30)</span>
-                                        <span>標準 (65)</span>
-                                        <span>特大 (120)</span>
+                            <div style="background: #f8fafc; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                    <label style="font-size: 11px; font-weight: 700; color: #334155; margin: 0; display: flex; align-items: center; gap: 5px;">
+                                        <i class="fa-solid fa-text-height" style="color: #4f46e5;"></i> 文字フォントサイズ (20px〜220px)
+                                    </label>
+                                    <div style="display: flex; align-items: center; gap: 4px;">
+                                        <input type="number" id="userMenuFontSizeNumber" min="20" max="220" step="1" value="65" style="width: 55px; text-align: center; padding: 2px 4px; font-size: 11.5px; font-weight: 800; color: #4f46e5; border: 1px solid #c7d2fe; border-radius: 4px; background: #fff;">
+                                        <span style="font-size: 11px; font-weight: 700; color: #64748b;">px</span>
                                     </div>
                                 </div>
-                                <div style="flex: 0.8;">
+                                <input type="range" id="userMenuFontSizeInput" min="20" max="220" step="1" value="65" style="width: 100%; accent-color: #4f46e5; cursor: pointer;">
+                                <div class="font-size-quick-chips" style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;">
+                                    <button type="button" class="btn-size-quick-chip" data-size="40">極小 40px</button>
+                                    <button type="button" class="btn-size-quick-chip active" data-size="65">標準 65px</button>
+                                    <button type="button" class="btn-size-quick-chip" data-size="90">大 90px</button>
+                                    <button type="button" class="btn-size-quick-chip" data-size="130">特大 130px</button>
+                                    <button type="button" class="btn-size-quick-chip" data-size="180">超特大 180px</button>
+                                </div>
+                            </div>
+
+                            <!-- 背景色 (HEX) & 文字色 (HEX) 設定 -->
+                            <div style="background: #f8fafc; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
+                                <div class="form-row" style="display: flex; gap: 12px; margin-bottom: 8px;">
+                                    <!-- 帯の背景色 -->
+                                    <div style="flex: 1;">
+                                        <label style="font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">
+                                            <i class="fa-solid fa-fill-drip" style="color: #e11d48;"></i> 帯の背景色 (HEX)
+                                        </label>
+                                        <div style="display: flex; align-items: center; gap: 6px;">
+                                            <input type="color" id="userMenuBgColorPicker" value="#e11d48" style="width: 32px; height: 32px; border: none; border-radius: 6px; cursor: pointer; padding: 0; background: none;">
+                                            <input type="text" id="userMenuBgColorHex" value="#e11d48" maxlength="7" placeholder="#e11d48" style="flex: 1; min-width: 0; padding: 5px 8px; font-size: 11.5px; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; text-transform: uppercase;">
+                                        </div>
+                                        <div class="color-quick-chips" style="display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap;">
+                                            <button type="button" class="btn-color-quick-chip" data-bg="#e11d48" title="赤 (重要・急ぎ)" style="background: #e11d48;"></button>
+                                            <button type="button" class="btn-color-quick-chip" data-bg="#2563eb" title="青 (スマート)" style="background: #2563eb;"></button>
+                                            <button type="button" class="btn-color-quick-chip" data-bg="#059669" title="緑 (LINE定番)" style="background: #059669;"></button>
+                                            <button type="button" class="btn-color-quick-chip" data-bg="#d97706" title="金・オレンジ (プレミアム)" style="background: #d97706;"></button>
+                                            <button type="button" class="btn-color-quick-chip" data-bg="#0f172a" title="黒・濃紺 (シック)" style="background: #0f172a;"></button>
+                                            <button type="button" class="btn-color-quick-chip" data-bg="#7c3aed" title="紫 (エレガント)" style="background: #7c3aed;"></button>
+                                            <button type="button" class="btn-color-quick-chip" data-bg="#db2777" title="ピンク (華やか)" style="background: #db2777;"></button>
+                                            <button type="button" class="btn-color-quick-chip" data-bg="#ffffff" title="白 (シンプル)" style="background: #ffffff; border: 1px solid #cbd5e1;"></button>
+                                        </div>
+                                    </div>
+
+                                    <!-- 帯の文字色 -->
+                                    <div style="flex: 1;">
+                                        <label style="font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">
+                                            <i class="fa-solid fa-font" style="color: #2563eb;"></i> 帯の文字色 (HEX)
+                                        </label>
+                                        <div style="display: flex; align-items: center; gap: 6px;">
+                                            <input type="color" id="userMenuTextColorPicker" value="#ffffff" style="width: 32px; height: 32px; border: none; border-radius: 6px; cursor: pointer; padding: 0; background: none;">
+                                            <input type="text" id="userMenuTextColorHex" value="#ffffff" maxlength="7" placeholder="#ffffff" style="flex: 1; min-width: 0; padding: 5px 8px; font-size: 11.5px; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; text-transform: uppercase;">
+                                        </div>
+                                        <div class="color-quick-chips" style="display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap;">
+                                            <button type="button" class="btn-text-color-quick-chip active" data-color="#ffffff" title="白" style="background: #ffffff; border: 1px solid #cbd5e1;"></button>
+                                            <button type="button" class="btn-text-color-quick-chip" data-color="#0f172a" title="黒" style="background: #0f172a;"></button>
+                                            <button type="button" class="btn-text-color-quick-chip" data-color="#facc15" title="黄" style="background: #facc15;"></button>
+                                            <button type="button" class="btn-text-color-quick-chip" data-color="#ef4444" title="赤" style="background: #ef4444;"></button>
+                                            <button type="button" class="btn-text-color-quick-chip" data-color="#38bdf8" title="水色" style="background: #38bdf8;"></button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: #475569; border-top: 1px dashed #e2e8f0; padding-top: 6px; margin-top: 6px;">
+                                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; margin: 0; font-weight: 600;">
+                                        <input type="checkbox" id="userMenuGradientToggle" checked style="accent-color: #4f46e5;">
+                                        <span>立体グラデーション効果を適用</span>
+                                    </label>
+                                    <span style="font-size: 10px; color: #94a3b8;">※HEX直接手入力も即時反映</span>
+                                </div>
+                            </div>
+
+                            <!-- 配置位置 & 帯の太さ -->
+                            <div class="form-row" style="display: flex; gap: 10px; margin-bottom: 0;">
+                                <div style="flex: 1;">
+                                    <label style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">配置位置</label>
+                                    <select id="userMenuPosSelect" style="width: 100%; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                        <option value="top">上部テロップ帯</option>
+                                        <option value="bottom">下部テロップ帯</option>
+                                    </select>
+                                </div>
+                                <div style="flex: 1;">
                                     <label style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">帯の太さ</label>
                                     <select id="userMenuBannerHeightSelect" style="width: 100%; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
                                         <option value="auto" selected>自動 (文字に合わせる)</option>
                                         <option value="compact">細め (約140px)</option>
                                         <option value="standard">標準 (約185px)</option>
                                         <option value="wide">太め (約240px)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="form-row" style="display: flex; gap: 10px; margin-bottom: 0;">
-                                <div style="flex: 1;">
-                                    <label style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">バナー色</label>
-                                    <select id="userMenuThemeSelect" style="width: 100%; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px;">
-                                        <option value="red">赤 (急ぎ・重要)</option>
-                                        <option value="blue">青 (スマート)</option>
-                                        <option value="green">緑 (LINE定番)</option>
-                                        <option value="gold">金 (プレミアム)</option>
-                                        <option value="dark">黒 (シック)</option>
-                                    </select>
-                                </div>
-                                <div style="flex: 1;">
-                                    <label style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">配置位置</label>
-                                    <select id="userMenuPosSelect" style="width: 100%; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px;">
-                                        <option value="top">上部テロップ帯</option>
-                                        <option value="bottom">下部テロップ帯</option>
                                     </select>
                                 </div>
                             </div>
@@ -894,6 +940,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260908_knowledge_v1"></script>
+    <script src="admin.js?v=20260908_hex_v1"></script>
 </body>
 </html>
