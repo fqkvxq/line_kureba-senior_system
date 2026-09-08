@@ -258,11 +258,11 @@
                             <div class="step-number">5</div>
                             <div class="step-body">
                                 <h4>レッスン予約・日程変更カレンダー連携（公式予約URLとリッチメニュー設定）</h4>
-                                <p>レッスンの予約・日程変更URL（<code>https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1</code>）と連携し、受講生がLINE内から1タップでレッスン日時を選んで予約や変更を行えるようにします。</p>
+                                <p>レッスンの予約・日程変更URL（<code>https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1</code>）と連携し、受講生がLINE内から1タップで受講生個別の予約や日程変更を行えるようにします。</p>
                                 <ul>
                                     <li><strong>リッチメニューでの予約設定</strong>:<br>
-                                        リッチメニュー管理エディタ（<code>richmenu.html</code>）のチップ「<strong>📅 レッスン予約・日程変更</strong>」をクリックすると、公式の予約・日程変更URL <code>https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1</code> がセットされます。<br>
-                                        受講生がタップすると、外部ブラウザで直接カレンダー予約・日程変更画面がスムーズに立ち上がります。</li>
+                                        リッチメニュー管理エディタ（<code>richmenu.html</code>）のチップ「<strong>📅 レッスン予約・日程変更</strong>」をクリックすると、受講生個別自動ログイン対応の公式予約URLがセットされます。<br>
+                                        受講生がタップすると、LINE UID（<code>[[uid]]</code>）が自動認識され、名前の再入力不要でカレンダー予約・日程変更画面が立ち上がります。</li>
                                     <li><strong>個別メニューのメッセージ帯タップ連動</strong>:<br>
                                         受講生カルテ画面の「個別リッチメニュー設定」で「📅 レッスン予約・日程変更を開く」を指定すると、次回レッスン日のメッセージ帯をタップした際にもこの予約カレンダーが自動起動します。</li>
                                     <li><strong>受講生マイカルテ（<code>mycar.html</code>）からの連動予約</strong>:<br>
@@ -634,7 +634,7 @@
                             <div class="step-number">4</div>
                             <div class="step-body">
                                 <h4>レッスン予約ボタンの連携</h4>
-                                <p>メッセージ末尾のメインボタンには、教室のレッスン予約URL（<code>https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1</code>）が最初からセットされています。必要に応じて別のURLへの差し替えも自由に行えます。</p>
+                                <p>メッセージ末尾のメインボタンには、教室の受講生個別自動ログイン対応レッスン予約URL（<code>https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1</code>）が最初からセットされています。必要に応じて別のURLへの差し替えも自由に行えます。</p>
                             </div>
                         </div>
 
@@ -666,9 +666,9 @@
                             <div class="step-body">
                                 <h4>リッチメニューに設定する「予約」と「マイカルテ」のURLは何を指定すれば良いですか？</h4>
                                 <p>リッチメニュー管理エディタ（<code>richmenu.html</code>）のチップからワンクリックで設定できます：<br>
-                                <strong>・レッスン予約・日程変更ボタン</strong>: <code>https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1</code>（チップ「📅 レッスン予約・日程変更」をクリック）<br>
+                                <strong>・レッスン予約・日程変更ボタン</strong>: <code>https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1</code>（チップ「📅 レッスン予約・日程変更」をクリック）<br>
                                 <strong>・マイカルテボタン</strong>: <code>https://liff.line.me/2000276344-YL1wXh0h</code>（チップ「💻 受講生マイカルテ・相談」をクリック）<br>
-                                この2つのURLを設定するだけで、予約・日程変更カレンダーと本システムの受講生マイカルテの両方がLINE上で完璧に動作します。</p>
+                                この2つのURLを設定するだけで、受講生個別の予約・日程変更カレンダーと本システムの受講生マイカルテの両方がLINE上で完璧に動作します。</p>
                             </div>
                         </div>
 
@@ -728,6 +728,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260908_fix_kb_send"></script>
+    <script src="manual.js?v=20260908_fix_kb_url3"></script>
 </body>
 </html>

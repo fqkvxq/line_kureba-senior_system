@@ -1240,7 +1240,7 @@ try {
                                     'action' => [
                                         'type' => 'uri',
                                         'label' => '📅 レッスン予約・日程変更',
-                                        'uri' => 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+                                        'uri' => defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1'
                                     ]
                                 ]
                             ]
@@ -1441,7 +1441,11 @@ try {
             $points = is_array($pointsJson) ? $pointsJson : (json_decode($pointsJson, true) ?: []);
             $advice = trim($_POST['advice'] ?? '');
             $btn1Label = trim($_POST['btn1_label'] ?? '📅 教室で直接相談・予約する');
-            $btn1Url = trim($_POST['btn1_url'] ?? (defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'));
+            $defaultBookingUrl = defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1';
+            $btn1Url = trim($_POST['btn1_url'] ?? $defaultBookingUrl);
+            if (empty($btn1Url) || str_contains($btn1Url, 'fsmk.co')) {
+                $btn1Url = $defaultBookingUrl;
+            }
             $btn2Label = trim($_POST['btn2_label'] ?? '💬 LINEで質問・相談する');
             $badgeColor = trim($_POST['badge_color'] ?? '#4f46e5');
 
@@ -1628,7 +1632,7 @@ try {
                     'action' => [
                         'type' => 'uri',
                         'label' => mb_substr($btn1Label, 0, 20),
-                        'uri' => !empty($btn1Url) ? $btn1Url : 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+                        'uri' => !empty($btn1Url) ? $btn1Url : (defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1')
                     ]
                 ];
             }
@@ -2732,7 +2736,7 @@ try {
             if ($bannerActionType !== 'none' && !empty($bannerBounds) && is_array($bannerBounds)) {
                 $bannerCleanAction = null;
                 if ($bannerActionType === 'reservation_cal' || $bannerActionType === 'proline_cal') {
-                    $calUrl = defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1';
+                    $calUrl = defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1';
                     $bannerCleanAction = [
                         'type' => 'uri',
                         'uri' => $calUrl,

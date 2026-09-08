@@ -2571,6 +2571,8 @@ async function testProlineRelay() {
 // シニアお役立ち情報 配信スタジオ (Knowledge Broadcast Studio)
 // ==========================================================================
 
+const DEFAULT_PROLINE_BOOKING_URL = 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1';
+
 const SENIOR_KNOWLEDGE_PRESETS = [
     {
         id: 'scam_virus_alert',
@@ -2586,7 +2588,7 @@ const SENIOR_KNOWLEDGE_PRESETS = [
         ],
         advice: '「警告画面が消えない」「操作が不安」という時は、無理に触らずそのまま教室へお持ちください。スタッフが一緒に安全を確認します！',
         btn1Label: '📅 教室で直接相談・予約する',
-        btn1Url: 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+        btn1Url: DEFAULT_PROLINE_BOOKING_URL
     },
     {
         id: 'scam_fake_sms',
@@ -2602,7 +2604,7 @@ const SENIOR_KNOWLEDGE_PRESETS = [
         ],
         advice: '心当たりのない不審なSMSが届いた時は、削除するか、スクリーンショットを撮って教室でお見せください！',
         btn1Label: '📅 教室で直接相談・予約する',
-        btn1Url: 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+        btn1Url: DEFAULT_PROLINE_BOOKING_URL
     },
     {
         id: 'phone_large_text',
@@ -2618,7 +2620,7 @@ const SENIOR_KNOWLEDGE_PRESETS = [
         ],
         advice: '教室のレッスンで、ご自身のスマホに合わせて一番読みやすい大きさに一緒に設定調整いたします！',
         btn1Label: '📅 スマホ設定を教室で相談する',
-        btn1Url: 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+        btn1Url: DEFAULT_PROLINE_BOOKING_URL
     },
     {
         id: 'line_font_size',
@@ -2634,7 +2636,7 @@ const SENIOR_KNOWLEDGE_PRESETS = [
         ],
         advice: 'スマホ全体の文字は変えずに、LINEだけ大きくすることも可能です。教室で一緒にやってみましょう！',
         btn1Label: '📅 レッスン予約・日程変更',
-        btn1Url: 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+        btn1Url: DEFAULT_PROLINE_BOOKING_URL
     },
     {
         id: 'battery_care',
@@ -2650,7 +2652,7 @@ const SENIOR_KNOWLEDGE_PRESETS = [
         ],
         advice: '「夕方には充電が切れてしまう」「スマホが熱くなる」などの点検も教室で行っています。お気軽に診断へお越しください！',
         btn1Label: '🛠️ スマホ・PC健康診断を予約',
-        btn1Url: 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+        btn1Url: DEFAULT_PROLINE_BOOKING_URL
     },
     {
         id: 'photo_cleanup',
@@ -2666,7 +2668,7 @@ const SENIOR_KNOWLEDGE_PRESETS = [
         ],
         advice: '「写真が消えたら怖い」「パソコンへ写真を移したい」時は、USBケーブルを持って教室へお越しください。安全なバックアップ手順をお教えします！',
         btn1Label: '📅 写真整理レッスンを予約',
-        btn1Url: 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+        btn1Url: DEFAULT_PROLINE_BOOKING_URL
     },
     {
         id: 'pc_restart_magic',
@@ -2682,7 +2684,7 @@ const SENIOR_KNOWLEDGE_PRESETS = [
         ],
         advice: '再起動しても動きが遅い・ファンが大きな音で回る場合は、不要ソフトの整理が必要かもしれません。教室でPC健康診断をお受けいただけます！',
         btn1Label: '🛠️ パソコン健康診断を予約',
-        btn1Url: 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+        btn1Url: DEFAULT_PROLINE_BOOKING_URL
     },
     {
         id: 'pc_shortcuts',
@@ -2698,7 +2700,7 @@ const SENIOR_KNOWLEDGE_PRESETS = [
         ],
         advice: 'Ctrl（コントロールキー）はキーボードの左下にあります！レッスンで実際に指を置いて練習してみましょう。',
         btn1Label: '📅 レッスン予約・日程変更',
-        btn1Url: 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+        btn1Url: DEFAULT_PROLINE_BOOKING_URL
     },
     {
         id: 'pc_caps_lock',
@@ -2714,7 +2716,7 @@ const SENIOR_KNOWLEDGE_PRESETS = [
         ],
         advice: '入力トラブルの多くはキーボードのちょっとした押し間違いです。焦らず教室スタッフにいつでもご質問ください！',
         btn1Label: '📅 教室で質問・レッスン予約',
-        btn1Url: 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+        btn1Url: DEFAULT_PROLINE_BOOKING_URL
     },
     {
         id: 'disaster_apps',
@@ -2730,7 +2732,7 @@ const SENIOR_KNOWLEDGE_PRESETS = [
         ],
         advice: '避難所の場所の登録や防災アプリの入れ方がわからない時は、教室でスタッフと一緒に設定しましょう！',
         btn1Label: '📅 防災アプリ設定を教室で相談',
-        btn1Url: 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+        btn1Url: DEFAULT_PROLINE_BOOKING_URL
     }
 ];
 
@@ -2873,7 +2875,7 @@ function applyKnowledgePreset(preset) {
     if (elements.kbPoint3) elements.kbPoint3.value = preset.points[2] || '';
     if (elements.kbAdviceInput) elements.kbAdviceInput.value = preset.advice || '';
     if (elements.kbBtn1Label) elements.kbBtn1Label.value = preset.btn1Label || '📅 教室で直接相談・予約する';
-    if (elements.kbBtn1Url) elements.kbBtn1Url.value = preset.btn1Url || 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1';
+    if (elements.kbBtn1Url) elements.kbBtn1Url.value = preset.btn1Url || DEFAULT_PROLINE_BOOKING_URL;
 
     updateKnowledgeLivePreview();
 }
@@ -2981,7 +2983,7 @@ async function submitKnowledgeBroadcast() {
         points: JSON.stringify(points),
         advice: elements.kbAdviceInput?.value.trim() || '',
         btn1_label: elements.kbBtn1Label?.value.trim() || '📅 教室で直接相談・予約する',
-        btn1_url: elements.kbBtn1Url?.value.trim() || 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1',
+        btn1_url: elements.kbBtn1Url?.value.trim() || DEFAULT_PROLINE_BOOKING_URL,
         btn2_label: '💬 LINEで質問・相談する'
     });
 
