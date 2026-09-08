@@ -4129,6 +4129,17 @@ function sendReplyMessage(string $replyToken, array $messages, string $userId = 
         return;
     }
 
+    // 【最重要】受講生のトーク画面最下部にクイックリプライボタンを常時表示し続けるため、
+    // 最後のメッセージに quickReply が未設定であれば自動的にシニアお役立ちクイックリプライを付与
+    $lastIdx = count($messages) - 1;
+    if ($lastIdx >= 0 && !isset($messages[$lastIdx]['quickReply'])) {
+        if (function_exists('getSeniorKnowledgeQuickReplyItems')) {
+            $messages[$lastIdx]['quickReply'] = getSeniorKnowledgeQuickReplyItems();
+        } elseif (function_exists('getQuickReplyItems')) {
+            $messages[$lastIdx]['quickReply'] = getQuickReplyItems();
+        }
+    }
+
     $url = 'https://api.line.me/v2/bot/message/reply';
     $payload = [
         'replyToken' => $replyToken,

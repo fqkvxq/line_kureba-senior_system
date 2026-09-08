@@ -658,6 +658,14 @@ function sendLinePushMessage(string $userId, array $messages): array {
         return ['success' => false, 'error' => 'Token or userId missing'];
     }
 
+    // 常にクイックリプライを表示し続けるため、最後のメッセージに未設定なら自動付与
+    $lastIdx = count($messages) - 1;
+    if ($lastIdx >= 0 && !isset($messages[$lastIdx]['quickReply'])) {
+        if (function_exists('getSeniorKnowledgeQuickReplyItems')) {
+            $messages[$lastIdx]['quickReply'] = getSeniorKnowledgeQuickReplyItems();
+        }
+    }
+
     $url = 'https://api.line.me/v2/bot/message/push';
     $payload = [
         'to' => $userId,
@@ -721,6 +729,14 @@ function sendLineBroadcastMessage(array $messages): array {
     if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         writeDebugLog("一斉配信スキップ: LINE_CHANNEL_ACCESS_TOKEN が未設定です");
         return ['success' => false, 'error' => 'Token not configured'];
+    }
+
+    // 常にクイックリプライを表示し続けるため、最後のメッセージに未設定なら自動付与
+    $lastIdx = count($messages) - 1;
+    if ($lastIdx >= 0 && !isset($messages[$lastIdx]['quickReply'])) {
+        if (function_exists('getSeniorKnowledgeQuickReplyItems')) {
+            $messages[$lastIdx]['quickReply'] = getSeniorKnowledgeQuickReplyItems();
+        }
     }
 
     $url = 'https://api.line.me/v2/bot/message/broadcast';
