@@ -2775,10 +2775,20 @@ function buildKnowledgeCarouselBubbles(array $presetGroup): array {
                 'layout' => 'vertical',
                 'paddingAll' => '16px',
                 'contents' => [
+                    // 送信アナウンス
+                    [
+                        'type' => 'text',
+                        'text' => '📢 お役立ち情報をお送りします！',
+                        'weight' => 'bold',
+                        'size' => 'xxs',
+                        'color' => '#0284c7',
+                        'margin' => 'none'
+                    ],
                     // カテゴリバッジ
                     [
                         'type' => 'box',
                         'layout' => 'horizontal',
+                        'margin' => 'sm',
                         'contents' => [
                             [
                                 'type' => 'box',
@@ -2894,7 +2904,7 @@ function generateSeniorKnowledgeCarouselMessages(bool $attachQuickReply = true):
     if (!empty($secBubbles)) {
         $messages[] = [
             'type' => 'flex',
-            'altText' => '🚨【防犯・トラブル対策編】シニアお役立ち情報（横スワイプでご覧ください）',
+            'altText' => 'お役立ち情報をお送りします！🚨【防犯・トラブル対策編】（横スワイプでご覧ください）',
             'contents' => [
                 'type' => 'carousel',
                 'contents' => array_slice($secBubbles, 0, 12)
@@ -2907,7 +2917,7 @@ function generateSeniorKnowledgeCarouselMessages(bool $attachQuickReply = true):
     if (!empty($tipsBubbles)) {
         $msg2 = [
             'type' => 'flex',
-            'altText' => '📱💻【スマホ・PC快適便利ワザ編】シニアお役立ち情報（横スワイプでご覧ください）',
+            'altText' => 'お役立ち情報をお送りします！📱💻【スマホ・PC快適便利ワザ編】（横スワイプでご覧ください）',
             'contents' => [
                 'type' => 'carousel',
                 'contents' => array_slice($tipsBubbles, 0, 12)
@@ -2984,10 +2994,27 @@ function generateSeniorKnowledgeFlexMessage(string $topicId, bool $attachQuickRe
     }
 
     $bodyContents = [
+        // 送信アナウンスヘッダー（お役立ち情報をお送りします！）
+        [
+            'type' => 'box',
+            'layout' => 'horizontal',
+            'contents' => [
+                [
+                    'type' => 'text',
+                    'text' => '📢 お役立ち情報をお送りします！',
+                    'weight' => 'bold',
+                    'size' => 'xs',
+                    'color' => '#0284c7'
+                ]
+            ],
+            'margin' => 'none',
+            'paddingBottom' => '4px'
+        ],
         // カテゴリピルバッジ
         [
             'type' => 'box',
             'layout' => 'horizontal',
+            'margin' => 'sm',
             'contents' => [
                 [
                     'type' => 'box',
@@ -3166,7 +3193,7 @@ function generateSeniorKnowledgeFlexMessage(string $topicId, bool $attachQuickRe
 
     $msg = [
         'type' => 'flex',
-        'altText' => mb_substr("【お役立ち情報】{$title}", 0, 400),
+        'altText' => mb_substr("お役立ち情報をお送りします！【{$title}】", 0, 400),
         'contents' => $bubble
     ];
 

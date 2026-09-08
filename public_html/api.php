@@ -1500,10 +1500,27 @@ try {
 
             // Flex Message 本体の構築（シニアに優しい大文字・高コントラスト設計）
             $bodyContents = [
+                // 送信アナウンスヘッダー（お役立ち情報をお送りします！）
+                [
+                    'type' => 'box',
+                    'layout' => 'horizontal',
+                    'contents' => [
+                        [
+                            'type' => 'text',
+                            'text' => '📢 お役立ち情報をお送りします！',
+                            'weight' => 'bold',
+                            'size' => 'xs',
+                            'color' => '#0284c7'
+                        ]
+                    ],
+                    'margin' => 'none',
+                    'paddingBottom' => '4px'
+                ],
                 // カテゴリバッジ（LINE Flex仕様に準拠したflex:0によるピルバッジ）
                 [
                     'type' => 'box',
                     'layout' => 'horizontal',
+                    'margin' => 'sm',
                     'contents' => [
                         [
                             'type' => 'box',
@@ -1689,7 +1706,7 @@ try {
 
             $flexMessage = [
                 'type' => 'flex',
-                'altText' => mb_substr("【シニアお役立ち情報】{$title}", 0, 400),
+                'altText' => mb_substr("お役立ち情報をお送りします！【{$title}】", 0, 400),
                 'contents' => $bubble
             ];
             if (function_exists('getSeniorKnowledgeQuickReplyItems')) {
