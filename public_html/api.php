@@ -1690,11 +1690,12 @@ try {
                 // LINE公式アカウント友だち全員へ一斉配信 (Broadcast)
                 $res = sendLineBroadcastMessage([$flexMessage]);
                 if (!empty($res['success'])) {
-                    recordAdminNotificationLog($db, 'knowledge_broadcast', "お役立ち情報一斉配信: {$title}");
+                    writeDebugLog("お役立ち情報一斉配信成功", ['title' => $title]);
                     echo json_encode([
                         'success' => true,
                         'message' => "LINE公式アカウントの友だち全員へ「{$title}」を一斉配信しました！"
                     ], JSON_UNESCAPED_UNICODE);
+                    exit;
                 } else {
                     $errMsg = !empty($res['error']) ? $res['error'] : (!empty($res['response']) ? $res['response'] : 'APIエラー');
                     http_response_code(500);
@@ -1712,6 +1713,7 @@ try {
                         'success' => true,
                         'message' => "指定された受講生へ「{$title}」を送信しました！"
                     ], JSON_UNESCAPED_UNICODE);
+                    exit;
                 } else {
                     $errMsg = !empty($res['error']) ? $res['error'] : (!empty($res['response']) ? $res['response'] : 'APIエラー');
                     http_response_code(500);

@@ -3157,12 +3157,13 @@ async function submitKnowledgeBroadcast() {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: payload.toString()
         });
-        let data;
+        const rawText = await res.text();
+        let data = null;
         try {
-            data = await res.json();
+            data = JSON.parse(rawText);
         } catch (jsonErr) {
-            const raw = await res.text().catch(() => '');
-            throw new Error(raw ? raw.substring(0, 300) : 'サーバーからの応答の解析に失敗しました');
+            console.error('API raw response parse error:', rawText);
+            throw new Error(rawText ? rawText.substring(0, 300) : 'サーバーからの応答の解析に失敗しました');
         }
 
         if (data && data.success) {
