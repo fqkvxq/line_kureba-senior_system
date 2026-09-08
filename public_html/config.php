@@ -2291,8 +2291,10 @@ function getSeniorKnowledgePresets(): array {
     $bookingUrl = defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1';
 
     return [
+        // === 🚨【防犯・トラブル・緊急対策編】（10テーマ） ===
         'scam_virus_alert' => [
             'id' => 'scam_virus_alert',
+            'group' => 'security',
             'category' => '🚨 偽警告・詐欺対策',
             'badge_color' => '#e11d48',
             'label' => '🚨 偽警告詐欺対策',
@@ -2309,8 +2311,9 @@ function getSeniorKnowledgePresets(): array {
         ],
         'scam_fake_sms' => [
             'id' => 'scam_fake_sms',
+            'group' => 'security',
             'category' => '⚠️ 不在通知詐欺対策',
-            'badge_color' => '#e11d48',
+            'badge_color' => '#ea580c',
             'label' => '⚠️ 偽SMS対策',
             'title' => '⚠️ ヤマトや佐川を名乗る偽SMS（不在通知）にご注意！',
             'subtitle' => '「お荷物をお届けにあがりましたが…」というSMSのリンクは絶対に開かないでください！',
@@ -2325,6 +2328,7 @@ function getSeniorKnowledgePresets(): array {
         ],
         'scam_fake_pdf' => [
             'id' => 'scam_fake_pdf',
+            'group' => 'security',
             'category' => '🚨 偽広告・詐欺対策',
             'badge_color' => '#e11d48',
             'label' => '📄 偽PDFアプリ詐欺',
@@ -2340,8 +2344,130 @@ function getSeniorKnowledgePresets(): array {
             'btn1_label' => '📅 教室でスマホ・PC点検を予約',
             'btn1_url' => $bookingUrl
         ],
+        'scam_support_phone' => [
+            'id' => 'scam_support_phone',
+            'group' => 'security',
+            'category' => '📞 偽サポート詐欺対策',
+            'badge_color' => '#dc2626',
+            'label' => '📞 偽電話サポート罠',
+            'title' => '📞「マイクロソフトに電話を」？偽サポート電話詐欺の恐ろしい手口',
+            'subtitle' => '画面に表示された電話番号に電話をかけると、片言の日本語で遠隔操作を迫られます！',
+            'points' => [
+                'マイクロソフトや大手企業が画面に電話番号を出して電話を求めることは100％ありません',
+                '電話すると「遠隔操作ソフト」を入れられ、パソコン内の写真や個人情報を盗まれます',
+                '「修理代」としてコンビニで電子マネー（Google Playカード等）を買わせるのは典型的な詐欺手口です'
+            ],
+            'advice' => '電話番号が表示されても絶対に電話をかけてはいけません！もし電話してしまったりカードを買うよう言われたら、すぐ電話を切り教室にご連絡ください。',
+            'btn1_label' => '📅 教室で緊急相談・点検予約',
+            'btn1_url' => $bookingUrl
+        ],
+        'scam_line_friend' => [
+            'id' => 'scam_line_friend',
+            'group' => 'security',
+            'category' => '👤 LINE乗っ取り防止',
+            'badge_color' => '#e11d48',
+            'label' => '👤 LINE乗っ取り詐欺',
+            'title' => '👤 友人から「認証番号教えて」と届いたら詐欺！LINE乗っ取りの防ぎ方',
+            'subtitle' => '仲の良いお友だちのアカウントから突然届く「携帯が壊れたから番号教えて」は乗っ取り犯です！',
+            'points' => [
+                '「電話番号と4桁の暗証番号を教えて」というメッセージは絶対に信じてはいけません',
+                'SMSに届いた「認証番号（セキュリティコード）」を他人に教えると、あなたのLINEが乗っ取られます',
+                '怪しいと思ったらLINEではなく、直接電話してお友だち本人に確認しましょう'
+            ],
+            'advice' => 'お友だち本人が書いた文章に見えても、文面が不自然な時は要注意です。不安なメッセージが届いたら教室スタッフにお見せください！',
+            'btn1_label' => '📅 LINE設定を教室で相談',
+            'btn1_url' => $bookingUrl
+        ],
+        'safe_free_wifi' => [
+            'id' => 'safe_free_wifi',
+            'group' => 'security',
+            'category' => '📶 通信セキュリティ',
+            'badge_color' => '#ea580c',
+            'label' => '📶 無料Wi-Fiの注意点',
+            'title' => '📶 街や病院の「無料Wi-Fi」安全な使い方と危険な落とし穴',
+            'subtitle' => 'カフェや商業施設のフリーWi-Fiは便利ですが、使い方を誤ると通信を盗み見られる危険があります！',
+            'points' => [
+                '鍵マークのない「暗号化されていないWi-Fi」では、パスワードやクレジットカード番号を入力しない',
+                '本物そっくりに偽装した「偽アクセスポイント」に自動接続させないよう「Wi-Fi自動接続」はオフ推奨',
+                '銀行のネットバンキングや大事な買い物は、自宅のWi-Fiかスマホの携帯電波（4G/5G）で行う'
+            ],
+            'advice' => '外出先で安全にWi-Fiをつなぐコツや、安全な設定方法は教室でわかりやすくレッスンいたします！',
+            'btn1_label' => '📅 スマホ通信設定を教室で相談',
+            'btn1_url' => $bookingUrl
+        ],
+        'pc_numlock_trouble' => [
+            'id' => 'pc_numlock_trouble',
+            'group' => 'security',
+            'category' => '🔢 キーボードトラブル',
+            'badge_color' => '#d97706',
+            'label' => '🔢 数字が打てない解決',
+            'title' => '🔢 キーボード右の数字が打てない！「NumLock」ランプの謎を解決',
+            'subtitle' => '「数字を押したのに画面が動くだけで打てない！」シニアの相談件数No.1トラブルです。',
+            'points' => [
+                'テンキー（右側の数字キー）の上にある「NumLock（ニューロック）」キーを1回押すだけ！',
+                'キーボードの「NumLock」ランプが点灯していれば数字入力、消えていると矢印移動になります',
+                'ノートパソコンで文字キーを押すと数字が出る場合は「Fn」＋「NumLock」で解除できます'
+            ],
+            'advice' => 'パソコンの故障ではなく、キーの押し間違いが原因です。教室のキーボードで実際にランプの点き方を確認してみましょう！',
+            'btn1_label' => '📅 パソコン操作を教室で相談',
+            'btn1_url' => $bookingUrl
+        ],
+        'pc_freeze_safety' => [
+            'id' => 'pc_freeze_safety',
+            'group' => 'security',
+            'category' => '💻 故障防止・緊急対応',
+            'badge_color' => '#0284c7',
+            'label' => '💻 画面フリーズ強制終了',
+            'title' => '💻 画面がカチコチに固まった！慌てず行う「安全な強制終了」手順',
+            'subtitle' => 'マウスも動かない時、いきなりコンセントを抜くのは故障の元！安全な終了手順を覚えましょう。',
+            'points' => [
+                '【手順①】まずは3分待ってみる（裏で更新作業中の一時的な停止の可能性があるため）',
+                '【手順②】パソコン本体の「電源ボタン」を指でグッと約5〜8秒間押し続ける',
+                '【手順③】ランプとファンの音が完全に消えたら、1分休ませてから再度電源を入れます'
+            ],
+            'advice' => '頻繁にフリーズを繰り返す場合は、ハードディスクの寿命やウイルス感染の疑いがあります。無理に使わず教室で無料健康診断をお受けください！',
+            'btn1_label' => '🛠️ パソコン健康診断を予約',
+            'btn1_url' => $bookingUrl
+        ],
+        'pc_fan_dust' => [
+            'id' => 'pc_fan_dust',
+            'group' => 'security',
+            'category' => '🧹 パソコン延命ケア',
+            'badge_color' => '#059669',
+            'label' => '🧹 PCホコリ掃除と異音',
+            'title' => '🧹 パソコンが熱い・急に切れる？寿命を延ばす「通気口のホコリ掃除」',
+            'subtitle' => '「ファンがゴーッと唸る」「本体がやけどしそうに熱い」のはホコリ詰まりのサインです！',
+            'points' => [
+                'パソコンの側面や底面にあるスリット（通気口）にホコリがたまると、熱を逃がせず急に電源が落ちます',
+                '必ず電源を切り電源コードを抜いてから、通気口のホコリを掃除機で弱く吸い取るか乾いた布で拭く',
+                '布団やこたつ布団の上など、通気口がふさがる場所でノートPCを使うのは故障の最大原因です'
+            ],
+            'advice' => '内部の精密清掃やファンのお手入れは分解が必要な場合もあります。教室にお持ちいただければスタッフが安全に清掃・点検いたします！',
+            'btn1_label' => '🛠️ パソコン内部清掃・点検予約',
+            'btn1_url' => $bookingUrl
+        ],
+        'line_unsend_mistake' => [
+            'id' => 'line_unsend_mistake',
+            'group' => 'security',
+            'category' => '💬 LINE誤送信防止',
+            'badge_color' => '#7c3aed',
+            'label' => '💬 送信間違え送信取消',
+            'title' => '💬 LINEで間違えて別の友だちに送っちゃった！24時間以内の「送信取消」',
+            'subtitle' => '「相手を間違えてメッセージや写真を送ってしまった！」そんな時の救済ワザです。',
+            'points' => [
+                '間違えた吹き出しを「指で長押し」してメニューを出す',
+                '【超重要】「削除」ではなく「送信取消」を選ぶ（削除は自分の画面から消えるだけ！）',
+                '送信後「24時間以内」なら相手のトーク画面からもメッセージを消すことができます'
+            ],
+            'advice' => '「削除」を押して相手の画面に残ってしまった…というご相談がよくあります。違いを教室のレッスンでマスターしておくと安心です！',
+            'btn1_label' => '📅 LINE使い方レッスンを予約',
+            'btn1_url' => $bookingUrl
+        ],
+
+        // === 📱💻【スマホ・PC快適便利ワザ編】（10テーマ） ===
         'phone_large_text' => [
             'id' => 'phone_large_text',
+            'group' => 'tips',
             'category' => '📱 スマホ見やすさ設定',
             'badge_color' => '#0284c7',
             'label' => '📱 スマホ文字拡大',
@@ -2358,6 +2484,7 @@ function getSeniorKnowledgePresets(): array {
         ],
         'line_font_size' => [
             'id' => 'line_font_size',
+            'group' => 'tips',
             'category' => '💬 LINE便利ワザ',
             'badge_color' => '#7c3aed',
             'label' => '💬 LINE文字特大化',
@@ -2372,8 +2499,43 @@ function getSeniorKnowledgePresets(): array {
             'btn1_label' => '📅 レッスン予約・日程変更',
             'btn1_url' => $bookingUrl
         ],
+        'phone_voice_input' => [
+            'id' => 'phone_voice_input',
+            'group' => 'tips',
+            'category' => '🗣️ スマホ神ワザ',
+            'badge_color' => '#0284c7',
+            'label' => '🗣️ らくらく音声入力',
+            'title' => '🗣️ キーボード入力不要！マイクで話すだけの「音声入力」超入門',
+            'subtitle' => '「文字入力が遅い・ボタンが小さくて押しづらい」という方は、マイクに向かって話すだけでOK！',
+            'points' => [
+                'キーボードの端にある「マイクのマーク」をポンと1回タップする',
+                '「こんにちは」「明日の10時に行きます」とスマホに話しかけるだけで文字が自動入力されます',
+                '「まる」と言うと「。」、「てん」と言うと「、」、「かいぎょう」と言うと改行されます'
+            ],
+            'advice' => '今の音声認識は驚くほど正確です！手が疲れる方やメール作成に時間がかかる方はぜひ教室で練習してみましょう。世界が変わります！',
+            'btn1_label' => '📅 音声入力レッスンを予約',
+            'btn1_url' => $bookingUrl
+        ],
+        'pc_mouse_zoom' => [
+            'id' => 'pc_mouse_zoom',
+            'group' => 'tips',
+            'category' => '🔍 パソコン便利技',
+            'badge_color' => '#059669',
+            'label' => '🔍 画面拡大Ctrl+車輪',
+            'title' => '🔍 ホームページの文字が一瞬で特大に！「Ctrl ＋ マウス車輪」',
+            'subtitle' => '「インターネットの文字が小さくて読めない…」メガネを探す前にこの操作をお試しください！',
+            'points' => [
+                'キーボード左下の「Ctrl（コントロール）」キーを押したまま、マウスの真ん中の車輪（ホイール）を上へ回す',
+                'ホームページの文字や写真が一瞬でグングン拡大されます（下へ回すと縮小）',
+                '元の100%サイズに戻したい時は、「Ctrl」キーを押しながら数字の「0」を押すだけ！'
+            ],
+            'advice' => 'Yahoo!ニュースやブログ、ネット検索を見るのが劇的に楽になります。教室のレッスンで感覚を掴んでみましょう！',
+            'btn1_label' => '📅 パソコン便利技レッスン予約',
+            'btn1_url' => $bookingUrl
+        ],
         'battery_care' => [
             'id' => 'battery_care',
+            'group' => 'tips',
             'category' => '🔋 スマホ長持ちのコツ',
             'badge_color' => '#0284c7',
             'label' => '🔋 電池長持ちの習慣',
@@ -2390,6 +2552,7 @@ function getSeniorKnowledgePresets(): array {
         ],
         'photo_cleanup' => [
             'id' => 'photo_cleanup',
+            'group' => 'tips',
             'category' => '📸 写真・容量整理',
             'badge_color' => '#0284c7',
             'label' => '📸 写真の簡単整理術',
@@ -2406,6 +2569,7 @@ function getSeniorKnowledgePresets(): array {
         ],
         'pc_restart_magic' => [
             'id' => 'pc_restart_magic',
+            'group' => 'tips',
             'category' => '⚡ パソコン快適化',
             'badge_color' => '#059669',
             'label' => '⚡ PC再起動の魔法',
@@ -2422,6 +2586,7 @@ function getSeniorKnowledgePresets(): array {
         ],
         'pc_shortcuts' => [
             'id' => 'pc_shortcuts',
+            'group' => 'tips',
             'category' => '⌨️ パソコン便利技',
             'badge_color' => '#059669',
             'label' => '⌨️ 3大ショートカット',
@@ -2438,6 +2603,7 @@ function getSeniorKnowledgePresets(): array {
         ],
         'pc_caps_lock' => [
             'id' => 'pc_caps_lock',
+            'group' => 'tips',
             'category' => '🔤 文字入力トラブル',
             'badge_color' => '#059669',
             'label' => '🔤 大文字ロック解除',
@@ -2454,6 +2620,7 @@ function getSeniorKnowledgePresets(): array {
         ],
         'disaster_apps' => [
             'id' => 'disaster_apps',
+            'group' => 'tips',
             'category' => '🏥 安心・暮らしのデジタル',
             'badge_color' => '#d97706',
             'label' => '🏥 スマホ防災速報',
@@ -2479,8 +2646,24 @@ function getSeniorKnowledgeQuickReplyItems(?string $currentTopic = null): array 
     $presets = getSeniorKnowledgePresets();
     $items = [];
 
-    // 10テーマのボタンを生成（発言による通知音防止のため displayText は設定せずサイレントPostbackにする）
-    foreach ($presets as $tId => $data) {
+    // クイックリプライはLINE上限13個。代表的・人気の11テーマを厳選配置
+    $highlightTopics = [
+        'scam_fake_pdf',      // 📄 偽PDF詐欺
+        'scam_virus_alert',   // 🚨 偽警告対策
+        'scam_support_phone', // 📞 偽電話サポート
+        'scam_fake_sms',      // ⚠️ 偽SMS対策
+        'scam_line_friend',   // 👤 LINE乗っ取り
+        'phone_large_text',   // 📱 文字拡大
+        'line_font_size',     // 💬 LINE特大
+        'phone_voice_input',  // 🗣️ 音声入力
+        'pc_mouse_zoom',      // 🔍 画面拡大
+        'pc_restart_magic',   // ⚡ PC再起動
+        'pc_numlock_trouble'  // 🔢 数字打てない
+    ];
+
+    foreach ($highlightTopics as $tId) {
+        if (!isset($presets[$tId])) continue;
+        $data = $presets[$tId];
         $label = mb_substr($data['label'], 0, 20);
         $items[] = [
             'type' => 'action',
@@ -2507,7 +2690,7 @@ function getSeniorKnowledgeQuickReplyItems(?string $currentTopic = null): array 
         'type' => 'action',
         'action' => [
             'type' => 'postback',
-            'label' => '📚 全テーマ一覧',
+            'label' => '📚 全20テーマ一覧',
             'data' => 'action=show_knowledge_menu'
         ]
     ];
@@ -2519,22 +2702,18 @@ function getSeniorKnowledgeQuickReplyItems(?string $currentTopic = null): array 
 }
 
 /**
- * シニア向けお役立ち情報 全テーマ一覧カルーセルメッセージを構築
- * LINE Flex Message Carousel 仕様（最大12バブル）
+ * 1グループ分のカルーセルバブル配列を構築するヘルパー
  */
-function generateSeniorKnowledgeCarouselMessage(bool $attachQuickReply = true): array {
-    $presets = getSeniorKnowledgePresets();
+function buildKnowledgeCarouselBubbles(array $presetGroup): array {
     $bookingUrl = defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1';
-
     $bubbles = [];
 
-    foreach ($presets as $tId => $data) {
+    foreach ($presetGroup as $tId => $data) {
         $category = $data['category'] ?? 'お役立ち情報';
         $badgeColor = $data['badge_color'] ?? '#0284c7';
         $title = $data['title'] ?? 'お役立ち情報';
         $points = $data['points'] ?? [];
 
-        // ポイント要約（最初の2点）
         $pointBoxes = [];
         if (!empty($points[0])) {
             $pointBoxes[] = [
@@ -2588,7 +2767,7 @@ function generateSeniorKnowledgeCarouselMessage(bool $attachQuickReply = true): 
             ];
         }
 
-        $bubble = [
+        $bubbles[] = [
             'type' => 'bubble',
             'size' => 'kilo',
             'body' => [
@@ -2685,27 +2864,70 @@ function generateSeniorKnowledgeCarouselMessage(bool $attachQuickReply = true): 
                 ]
             ]
         ];
-
-        $bubbles[] = $bubble;
     }
 
-    // LINEカルーセル仕様の最大12個以内に収める（現在11テーマ）
-    $carouselContents = array_slice($bubbles, 0, 12);
+    return $bubbles;
+}
 
-    $msg = [
-        'type' => 'flex',
-        'altText' => '💡【シニアお役立ち情報】全テーマ一覧（横にスワイプしてご覧ください）',
-        'contents' => [
-            'type' => 'carousel',
-            'contents' => $carouselContents
-        ]
-    ];
+/**
+ * シニア向けお役立ち情報 全20テーマを2つのカルーセルメッセージ（防犯編・便利ワザ編 各10バブル）に分割して構築
+ * LINE Flex Message Carousel 仕様（最大12バブル/メッセージ）に完全準拠
+ */
+function generateSeniorKnowledgeCarouselMessages(bool $attachQuickReply = true): array {
+    $presets = getSeniorKnowledgePresets();
 
-    if ($attachQuickReply && function_exists('getSeniorKnowledgeQuickReplyItems')) {
-        $msg['quickReply'] = getSeniorKnowledgeQuickReplyItems();
+    $securityGroup = [];
+    $tipsGroup = [];
+
+    foreach ($presets as $tId => $data) {
+        if (($data['group'] ?? '') === 'security') {
+            $securityGroup[$tId] = $data;
+        } else {
+            $tipsGroup[$tId] = $data;
+        }
     }
 
-    return $msg;
+    $messages = [];
+
+    // 第1便: 🚨 防犯・トラブル・緊急対策編（10選）
+    $secBubbles = buildKnowledgeCarouselBubbles($securityGroup);
+    if (!empty($secBubbles)) {
+        $messages[] = [
+            'type' => 'flex',
+            'altText' => '🚨【防犯・トラブル対策編】シニアお役立ち情報（横スワイプでご覧ください）',
+            'contents' => [
+                'type' => 'carousel',
+                'contents' => array_slice($secBubbles, 0, 12)
+            ]
+        ];
+    }
+
+    // 第2便: 📱💻 スマホ・PC快適便利ワザ編（10選）
+    $tipsBubbles = buildKnowledgeCarouselBubbles($tipsGroup);
+    if (!empty($tipsBubbles)) {
+        $msg2 = [
+            'type' => 'flex',
+            'altText' => '📱💻【スマホ・PC快適便利ワザ編】シニアお役立ち情報（横スワイプでご覧ください）',
+            'contents' => [
+                'type' => 'carousel',
+                'contents' => array_slice($tipsBubbles, 0, 12)
+            ]
+        ];
+        if ($attachQuickReply && function_exists('getSeniorKnowledgeQuickReplyItems')) {
+            $msg2['quickReply'] = getSeniorKnowledgeQuickReplyItems();
+        }
+        $messages[] = $msg2;
+    }
+
+    return $messages;
+}
+
+/**
+ * 互換用: 単一カルーセルメッセージを返す関数
+ */
+function generateSeniorKnowledgeCarouselMessage(bool $attachQuickReply = true): array {
+    $msgs = generateSeniorKnowledgeCarouselMessages($attachQuickReply);
+    return !empty($msgs) ? $msgs[0] : [];
 }
 
 /**

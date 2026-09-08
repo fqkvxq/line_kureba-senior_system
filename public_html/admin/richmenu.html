@@ -268,23 +268,30 @@
                                     </label>
                                     <select id="postbackPresetSelect" class="form-select" style="width: 100%; padding: 7px 10px; font-size: 13px; font-weight: 700; border: 1.5px solid #818cf8; border-radius: 6px; background: #ffffff; color: #1e1b4b;">
                                         <option value="">-- お役立ち機能・テーマを選択（ワンクリック反映） --</option>
-                                        <option value="action=show_knowledge_menu">💡【全テーマ一覧】お役立ちガイド＆クイックリプライ表示</option>
-                                        <optgroup label="🚨 偽広告・防犯詐欺対策">
+                                        <option value="action=show_knowledge_menu">💡【全20テーマ一覧】お役立ちガイド＆カルーセル表示</option>
+                                        <optgroup label="🚨 偽広告・防犯詐欺・緊急対策（10選）">
                                             <option value="action=show_senior_kb&topic=scam_fake_pdf">📄 偽PDFアプリ詐欺の危険と悪影響</option>
                                             <option value="action=show_senior_kb&topic=scam_virus_alert">🚨 パソコン偽警告・ウイルス感染詐欺対策</option>
+                                            <option value="action=show_senior_kb&topic=scam_support_phone">📞 偽サポート電話詐欺・遠隔操作の罠</option>
                                             <option value="action=show_senior_kb&topic=scam_fake_sms">⚠️ 偽不在SMS・フィッシング対策</option>
+                                            <option value="action=show_senior_kb&topic=scam_line_friend">👤 友人からのLINE乗っ取り詐欺</option>
+                                            <option value="action=show_senior_kb&topic=safe_free_wifi">📶 街や病院の無料Wi-Fi注意点</option>
+                                            <option value="action=show_senior_kb&topic=pc_numlock_trouble">🔢 キーボードの数字が打てないNumLock</option>
+                                            <option value="action=show_senior_kb&topic=pc_freeze_safety">💻 画面フリーズ時の安全な強制終了</option>
+                                            <option value="action=show_senior_kb&topic=pc_fan_dust">🧹 PCホコリ掃除と異音対策</option>
+                                            <option value="action=show_senior_kb&topic=line_unsend_mistake">💬 LINE送信間違い・24時間送信取消</option>
                                         </optgroup>
-                                        <optgroup label="📱 スマホ便利ワザ・設定">
+                                        <optgroup label="📱💻 スマホ・PC快適便利ワザ（10選）">
                                             <option value="action=show_senior_kb&topic=phone_large_text">📱 スマホ文字拡大・見やすさ設定</option>
                                             <option value="action=show_senior_kb&topic=line_font_size">💬 LINEメッセージ文字の特大化</option>
+                                            <option value="action=show_senior_kb&topic=phone_voice_input">🗣️ 話すだけ！らくらく音声入力術</option>
+                                            <option value="action=show_senior_kb&topic=pc_mouse_zoom">🔍 画面拡大Ctrl+マウス車輪の神ワザ</option>
                                             <option value="action=show_senior_kb&topic=battery_care">🔋 バッテリー長持ち3つの習慣</option>
                                             <option value="action=show_senior_kb&topic=photo_cleanup">📸 たまった写真の簡単整理術</option>
-                                            <option value="action=show_senior_kb&topic=disaster_apps">🏥 スマホ防災速報・ハザードマップ</option>
-                                        </optgroup>
-                                        <optgroup label="💻 パソコン便利ワザ・トラブル">
                                             <option value="action=show_senior_kb&topic=pc_restart_magic">⚡ PC不調時の魔法「再起動」</option>
                                             <option value="action=show_senior_kb&topic=pc_shortcuts">⌨️ 3大魔法のショートカットキー</option>
                                             <option value="action=show_senior_kb&topic=pc_caps_lock">🔤 勝手に大文字？Caps Lock解除</option>
+                                            <option value="action=show_senior_kb&topic=disaster_apps">🏥 スマホ防災速報・ハザードマップ</option>
                                         </optgroup>
                                         <optgroup label="🏢 教室サポート・その他">
                                             <option value="action=ask_class&topic=お役立ち情報">💬 教室スタッフに質問・相談</option>
@@ -300,15 +307,17 @@
                                     <button class="quick-chip chip-highlight" type="button" data-val="action=show_knowledge_menu" style="background: #e0e7ff; color: #3730a3; border-color: #818cf8; font-weight: 800;">💡 お役立ちガイド一覧</button>
                                     <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=scam_fake_pdf" style="color: #e11d48; font-weight: 700; border-color: #fecdd3;">📄 偽PDF詐欺注意</button>
                                     <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=scam_virus_alert" style="color: #e11d48;">🚨 偽警告対策</button>
-                                    <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=scam_fake_sms" style="color: #e11d48;">⚠️ 偽SMS対策</button>
-                                    <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=phone_large_text">📱 文字拡大</button>
-                                    <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=line_font_size">💬 LINE特大</button>
-                                    <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=battery_care">🔋 電池長持ち</button>
-                                    <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=photo_cleanup">📸 写真整理</button>
-                                    <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=pc_restart_magic">⚡ PC再起動</button>
-                                    <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=pc_shortcuts">⌨️ 3大キー</button>
-                                    <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=pc_caps_lock">🔤 大文字解除</button>
-                                    <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=disaster_apps">🏥 防災速報</button>
+                                    <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=scam_support_phone" style="color: #dc2626;">📞 偽電話サポート</button>
+                                    <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=scam_fake_sms" style="color: #ea580c;">⚠️ 偽SMS対策</button>
+                                    <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=scam_line_friend" style="color: #e11d48;">👤 LINE乗っ取り</button>
+                                    <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=phone_voice_input" style="color: #0284c7; font-weight: 700;">🗣️ 音声入力</button>
+                                    <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=pc_mouse_zoom" style="color: #059669; font-weight: 700;">🔍 画面拡大</button>
+                                    <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=phone_large_text" style="color: #0284c7;">📱 文字拡大</button>
+                                    <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=line_font_size" style="color: #7c3aed;">💬 LINE特大</button>
+                                    <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=pc_numlock_trouble" style="color: #d97706;">🔢 数字打てない</button>
+                                    <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=pc_restart_magic" style="color: #059669;">⚡ PC再起動</button>
+                                    <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=pc_shortcuts" style="color: #059669;">⌨️ 3大キー</button>
+                                    <button class="quick-chip" type="button" data-val="action=show_senior_kb&topic=disaster_apps" style="color: #d97706;">🏥 防災速報</button>
                                     <button class="quick-chip" type="button" data-val="action=ask_class&topic=お役立ち情報">💬 教室相談</button>
                                     <button class="quick-chip" type="button" data-val="action=open_mycar">💻 マイカルテ</button>
                                     <button class="quick-chip" type="button" data-val="action=show_notice_menu">📢 お知らせ</button>
@@ -609,6 +618,6 @@
     <!-- トースト通知 -->
     <div class="toast-notification" id="adminToast"></div>
 
-    <script src="richmenu.js?v=20260908_carousel_v1"></script>
+    <script src="richmenu.js?v=20260908_20topics_v1"></script>
 </body>
 </html>

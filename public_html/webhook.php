@@ -2091,7 +2091,13 @@ function generateDistanceMenuMessages(PDO $db): array {
  * シニア向けスマホ・PCお役立ちガイドメニューを送信（横スクロールカルーセル＋クイックリプライ付き）
  */
 function sendKnowledgeMenuMessage(string $replyToken) {
-    if (function_exists('generateSeniorKnowledgeCarouselMessage')) {
+    if (function_exists('generateSeniorKnowledgeCarouselMessages')) {
+        $carouselMsgs = generateSeniorKnowledgeCarouselMessages(true);
+        if (!empty($carouselMsgs)) {
+            sendReplyMessage($replyToken, $carouselMsgs);
+            return;
+        }
+    } elseif (function_exists('generateSeniorKnowledgeCarouselMessage')) {
         $carouselMsg = generateSeniorKnowledgeCarouselMessage(true);
         sendReplyMessage($replyToken, [$carouselMsg]);
         return;
