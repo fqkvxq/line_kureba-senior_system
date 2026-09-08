@@ -1682,6 +1682,9 @@ try {
                 'altText' => mb_substr("【シニアお役立ち情報】{$title}", 0, 400),
                 'contents' => $bubble
             ];
+            if (function_exists('getSeniorKnowledgeQuickReplyItems')) {
+                $flexMessage['quickReply'] = getSeniorKnowledgeQuickReplyItems();
+            }
 
             if ($targetType === 'all') {
                 // LINE公式アカウント友だち全員へ一斉配信 (Broadcast)

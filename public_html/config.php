@@ -2264,3 +2264,463 @@ function relayWebhookToProline(string $rawBody, string $signature = '', ?PDO $pd
     ];
 }
 
+// ==========================================================================
+// シニア向けスマホ・PCお役立ち情報 & クイックリプライ閲覧エンジン
+// ==========================================================================
+
+/**
+ * シニア向けお役立ち全10テーマのマスター定義
+ */
+function getSeniorKnowledgePresets(): array {
+    $bookingUrl = defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1';
+
+    return [
+        'scam_virus_alert' => [
+            'id' => 'scam_virus_alert',
+            'category' => '🚨 偽警告・詐欺対策',
+            'badge_color' => '#e11d48',
+            'label' => '🚨 偽警告詐欺対策',
+            'title' => '🚨 パソコンの「ウイルス感染警告」は詐欺！慌てず閉じる方法',
+            'subtitle' => '画面に突然ピーッと警告音や電話番号が出ても絶対に電話をかけてはいけません！',
+            'points' => [
+                '画面に表示される電話番号には絶対に電話しない',
+                'キーボードの「Esc」長押し、または「Ctrl+Alt+Delete」で画面を閉じる',
+                '不安な時は電源ボタン長押しで強制終了し、教室へご相談ください'
+            ],
+            'advice' => '「警告画面が消えない」「操作が不安」という時は、無理に触らずそのまま教室へお持ちください。スタッフが一緒に安全を確認します！',
+            'btn1_label' => '📅 教室で直接相談・予約する',
+            'btn1_url' => $bookingUrl
+        ],
+        'scam_fake_sms' => [
+            'id' => 'scam_fake_sms',
+            'category' => '⚠️ 不在通知詐欺対策',
+            'badge_color' => '#e11d48',
+            'label' => '⚠️ 偽SMS対策',
+            'title' => '⚠️ ヤマトや佐川を名乗る偽SMS（不在通知）にご注意！',
+            'subtitle' => '「お荷物をお届けにあがりましたが…」というSMSのリンクは絶対に開かないでください！',
+            'points' => [
+                'SMSに書かれた青い英数字リンク（URL）は絶対に押さない',
+                '荷物の確認は、公式アプリやLINEの公式通知から行う',
+                '万が一リンクを開いてしまっても、電話番号やパスワードは絶対に入力しない'
+            ],
+            'advice' => '心当たりのない不審なSMSが届いた時は、削除するか、スクリーンショットを撮って教室でお見せください！',
+            'btn1_label' => '📅 教室で直接相談・予約する',
+            'btn1_url' => $bookingUrl
+        ],
+        'phone_large_text' => [
+            'id' => 'phone_large_text',
+            'category' => '📱 スマホ見やすさ設定',
+            'badge_color' => '#0284c7',
+            'label' => '📱 スマホ文字拡大',
+            'title' => '📱 スマホの文字をもっと大きく！目に優しい簡単設定',
+            'subtitle' => '「画面の文字が小さくて読みづらい…」とお悩みの方へ。文字を大きく太くする設定です！',
+            'points' => [
+                'iPhone: 「設定」→「画面表示と明るさ」→「テキストサイズを変更」',
+                'Android: 「設定」→「ディスプレイ」→「フォントサイズと表示サイズ」',
+                '「文字を太くする」をオンにすると、さらにクッキリ見やすくなります'
+            ],
+            'advice' => '教室のレッスンで、ご自身のスマホに合わせて一番読みやすい大きさに一緒に設定調整いたします！',
+            'btn1_label' => '📅 スマホ設定を教室で相談する',
+            'btn1_url' => $bookingUrl
+        ],
+        'line_font_size' => [
+            'id' => 'line_font_size',
+            'category' => '💬 LINE便利ワザ',
+            'badge_color' => '#7c3aed',
+            'label' => '💬 LINE文字特大化',
+            'title' => '💬 LINEのメッセージ文字だけを特大サイズにする方法',
+            'subtitle' => 'お友だちやご家族からのメッセージがぐんと読みやすくなります！',
+            'points' => [
+                'LINEの「ホーム」右上の歯車マーク（設定）をタップ',
+                '「トーク」→「フォントサイズ」を選ぶ',
+                '「特大」を選ぶと、トークの文字が大きく見やすくなります'
+            ],
+            'advice' => 'スマホ全体の文字は変えずに、LINEだけ大きくすることも可能です。教室で一緒にやってみましょう！',
+            'btn1_label' => '📅 レッスン予約・日程変更',
+            'btn1_url' => $bookingUrl
+        ],
+        'battery_care' => [
+            'id' => 'battery_care',
+            'category' => '🔋 スマホ長持ちのコツ',
+            'badge_color' => '#0284c7',
+            'label' => '🔋 電池長持ちの習慣',
+            'title' => '🔋 スマートフォンのバッテリーを長持ちさせる3つの習慣',
+            'subtitle' => '電池の減りが早くなってきたと感じたら、この使い方を試してみてください！',
+            'points' => [
+                '充電しながらの長時間の動画視聴や操作を避ける（発熱予防）',
+                '画面の明るさを「自動調整」にするか、少し暗めに設定する',
+                '使っていない時はWi-FiやBluetoothをこまめにオフにする'
+            ],
+            'advice' => '「夕方には充電が切れてしまう」「スマホが熱くなる」などの点検も教室で行っています。お気軽に診断へお越しください！',
+            'btn1_label' => '🛠️ スマホ・PC健康診断を予約',
+            'btn1_url' => $bookingUrl
+        ],
+        'photo_cleanup' => [
+            'id' => 'photo_cleanup',
+            'category' => '📸 写真・容量整理',
+            'badge_color' => '#0284c7',
+            'label' => '📸 写真の簡単整理術',
+            'title' => '📸 スマホの容量がいっぱい？たまった写真の簡単整理術',
+            'subtitle' => 'お孫さんの写真や旅行の写真でメモリがいっぱいになる前の安心お手入れ法です！',
+            'points' => [
+                'ブレた写真や連写写真、不要なスクリーンショットを先に削除',
+                'お気に入りの写真には「♡（ハートマーク）」を付けて整理',
+                'Googleフォトやパソコンへ定期バックアップしてスマホをスッキリ'
+            ],
+            'advice' => '「写真が消えたら怖い」「パソコンへ写真を移したい」時は、USBケーブルを持って教室へお越しください。安全なバックアップ手順をお教えします！',
+            'btn1_label' => '📅 写真整理レッスンを予約',
+            'btn1_url' => $bookingUrl
+        ],
+        'pc_restart_magic' => [
+            'id' => 'pc_restart_magic',
+            'category' => '⚡ パソコン快適化',
+            'badge_color' => '#059669',
+            'label' => '⚡ PC再起動の魔法',
+            'title' => '⚡ パソコンが重い・動かない？「再起動」の魔法とシャットダウンの違い',
+            'subtitle' => '調子が悪い時は、まず「再起動」を試すのが一番の特効薬です！',
+            'points' => [
+                'Windowsの「シャットダウン」は前回の状態を一部保存して終了します',
+                '「再起動」を選ぶと、メモリが完全にリセットされて動作が軽くなります',
+                '週に1〜2回は「スタート」→「電源」→「再起動」を行うのがオススメ'
+            ],
+            'advice' => '再起動しても動きが遅い・ファンが大きな音で回る場合は、不要ソフトの整理が必要かもしれません。教室でPC健康診断をお受けいただけます！',
+            'btn1_label' => '🛠️ パソコン健康診断を予約',
+            'btn1_url' => $bookingUrl
+        ],
+        'pc_shortcuts' => [
+            'id' => 'pc_shortcuts',
+            'category' => '⌨️ パソコン便利技',
+            'badge_color' => '#059669',
+            'label' => '⌨️ 3大ショートカット',
+            'title' => '⌨️ これだけは覚えたい！パソコン3大魔法のショートカットキー',
+            'subtitle' => 'マウスで何度もカチカチ探すより、左手ひとつでパッと操作できるようになります！',
+            'points' => [
+                '【元に戻す】Ctrl ＋ Z（間違えて消してしまった文字や操作が一瞬で復活！）',
+                '【コピー】Ctrl ＋ C（選んだ文字や写真をサッと複製）',
+                '【貼り付け】Ctrl ＋ V（コピーした内容を好きな場所へペタッと貼る）'
+            ],
+            'advice' => 'Ctrl（コントロールキー）はキーボードの左下にあります！レッスンで実際に指を置いて練習してみましょう。',
+            'btn1_label' => '📅 レッスン予約・日程変更',
+            'btn1_url' => $bookingUrl
+        ],
+        'pc_caps_lock' => [
+            'id' => 'pc_caps_lock',
+            'category' => '🔤 文字入力トラブル',
+            'badge_color' => '#059669',
+            'label' => '🔤 大文字ロック解除',
+            'title' => '🔤 文字が勝手に大文字になる？「Caps Lock」のワンキー解決法',
+            'subtitle' => 'パスワードやアルファベットを入力した時、全部大文字になって困ったことはありませんか？',
+            'points' => [
+                '原因はキーボードの「Shift」と「Caps Lock」を一緒に押してしまったこと',
+                '解決法: 「Shift」キーを押しながら「Caps Lock」キーをもう1度押すだけ！',
+                'キーボード上の小さなランプ（Aのランプ）が消えれば通常入力に戻ります'
+            ],
+            'advice' => '入力トラブルの多くはキーボードのちょっとした押し間違いです。焦らず教室スタッフにいつでもご質問ください！',
+            'btn1_label' => '📅 教室で質問・予約',
+            'btn1_url' => $bookingUrl
+        ],
+        'disaster_apps' => [
+            'id' => 'disaster_apps',
+            'category' => '🏥 安心・暮らしのデジタル',
+            'badge_color' => '#d97706',
+            'label' => '🏥 スマホ防災速報',
+            'title' => '🏥 いざという時に安心！スマホで見る防災速報・ハザードマップ',
+            'subtitle' => '大雨や地震の際、スマホが命を守る一番の味方になります！',
+            'points' => [
+                '自治体の公式LINEや「Yahoo!防災速報」を登録しておくと警報が即届く',
+                'スマホのGoogleマップで近くの「指定避難所」を事前確認しておく',
+                '災害用伝言ダイヤル「171」やLINEでの安否確認方法を家族で決めておく'
+            ],
+            'advice' => '避難所の場所の登録や防災アプリの入れ方がわからない時は、教室でスタッフと一緒に設定しましょう！',
+            'btn1_label' => '📅 防災アプリ設定を教室で相談',
+            'btn1_url' => $bookingUrl
+        ]
+    ];
+}
+
+/**
+ * シニアお役立ち情報用 クイックリプライボタンスキーマ生成
+ * LINE Messaging API 仕様準拠（最大13個・postbackアクション・ラベル20文字以内）
+ */
+function getSeniorKnowledgeQuickReplyItems(?string $currentTopic = null): array {
+    $presets = getSeniorKnowledgePresets();
+    $items = [];
+
+    // 10テーマのボタンを生成
+    foreach ($presets as $tId => $data) {
+        $label = mb_substr($data['label'], 0, 20);
+        $items[] = [
+            'type' => 'action',
+            'action' => [
+                'type' => 'postback',
+                'label' => $label,
+                'data' => "action=show_senior_kb&topic={$tId}",
+                'displayText' => "「{$label}」を読む"
+            ]
+        ];
+    }
+
+    // 教室質問・相談ボタン
+    $items[] = [
+        'type' => 'action',
+        'action' => [
+            'type' => 'postback',
+            'label' => '💬 教室に質問・相談',
+            'data' => 'action=ask_class&topic=お役立ち情報',
+            'displayText' => 'お役立ち情報について教室に質問したい'
+        ]
+    ];
+
+    // 全テーマ一覧メニュー表示ボタン
+    $items[] = [
+        'type' => 'action',
+        'action' => [
+            'type' => 'postback',
+            'label' => '📚 全テーマ一覧',
+            'data' => 'action=show_knowledge_menu',
+            'displayText' => '📚 お役立ちテーマ一覧を見る'
+        ]
+    ];
+
+    // LINE上限の13個以内に収める
+    return [
+        'items' => array_slice($items, 0, 13)
+    ];
+}
+
+/**
+ * 特定のトピックのお役立ちFlex Messageカードを構築
+ */
+function generateSeniorKnowledgeFlexMessage(string $topicId, bool $attachQuickReply = true): array {
+    $presets = getSeniorKnowledgePresets();
+    $data = $presets[$topicId] ?? reset($presets);
+
+    $category = $data['category'];
+    $badgeColor = $data['badge_color'];
+    $title = $data['title'];
+    $subtitle = $data['subtitle'];
+    $points = $data['points'] ?? [];
+    $advice = $data['advice'] ?? '';
+    $btn1Label = $data['btn1_label'] ?? '📅 教室で直接相談・予約する';
+    $btn1Url = $data['btn1_url'] ?? (defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : '');
+
+    // ポイント一覧
+    $pointBoxContents = [];
+    $numIcons = ['①', '②', '③', '④', '⑤'];
+    foreach ($points as $idx => $pt) {
+        $ptText = trim((string)$pt);
+        if (empty($ptText)) continue;
+        $icon = $numIcons[$idx] ?? '・';
+        $item = [
+            'type' => 'box',
+            'layout' => 'horizontal',
+            'spacing' => 'sm',
+            'contents' => [
+                [
+                    'type' => 'text',
+                    'text' => $icon,
+                    'weight' => 'bold',
+                    'size' => 'sm',
+                    'color' => $badgeColor,
+                    'flex' => 1
+                ],
+                [
+                    'type' => 'text',
+                    'text' => $ptText,
+                    'size' => 'sm',
+                    'color' => '#1e293b',
+                    'wrap' => true,
+                    'weight' => 'bold',
+                    'flex' => 11
+                ]
+            ]
+        ];
+        if ($idx > 0) {
+            $item['margin'] = 'md';
+        }
+        $pointBoxContents[] = $item;
+    }
+
+    $bodyContents = [
+        // カテゴリピルバッジ
+        [
+            'type' => 'box',
+            'layout' => 'horizontal',
+            'contents' => [
+                [
+                    'type' => 'box',
+                    'layout' => 'baseline',
+                    'contents' => [
+                        [
+                            'type' => 'text',
+                            'text' => '💡 ' . $category,
+                            'size' => 'xs',
+                            'weight' => 'bold',
+                            'color' => '#ffffff'
+                        ]
+                    ],
+                    'backgroundColor' => $badgeColor,
+                    'paddingAll' => '5px',
+                    'paddingStart' => '12px',
+                    'paddingEnd' => '12px',
+                    'cornerRadius' => 'xxl',
+                    'flex' => 0
+                ]
+            ]
+        ],
+        // タイトル
+        [
+            'type' => 'text',
+            'text' => $title,
+            'weight' => 'bold',
+            'size' => 'lg',
+            'margin' => 'md',
+            'color' => '#0f172a',
+            'wrap' => true
+        ]
+    ];
+
+    if (!empty($subtitle)) {
+        $bodyContents[] = [
+            'type' => 'text',
+            'text' => $subtitle,
+            'size' => 'xs',
+            'color' => '#475569',
+            'margin' => 'sm',
+            'wrap' => true
+        ];
+    }
+
+    $bodyContents[] = ['type' => 'separator', 'margin' => 'lg'];
+
+    if (!empty($pointBoxContents)) {
+        $bodyContents[] = [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'margin' => 'md',
+            'backgroundColor' => '#f8fafc',
+            'paddingAll' => '14px',
+            'cornerRadius' => 'lg',
+            'borderColor' => '#e2e8f0',
+            'borderWidth' => '1px',
+            'contents' => array_merge([
+                [
+                    'type' => 'text',
+                    'text' => '【覚えておきたいポイント】',
+                    'weight' => 'bold',
+                    'size' => 'xs',
+                    'color' => '#64748b'
+                ],
+                [
+                    'type' => 'separator',
+                    'margin' => 'sm'
+                ]
+            ], $pointBoxContents)
+        ];
+    }
+
+    if (!empty($advice)) {
+        $bodyContents[] = [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'margin' => 'md',
+            'backgroundColor' => '#fffbeb',
+            'paddingAll' => '12px',
+            'cornerRadius' => 'md',
+            'borderColor' => '#fef3c7',
+            'borderWidth' => '1px',
+            'contents' => [
+                [
+                    'type' => 'text',
+                    'text' => '👩‍🏫 教室スタッフからのアドバイス',
+                    'weight' => 'bold',
+                    'size' => 'xs',
+                    'color' => '#b45309'
+                ],
+                [
+                    'type' => 'text',
+                    'text' => $advice,
+                    'size' => 'xs',
+                    'color' => '#78350f',
+                    'wrap' => true,
+                    'margin' => 'xs'
+                ]
+            ]
+        ];
+    }
+
+    $bodyContents[] = [
+        'type' => 'text',
+        'text' => '※わからない操作や気になる点はお気軽に教室でお尋ねください。',
+        'size' => 'xxs',
+        'color' => '#94a3b8',
+        'margin' => 'md',
+        'wrap' => true
+    ];
+
+    // フッターボタン
+    $footerButtons = [];
+    if (!empty($btn1Label)) {
+        $footerButtons[] = [
+            'type' => 'button',
+            'style' => 'primary',
+            'color' => $badgeColor,
+            'height' => 'sm',
+            'action' => [
+                'type' => 'uri',
+                'label' => mb_substr($btn1Label, 0, 20),
+                'uri' => !empty($btn1Url) ? $btn1Url : 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1'
+            ]
+        ];
+    }
+
+    // LINE postback action の data は250バイト以内に収める
+    $shortTopic = mb_substr($title, 0, 15);
+    $encodedTopic = urlencode($shortTopic);
+    while (strlen("action=ask_class&topic={$encodedTopic}") > 250 && mb_strlen($shortTopic) > 0) {
+        $shortTopic = mb_substr($shortTopic, 0, -1);
+        $encodedTopic = urlencode($shortTopic);
+    }
+    $footerButtons[] = [
+        'type' => 'button',
+        'style' => 'secondary',
+        'height' => 'sm',
+        'action' => [
+            'type' => 'postback',
+            'label' => '💬 LINEで質問・相談する',
+            'data' => "action=ask_class&topic={$encodedTopic}",
+            'displayText' => mb_substr("「{$title}」について教室に質問・相談したい", 0, 100)
+        ]
+    ];
+
+    $bubble = [
+        'type' => 'bubble',
+        'size' => 'mega',
+        'body' => [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'paddingAll' => '18px',
+            'contents' => $bodyContents
+        ],
+        'footer' => [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'spacing' => 'sm',
+            'paddingAll' => '14px',
+            'contents' => $footerButtons
+        ]
+    ];
+
+    $msg = [
+        'type' => 'flex',
+        'altText' => mb_substr("【お役立ち情報】{$title}", 0, 400),
+        'contents' => $bubble
+    ];
+
+    if ($attachQuickReply) {
+        $msg['quickReply'] = getSeniorKnowledgeQuickReplyItems($topicId);
+    }
+
+    return $msg;
+}
+

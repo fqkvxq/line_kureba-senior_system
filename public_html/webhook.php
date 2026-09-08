@@ -252,11 +252,18 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
         return;
     }
 
+    // --- お役立ち情報の明示キーワード応答 ---
+    $cleanText = trim(mb_convert_kana($text, 'asKV', 'UTF-8'));
+    if (in_array($cleanText, ['お役立ち', 'お役立ち情報', '豆知識', '知恵袋', 'スマホ', 'パソコン', 'ガイド', '使い方'], true)) {
+        recordCustomerInteraction($db, $userId, 'user_action', "💡 お役立ちガイド呼出: {$cleanText}");
+        sendKnowledgeMenuMessage($replyToken);
+        return;
+    }
+
     // --- キーワード自動応答の停止 ---
-    // ※管理者側の通知・チャット妨害防止のため、テキストメッセージに対するボット自動応答（在庫検索、点検、価格帯等）は一切行わず、
+    // ※管理者側の通知・チャット妨害防止のため、上記以外の通常テキストメッセージに対するボット自動応答は行わず、
     //   通常のスタッフとの1対1チャットに任せてサイレント終了します。
-    //   （リッチメニューのボタン操作はサイレントPostbackで通常通り動作します）
-    writeDebugLog("テキスト受信（キーワード自動応答停止中につきサイレント終了）", ['text' => $text, 'userId' => $userId]);
+    writeDebugLog("テキスト受信（スタッフチャット優先のためサイレント終了）", ['text' => $text, 'userId' => $userId]);
     return;
 }
 
@@ -399,15 +406,19 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             sendDistanceMenuMessage($db, $replyToken);
             break;
 
-        // --- 7-4. お役立ちガイド・カーライフ豆知識メニュー表示 ---
+        // --- 7-4. お役立ちガイドメニュー表示（クイックリプライ） ---
         case 'show_knowledge_menu':
+        case 'show_knowledge_guide':
+        case 'senior_kb_menu':
             sendKnowledgeMenuMessage($replyToken);
+            recordCustomerInteraction($db, $userId, 'user_action', '📚 お役立ちメニュー表示');
             break;
 
-        // --- 7-5. お役立ちガイド・個別記事詳細表示 ---
+        // --- 7-5. お役立ちガイド・個別記事詳細表示（Flexカード＋クイックリプライ） ---
         case 'show_knowledge':
-            $topic = trim($params['topic'] ?? 'used_car');
-            sendKnowledgeDetailMessage($replyToken, $topic);
+        case 'show_senior_kb':
+            $topic = trim($params['topic'] ?? 'scam_virus_alert');
+            sendKnowledgeDetailMessage($replyToken, $topic, $userId, $db);
             break;
 
         // --- 8. サイレント検索: 価格帯絞り込み実行 ---
@@ -2072,19 +2083,29 @@ function generateDistanceMenuMessages(PDO $db): array {
 }
 
 /**
- * カーライフ豆知識・お役立ちガイドメニューを送信
+ * シニア向けスマホ・PCお役立ちガイドメニューを送信（クイックリプライ付き）
  */
 function sendKnowledgeMenuMessage(string $replyToken) {
-    $messages = generateKnowledgeMenuMessages();
+    $qr = getSeniorKnowledgeQuickReplyItems();
+    $messages = [
+        [
+            'type' => 'text',
+            'text' => "💡【シニア向け スマホ・PCお役立ちガイド】\n\n知っておくと安心・便利な知恵袋やトラブル対処法をまとめました！\n\n画面下のボタン（横スクロール）から、読みたいテーマをタップしてご覧ください👇",
+            'quickReply' => $qr
+        ]
+    ];
     sendReplyMessage($replyToken, $messages);
 }
 
 /**
- * カーライフ豆知識・個別記事を送信
+ * シニア向けお役立ち個別記事（Flex Messageカード＋クイックリプライ）を送信
  */
-function sendKnowledgeDetailMessage(string $replyToken, string $topic) {
-    $messages = generateKnowledgeDetailMessage($topic);
-    sendReplyMessage($replyToken, $messages);
+function sendKnowledgeDetailMessage(string $replyToken, string $topic, string $userId = '', ?PDO $db = null) {
+    $flexMsg = generateSeniorKnowledgeFlexMessage($topic, true);
+    sendReplyMessage($replyToken, [$flexMsg]);
+    if ($db && !empty($userId)) {
+        recordCustomerInteraction($db, $userId, 'knowledge_view', "お役立ち閲覧: {$topic}");
+    }
 }
 
 /**
@@ -4054,31 +4075,20 @@ function handleCloseNoticeMenu(?PDO $db, string $replyToken, string $userId): vo
 
 /**
  * クイックリプライボタン一覧（LINE Messaging API 完全準拠: postbackのみ）
+ * シニア向けお役立ち情報・相談・カレンダー予約のクイックリプライを返却
  */
 function getQuickReplyItems(): array {
+    if (function_exists('getSeniorKnowledgeQuickReplyItems')) {
+        return getSeniorKnowledgeQuickReplyItems();
+    }
+
     return [
         'items' => [
             [
                 'type' => 'action',
                 'action' => [
                     'type' => 'postback',
-                    'label' => '📢 お知らせ',
-                    'data' => 'action=show_notice_menu'
-                ]
-            ],
-            [
-                'type' => 'action',
-                'action' => [
-                    'type' => 'postback',
-                    'label' => '🛠️ 点検受付',
-                    'data' => 'action=open_mycar'
-                ]
-            ],
-            [
-                'type' => 'action',
-                'action' => [
-                    'type' => 'postback',
-                    'label' => '📚 豆知識ガイド',
+                    'label' => '💡 お役立ち情報',
                     'data' => 'action=show_knowledge_menu'
                 ]
             ],
@@ -4086,48 +4096,16 @@ function getQuickReplyItems(): array {
                 'type' => 'action',
                 'action' => [
                     'type' => 'postback',
-                    'label' => '🚗 在庫全台',
-                    'data' => 'action=search_all'
+                    'label' => '💻 受講生マイカルテ',
+                    'data' => 'action=open_mycar'
                 ]
             ],
             [
                 'type' => 'action',
                 'action' => [
                     'type' => 'postback',
-                    'label' => '💰 価格で探す',
-                    'data' => 'action=show_price_menu'
-                ]
-            ],
-            [
-                'type' => 'action',
-                'action' => [
-                    'type' => 'postback',
-                    'label' => '🚙 車種で探す',
-                    'data' => 'action=show_type_menu'
-                ]
-            ],
-            [
-                'type' => 'action',
-                'action' => [
-                    'type' => 'postback',
-                    'label' => '⚙️ 装備で探す',
-                    'data' => 'action=show_equipment_menu'
-                ]
-            ],
-            [
-                'type' => 'action',
-                'action' => [
-                    'type' => 'postback',
-                    'label' => '🛣️ 距離で探す',
-                    'data' => 'action=show_distance_menu'
-                ]
-            ],
-            [
-                'type' => 'action',
-                'action' => [
-                    'type' => 'postback',
-                    'label' => '🚘 軽自動車',
-                    'data' => 'action=search_kei'
+                    'label' => '💬 教室に質問・相談',
+                    'data' => 'action=ask_class&topic=お役立ち情報'
                 ]
             ]
         ]
