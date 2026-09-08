@@ -2519,6 +2519,196 @@ function getSeniorKnowledgeQuickReplyItems(?string $currentTopic = null): array 
 }
 
 /**
+ * シニア向けお役立ち情報 全テーマ一覧カルーセルメッセージを構築
+ * LINE Flex Message Carousel 仕様（最大12バブル）
+ */
+function generateSeniorKnowledgeCarouselMessage(bool $attachQuickReply = true): array {
+    $presets = getSeniorKnowledgePresets();
+    $bookingUrl = defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1';
+
+    $bubbles = [];
+
+    foreach ($presets as $tId => $data) {
+        $category = $data['category'] ?? 'お役立ち情報';
+        $badgeColor = $data['badge_color'] ?? '#0284c7';
+        $title = $data['title'] ?? 'お役立ち情報';
+        $points = $data['points'] ?? [];
+
+        // ポイント要約（最初の2点）
+        $pointBoxes = [];
+        if (!empty($points[0])) {
+            $pointBoxes[] = [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'spacing' => 'xs',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => '①',
+                        'weight' => 'bold',
+                        'size' => 'xxs',
+                        'color' => $badgeColor,
+                        'flex' => 1
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => mb_substr((string)$points[0], 0, 32) . (mb_strlen((string)$points[0]) > 32 ? '…' : ''),
+                        'size' => 'xxs',
+                        'color' => '#334155',
+                        'wrap' => true,
+                        'flex' => 11
+                    ]
+                ]
+            ];
+        }
+        if (!empty($points[1])) {
+            $pointBoxes[] = [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'spacing' => 'xs',
+                'margin' => 'xs',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => '②',
+                        'weight' => 'bold',
+                        'size' => 'xxs',
+                        'color' => $badgeColor,
+                        'flex' => 1
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => mb_substr((string)$points[1], 0, 32) . (mb_strlen((string)$points[1]) > 32 ? '…' : ''),
+                        'size' => 'xxs',
+                        'color' => '#334155',
+                        'wrap' => true,
+                        'flex' => 11
+                    ]
+                ]
+            ];
+        }
+
+        $bubble = [
+            'type' => 'bubble',
+            'size' => 'kilo',
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'paddingAll' => '16px',
+                'contents' => [
+                    // カテゴリバッジ
+                    [
+                        'type' => 'box',
+                        'layout' => 'horizontal',
+                        'contents' => [
+                            [
+                                'type' => 'box',
+                                'layout' => 'baseline',
+                                'contents' => [
+                                    [
+                                        'type' => 'text',
+                                        'text' => $category,
+                                        'size' => 'xxs',
+                                        'weight' => 'bold',
+                                        'color' => '#ffffff'
+                                    ]
+                                ],
+                                'backgroundColor' => $badgeColor,
+                                'paddingAll' => '4px',
+                                'paddingStart' => '10px',
+                                'paddingEnd' => '10px',
+                                'cornerRadius' => 'xxl',
+                                'flex' => 0
+                            ]
+                        ]
+                    ],
+                    // タイトル
+                    [
+                        'type' => 'text',
+                        'text' => $title,
+                        'weight' => 'bold',
+                        'size' => 'sm',
+                        'margin' => 'md',
+                        'color' => '#0f172a',
+                        'wrap' => true,
+                        'maxLines' => 3
+                    ],
+                    // ポイント要約
+                    [
+                        'type' => 'box',
+                        'layout' => 'vertical',
+                        'margin' => 'md',
+                        'backgroundColor' => '#f8fafc',
+                        'paddingAll' => '10px',
+                        'cornerRadius' => 'md',
+                        'borderColor' => '#e2e8f0',
+                        'borderWidth' => '1px',
+                        'contents' => array_merge([
+                            [
+                                'type' => 'text',
+                                'text' => '【ポイント要約】',
+                                'weight' => 'bold',
+                                'size' => 'xxs',
+                                'color' => '#64748b'
+                            ]
+                        ], $pointBoxes)
+                    ]
+                ]
+            ],
+            'footer' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'spacing' => 'xs',
+                'paddingAll' => '12px',
+                'contents' => [
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => $badgeColor,
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'postback',
+                            'label' => '📖 詳しく読む',
+                            'data' => "action=show_senior_kb&topic={$tId}"
+                        ]
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'secondary',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'uri',
+                            'label' => '📅 教室で相談・予約',
+                            'uri' => $bookingUrl
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        $bubbles[] = $bubble;
+    }
+
+    // LINEカルーセル仕様の最大12個以内に収める（現在11テーマ）
+    $carouselContents = array_slice($bubbles, 0, 12);
+
+    $msg = [
+        'type' => 'flex',
+        'altText' => '💡【シニアお役立ち情報】全テーマ一覧（横にスワイプしてご覧ください）',
+        'contents' => [
+            'type' => 'carousel',
+            'contents' => $carouselContents
+        ]
+    ];
+
+    if ($attachQuickReply && function_exists('getSeniorKnowledgeQuickReplyItems')) {
+        $msg['quickReply'] = getSeniorKnowledgeQuickReplyItems();
+    }
+
+    return $msg;
+}
+
+/**
  * 特定のトピックのお役立ちFlex Messageカードを構築
  */
 function generateSeniorKnowledgeFlexMessage(string $topicId, bool $attachQuickReply = true): array {
