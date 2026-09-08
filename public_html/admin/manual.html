@@ -665,6 +665,10 @@
                                 <br>
                                 受講生は文字入力することなく、読みたいボタンを1タップするだけで大文字解説カードが届き、そのカードの下にも再びボタンが並ぶため、<strong>次々と興味のある役立ち情報を快適に読み進める</strong>ことができます。<br>
                                 また、受講生がトーク画面で「お役立ち」や「豆知識」と送信した場合も、自動的にクイックリプライ一覧案内が返信されます。</p>
+                                <div class="tip-box" style="margin-top:12px;background:#f0fdf4;border-left:4px solid #10b981;padding:10px 14px;border-radius:4px;">
+                                    <strong style="color:#065f46;">🔇 管理者側通知音を防止するサイレント設計:</strong><br>
+                                    クイックリプライボタンや「LINEで質問」ボタンは、タップしても受講生がトーク画面で発言（テキスト送信）した扱いにならない<strong>サイレントPostback（裏側通信）仕様</strong>となっています。そのため、受講生が記事をどんどん読んでも管理者にピコンと着信通知音が鳴り続ける心配はありません。
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -750,6 +754,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260908_qr_v1"></script>
+    <script src="manual.js?v=20260908_silent_qr"></script>
 </body>
 </html>

@@ -2446,7 +2446,7 @@ function getSeniorKnowledgeQuickReplyItems(?string $currentTopic = null): array 
     $presets = getSeniorKnowledgePresets();
     $items = [];
 
-    // 10テーマのボタンを生成
+    // 10テーマのボタンを生成（発言による通知音防止のため displayText は設定せずサイレントPostbackにする）
     foreach ($presets as $tId => $data) {
         $label = mb_substr($data['label'], 0, 20);
         $items[] = [
@@ -2454,31 +2454,28 @@ function getSeniorKnowledgeQuickReplyItems(?string $currentTopic = null): array 
             'action' => [
                 'type' => 'postback',
                 'label' => $label,
-                'data' => "action=show_senior_kb&topic={$tId}",
-                'displayText' => "「{$label}」を読む"
+                'data' => "action=show_senior_kb&topic={$tId}"
             ]
         ];
     }
 
-    // 教室質問・相談ボタン
+    // 教室質問・相談ボタン（サイレントPostback）
     $items[] = [
         'type' => 'action',
         'action' => [
             'type' => 'postback',
             'label' => '💬 教室に質問・相談',
-            'data' => 'action=ask_class&topic=お役立ち情報',
-            'displayText' => 'お役立ち情報について教室に質問したい'
+            'data' => 'action=ask_class&topic=お役立ち情報'
         ]
     ];
 
-    // 全テーマ一覧メニュー表示ボタン
+    // 全テーマ一覧メニュー表示ボタン（サイレントPostback）
     $items[] = [
         'type' => 'action',
         'action' => [
             'type' => 'postback',
             'label' => '📚 全テーマ一覧',
-            'data' => 'action=show_knowledge_menu',
-            'displayText' => '📚 お役立ちテーマ一覧を見る'
+            'data' => 'action=show_knowledge_menu'
         ]
     ];
 
@@ -2688,8 +2685,7 @@ function generateSeniorKnowledgeFlexMessage(string $topicId, bool $attachQuickRe
         'action' => [
             'type' => 'postback',
             'label' => '💬 LINEで質問・相談する',
-            'data' => "action=ask_class&topic={$encodedTopic}",
-            'displayText' => mb_substr("「{$title}」について教室に質問・相談したい", 0, 100)
+            'data' => "action=ask_class&topic={$encodedTopic}"
         ]
     ];
 

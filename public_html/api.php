@@ -1316,8 +1316,7 @@ try {
                                     'action' => [
                                         'type' => 'postback',
                                         'label' => '🛠 パソコン診断の予約・相談',
-                                        'data' => 'action=ask_class&type=diagnosis&device=' . urlencode($deviceInfo) . '&date=' . urlencode($diagDate),
-                                        'displayText' => "【{$deviceInfo}】の定期点検・診断を相談したい"
+                                        'data' => 'action=ask_class&type=diagnosis&device=' . urlencode($deviceInfo) . '&date=' . urlencode($diagDate)
                                     ]
                                 ]
                             ]
@@ -1385,8 +1384,7 @@ try {
                                     'action' => [
                                         'type' => 'postback',
                                         'label' => '💬 コース・更新について相談',
-                                        'data' => 'action=ask_class&type=renew&course=' . urlencode($courseName) . '&date=' . urlencode($renewDate),
-                                        'displayText' => "【{$courseName}】の受講更新・プランについて相談したい"
+                                        'data' => 'action=ask_class&type=renew&course=' . urlencode($courseName) . '&date=' . urlencode($renewDate)
                                     ]
                                 ]
                             ]
@@ -1651,8 +1649,7 @@ try {
                     'action' => [
                         'type' => 'postback',
                         'label' => mb_substr($btn2Label, 0, 20),
-                        'data' => "action=ask_class&topic={$encodedTopic}",
-                        'displayText' => mb_substr("「{$title}」について教室に質問・相談したい", 0, 100)
+                        'data' => "action=ask_class&topic={$encodedTopic}"
                     ]
                 ];
             }
