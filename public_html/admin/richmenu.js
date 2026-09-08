@@ -2,6 +2,8 @@
  * アップファーレン リッチメニュー管理エディタ JS
  */
 
+const DEFAULT_PROLINE_BOOKING_URL = 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1';
+
 const state = {
     password: '',
     currentView: 'editor', // 'editor' or 'history'
@@ -108,6 +110,7 @@ const elements = {
     switchMenuSelect: document.getElementById('switchMenuSelect'),
     switchBranchCustomCheck: document.getElementById('switchBranchCustomCheck'),
     postbackDataInput: document.getElementById('postbackDataInput'),
+    postbackPresetSelect: document.getElementById('postbackPresetSelect'),
     postbackDisplayTextInput: document.getElementById('postbackDisplayTextInput'),
     uriInput: document.getElementById('uriInput'),
     messageTextInput: document.getElementById('messageTextInput'),
@@ -314,7 +317,25 @@ function initEventListeners() {
             syncCurrentAreaFromForm();
         });
     });
-    elements.postbackDataInput.addEventListener('input', syncCurrentAreaFromForm);
+    elements.postbackDataInput.addEventListener('input', () => {
+        if (elements.postbackPresetSelect) {
+            elements.postbackPresetSelect.value = elements.postbackDataInput.value.trim();
+        }
+        syncCurrentAreaFromForm();
+    });
+    if (elements.postbackPresetSelect) {
+        elements.postbackPresetSelect.addEventListener('change', () => {
+            const val = elements.postbackPresetSelect.value;
+            if (val) {
+                elements.actionTypeRadios.forEach(r => { r.checked = (r.value === 'postback'); });
+                showActionFieldGroup('postback');
+                elements.postbackDataInput.value = val;
+                elements.postbackDisplayTextInput.value = ''; // 管理者通知音防止のためサイレント
+                syncCurrentAreaFromForm();
+                showToast('💡 お役立ちアクションを設定しました（サイレント送信）', 'success');
+            }
+        });
+    }
     elements.postbackDisplayTextInput.addEventListener('input', syncCurrentAreaFromForm);
     elements.uriInput.addEventListener('input', () => {
         const val = elements.uriInput.value.trim();
@@ -371,7 +392,12 @@ function initEventListeners() {
                 elements.actionTypeRadios.forEach(r => { r.checked = (r.value === 'postback'); });
                 showActionFieldGroup('postback');
                 elements.postbackDataInput.value = chip.dataset.val;
+                if (elements.postbackPresetSelect) {
+                    elements.postbackPresetSelect.value = chip.dataset.val;
+                }
+                elements.postbackDisplayTextInput.value = ''; // 管理者通知音防止のためサイレント
                 syncCurrentAreaFromForm();
+                showToast('💡 お役立ちアクションを設定しました', 'success');
             } else if (chip.dataset.uri) {
                 elements.actionTypeRadios.forEach(r => { r.checked = (r.value === 'uri'); });
                 showActionFieldGroup('uri');
@@ -513,18 +539,18 @@ function applyPreset(presetType) {
     state.selectedAreaId = null;
 
     if (presetType === 'grid6') {
-        // 2行 × 3列
+        // 2行 × 3列 (シニア教室・お役立ちおすすめ構成)
         const colW = Math.round(W / 3);
         const rowH = Math.round(H / 2);
         let idCounter = 1;
 
         const defaultActions = [
-            { type: 'postback', data: 'action=show_price_menu', displayText: '価格で探す' },
-            { type: 'postback', data: 'action=search_all', displayText: '在庫全台' },
-            { type: 'postback', data: 'action=open_mycar', displayText: '点検受付' },
-            { type: 'postback', data: 'action=show_type_menu', displayText: '車種で探す' },
-            { type: 'postback', data: 'action=show_equipment_menu', displayText: '装備で探す' },
-            { type: 'postback', data: 'action=show_distance_menu', displayText: '距離で探す' }
+            { type: 'uri', uri: DEFAULT_PROLINE_BOOKING_URL, displayText: '' },
+            { type: 'postback', data: 'action=show_knowledge_menu', displayText: '' },
+            { type: 'uri', uri: 'https://liff.line.me/2000276344-YL1wXh0h', displayText: '' },
+            { type: 'postback', data: 'action=show_senior_kb&topic=scam_fake_pdf', displayText: '' },
+            { type: 'postback', data: 'action=ask_class&topic=お役立ち情報', displayText: '' },
+            { type: 'postback', data: 'action=show_notice_menu', displayText: '' }
         ];
 
         for (let row = 0; row < 2; row++) {
@@ -533,7 +559,7 @@ function applyPreset(presetType) {
                 const y = row * rowH;
                 const w = (col === 2) ? (W - x) : colW;
                 const h = (row === 1) ? (H - y) : rowH;
-                const act = defaultActions[(idCounter - 1)] || { type: 'postback', data: 'action=search_all' };
+                const act = defaultActions[(idCounter - 1)] || { type: 'postback', data: 'action=show_knowledge_menu' };
 
                 state.areas.push({
                     id: idCounter++,
@@ -543,16 +569,16 @@ function applyPreset(presetType) {
             }
         }
     } else if (presetType === 'grid4') {
-        // 2行 × 2列
+        // 2行 × 2列 (4大機能)
         const colW = Math.round(W / 2);
         const rowH = Math.round(H / 2);
         let idCounter = 1;
 
         const defaultActions = [
-            { type: 'postback', data: 'action=show_price_menu', displayText: '価格で探す' },
-            { type: 'postback', data: 'action=open_mycar', displayText: '点検受付' },
-            { type: 'postback', data: 'action=search_all', displayText: '在庫全台' },
-            { type: 'uri', uri: 'https://liff.line.me/2000276344-YL1wXh0h/mycar.html' }
+            { type: 'uri', uri: DEFAULT_PROLINE_BOOKING_URL, displayText: '' },
+            { type: 'postback', data: 'action=show_knowledge_menu', displayText: '' },
+            { type: 'uri', uri: 'https://liff.line.me/2000276344-YL1wXh0h', displayText: '' },
+            { type: 'postback', data: 'action=ask_class&topic=お役立ち情報', displayText: '' }
         ];
 
         for (let row = 0; row < 2; row++) {
@@ -565,25 +591,30 @@ function applyPreset(presetType) {
                 state.areas.push({
                     id: idCounter++,
                     bounds: { x, y, width: w, height: h },
-                    action: defaultActions[idCounter - 2] || { type: 'postback', data: 'action=search_all' }
+                    action: defaultActions[idCounter - 2] || { type: 'postback', data: 'action=show_knowledge_menu' }
                 });
             }
         }
     } else if (presetType === 'grid3') {
-        // 1行 × 3列
+        // 1行 × 3列 (ハーフメニューおすすめ構成)
         const colW = Math.round(W / 3);
         let idCounter = 1;
+        const defaultActions3 = [
+            { type: 'uri', uri: DEFAULT_PROLINE_BOOKING_URL, displayText: '' },
+            { type: 'postback', data: 'action=show_knowledge_menu', displayText: '' },
+            { type: 'uri', uri: 'https://liff.line.me/2000276344-YL1wXh0h', displayText: '' }
+        ];
         for (let col = 0; col < 3; col++) {
             const x = col * colW;
             const w = (col === 2) ? (W - x) : colW;
             state.areas.push({
                 id: idCounter++,
                 bounds: { x, y: 0, width: w, height: H },
-                action: { type: 'postback', data: 'action=search_all' }
+                action: defaultActions3[col] || { type: 'postback', data: 'action=show_knowledge_menu' }
             });
         }
     } else if (presetType === 'hero') {
-        // 左大1枠 (半分)、右4枠 (2x2)
+        // 左大1枠 (レッスン予約)、右4枠 (お役立ち/詐欺注意/カルテ/質問)
         const halfW = Math.round(W / 2);
         const rightColW = Math.round(halfW / 2);
         const rowH = Math.round(H / 2);
@@ -591,8 +622,15 @@ function applyPreset(presetType) {
         state.areas.push({
             id: 1,
             bounds: { x: 0, y: 0, width: halfW, height: H },
-            action: { type: 'postback', data: 'action=search_all', displayText: 'おすすめ在庫を見る' }
+            action: { type: 'uri', uri: DEFAULT_PROLINE_BOOKING_URL, displayText: '' }
         });
+
+        const heroSubActions = [
+            { type: 'postback', data: 'action=show_knowledge_menu' },
+            { type: 'postback', data: 'action=show_senior_kb&topic=scam_fake_pdf' },
+            { type: 'uri', uri: 'https://liff.line.me/2000276344-YL1wXh0h' },
+            { type: 'postback', data: 'action=ask_class&topic=お役立ち情報' }
+        ];
 
         let idCounter = 2;
         for (let r = 0; r < 2; r++) {
@@ -601,10 +639,11 @@ function applyPreset(presetType) {
                 const y = r * rowH;
                 const w = (c === 1) ? (W - x) : rightColW;
                 const h = (r === 1) ? (H - y) : rowH;
+                const actIdx = (r * 2 + c);
                 state.areas.push({
                     id: idCounter++,
                     bounds: { x, y, width: w, height: h },
-                    action: { type: 'postback', data: 'action=search_all' }
+                    action: heroSubActions[actIdx] || { type: 'postback', data: 'action=show_knowledge_menu' }
                 });
             }
         }
@@ -612,7 +651,7 @@ function applyPreset(presetType) {
         state.areas.push({
             id: 1,
             bounds: { x: 0, y: 0, width: W, height: H },
-            action: { type: 'postback', data: 'action=search_all' }
+            action: { type: 'postback', data: 'action=show_knowledge_menu' }
         });
     }
 
@@ -622,6 +661,42 @@ function applyPreset(presetType) {
 
     renderAreas();
     updateAreaConfigForm();
+}
+
+// アクションの日本語要約ラベルを取得
+function getActionLabel(action) {
+    if (!action) return '未設定';
+    if (action.type === 'postback') {
+        const data = action.data || '';
+        if (data.includes('show_knowledge_menu')) return '💡お役立ちガイド';
+        if (data.includes('scam_fake_pdf')) return '📄偽PDF詐欺注意';
+        if (data.includes('scam_virus_alert')) return '🚨偽警告対策';
+        if (data.includes('scam_fake_sms')) return '⚠️偽SMS対策';
+        if (data.includes('phone_large_text')) return '📱文字拡大';
+        if (data.includes('line_font_size')) return '💬LINE特大';
+        if (data.includes('battery_care')) return '🔋電池長持ち';
+        if (data.includes('photo_cleanup')) return '📸写真整理';
+        if (data.includes('pc_restart_magic')) return '⚡PC再起動';
+        if (data.includes('pc_shortcuts')) return '⌨️3大キー';
+        if (data.includes('pc_caps_lock')) return '🔤大文字解除';
+        if (data.includes('disaster_apps')) return '🏥防災速報';
+        if (data.includes('ask_class')) return '💬教室相談';
+        if (data.includes('open_mycar')) return '💻マイカルテ';
+        if (data.includes('show_notice_menu')) return '📢お知らせ';
+        if (data.includes('close_notice')) return '✕通常戻す';
+        return action.displayText || data.replace('action=', '') || 'Postback';
+    } else if (action.type === 'uri') {
+        const uri = action.uri || '';
+        if (uri.includes('autosns.app') || uri.includes('2000276344-XlmvL9qZ')) return '📅レッスン予約';
+        if (uri.includes('shopCard') || uri.includes('shopcard')) return '🎫スタンプカード';
+        if (uri.includes('mycar') || uri.includes('2000276344-YL1wXh0h')) return '💻受講生カルテ';
+        return '🌐リンク';
+    } else if (action.type === 'message') {
+        return action.text ? `💬${action.text}` : 'メッセージ';
+    } else if (action.type === 'richmenuswitch') {
+        return '📋メニュー切替';
+    }
+    return action.type || '未設定';
 }
 
 // ================= エリア描画 =================
@@ -648,24 +723,7 @@ function renderAreas() {
         // ラベルバッジ
         const badge = document.createElement('div');
         badge.className = 'area-box-badge';
-        let actionSummary = area.action?.type || 'postback';
-        if (area.action?.type === 'postback') {
-            actionSummary = area.action.displayText || area.action.data || 'Postback';
-        } else if (area.action?.type === 'uri') {
-            const uriVal = area.action.uri || '';
-            if (uriVal.includes('shopCard') || uriVal.includes('shopcard')) {
-                actionSummary = 'スタンプカード';
-            } else if (uriVal.includes('mycar')) {
-                actionSummary = '点検パスポート';
-            } else if (uriVal.includes('goo-net')) {
-                actionSummary = 'Goo-net';
-            } else {
-                actionSummary = 'リンク';
-            }
-        } else if (area.action?.type === 'message') {
-            actionSummary = area.action.text || 'Message';
-        }
-        badge.textContent = `枠${index + 1}: ${actionSummary}`;
+        badge.textContent = `枠${index + 1}: ${getActionLabel(area.action)}`;
         box.appendChild(badge);
 
         // 選択中の場合はリサイズハンドルを追加
@@ -715,17 +773,8 @@ function renderAreaPills() {
         btn.type = 'button';
         btn.className = 'area-pill-btn' + (isSelected ? ' active' : '');
         btn.dataset.id = String(area.id);
+        btn.textContent = `枠 ${index + 1}: ${getActionLabel(area.action)}`;
 
-        let title = `枠 ${index + 1}`;
-        if (area.action?.type === 'uri' && (area.action.uri?.includes('shopCard') || area.action.uri?.includes('shopcard'))) {
-            title += ': 🎫スタンプ';
-        } else if (area.action?.displayText) {
-            title += `: ${area.action.displayText}`;
-        } else if (area.action?.data) {
-            title += `: ${area.action.data.replace('action=', '')}`;
-        }
-
-        btn.textContent = title;
         btn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -1060,8 +1109,11 @@ function updateAreaConfigForm() {
     updateCoordsDisplay(area);
 
     // 1. 各入力欄に保存されている値を正確に反映
-    if (!area.action) area.action = { type: 'postback', data: 'action=search_all', displayText: '' };
+    if (!area.action) area.action = { type: 'postback', data: 'action=show_knowledge_menu', displayText: '' };
     elements.postbackDataInput.value = area.action.data || '';
+    if (elements.postbackPresetSelect) {
+        elements.postbackPresetSelect.value = area.action.data || '';
+    }
     elements.postbackDisplayTextInput.value = area.action.displayText || '';
     elements.uriInput.value = area.action.uri || '';
     elements.messageTextInput.value = area.action.text || '';
