@@ -1634,6 +1634,19 @@ try {
                     ]
                 ];
             }
+
+            // その他のお役立ち情報を見るボタン（全テーマクイックリプライ呼出・サイレント送信）
+            $footerButtons[] = [
+                'type' => 'button',
+                'style' => 'secondary',
+                'height' => 'sm',
+                'action' => [
+                    'type' => 'postback',
+                    'label' => '📚 その他のお役立ち情報',
+                    'data' => 'action=show_knowledge_menu'
+                ]
+            ];
+
             if (!empty($btn2Label)) {
                 // LINE postback action の data は最大300バイト制限（URLエンコード後）
                 $shortTopic = mb_substr($title, 0, 15);

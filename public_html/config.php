@@ -2688,6 +2688,18 @@ function generateSeniorKnowledgeFlexMessage(string $topicId, bool $attachQuickRe
         ];
     }
 
+    // その他のお役立ち情報を見るボタン（全テーマクイックリプライ呼出・サイレント送信）
+    $footerButtons[] = [
+        'type' => 'button',
+        'style' => 'secondary',
+        'height' => 'sm',
+        'action' => [
+            'type' => 'postback',
+            'label' => '📚 その他のお役立ち情報',
+            'data' => 'action=show_knowledge_menu'
+        ]
+    ];
+
     // LINE postback action の data は250バイト以内に収める
     $shortTopic = mb_substr($title, 0, 15);
     $encodedTopic = urlencode($shortTopic);
