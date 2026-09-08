@@ -2784,40 +2784,13 @@ function buildKnowledgeCarouselBubbles(array $presetGroup): array {
                         'color' => '#0284c7',
                         'margin' => 'none'
                     ],
-                    // カテゴリバッジ
-                    [
-                        'type' => 'box',
-                        'layout' => 'horizontal',
-                        'margin' => 'sm',
-                        'contents' => [
-                            [
-                                'type' => 'box',
-                                'layout' => 'baseline',
-                                'contents' => [
-                                    [
-                                        'type' => 'text',
-                                        'text' => $category,
-                                        'size' => 'xxs',
-                                        'weight' => 'bold',
-                                        'color' => '#ffffff'
-                                    ]
-                                ],
-                                'backgroundColor' => $badgeColor,
-                                'paddingAll' => '4px',
-                                'paddingStart' => '10px',
-                                'paddingEnd' => '10px',
-                                'cornerRadius' => 'xxl',
-                                'flex' => 0
-                            ]
-                        ]
-                    ],
                     // タイトル
                     [
                         'type' => 'text',
                         'text' => $title,
                         'weight' => 'bold',
                         'size' => 'sm',
-                        'margin' => 'md',
+                        'margin' => 'sm',
                         'color' => '#0f172a',
                         'wrap' => true,
                         'maxLines' => 3
@@ -3008,34 +2981,7 @@ function generateSeniorKnowledgeFlexMessage(string $topicId, bool $attachQuickRe
                 ]
             ],
             'margin' => 'none',
-            'paddingBottom' => '4px'
-        ],
-        // カテゴリピルバッジ
-        [
-            'type' => 'box',
-            'layout' => 'horizontal',
-            'margin' => 'sm',
-            'contents' => [
-                [
-                    'type' => 'box',
-                    'layout' => 'baseline',
-                    'contents' => [
-                        [
-                            'type' => 'text',
-                            'text' => '💡 ' . $category,
-                            'size' => 'xs',
-                            'weight' => 'bold',
-                            'color' => '#ffffff'
-                        ]
-                    ],
-                    'backgroundColor' => $badgeColor,
-                    'paddingAll' => '5px',
-                    'paddingStart' => '12px',
-                    'paddingEnd' => '12px',
-                    'cornerRadius' => 'xxl',
-                    'flex' => 0
-                ]
-            ]
+            'paddingBottom' => '6px'
         ],
         // タイトル
         [
@@ -3043,7 +2989,7 @@ function generateSeniorKnowledgeFlexMessage(string $topicId, bool $attachQuickRe
             'text' => $title,
             'weight' => 'bold',
             'size' => 'lg',
-            'margin' => 'md',
+            'margin' => 'sm',
             'color' => '#0f172a',
             'wrap' => true
         ]
