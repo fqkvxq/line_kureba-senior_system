@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260907_senior_proline_v1">
+    <link rel="stylesheet" href="admin.css?v=20260908_knowledge_v1">
 </head>
 <body>
     <!-- ログインモーダル (初期表示) -->
@@ -58,6 +58,9 @@
                 </button>
                 <button class="btn-secondary" id="syncLineFollowersBtn" title="LINE公式アカウントの全友だちを取得して受講生一覧に一括登録・更新します" style="background: #06C755; color: #ffffff; border: none; font-weight: bold; box-shadow: 0 2px 4px rgba(6,199,85,0.2);">
                     <i class="fa-brands fa-line" style="font-size: 16px; margin-right: 4px;"></i> LINE友だち一括同期
+                </button>
+                <button class="btn-secondary" id="openKnowledgeBroadcastModalBtn" title="シニア向けスマホ・PC役立つ情報（詐欺対策・便利ワザ等）をリッチメッセージ配信します" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: #ffffff; border: none; font-weight: 700; box-shadow: 0 2px 6px rgba(2,132,199,0.25);">
+                    <i class="fa-solid fa-bullhorn" style="margin-right: 4px;"></i> お役立ち情報配信
                 </button>
                 <button class="btn-primary" id="openAddCustomerModalBtn">
                     <i class="fa-solid fa-user-plus"></i> 新規受講生登録
@@ -689,9 +692,208 @@
         </div>
     </div>
 
+    <!-- シニアお役立ち情報 配信スタジオ モーダル -->
+    <div class="modal-overlay" id="knowledgeBroadcastModal" style="z-index: 1200; display: none;">
+        <div class="modal-card" style="max-width: 960px; width: 95%; max-height: 92vh; display: flex; flex-direction: column;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #fff; flex-shrink: 0;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(255, 255, 255, 0.2); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                        <i class="fa-solid fa-bullhorn"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #fff;">シニアお役立ち情報 配信スタジオ</h3>
+                        <p style="margin: 2px 0 0; font-size: 11.5px; color: #e0f2fe;">スマホ・PCの便利ワザ・詐欺対策を美しいリッチカード形式（Flex Message）でLINE配信</p>
+                    </div>
+                </div>
+                <button class="modal-close" id="closeKnowledgeBroadcastModalBtn" style="color: #e0f2fe;">&times;</button>
+            </div>
+
+            <div class="modal-body" style="padding: 16px; overflow-y: auto; flex: 1; display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 16px;">
+                <!-- 左カラム: 設定フォーム & テンプレート選択 -->
+                <div style="display: flex; flex-direction: column; gap: 14px;">
+                    <!-- 配信対象選択 -->
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px;">
+                        <label style="font-weight: 700; font-size: 12px; color: #334155; margin-bottom: 6px; display: block;">
+                            <i class="fa-solid fa-users" style="color: #0284c7; margin-right: 4px;"></i> 配信対象
+                        </label>
+                        <div style="display: flex; gap: 12px; align-items: center;">
+                            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; cursor: pointer; font-weight: 600; color: #0f172a;">
+                                <input type="radio" name="kbTargetType" value="all" checked style="accent-color: #0284c7;">
+                                <span>👥 LINE公式の友だち全員（一斉配信）</span>
+                            </label>
+                            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; cursor: pointer; font-weight: 600; color: #0f172a;">
+                                <input type="radio" name="kbTargetType" value="user" style="accent-color: #0284c7;">
+                                <span>👤 特定の受講生のみ（個別送信）</span>
+                            </label>
+                        </div>
+                        <div id="kbUserSelectWrap" style="display: none; margin-top: 8px;">
+                            <select id="kbTargetUserSelect" style="width: 100%; padding: 6px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+                                <option value="">受講生を選択してください...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 厳選プリセットテンプレート -->
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <label style="font-weight: 700; font-size: 12px; color: #334155; margin: 0;">
+                                <i class="fa-solid fa-wand-magic-sparkles" style="color: #6366f1; margin-right: 4px;"></i> 厳選テンプレートから選ぶ（ワンクリック自動入力）
+                            </label>
+                            <span style="font-size: 11px; color: #64748b;">全10種搭載</span>
+                        </div>
+                        <div class="kb-preset-chips-wrap" id="kbPresetChipsWrap" style="display: flex; flex-wrap: wrap; gap: 6px; max-height: 120px; overflow-y: auto; padding: 4px 0;">
+                            <!-- プリセットチップがJSで動的生成される -->
+                        </div>
+                    </div>
+
+                    <!-- 記事編集フォーム -->
+                    <div style="display: flex; flex-direction: column; gap: 10px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div>
+                                <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">カテゴリ名</label>
+                                <input type="text" id="kbCategoryInput" value="安心・セキュリティ" maxlength="20" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">テーマカラー</label>
+                                <select id="kbColorSelect" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+                                    <option value="#e11d48">🔴 警告・安心対策 (赤)</option>
+                                    <option value="#0284c7">🔵 スマホ便利ワザ (青)</option>
+                                    <option value="#059669">🟢 パソコン快適 (緑)</option>
+                                    <option value="#d97706">🟠 暮らし・行政 (橙)</option>
+                                    <option value="#7c3aed">🟣 LINE活用 (紫)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">記事タイトル（見出し）</label>
+                            <input type="text" id="kbTitleInput" placeholder="例: 🚨 パソコンの「ウイルス感染警告」は詐欺！慌てず閉じる方法" style="width: 100%; box-sizing: border-box; padding: 8px 10px; font-size: 13px; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px;">
+                        </div>
+
+                        <div>
+                            <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">サブタイトル / 要約</label>
+                            <input type="text" id="kbSubtitleInput" placeholder="例: 画面に突然警告音や電話番号が出ても絶対に電話をかけてはいけません！" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                        </div>
+
+                        <div>
+                            <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">
+                                <span>覚えておきたいポイント（3点）</span>
+                            </label>
+                            <div style="display: flex; flex-direction: column; gap: 6px;">
+                                <input type="text" id="kbPoint1" placeholder="ポイント①: 画面の電話番号には絶対に電話しない" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                <input type="text" id="kbPoint2" placeholder="ポイント②: キーボードの「Esc」長押し、または「Ctrl+Alt+Delete」で閉じる" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                <input type="text" id="kbPoint3" placeholder="ポイント③: 不安な時は電源ボタン長押しで強制終了して教室へ相談する" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">👩‍🏫 教室スタッフからのアドバイス</label>
+                            <textarea id="kbAdviceInput" rows="2" placeholder="例: 「警告画面が消えない」「操作が不安」という時は、触らずにそのまま教室へお持ちください。スタッフが一緒に確認します！" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px; resize: vertical;"></textarea>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div>
+                                <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">メインボタン (予約URL直結)</label>
+                                <input type="text" id="kbBtn1Label" value="📅 教室で直接相談・予約する" maxlength="20" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">リンク先 URL</label>
+                                <input type="url" id="kbBtn1Url" value="https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11px; font-family: monospace; border: 1px solid #cbd5e1; border-radius: 6px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右カラム: リアルタイムLINE受信プレビュー -->
+                <div style="display: flex; flex-direction: column; background: #849ebf; border-radius: 12px; padding: 14px; box-shadow: inset 0 2px 6px rgba(0,0,0,0.15);">
+                    <div style="font-size: 11px; font-weight: 700; color: #ffffff; text-align: center; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        <i class="fa-brands fa-line" style="font-size: 16px; color: #06C755;"></i>
+                        <span>LINE受講生の受信画面プレビュー</span>
+                    </div>
+
+                    <!-- スマホ風カードプレビュー -->
+                    <div class="kb-preview-card" style="background: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; flex-direction: column;">
+                        <!-- ヘッダー & 本文 -->
+                        <div style="padding: 16px;">
+                            <div id="prevKbBadge" style="display: inline-block; background: #e11d48; color: #fff; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 12px; margin-bottom: 8px;">
+                                💡 安心・セキュリティ
+                            </div>
+                            <h4 id="prevKbTitle" style="margin: 0 0 6px; font-size: 15px; font-weight: 800; color: #0f172a; line-height: 1.4;">
+                                🚨 パソコンの「ウイルス感染警告」は詐欺！慌てず閉じる方法
+                            </h4>
+                            <p id="prevKbSubtitle" style="margin: 0 0 10px; font-size: 11px; color: #475569; line-height: 1.4;">
+                                画面に突然警告音や電話番号が出ても絶対に電話をかけてはいけません！
+                            </p>
+
+                            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 8px 0;">
+
+                            <!-- ポイントボックス -->
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-top: 8px;">
+                                <div style="font-size: 10px; font-weight: bold; color: #64748b; margin-bottom: 6px;">
+                                    【覚えておきたいポイント】
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 6px; font-size: 11px; line-height: 1.4; color: #1e293b; font-weight: 600;">
+                                    <div id="prevKbPoint1" style="display: flex; gap: 4px;">
+                                        <span id="prevKbPointIcon1" style="color: #e11d48; font-weight: bold;">①</span>
+                                        <span>画面の電話番号には絶対に電話しない</span>
+                                    </div>
+                                    <div id="prevKbPoint2" style="display: flex; gap: 4px;">
+                                        <span id="prevKbPointIcon2" style="color: #e11d48; font-weight: bold;">②</span>
+                                        <span>キーボードの「Esc」長押し、または「Ctrl+Alt+Delete」で閉じる</span>
+                                    </div>
+                                    <div id="prevKbPoint3" style="display: flex; gap: 4px;">
+                                        <span id="prevKbPointIcon3" style="color: #e11d48; font-weight: bold;">③</span>
+                                        <span>不安な時は電源ボタン長押しで強制終了して教室へ相談する</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 先生のアドバイス -->
+                            <div id="prevKbAdviceBox" style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 8px 10px; margin-top: 8px;">
+                                <div style="font-size: 10px; font-weight: bold; color: #b45309;">
+                                    👩‍🏫 教室スタッフからのアドバイス
+                                </div>
+                                <p id="prevKbAdviceText" style="margin: 2px 0 0; font-size: 10.5px; color: #78350f; line-height: 1.4;">
+                                    「警告画面が消えない」「操作が不安」という時は、触らずにそのまま教室へお持ちください。スタッフが一緒に確認します！
+                                </p>
+                            </div>
+
+                            <p style="margin: 8px 0 0; font-size: 9.5px; color: #94a3b8; text-align: center;">
+                                ※わからない操作や気になる点はお気軽に教室でお尋ねください。
+                            </p>
+                        </div>
+
+                        <!-- ボタン部 -->
+                        <div style="padding: 10px 14px; background: #ffffff; border-top: 1px solid #f1f5f9; display: flex; flex-direction: column; gap: 6px;">
+                            <button type="button" id="prevKbBtn1" style="background: #e11d48; color: #fff; border: none; font-weight: 700; font-size: 12px; padding: 8px; border-radius: 6px; cursor: default; width: 100%;">
+                                📅 教室で直接相談・予約する
+                            </button>
+                            <button type="button" id="prevKbBtn2" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-weight: 600; font-size: 11px; padding: 6px; border-radius: 6px; cursor: default; width: 100%;">
+                                💬 LINEで質問・相談する
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="padding: 12px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+                <div style="font-size: 12px; color: #475569; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-circle-info" style="color: #0284c7;"></i>
+                    <span id="kbTargetSummaryText">配信先: <strong>LINE公式の友だち全員（一斉配信）</strong></span>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn-cancel" id="cancelKnowledgeBroadcastBtn">キャンセル</button>
+                    <button type="button" class="btn-save" id="submitKnowledgeBroadcastBtn" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+                        <i class="fa-solid fa-paper-plane"></i> この内容でLINE配信する
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260907_senior_proline_v6"></script>
+    <script src="admin.js?v=20260908_knowledge_v1"></script>
 </body>
 </html>

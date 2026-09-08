@@ -1423,6 +1423,278 @@ try {
             }
             break;
 
+        // --- 10-2. シニア向けスマホ・PC役立つ情報 リッチメッセージ配信 ---
+        case 'admin_send_knowledge_message':
+            $authPass = $_POST['password'] ?? '';
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
+                exit;
+            }
+
+            $targetType = trim($_POST['target_type'] ?? 'all'); // 'all' (一斉配信) or 'user' (個別送信)
+            $userId = trim($_POST['uid'] ?? '');
+            $title = trim($_POST['title'] ?? 'シニア向けお役立ち情報');
+            $subtitle = trim($_POST['subtitle'] ?? '');
+            $category = trim($_POST['category'] ?? 'スマホ・パソコンお役立ち');
+            $pointsJson = $_POST['points'] ?? '[]';
+            $points = is_array($pointsJson) ? $pointsJson : (json_decode($pointsJson, true) ?: []);
+            $advice = trim($_POST['advice'] ?? '');
+            $btn1Label = trim($_POST['btn1_label'] ?? '📅 教室で直接相談・予約する');
+            $btn1Url = trim($_POST['btn1_url'] ?? (defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'));
+            $btn2Label = trim($_POST['btn2_label'] ?? '💬 LINEで質問・相談する');
+            $badgeColor = trim($_POST['badge_color'] ?? '#4f46e5');
+
+            if (empty($title)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'タイトルを入力してください']);
+                exit;
+            }
+
+            if ($targetType === 'user') {
+                if (empty($userId) || str_starts_with($userId, 'MANUAL_')) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'error' => 'LINE未連携の受講生には送信できません']);
+                    exit;
+                }
+            }
+
+            // ポイント一覧のFlex Box作成
+            $pointBoxContents = [];
+            $numIcons = ['①', '②', '③', '④', '⑤'];
+            foreach ($points as $idx => $pt) {
+                $ptText = trim((string)$pt);
+                if (empty($ptText)) continue;
+                $icon = $numIcons[$idx] ?? '・';
+                $pointBoxContents[] = [
+                    'type' => 'box',
+                    'layout' => 'baseline',
+                    'spacing' => 'sm',
+                    'margin' => ($idx > 0) ? 'md' : 'none',
+                    'contents' => [
+                        [
+                            'type' => 'text',
+                            'text' => $icon,
+                            'weight' => 'bold',
+                            'size' => 'sm',
+                            'color' => $badgeColor,
+                            'flex' => 1
+                        ],
+                        [
+                            'type' => 'text',
+                            'text' => $ptText,
+                            'size' => 'sm',
+                            'color' => '#1e293b',
+                            'wrap' => true,
+                            'weight' => 'bold',
+                            'flex' => 11
+                        ]
+                    ]
+                ];
+            }
+
+            // Flex Message 本体の構築（シニアに優しい大文字・高コントラスト設計）
+            $bodyContents = [
+                // カテゴリバッジ
+                [
+                    'type' => 'box',
+                    'layout' => 'horizontal',
+                    'contents' => [
+                        [
+                            'type' => 'text',
+                            'text' => '💡 ' . $category,
+                            'size' => 'xs',
+                            'weight' => 'bold',
+                            'color' => '#ffffff'
+                        ]
+                    ],
+                    'backgroundColor' => $badgeColor,
+                    'paddingAll' => '5px',
+                    'paddingStart' => '10px',
+                    'paddingEnd' => '10px',
+                    'cornerRadius' => 'xxl',
+                    'width' => 'fit-content'
+                ],
+                // 大見出しタイトル
+                [
+                    'type' => 'text',
+                    'text' => $title,
+                    'weight' => 'bold',
+                    'size' => 'lg',
+                    'margin' => 'md',
+                    'color' => '#0f172a',
+                    'wrap' => true
+                ]
+            ];
+
+            // サブタイトル / 要約
+            if (!empty($subtitle)) {
+                $bodyContents[] = [
+                    'type' => 'text',
+                    'text' => $subtitle,
+                    'size' => 'xs',
+                    'color' => '#475569',
+                    'margin' => 'sm',
+                    'wrap' => true
+                ];
+            }
+
+            $bodyContents[] = ['type' => 'separator', 'margin' => 'lg'];
+
+            // 要点まとめボックス（3つのポイント）
+            if (!empty($pointBoxContents)) {
+                $bodyContents[] = [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'margin' => 'md',
+                    'backgroundColor' => '#f8fafc',
+                    'paddingAll' => '14px',
+                    'cornerRadius' => 'lg',
+                    'borderColor' => '#e2e8f0',
+                    'borderWidth' => '1px',
+                    'contents' => array_merge([
+                        [
+                            'type' => 'text',
+                            'text' => '【覚えておきたいポイント】',
+                            'weight' => 'bold',
+                            'size' => 'xs',
+                            'color' => '#64748b',
+                            'margin' => 'none'
+                        ],
+                        [
+                            'type' => 'separator',
+                            'margin' => 'sm'
+                        ]
+                    ], $pointBoxContents)
+                ];
+            }
+
+            // 先生からのワンポイントアドバイス
+            if (!empty($advice)) {
+                $bodyContents[] = [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'margin' => 'md',
+                    'backgroundColor' => '#fffbeb',
+                    'paddingAll' => '12px',
+                    'cornerRadius' => 'md',
+                    'borderColor' => '#fef3c7',
+                    'borderWidth' => '1px',
+                    'contents' => [
+                        [
+                            'type' => 'text',
+                            'text' => '👩‍🏫 教室スタッフからのアドバイス',
+                            'weight' => 'bold',
+                            'size' => 'xs',
+                            'color' => '#b45309'
+                        ],
+                        [
+                            'type' => 'text',
+                            'text' => $advice,
+                            'size' => 'xs',
+                            'color' => '#78350f',
+                            'wrap' => true,
+                            'margin' => 'xs'
+                        ]
+                    ]
+                ];
+            }
+
+            $bodyContents[] = [
+                'type' => 'text',
+                'text' => '※わからない操作や気になる点はお気軽に教室でお尋ねください。',
+                'size' => 'xxs',
+                'color' => '#94a3b8',
+                'margin' => 'md',
+                'wrap' => true
+            ];
+
+            // フッターアクションボタン
+            $footerButtons = [];
+            if (!empty($btn1Label)) {
+                $footerButtons[] = [
+                    'type' => 'button',
+                    'style' => 'primary',
+                    'color' => $badgeColor,
+                    'height' => 'sm',
+                    'action' => [
+                        'type' => 'uri',
+                        'label' => mb_substr($btn1Label, 0, 20),
+                        'uri' => !empty($btn1Url) ? $btn1Url : 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+                    ]
+                ];
+            }
+            if (!empty($btn2Label)) {
+                $footerButtons[] = [
+                    'type' => 'button',
+                    'style' => 'secondary',
+                    'height' => 'sm',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => mb_substr($btn2Label, 0, 20),
+                        'data' => 'action=ask_class&type=knowledge_question&topic=' . urlencode(mb_substr($title, 0, 30)),
+                        'displayText' => "「{$title}」について教室に質問・相談したい"
+                    ]
+                ];
+            }
+
+            $flexMessage = [
+                'type' => 'flex',
+                'altText' => "【シニアお役立ち情報】{$title}",
+                'contents' => [
+                    'type' => 'bubble',
+                    'size' => 'mega',
+                    'body' => [
+                        'type' => 'box',
+                        'layout' => 'vertical',
+                        'paddingAll' => '18px',
+                        'contents' => $bodyContents
+                    ],
+                    'footer' => [
+                        'type' => 'box',
+                        'layout' => 'vertical',
+                        'spacing' => 'sm',
+                        'paddingAll' => '14px',
+                        'contents' => $footerButtons
+                    ]
+                ]
+            ];
+
+            if ($targetType === 'all') {
+                // LINE公式アカウント友だち全員へ一斉配信 (Broadcast)
+                $res = sendLineBroadcastMessage([$flexMessage]);
+                if (!empty($res['success'])) {
+                    recordAdminNotificationLog($db, 'knowledge_broadcast', "お役立ち情報一斉配信: {$title}");
+                    echo json_encode([
+                        'success' => true,
+                        'message' => "LINE公式アカウントの友だち全員へ「{$title}」を一斉配信しました！"
+                    ], JSON_UNESCAPED_UNICODE);
+                } else {
+                    http_response_code(500);
+                    echo json_encode([
+                        'success' => false,
+                        'error' => "一斉配信失敗: " . ($res['error'] ?? 'APIエラー')
+                    ], JSON_UNESCAPED_UNICODE);
+                }
+            } else {
+                // 特定受講生への個別送信 (Push)
+                $res = sendLinePushMessage($userId, [$flexMessage]);
+                if (!empty($res['success'])) {
+                    recordCustomerInteraction($db, $userId, 'knowledge_send', "お役立ち情報個別送信: {$title}");
+                    echo json_encode([
+                        'success' => true,
+                        'message' => "指定された受講生へ「{$title}」を送信しました！"
+                    ], JSON_UNESCAPED_UNICODE);
+                } else {
+                    http_response_code(500);
+                    echo json_encode([
+                        'success' => false,
+                        'error' => "送信失敗: " . ($res['error'] ?? 'APIエラー')
+                    ], JSON_UNESCAPED_UNICODE);
+                }
+            }
+            break;
+
         // --- 11-2. リッチメニュー画像配信 & LINE自動リカバリ ---
         case 'richmenu_image':
             $id = (int)($_GET['id'] ?? 0);

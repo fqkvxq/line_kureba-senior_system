@@ -148,12 +148,49 @@ const elements = {
     btnRefreshProlineLogs: document.getElementById('btnRefreshProlineLogs'),
     displayOurWebhookUrl: document.getElementById('displayOurWebhookUrl'),
 
+    // シニアお役立ち情報 配信スタジオ モーダル
+    openKnowledgeBroadcastModalBtn: document.getElementById('openKnowledgeBroadcastModalBtn'),
+    knowledgeBroadcastModal: document.getElementById('knowledgeBroadcastModal'),
+    closeKnowledgeBroadcastModalBtn: document.getElementById('closeKnowledgeBroadcastModalBtn'),
+    cancelKnowledgeBroadcastBtn: document.getElementById('cancelKnowledgeBroadcastBtn'),
+    submitKnowledgeBroadcastBtn: document.getElementById('submitKnowledgeBroadcastBtn'),
+    kbPresetChipsWrap: document.getElementById('kbPresetChipsWrap'),
+    kbUserSelectWrap: document.getElementById('kbUserSelectWrap'),
+    kbTargetUserSelect: document.getElementById('kbTargetUserSelect'),
+    kbCategoryInput: document.getElementById('kbCategoryInput'),
+    kbColorSelect: document.getElementById('kbColorSelect'),
+    kbTitleInput: document.getElementById('kbTitleInput'),
+    kbSubtitleInput: document.getElementById('kbSubtitleInput'),
+    kbPoint1: document.getElementById('kbPoint1'),
+    kbPoint2: document.getElementById('kbPoint2'),
+    kbPoint3: document.getElementById('kbPoint3'),
+    kbAdviceInput: document.getElementById('kbAdviceInput'),
+    kbBtn1Label: document.getElementById('kbBtn1Label'),
+    kbBtn1Url: document.getElementById('kbBtn1Url'),
+    kbTargetSummaryText: document.getElementById('kbTargetSummaryText'),
+
+    // プレビュー要素
+    prevKbBadge: document.getElementById('prevKbBadge'),
+    prevKbTitle: document.getElementById('prevKbTitle'),
+    prevKbSubtitle: document.getElementById('prevKbSubtitle'),
+    prevKbPoint1: document.getElementById('prevKbPoint1'),
+    prevKbPoint2: document.getElementById('prevKbPoint2'),
+    prevKbPoint3: document.getElementById('prevKbPoint3'),
+    prevKbPointIcon1: document.getElementById('prevKbPointIcon1'),
+    prevKbPointIcon2: document.getElementById('prevKbPointIcon2'),
+    prevKbPointIcon3: document.getElementById('prevKbPointIcon3'),
+    prevKbAdviceBox: document.getElementById('prevKbAdviceBox'),
+    prevKbAdviceText: document.getElementById('prevKbAdviceText'),
+    prevKbBtn1: document.getElementById('prevKbBtn1'),
+    prevKbBtn2: document.getElementById('prevKbBtn2'),
+
     toast: document.getElementById('adminToast')
 };
 
 document.addEventListener('DOMContentLoaded', () => {
     initAuth();
     initEventListeners();
+    initKnowledgeBroadcastStudio();
 });
 
 function initAuth() {
@@ -645,6 +682,9 @@ function renderTable() {
                         <button class="btn-user-richmenu ${isCustomized ? 'is-active' : ''}" data-action="custom-menu" data-idx="${idx}" title="リッチメニューの確認・個別指定・メッセージ設定">
                             <i class="fa-solid fa-table-cells-large"></i> メニュー設定
                         </button>
+                        <button class="btn-knowledge-user-row" data-action="knowledge-send" data-idx="${idx}" title="この受講生へスマホ・PCお役立ち情報（Flex Message）を個別送信">
+                            <i class="fa-solid fa-bullhorn"></i> お役立ち配信
+                        </button>
                         <button class="btn-remind-oil" data-action="remind-oil" data-idx="${idx}" title="次回レッスン案内リマインドをLINE送信" style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd;">
                             <i class="fa-solid fa-laptop"></i> レッスン
                         </button>
@@ -677,6 +717,8 @@ function renderTable() {
 
             if (action === 'custom-menu') {
                 openUserRichMenuModal(cust);
+            } else if (action === 'knowledge-send') {
+                openKnowledgeBroadcastModal(cust.user_id);
             } else if (action === 'remind-oil') {
                 sendManualReminder(cust.id, cust.user_id, 'oil', cust.user_name, cust.car_model);
             } else if (action === 'remind-periodic') {
@@ -2323,6 +2365,440 @@ async function testProlineRelay() {
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-rotate"></i> 疎通テスト';
+        }
+    }
+}
+
+// ==========================================================================
+// シニアお役立ち情報 配信スタジオ (Knowledge Broadcast Studio)
+// ==========================================================================
+
+const SENIOR_KNOWLEDGE_PRESETS = [
+    {
+        id: 'scam_virus_alert',
+        category: '🚨 偽警告・詐欺対策',
+        color: '#e11d48',
+        label: '🚨 ウイルス警告詐欺対策',
+        title: '🚨 パソコンの「ウイルス感染警告」は詐欺！慌てず閉じる方法',
+        subtitle: '画面に突然ピーッと警告音や電話番号が出ても絶対に電話をかけてはいけません！',
+        points: [
+            '画面に表示される電話番号には絶対に電話しない',
+            'キーボードの「Esc」長押し、または「Ctrl+Alt+Delete」で画面を閉じる',
+            '不安な時は電源ボタン長押しで強制終了し、教室へご相談ください'
+        ],
+        advice: '「警告画面が消えない」「操作が不安」という時は、無理に触らずそのまま教室へお持ちください。スタッフが一緒に安全を確認します！',
+        btn1Label: '📅 教室で直接相談・予約する',
+        btn1Url: 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+    },
+    {
+        id: 'scam_fake_sms',
+        category: '⚠️ 不在通知詐欺対策',
+        color: '#e11d48',
+        label: '⚠️ 偽SMS・不在通知の見分け方',
+        title: '⚠️ ヤマトや佐川を名乗る偽SMS（不在通知）にご注意！',
+        subtitle: '「お荷物をお届けにあがりましたが…」というSMSのリンクは絶対に開かないでください！',
+        points: [
+            'SMSに書かれた青い英数字リンク（URL）は絶対に押さない',
+            '荷物の確認は、公式アプリやLINEの公式通知から行う',
+            '万が一リンクを開いてしまっても、電話番号やパスワードは絶対に入力しない'
+        ],
+        advice: '心当たりのない不審なSMSが届いた時は、削除するか、スクリーンショットを撮って教室でお見せください！',
+        btn1Label: '📅 教室で直接相談・予約する',
+        btn1Url: 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+    },
+    {
+        id: 'phone_large_text',
+        category: '📱 スマホ見やすさ設定',
+        color: '#0284c7',
+        label: '📱 スマホの文字を大きくする',
+        title: '📱 スマホの文字をもっと大きく！目に優しい簡単設定',
+        subtitle: '「画面の文字が小さくて読みづらい…」とお悩みの方へ。文字を大きく太くする設定です！',
+        points: [
+            'iPhone: 「設定」→「画面表示と明るさ」→「テキストサイズを変更」',
+            'Android: 「設定」→「ディスプレイ」→「フォントサイズと表示サイズ」',
+            '「文字を太くする」をオンにすると、さらにクッキリ見やすくなります'
+        ],
+        advice: '教室のレッスンで、ご自身のスマホに合わせて一番読みやすい大きさに一緒に設定調整いたします！',
+        btn1Label: '📅 スマホ設定を教室で相談する',
+        btn1Url: 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+    },
+    {
+        id: 'line_font_size',
+        category: '💬 LINE便利ワザ',
+        color: '#7c3aed',
+        label: '💬 LINEの文字サイズ変更',
+        title: '💬 LINEのメッセージ文字だけを特大サイズにする方法',
+        subtitle: 'お友だちやご家族からのメッセージがぐんと読みやすくなります！',
+        points: [
+            'LINEの「ホーム」右上の歯車マーク（設定）をタップ',
+            '「トーク」→「フォントサイズ」を選ぶ',
+            '「特大」を選ぶと、トークの文字が大きく見やすくなります'
+        ],
+        advice: 'スマホ全体の文字は変えずに、LINEだけ大きくすることも可能です。教室で一緒にやってみましょう！',
+        btn1Label: '📅 レッスン予約・日程変更',
+        btn1Url: 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+    },
+    {
+        id: 'battery_care',
+        category: '🔋 スマホ長持ちのコツ',
+        color: '#0284c7',
+        label: '🔋 バッテリー長持ちの習慣',
+        title: '🔋 スマートフォンのバッテリーを長持ちさせる3つの習慣',
+        subtitle: '電池の減りが早くなってきたと感じたら、この使い方を試してみてください！',
+        points: [
+            '充電しながらの長時間の動画視聴や操作を避ける（発熱予防）',
+            '画面の明るさを「自動調整」にするか、少し暗めに設定する',
+            '使っていない時はWi-FiやBluetoothをこまめにオフにする'
+        ],
+        advice: '「夕方には充電が切れてしまう」「スマホが熱くなる」などの点検も教室で行っています。お気軽に診断へお越しください！',
+        btn1Label: '🛠️ スマホ・PC健康診断を予約',
+        btn1Url: 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+    },
+    {
+        id: 'photo_cleanup',
+        category: '📸 写真・容量整理',
+        color: '#0284c7',
+        label: '📸 たまった写真の簡単整理術',
+        title: '📸 スマホの容量がいっぱい？たまった写真の簡単整理術',
+        subtitle: 'お孫さんの写真や旅行の写真でメモリがいっぱいになる前の安心お手入れ法です！',
+        points: [
+            'ブレた写真や連写写真、不要なスクリーンショットを先に削除',
+            'お気に入りの写真には「♡（ハートマーク）」を付けて整理',
+            'Googleフォトやパソコンへ定期バックアップしてスマホをスッキリ'
+        ],
+        advice: '「写真が消えたら怖い」「パソコンへ写真を移したい」時は、USBケーブルを持って教室へお越しください。安全なバックアップ手順をお教えします！',
+        btn1Label: '📅 写真整理レッスンを予約',
+        btn1Url: 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+    },
+    {
+        id: 'pc_restart_magic',
+        category: '⚡ パソコン快適化',
+        color: '#059669',
+        label: '⚡ パソコン再起動の魔法',
+        title: '⚡ パソコンが重い・動かない？「再起動」の魔法とシャットダウンの違い',
+        subtitle: '調子が悪い時は、まず「再起動」を試すのが一番の特効薬です！',
+        points: [
+            'Windowsの「シャットダウン」は前回の状態を一部保存して終了します',
+            '「再起動」を選ぶと、メモリが完全にリセットされて動作が軽くなります',
+            '週に1〜2回は「スタート」→「電源」→「再起動」を行うのがオススメ'
+        ],
+        advice: '再起動しても動きが遅い・ファンが大きな音で回る場合は、不要ソフトの整理が必要かもしれません。教室でPC健康診断をお受けいただけます！',
+        btn1Label: '🛠️ パソコン健康診断を予約',
+        btn1Url: 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+    },
+    {
+        id: 'pc_shortcuts',
+        category: '⌨️ パソコン便利技',
+        color: '#059669',
+        label: '⌨️ パソコン3大ショートカット',
+        title: '⌨️ これだけは覚えたい！パソコン3大魔法のショートカットキー',
+        subtitle: 'マウスで何度もカチカチ探すより、左手ひとつでパッと操作できるようになります！',
+        points: [
+            '【元に戻す】Ctrl ＋ Z（間違えて消してしまった文字や操作が一瞬で復活！）',
+            '【コピー】Ctrl ＋ C（選んだ文字や写真をサッと複製）',
+            '【貼り付け】Ctrl ＋ V（コピーした内容を好きな場所へペタッと貼る）'
+        ],
+        advice: 'Ctrl（コントロールキー）はキーボードの左下にあります！レッスンで実際に指を置いて練習してみましょう。',
+        btn1Label: '📅 レッスン予約・日程変更',
+        btn1Url: 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+    },
+    {
+        id: 'pc_caps_lock',
+        category: '🔤 文字入力トラブル',
+        color: '#059669',
+        label: '🔤 勝手に大文字になる解決法',
+        title: '🔤 文字が勝手に大文字になる？「Caps Lock」のワンキー解決法',
+        subtitle: 'パスワードやアルファベットを入力した時、全部大文字になって困ったことはありませんか？',
+        points: [
+            '原因はキーボードの「Shift」と「Caps Lock」を一緒に押してしまったこと',
+            '解決法: 「Shift」キーを押しながら「Caps Lock」キーをもう1度押すだけ！',
+            'キーボード上の小さなランプ（Aのランプ）が消えれば通常入力に戻ります'
+        ],
+        advice: '入力トラブルの多くはキーボードのちょっとした押し間違いです。焦らず教室スタッフにいつでもご質問ください！',
+        btn1Label: '📅 教室で質問・レッスン予約',
+        btn1Url: 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+    },
+    {
+        id: 'disaster_apps',
+        category: '🏥 安心・暮らしのデジタル',
+        color: '#d97706',
+        label: '🏥 防災・ハザードマップ活用',
+        title: '🏥 いざという時に安心！スマホで見る防災速報・ハザードマップ',
+        subtitle: '大雨や地震の際、スマホが命を守る一番の味方になります！',
+        points: [
+            '自治体の公式LINEや「Yahoo!防災速報」を登録しておくと警報が即届く',
+            'スマホのGoogleマップで近くの「指定避難所」を事前確認しておく',
+            '災害用伝言ダイヤル「171」やLINEでの安否確認方法を家族で決めておく'
+        ],
+        advice: '避難所の場所の登録や防災アプリの入れ方がわからない時は、教室でスタッフと一緒に設定しましょう！',
+        btn1Label: '📅 防災アプリ設定を教室で相談',
+        btn1Url: 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1'
+    }
+];
+
+function initKnowledgeBroadcastStudio() {
+    if (!elements.knowledgeBroadcastModal) return;
+
+    // 開閉イベント
+    elements.openKnowledgeBroadcastModalBtn?.addEventListener('click', () => openKnowledgeBroadcastModal());
+    elements.closeKnowledgeBroadcastModalBtn?.addEventListener('click', closeKnowledgeBroadcastModal);
+    elements.cancelKnowledgeBroadcastBtn?.addEventListener('click', closeKnowledgeBroadcastModal);
+
+    // プリセットチップの動的生成
+    if (elements.kbPresetChipsWrap) {
+        elements.kbPresetChipsWrap.innerHTML = '';
+        SENIOR_KNOWLEDGE_PRESETS.forEach((preset, idx) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'kb-preset-btn' + (idx === 0 ? ' active' : '');
+            btn.textContent = preset.label;
+            btn.addEventListener('click', () => {
+                applyKnowledgePreset(preset);
+                elements.kbPresetChipsWrap.querySelectorAll('.kb-preset-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+            elements.kbPresetChipsWrap.appendChild(btn);
+        });
+    }
+
+    // 配信対象ラジオボタン切り替え
+    document.querySelectorAll('input[name="kbTargetType"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            updateKnowledgeTargetUI();
+        });
+    });
+
+    // リアルタイムプレビュー連動イベント
+    const inputIds = [
+        'kbCategoryInput', 'kbColorSelect', 'kbTitleInput', 'kbSubtitleInput',
+        'kbPoint1', 'kbPoint2', 'kbPoint3', 'kbAdviceInput', 'kbBtn1Label', 'kbBtn1Url'
+    ];
+    inputIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', updateKnowledgeLivePreview);
+            el.addEventListener('change', updateKnowledgeLivePreview);
+        }
+    });
+
+    // 送信ボタン
+    elements.submitKnowledgeBroadcastBtn?.addEventListener('click', submitKnowledgeBroadcast);
+
+    // 初期値として1件目のプリセットを反映
+    if (SENIOR_KNOWLEDGE_PRESETS.length > 0) {
+        applyKnowledgePreset(SENIOR_KNOWLEDGE_PRESETS[0]);
+    }
+}
+
+function openKnowledgeBroadcastModal(targetUserId = null) {
+    if (!elements.knowledgeBroadcastModal) return;
+
+    // 受講生選択肢の更新
+    populateKbTargetUsers(targetUserId);
+
+    if (targetUserId) {
+        const userRadio = document.querySelector('input[name="kbTargetType"][value="user"]');
+        if (userRadio) userRadio.checked = true;
+    } else {
+        const allRadio = document.querySelector('input[name="kbTargetType"][value="all"]');
+        if (allRadio) allRadio.checked = true;
+    }
+
+    updateKnowledgeTargetUI();
+    updateKnowledgeLivePreview();
+
+    elements.knowledgeBroadcastModal.style.display = 'flex';
+}
+
+function closeKnowledgeBroadcastModal() {
+    if (elements.knowledgeBroadcastModal) {
+        elements.knowledgeBroadcastModal.style.display = 'none';
+    }
+}
+
+function populateKbTargetUsers(selectedUserId = null) {
+    if (!elements.kbTargetUserSelect) return;
+    elements.kbTargetUserSelect.innerHTML = '<option value="">受講生を選択してください...</option>';
+
+    const lineUsers = state.allCustomers.filter(c => c.user_id && c.user_id.startsWith('U'));
+    lineUsers.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.user_id;
+        opt.textContent = `${c.user_name || '名前なし'} (${c.car_model || '受講コース未設定'})`;
+        if (selectedUserId && c.user_id === selectedUserId) {
+            opt.selected = true;
+        }
+        elements.kbTargetUserSelect.appendChild(opt);
+    });
+}
+
+function updateKnowledgeTargetUI() {
+    const targetType = document.querySelector('input[name="kbTargetType"]:checked')?.value || 'all';
+    if (targetType === 'user') {
+        if (elements.kbUserSelectWrap) elements.kbUserSelectWrap.style.display = 'block';
+        const selectedUid = elements.kbTargetUserSelect?.value;
+        const selectedCust = state.allCustomers.find(c => c.user_id === selectedUid);
+        const name = selectedCust ? (selectedCust.user_name || '受講生') : '選択した受講生';
+        if (elements.kbTargetSummaryText) {
+            elements.kbTargetSummaryText.innerHTML = `配信先: <strong>👤 【${escapeHtml(name)} 様】へ個別送信</strong>`;
+        }
+    } else {
+        if (elements.kbUserSelectWrap) elements.kbUserSelectWrap.style.display = 'none';
+        if (elements.kbTargetSummaryText) {
+            elements.kbTargetSummaryText.innerHTML = '配信先: <strong>👥 LINE公式アカウントの友だち全員（一斉配信）</strong>';
+        }
+    }
+}
+
+if (elements.kbTargetUserSelect) {
+    elements.kbTargetUserSelect.addEventListener('change', updateKnowledgeTargetUI);
+}
+
+function applyKnowledgePreset(preset) {
+    if (!preset) return;
+    if (elements.kbCategoryInput) elements.kbCategoryInput.value = preset.category;
+    if (elements.kbColorSelect) elements.kbColorSelect.value = preset.color;
+    if (elements.kbTitleInput) elements.kbTitleInput.value = preset.title;
+    if (elements.kbSubtitleInput) elements.kbSubtitleInput.value = preset.subtitle;
+    if (elements.kbPoint1) elements.kbPoint1.value = preset.points[0] || '';
+    if (elements.kbPoint2) elements.kbPoint2.value = preset.points[1] || '';
+    if (elements.kbPoint3) elements.kbPoint3.value = preset.points[2] || '';
+    if (elements.kbAdviceInput) elements.kbAdviceInput.value = preset.advice || '';
+    if (elements.kbBtn1Label) elements.kbBtn1Label.value = preset.btn1Label || '📅 教室で直接相談・予約する';
+    if (elements.kbBtn1Url) elements.kbBtn1Url.value = preset.btn1Url || 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1';
+
+    updateKnowledgeLivePreview();
+}
+
+function updateKnowledgeLivePreview() {
+    const category = elements.kbCategoryInput?.value || '安心・セキュリティ';
+    const color = elements.kbColorSelect?.value || '#e11d48';
+    const title = elements.kbTitleInput?.value || 'お役立ち情報タイトル';
+    const subtitle = elements.kbSubtitleInput?.value || '';
+    const p1 = elements.kbPoint1?.value || '';
+    const p2 = elements.kbPoint2?.value || '';
+    const p3 = elements.kbPoint3?.value || '';
+    const advice = elements.kbAdviceInput?.value || '';
+    const btn1Text = elements.kbBtn1Label?.value || '📅 教室で直接相談・予約する';
+
+    if (elements.prevKbBadge) {
+        elements.prevKbBadge.textContent = '💡 ' + category;
+        elements.prevKbBadge.style.background = color;
+    }
+    if (elements.prevKbTitle) elements.prevKbTitle.textContent = title;
+    if (elements.prevKbSubtitle) {
+        elements.prevKbSubtitle.textContent = subtitle;
+        elements.prevKbSubtitle.style.display = subtitle ? 'block' : 'none';
+    }
+
+    // ポイント
+    const updatePointRow = (rowEl, iconEl, iconText, text) => {
+        if (!rowEl) return;
+        if (text) {
+            rowEl.style.display = 'flex';
+            rowEl.querySelector('span:last-child').textContent = text;
+            if (iconEl) iconEl.style.color = color;
+        } else {
+            rowEl.style.display = 'none';
+        }
+    };
+    updatePointRow(elements.prevKbPoint1, elements.prevKbPointIcon1, '①', p1);
+    updatePointRow(elements.prevKbPoint2, elements.prevKbPointIcon2, '②', p2);
+    updatePointRow(elements.prevKbPoint3, elements.prevKbPointIcon3, '③', p3);
+
+    // 先生のアドバイス
+    if (elements.prevKbAdviceBox) {
+        elements.prevKbAdviceBox.style.display = advice ? 'block' : 'none';
+    }
+    if (elements.prevKbAdviceText) {
+        elements.prevKbAdviceText.textContent = advice;
+    }
+
+    // ボタン
+    if (elements.prevKbBtn1) {
+        elements.prevKbBtn1.textContent = btn1Text;
+        elements.prevKbBtn1.style.background = color;
+    }
+}
+
+async function submitKnowledgeBroadcast() {
+    const title = elements.kbTitleInput?.value.trim();
+    if (!title) {
+        alert('記事タイトルを入力してください');
+        return;
+    }
+
+    const targetType = document.querySelector('input[name="kbTargetType"]:checked')?.value || 'all';
+    let targetUid = '';
+    let targetName = 'LINE友だち全員';
+
+    if (targetType === 'user') {
+        targetUid = elements.kbTargetUserSelect?.value;
+        if (!targetUid) {
+            alert('送信先の受講生を選択してください');
+            return;
+        }
+        const cust = state.allCustomers.find(c => c.user_id === targetUid);
+        targetName = cust ? `${cust.user_name || '受講生'} 様` : '指定受講生';
+    }
+
+    const confirmMsg = (targetType === 'all')
+        ? `【LINE公式の友だち全員（一斉配信）】へ、お役立ちリッチカード「${title}」を今すぐ配信しますか？\n（※全受講生のトーク画面へ即座に送信されます）`
+        : `【${targetName}】へ、お役立ちリッチカード「${title}」をLINE送信しますか？`;
+
+    if (!confirm(confirmMsg)) return;
+
+    const btn = elements.submitKnowledgeBroadcastBtn;
+    const originalHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> LINE送信中...';
+    }
+
+    const points = [
+        elements.kbPoint1?.value.trim(),
+        elements.kbPoint2?.value.trim(),
+        elements.kbPoint3?.value.trim()
+    ].filter(Boolean);
+
+    const payload = new URLSearchParams({
+        action: 'admin_send_knowledge_message',
+        password: state.password,
+        target_type: targetType,
+        uid: targetUid,
+        category: elements.kbCategoryInput?.value.trim() || 'スマホ・パソコンお役立ち',
+        badge_color: elements.kbColorSelect?.value || '#e11d48',
+        title: title,
+        subtitle: elements.kbSubtitleInput?.value.trim() || '',
+        points: JSON.stringify(points),
+        advice: elements.kbAdviceInput?.value.trim() || '',
+        btn1_label: elements.kbBtn1Label?.value.trim() || '📅 教室で直接相談・予約する',
+        btn1_url: elements.kbBtn1Url?.value.trim() || 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1',
+        btn2_label: '💬 LINEで質問・相談する'
+    });
+
+    try {
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            showToast(data.message || 'お役立ち情報をLINE送信しました！');
+            closeKnowledgeBroadcastModal();
+            await fetchCustomers();
+        } else {
+            alert(data.error || '送信に失敗しました');
+        }
+    } catch (e) {
+        console.error('Knowledge broadcast error:', e);
+        alert('通信エラーが発生しました: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
         }
     }
 }

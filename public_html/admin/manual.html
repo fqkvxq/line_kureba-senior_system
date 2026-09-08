@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260907_senior_proline_v1">
+    <link rel="stylesheet" href="manual.css?v=20260908_knowledge_v1">
 </head>
 <body>
     <!-- ログインモーダル -->
@@ -76,7 +76,8 @@
                         <li class="toc-item"><a href="#sec-line-reminder"><i class="fa-solid fa-paper-plane"></i> 7. LINE個別リマインド・自動バッチ</a></li>
                         <li class="toc-item"><a href="#sec-global-richmenu"><i class="fa-solid fa-sliders"></i> 8. 全体リッチメニュー管理</a></li>
                         <li class="toc-item"><a href="#sec-admin-notify"><i class="fa-solid fa-bell" style="color:#0284c7;"></i> 9. 管理者向けLINE通知設定</a></li>
-                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 10. よくある質問・トラブルシューティング</a></li>
+                        <li class="toc-item"><a href="#sec-knowledge-broadcast"><i class="fa-solid fa-lightbulb" style="color:#f59e0b;"></i> 10. シニア向けお役立ち情報 配信スタジオ</a></li>
+                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 11. よくある質問・トラブルシューティング</a></li>
                     </ul>
                 </div>
             </aside>
@@ -129,6 +130,16 @@
                         <div class="summary-card-content">
                             <h3>管理者LINE通知</h3>
                             <p>受講生からのレッスン予約やお困りごと相談を、講師・スタッフの個人LINEへ即座にプッシュ通知。</p>
+                        </div>
+                    </a>
+
+                    <a href="#sec-knowledge-broadcast" class="summary-card">
+                        <div class="summary-icon-wrap" style="background: #fffbeb; color: #d97706;">
+                            <i class="fa-solid fa-lightbulb"></i>
+                        </div>
+                        <div class="summary-card-content">
+                            <h3>お役立ち情報配信</h3>
+                            <p>シニアに優しい大文字カード（Flex）でスマホ・PC便利ワザや詐欺対策を一斉・個別配信。</p>
                         </div>
                     </a>
                 </div>
@@ -564,14 +575,84 @@
                     </div>
                 </section>
 
-                <!-- 10. よくある質問・トラブルシューティング -->
+                <!-- 10. シニア向けお役立ち情報 配信スタジオ -->
+                <section class="manual-section" id="sec-knowledge-broadcast">
+                    <div class="section-header">
+                        <div class="section-header-icon" style="background: #fffbeb; color: #d97706;">
+                            <i class="fa-solid fa-lightbulb"></i>
+                        </div>
+                        <div class="section-header-text">
+                            <h2>10. シニア向けお役立ち情報 配信スタジオ（リッチメッセージ配信）</h2>
+                            <p>シニアに優しい大文字カード（LINE Flex Message）でスマホ・パソコンの豆知識や偽警告対策を配信</p>
+                        </div>
+                    </div>
+
+                    <p>文字が小さく見落とされがちな通常のテキスト配信や画像配信とは異なり、<strong>シニア受講生の視認性に配慮した特大フォント・明瞭な枠線・カラーバッジ・3点要約ボックス</strong>で構成された高品質なリッチカードメッセージ（LINE Flex Message）を配信できる機能です。<br>
+                    受講生からの信頼向上はもちろん、メッセージ末尾に「<strong>次回のレッスンを予約する</strong>」ボタンや「<strong>LINEで先生に相談する</strong>」ボタンが標準装備されているため、自然なレッスン予約・相談への誘導が可能です。</p>
+
+                    <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <div class="step-body">
+                                <h4>配信スタジオの開き方</h4>
+                                <p><strong>・友だち全員へ一斉配信する場合</strong>：管理画面上部ヘッダーの「<strong><i class="fa-solid fa-bullhorn"></i> お役立ち情報配信</strong>」ボタンをクリックします。<br>
+                                <strong>・特定の受講生へ個別送信する場合</strong>：受講生一覧テーブルの操作列にある「<strong><i class="fa-solid fa-paper-plane"></i> お役立ち配信</strong>」ボタンをクリックすると、その受講生が指定された状態でモーダルが開きます。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <div class="step-body">
+                                <h4>厳選10種プリセットからワンクリック選択</h4>
+                                <p>シニアの方が日常で特に知りたい、トラブル防止に直結する10テーマのテンプレートを標準装備しています：<br>
+                                <span class="badge" style="background:#ef4444;color:#fff;margin:2px;">偽警告詐欺・ウイルス画面</span>
+                                <span class="badge" style="background:#ea580c;color:#fff;margin:2px;">偽不在SMS・フィッシング</span>
+                                <span class="badge" style="background:#2563eb;color:#fff;margin:2px;">スマホ文字サイズ拡大</span>
+                                <span class="badge" style="background:#16a34a;color:#fff;margin:2px;">LINE文字の特大化</span>
+                                <span class="badge" style="background:#0284c7;color:#fff;margin:2px;">バッテリー長持ちの秘訣</span>
+                                <span class="badge" style="background:#8b5cf6;color:#fff;margin:2px;">写真整理とお気に入り活用</span>
+                                <span class="badge" style="background:#0891b2;color:#fff;margin:2px;">不調時の魔法「再起動」</span>
+                                <span class="badge" style="background:#4f46e5;color:#fff;margin:2px;">PC 3大ショートカット</span>
+                                <span class="badge" style="background:#f59e0b;color:#fff;margin:2px;">大文字入力Caps Lock解除</span>
+                                <span class="badge" style="background:#dc2626;color:#fff;margin:2px;">防災アプリとハザード確認</span><br>
+                                チップをクリックするだけで、タイトル・カテゴリ・重要ポイント3点・先生のアドバイス欄に自動入力されます。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">3</div>
+                            <div class="step-body">
+                                <h4>リアルタイム・スマホ画面プレビュー</h4>
+                                <p>モーダル右側（スマホ画面では下部）に、<strong>受講生のLINE画面で実際にどのように表示されるかが1文字単位でリアルタイム反映</strong>されます。文字の改行や読みやすさを確認しながら内容を自由に微調整できます。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">4</div>
+                            <div class="step-body">
+                                <h4>レッスン予約ボタンの連携</h4>
+                                <p>メッセージ末尾のメインボタンには、教室のレッスン予約URL（<code>https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1</code>）が最初からセットされています。必要に応じて別のURLへの差し替えも自由に行えます。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">5</div>
+                            <div class="step-body">
+                                <h4>安全な確認ダイアログを経て配信</h4>
+                                <p>「配信する」ボタンを押すと、一斉配信の場合は送信対象人数（友だち全員）の確認ダイアログが表示されます。「OK」を押すとLINE公式アカウント経由で瞬時にカードメッセージが届けられます。</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 11. よくある質問・トラブルシューティング -->
                 <section class="manual-section" id="sec-faq">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #fef2f2; color: #ef4444;">
                             <i class="fa-solid fa-circle-question"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>10. よくある質問・トラブルシューティング</h2>
+                            <h2>11. よくある質問・トラブルシューティング</h2>
                             <p>困ったときの解決方法</p>
                         </div>
                     </div>
@@ -633,6 +714,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260907_senior_proline_v8"></script>
+    <script src="manual.js?v=20260908_knowledge_v1"></script>
 </body>
 </html>
