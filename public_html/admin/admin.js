@@ -1644,6 +1644,9 @@ async function openUserRichMenuModal(cust) {
         elements.userMenuTextInput.value = getDefaultCustomPhrase(cust, 'insp');
     }
 
+    // タップ案内ガイドはデフォルトOFF
+    if (elements.userMenuShowTapHint) elements.userMenuShowTapHint.checked = false;
+
     // LINEリアルタイム表示ステータスの確認実行
     checkUserRealtimeMenuStatus(cust.user_id);
 
@@ -1870,7 +1873,7 @@ function renderUserMenuPreview() {
     if (lines.length === 0) return;
 
     const actionType = elements.userMenuBannerActionType ? elements.userMenuBannerActionType.value : 'mycar_liff';
-    const showTapHint = elements.userMenuShowTapHint ? elements.userMenuShowTapHint.checked : true;
+    const showTapHint = elements.userMenuShowTapHint ? elements.userMenuShowTapHint.checked : false;
     const hasTapAction = actionType !== 'none';
 
     // 帯の高さ計算（文字サイズ・行数・帯の太さ・タップ案内設定を考慮）
