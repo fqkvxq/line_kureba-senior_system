@@ -33,8 +33,8 @@ $DEFAULT_SYSTEM_LINE_ACCOUNTS = [
         'db_file' => 'cars.db', // 既存メインDB
         'is_default' => true,
     ],
-    'kaisyadx' => [
-        'id' => 'kaisya_dx',
+    'kaisya_dx' => [
+            'id' => 'kaisya_dx',
         'name' => '会社DXのKUREBA',
         'short_name' => '会社DXのKUREBA',
         'theme_color' => '#2563eb', // ブルー
