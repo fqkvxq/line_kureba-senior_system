@@ -33,17 +33,17 @@ $DEFAULT_SYSTEM_LINE_ACCOUNTS = [
         'db_file' => 'cars.db', // 既存メインDB
         'is_default' => true,
     ],
-    'upfahren' => [
-        'id' => 'upfahren',
-        'name' => 'アップファーレン (車両点検・車検)',
-        'short_name' => 'アップファーレン',
+    'kaisyadx' => [
+        'id' => 'kaisya_dx',
+        'name' => '会社DXのKUREBA',
+        'short_name' => '会社DXのKUREBA',
         'theme_color' => '#2563eb', // ブルー
-        'channel_access_token' => '', // チャネルアクセストークン
-        'channel_secret' => '',       // チャネルシークレット
+        'channel_access_token' => '5rGB+M9chkEMdXpO7S5+jAtrqX+7FUNDF9IsZ2/i3zi02/QlGQQTolaYjeLMDo92ckuD2MORgkaCID1MxpbDPD3INS8jHs+wxyyNfKzj9xT1eZ5jPqWy4S0DM2l7IJo7MDIeOzqcr5JtMQaq38OQNQdB04t89/1O/w1cDnyilFU=', // チャネルアクセストークン
+        'channel_secret' => '70b7887d48cbb85870eb8ee6f43dc6aa',       // チャネルシークレット
         'liff_id' => '',              // LIFF ID
         'proline_calendar_url' => '',
         'proline_webhook_url' => '',
-        'db_file' => 'cars_upfahren.db', // 専用DB
+        'db_file' => 'kaisyadx.db', // 専用DB
         'is_default' => false,
     ],
 ];
