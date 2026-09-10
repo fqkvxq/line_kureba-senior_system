@@ -10,12 +10,16 @@ ini_set('date.timezone', 'Asia/Tokyo');
 putenv('TZ=Asia/Tokyo');
 
 // --- 複数LINE公式アカウント設定 (マルチテナント対応) ---
-// 切り替えて運用したいLINE公式アカウントをここで定義します。
-// 必要に応じて新しいアカウント配列を追加するだけで、何個でもアカウントを増設可能です。
+// 切り替えて運用したいLINE公式アカウントを管理します。
+// 管理画面からの新規追加・編集・削除にも完全対応しています。
 global $SYSTEM_LINE_ACCOUNTS, $CURRENT_ACTIVE_LINE_ACCOUNT_KEY;
 $CURRENT_ACTIVE_LINE_ACCOUNT_KEY = null;
 
-$SYSTEM_LINE_ACCOUNTS = [
+define('LINE_ACCOUNTS_DATA_DIR', __DIR__ . '/data');
+define('LINE_ACCOUNTS_DATA_FILE', LINE_ACCOUNTS_DATA_DIR . '/line_accounts.json');
+
+// デフォルトの基本アカウント定義
+$DEFAULT_SYSTEM_LINE_ACCOUNTS = [
     'senior' => [
         'id' => 'senior',
         'name' => 'シニア向けパソコン教室',
@@ -34,9 +38,9 @@ $SYSTEM_LINE_ACCOUNTS = [
         'name' => 'アップファーレン (車両点検・車検)',
         'short_name' => 'アップファーレン',
         'theme_color' => '#2563eb', // ブルー
-        'channel_access_token' => '', // 2つ目のアカウントのチャネルアクセストークンを貼り付け
-        'channel_secret' => '',       // 2つ目のアカウントのチャネルシークレット
-        'liff_id' => '',              // 2つ目のアカウントのLIFF ID
+        'channel_access_token' => '', // チャネルアクセストークン
+        'channel_secret' => '',       // チャネルシークレット
+        'liff_id' => '',              // LIFF ID
         'proline_calendar_url' => '',
         'proline_webhook_url' => '',
         'db_file' => 'cars_upfahren.db', // 専用DB
@@ -44,11 +48,162 @@ $SYSTEM_LINE_ACCOUNTS = [
     ],
 ];
 
+/**
+ * 登録されているLINE公式アカウント設定をロード（ファイル永続化 + デフォルトマージ）
+ */
+function loadSystemLineAccounts(): array {
+    global $DEFAULT_SYSTEM_LINE_ACCOUNTS;
+    $accounts = $DEFAULT_SYSTEM_LINE_ACCOUNTS;
+
+    if (file_exists(LINE_ACCOUNTS_DATA_FILE)) {
+        $json = @file_get_contents(LINE_ACCOUNTS_DATA_FILE);
+        if (!empty($json)) {
+            $data = json_decode($json, true);
+            if (is_array($data) && !empty($data['accounts']) && is_array($data['accounts'])) {
+                foreach ($data['accounts'] as $k => $acc) {
+                    if (is_array($acc) && !empty($acc['id'])) {
+                        $key = preg_replace('/[^a-zA-Z0-9_\-]/', '', $acc['id']);
+                        if (!empty($key)) {
+                            // 既存のsenior等のプロパティを保持しつつマージ
+                            $base = $accounts[$key] ?? [
+                                'id' => $key,
+                                'is_default' => false,
+                                'db_file' => "cars_{$key}.db"
+                            ];
+                            $accounts[$key] = array_merge($base, $acc);
+                            $accounts[$key]['id'] = $key;
+                            if (empty($accounts[$key]['db_file'])) {
+                                $accounts[$key]['db_file'] = ($key === 'senior') ? 'cars.db' : "cars_{$key}.db";
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 必ず最低1つのデフォルトが存在することを保証
+    $hasDefault = false;
+    foreach ($accounts as $acc) {
+        if (!empty($acc['is_default'])) {
+            $hasDefault = true;
+            break;
+        }
+    }
+    if (!$hasDefault && isset($accounts['senior'])) {
+        $accounts['senior']['is_default'] = true;
+    }
+
+    return $accounts;
+}
+
+/**
+ * LINE公式アカウント設定を保存（安全なJSONファイル書き込み）
+ */
+function saveSystemLineAccounts(array $accounts): bool {
+    if (!is_dir(LINE_ACCOUNTS_DATA_DIR)) {
+        @mkdir(LINE_ACCOUNTS_DATA_DIR, 0777, true);
+    }
+    @chmod(LINE_ACCOUNTS_DATA_DIR, 0777);
+
+    // .htaccess で直接Webアクセスを遮断
+    $htaccessFile = LINE_ACCOUNTS_DATA_DIR . '/.htaccess';
+    if (!file_exists($htaccessFile)) {
+        @file_put_contents($htaccessFile, "Deny from all\n");
+    }
+
+    $cleanAccounts = [];
+    foreach ($accounts as $k => $acc) {
+        $key = preg_replace('/[^a-zA-Z0-9_\-]/', '', $acc['id'] ?? $k);
+        if (empty($key)) continue;
+
+        $cleanAccounts[$key] = [
+            'id' => $key,
+            'name' => trim((string)($acc['name'] ?? 'LINE公式アカウント')),
+            'short_name' => trim((string)($acc['short_name'] ?? $acc['name'] ?? '店舗')),
+            'theme_color' => preg_match('/^#[0-9a-fA-F]{6}$/', $acc['theme_color'] ?? '') ? $acc['theme_color'] : '#6366f1',
+            'channel_access_token' => trim((string)($acc['channel_access_token'] ?? '')),
+            'channel_secret' => trim((string)($acc['channel_secret'] ?? '')),
+            'liff_id' => trim((string)($acc['liff_id'] ?? '')),
+            'proline_calendar_url' => trim((string)($acc['proline_calendar_url'] ?? '')),
+            'proline_webhook_url' => trim((string)($acc['proline_webhook_url'] ?? '')),
+            'db_file' => !empty($acc['db_file']) ? $acc['db_file'] : (($key === 'senior') ? 'cars.db' : "cars_{$key}.db"),
+            'is_default' => !empty($acc['is_default']),
+            'updated_at' => date('Y-m-d H:i:s')
+        ];
+    }
+
+    $payload = [
+        'version' => '1.0',
+        'updated_at' => date('Y-m-d H:i:s'),
+        'accounts' => $cleanAccounts
+    ];
+
+    $json = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $res = @file_put_contents(LINE_ACCOUNTS_DATA_FILE, $json, LOCK_EX);
+    if ($res !== false) {
+        @chmod(LINE_ACCOUNTS_DATA_FILE, 0666);
+        return true;
+    }
+    return false;
+}
+
+/**
+ * LINE公式アカウントのチャネルアクセストークンを検証（Bot情報の取得テスト）
+ */
+function verifyLineBotCredentials(string $accessToken): array {
+    $token = trim($accessToken);
+    if (empty($token)) {
+        return ['success' => false, 'error' => 'チャネルアクセストークンが入力されていません'];
+    }
+
+    $ch = curl_init('https://api.line.me/v2/bot/info');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: Bearer ' . $token
+    ]);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+
+    $body = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if (!empty($curlError)) {
+        return ['success' => false, 'error' => 'LINE通信エラー: ' . $curlError];
+    }
+
+    $data = json_decode($body, true);
+    if ($httpCode === 200 && is_array($data)) {
+        return [
+            'success' => true,
+            'bot_info' => [
+                'user_id' => $data['userId'] ?? '',
+                'basic_id' => $data['basicId'] ?? '',
+                'premium_id' => $data['premiumId'] ?? '',
+                'display_name' => $data['displayName'] ?? '',
+                'picture_url' => $data['pictureUrl'] ?? '',
+                'chat_mode' => $data['chatMode'] ?? '',
+                'mark_as_read_mode' => $data['markAsReadMode'] ?? ''
+            ]
+        ];
+    }
+
+    $errMessage = $data['message'] ?? "HTTP {$httpCode}: LINE認証に失敗しました。トークンを確認してください。";
+    if (isset($data['details'])) {
+        $errMessage .= ' (' . json_encode($data['details'], JSON_UNESCAPED_UNICODE) . ')';
+    }
+    return ['success' => false, 'error' => $errMessage, 'http_code' => $httpCode];
+}
+
+$SYSTEM_LINE_ACCOUNTS = loadSystemLineAccounts();
+
 // --- 後方互換用 定数フォールバック (単一アカウント時代の定数参照を安全に維持) ---
-define('LINE_CHANNEL_ACCESS_TOKEN', $SYSTEM_LINE_ACCOUNTS['senior']['channel_access_token']);
-define('LINE_CHANNEL_SECRET', $SYSTEM_LINE_ACCOUNTS['senior']['channel_secret']);
-define('LINE_LIFF_ID', $SYSTEM_LINE_ACCOUNTS['senior']['liff_id']);
-define('LIFF_ID', $SYSTEM_LINE_ACCOUNTS['senior']['liff_id']);
+define('LINE_CHANNEL_ACCESS_TOKEN', $SYSTEM_LINE_ACCOUNTS['senior']['channel_access_token'] ?? '');
+define('LINE_CHANNEL_SECRET', $SYSTEM_LINE_ACCOUNTS['senior']['channel_secret'] ?? '');
+define('LINE_LIFF_ID', $SYSTEM_LINE_ACCOUNTS['senior']['liff_id'] ?? '');
+define('LIFF_ID', $SYSTEM_LINE_ACCOUNTS['senior']['liff_id'] ?? '');
 
 // --- 新着車両の自動配信設定 ---
 define('ENABLE_NEW_CAR_BROADCAST', false); // 新着検知時にLINE公式アカウントの友だち全員へ自動一斉配信するか (true: 送信する, false: 送信しない)

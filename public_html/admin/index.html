@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260910_radius_unify_v1">
+    <link rel="stylesheet" href="admin.css?v=20260910_account_manage_v1">
 </head>
 <body>
     <!-- ログインモーダル (初期表示) -->
@@ -43,7 +43,7 @@
             </div>
 
             <!-- アカウント切り替えスイッチャー -->
-            <div class="account-switcher-wrap" id="accountSwitcherWrap">
+            <div class="account-switcher-wrap" id="accountSwitcherWrap" style="display: flex; align-items: center; gap: 8px;">
                 <label for="accountSelect" class="account-switcher-label">
                     <i class="fa-solid fa-arrows-rotate"></i> アカウント:
                 </label>
@@ -53,6 +53,9 @@
                         <option value="senior">シニア向けパソコン教室</option>
                     </select>
                 </div>
+                <button type="button" class="btn-account-manage" id="btnOpenAccountManageModal" title="LINE公式アカウントの追加・編集・接続設定">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
             </div>
 
             <!-- ナビゲーションリンク -->
@@ -954,9 +957,198 @@
         </div>
     </div>
 
+    <!-- LINE公式アカウント管理・新規追加モーダル -->
+    <div class="modal-overlay" id="accountManageModal" style="z-index: 1250;">
+        <div class="modal-card" style="max-width: 720px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: #fff; flex-shrink: 0;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 38px; height: 38px; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center; color: #a5b4fc; font-size: 18px;">
+                        <i class="fa-solid fa-sliders"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #fff;">LINE公式アカウント設定・新規追加</h3>
+                        <p style="margin: 2px 0 0; font-size: 11.5px; color: #c7d2fe;">教室・店舗など複数のLINE公式アカウントを簡単に追加・接続設定</p>
+                    </div>
+                </div>
+                <button class="modal-close" id="closeAccountManageModalBtn" style="color: #c7d2fe;">&times;</button>
+            </div>
+
+            <!-- タブ切り替えバー -->
+            <div style="padding: 14px 20px 0; background: #ffffff; flex-shrink: 0;">
+                <div class="acc-modal-tabs">
+                    <button type="button" class="acc-tab-btn active" id="tabAccListBtn">
+                        <i class="fa-solid fa-list-check"></i> 登録アカウント一覧 (<span id="accCountBadge">0</span>)
+                    </button>
+                    <button type="button" class="acc-tab-btn" id="tabAccNewBtn">
+                        <i class="fa-solid fa-circle-plus" style="color: #10b981;"></i> ＋ 新規アカウントを追加
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-body" style="padding: 10px 20px 20px; overflow-y: auto; flex: 1;">
+                <!-- ビュー1: アカウント一覧 -->
+                <div id="accListView">
+                    <div class="account-card-grid" id="accountCardsListWrap">
+                        <!-- JSで動的生成 -->
+                    </div>
+                    <div style="margin-top: 14px; padding: 12px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); font-size: 11.5px; color: #475569; line-height: 1.6;">
+                        <i class="fa-solid fa-circle-info" style="color: #4f46e5;"></i>
+                        <strong>アカウントの追加とデータ管理について:</strong><br>
+                        アカウントを追加すると、受講生カルテ・点検履歴・リッチメニュー用の専用SQLiteデータベース（<code>cars_{id}.db</code>）が自動生成され、他アカウントと完全に分離して安全に管理されます。
+                    </div>
+                </div>
+
+                <!-- ビュー2: アカウント新規追加・編集フォーム -->
+                <div id="accEditView" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px dashed #e2e8f0;">
+                        <span style="font-size: 13px; font-weight: 800; color: #1e293b;" id="accFormTitle">
+                            <i class="fa-solid fa-circle-plus" style="color: #10b981;"></i> 新規LINE公式アカウントの追加
+                        </span>
+                        <button type="button" class="btn-secondary" id="btnBackToAccList" style="font-size: 11px; padding: 4px 10px; height: auto;">
+                            <i class="fa-solid fa-arrow-left"></i> 一覧に戻る
+                        </button>
+                    </div>
+
+                    <form id="lineAccountForm" onsubmit="return false;">
+                        <input type="hidden" id="accFormMode" value="create">
+
+                        <!-- 基本情報 -->
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 12px;">
+                            <div style="font-size: 12px; font-weight: 800; color: #1e293b; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-id-card" style="color: #4f46e5;"></i> 基本情報・表示設定
+                            </div>
+                            
+                            <div class="form-row-2col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
+                                <div>
+                                    <label style="font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">
+                                        アカウント識別ID <span style="color: #e11d48;">*</span>
+                                    </label>
+                                    <input type="text" id="accFormId" placeholder="例: kumamoto, senior2" maxlength="32" style="width: 100%; box-sizing: border-box; padding: 7px 10px; font-family: monospace; font-size: 12px; font-weight: bold; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
+                                    <small style="font-size: 10px; color: #64748b;">※半角英小文字・数字・ハイフン (登録後変更不可)</small>
+                                </div>
+                                <div>
+                                    <label style="font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">
+                                        アカウント表示名 <span style="color: #e11d48;">*</span>
+                                    </label>
+                                    <input type="text" id="accFormName" placeholder="例: パソコン教室 熊本校" maxlength="50" style="width: 100%; box-sizing: border-box; padding: 7px 10px; font-size: 12px; font-weight: bold; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
+                                    <small style="font-size: 10px; color: #64748b;">※ヘッダーや選択肢に表示される正式名称</small>
+                                </div>
+                            </div>
+
+                            <div class="form-row-2col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
+                                <div>
+                                    <label style="font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">
+                                        略称（ショートネーム）
+                                    </label>
+                                    <input type="text" id="accFormShortName" placeholder="例: 熊本校" maxlength="20" style="width: 100%; box-sizing: border-box; padding: 7px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
+                                </div>
+                                <div>
+                                    <label style="font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">
+                                        テーマカラー
+                                    </label>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <input type="color" id="accFormColorPicker" value="#6366f1" style="width: 32px; height: 32px; border: none; border-radius: var(--radius-sm); cursor: pointer; padding: 0; background: none;">
+                                        <input type="text" id="accFormColorHex" value="#6366f1" maxlength="7" style="flex: 1; min-width: 0; padding: 6px 8px; font-size: 11.5px; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); text-transform: uppercase;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 6px;">
+                                <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; user-select: none;">
+                                    <input type="checkbox" id="accFormIsDefault" style="accent-color: #4f46e5; width: 15px; height: 15px;">
+                                    <span>このアカウントをログイン時の<strong>初期選択（デフォルト）</strong>にする</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- LINE Messaging API 認証設定 -->
+                        <div style="background: #ffffff; border: 1.5px solid #c7d2fe; border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 12px;">
+                            <div style="font-size: 12px; font-weight: 800; color: #1e1b4b; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+                                <span><i class="fa-brands fa-line" style="color: #06C755; font-size: 15px;"></i> LINE Developers 連携キー</span>
+                                <button type="button" class="btn-secondary" id="btnTestLineCredentials" style="background: #06C755; color: #ffffff; border: none; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: var(--radius-sm); cursor: pointer;">
+                                    <i class="fa-solid fa-satellite-dish"></i> LINE接続テスト
+                                </button>
+                            </div>
+
+                            <!-- 接続テスト結果バナー -->
+                            <div id="lineTokenTestResultBanner" style="display: none; padding: 8px 12px; border-radius: var(--radius-sm); font-size: 11.5px; line-height: 1.5; margin-bottom: 10px;"></div>
+
+                            <div class="form-group" style="margin-bottom: 10px;">
+                                <label style="font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">
+                                    チャネルアクセストークン（長期）
+                                </label>
+                                <textarea id="accFormAccessToken" rows="2" placeholder="例: LINE DevelopersのMessaging APIタブで発行された長いアクセストークンを貼り付け" style="width: 100%; box-sizing: border-box; padding: 7px 10px; font-family: monospace; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); line-height: 1.4;"></textarea>
+                            </div>
+
+                            <div class="form-row-2col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div>
+                                    <label style="font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">
+                                        チャネルシークレット
+                                    </label>
+                                    <input type="password" id="accFormSecret" placeholder="32桁のシークレットキー" style="width: 100%; box-sizing: border-box; padding: 7px 10px; font-family: monospace; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
+                                </div>
+                                <div>
+                                    <label style="font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">
+                                        LIFF ID（受講生マイカルテ用）
+                                    </label>
+                                    <input type="text" id="accFormLiffId" placeholder="例: 2000276344-YL1wXh0h" style="width: 100%; box-sizing: border-box; padding: 7px 10px; font-family: monospace; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- プロライン連携 (任意) -->
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 12px;">
+                            <div style="font-size: 12px; font-weight: 800; color: #334155; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-network-wired" style="color: #4338ca;"></i> プロライン (ProLine) 連携設定（任意）
+                            </div>
+                            <div class="form-group" style="margin-bottom: 8px;">
+                                <label style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">
+                                    プロライン予約カレンダーURL
+                                </label>
+                                <input type="url" id="accFormCalendarUrl" placeholder="例: https://liff.line.me/... (カレンダー予約自動ログインURL)" style="width: 100%; box-sizing: border-box; padding: 7px 10px; font-family: monospace; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">
+                                    転送先 プロライン Webhook URL
+                                </label>
+                                <input type="url" id="accFormWebhookUrl" placeholder="例: https://autosns.pro/api/webhook/... (プロライン共存用)" style="width: 100%; box-sizing: border-box; padding: 7px 10px; font-family: monospace; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
+                            </div>
+                        </div>
+
+                        <!-- このアカウント専用のWebhook URL表示 -->
+                        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md); padding: 10px 14px; margin-bottom: 12px;">
+                            <div style="font-weight: bold; font-size: 11px; color: #166534; margin-bottom: 4px;">
+                                <i class="fa-brands fa-line"></i> LINE Developers への登録Webhook URL:
+                            </div>
+                            <div style="display: flex; gap: 6px; align-items: center;">
+                                <input type="text" id="accFormDisplayWebhookUrl" readonly style="flex: 1; padding: 6px 8px; font-family: monospace; font-size: 11px; border: 1px solid #86efac; border-radius: var(--radius-sm); background: #ffffff; color: #166534; user-select: all;">
+                                <button type="button" id="btnCopyAccWebhookUrl" class="btn-secondary" style="font-size: 11px; padding: 6px 10px; white-space: nowrap; height: auto;">
+                                    <i class="fa-regular fa-copy"></i> コピー
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="accSaveStatusMsg" style="margin-bottom: 10px; font-size: 12px; font-weight: bold;"></div>
+
+                        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                            <button type="button" class="btn-cancel" id="btnCancelAccForm">キャンセル</button>
+                            <button type="button" class="btn-save" id="btnSubmitAccountSave" style="background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);">
+                                <i class="fa-solid fa-floppy-disk"></i> この設定で保存する
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="padding: 10px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; align-items: center; flex-shrink: 0;">
+                <button type="button" class="btn-cancel" id="closeAccountManageModalFooterBtn">閉じる</button>
+            </div>
+        </div>
+    </div>
+
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260910_radius_unify_v1"></script>
+    <script src="admin.js?v=20260910_account_manage_v1"></script>
 </body>
 </html>

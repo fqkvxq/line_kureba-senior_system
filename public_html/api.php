@@ -86,6 +86,203 @@ try {
             ], JSON_UNESCAPED_UNICODE);
             exit;
 
+        // --- 0-2. アカウント詳細情報取得 (編集用・管理者認証必須) ---
+        case 'get_account_detail':
+            $authPass = $_POST['password'] ?? ($_GET['password'] ?? ($_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ''));
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $targetAcc = $_GET['target_account'] ?? ($_POST['target_account'] ?? getActiveAccountKey());
+            $accConfig = getAccountConfig($targetAcc);
+            if (empty($accConfig) || empty($accConfig['id'])) {
+                echo json_encode(['success' => false, 'error' => '指定されたアカウントが見つかりません']);
+                exit;
+            }
+
+            $host = $_SERVER['HTTP_HOST'] ?? 'example.com';
+            $scriptDir = dirname($_SERVER['SCRIPT_NAME'] ?? '');
+            $webhookUrl = "https://{$host}" . rtrim($scriptDir, '/') . "/webhook.php" . (!empty($accConfig['is_default']) ? '' : "?account={$accConfig['id']}");
+            $webhookUrl = str_replace('\\', '/', $webhookUrl);
+
+            echo json_encode([
+                'success' => true,
+                'account' => [
+                    'id' => $accConfig['id'],
+                    'name' => $accConfig['name'],
+                    'short_name' => $accConfig['short_name'] ?? $accConfig['name'],
+                    'theme_color' => $accConfig['theme_color'] ?? '#6366f1',
+                    'channel_access_token' => $accConfig['channel_access_token'] ?? '',
+                    'channel_secret' => $accConfig['channel_secret'] ?? '',
+                    'liff_id' => $accConfig['liff_id'] ?? '',
+                    'proline_calendar_url' => $accConfig['proline_calendar_url'] ?? '',
+                    'proline_webhook_url' => $accConfig['proline_webhook_url'] ?? '',
+                    'db_file' => $accConfig['db_file'] ?? "cars_{$accConfig['id']}.db",
+                    'is_default' => !empty($accConfig['is_default']),
+                    'webhook_url' => $webhookUrl
+                ]
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+
+        // --- 0-3. アカウント追加・更新保存 (管理者認証必須) ---
+        case 'save_account':
+            $authPass = $_POST['password'] ?? ($_GET['password'] ?? ($_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ''));
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $rawId = strtolower(trim($_POST['id'] ?? ''));
+            $cleanId = preg_replace('/[^a-z0-9_\-]/', '', $rawId);
+            if (empty($cleanId) || strlen($cleanId) < 2 || strlen($cleanId) > 32) {
+                echo json_encode(['success' => false, 'error' => 'アカウントIDは半角英小文字・数字・アンダースコア・ハイフン（2〜32文字）で入力してください']);
+                exit;
+            }
+
+            $name = trim($_POST['name'] ?? '');
+            if (empty($name)) {
+                echo json_encode(['success' => false, 'error' => 'アカウント表示名を入力してください']);
+                exit;
+            }
+
+            $shortName = trim($_POST['short_name'] ?? '') ?: $name;
+            $themeColor = trim($_POST['theme_color'] ?? '#6366f1');
+            if (!preg_match('/^#[0-9a-fA-F]{6}$/', $themeColor)) {
+                $themeColor = '#6366f1';
+            }
+
+            $accessToken = trim($_POST['channel_access_token'] ?? '');
+            $channelSecret = trim($_POST['channel_secret'] ?? '');
+            $liffId = trim($_POST['liff_id'] ?? '');
+            $prolineCalUrl = trim($_POST['proline_calendar_url'] ?? '');
+            $prolineWebhookUrl = trim($_POST['proline_webhook_url'] ?? '');
+            $isDefault = !empty($_POST['is_default']) ? true : false;
+
+            // アカウント設定リスト取得
+            $allAccounts = loadSystemLineAccounts();
+            $isNew = !isset($allAccounts[$cleanId]);
+
+            // デフォルト指定の場合、他アカウントのデフォルトを解除
+            if ($isDefault) {
+                foreach ($allAccounts as $k => $v) {
+                    $allAccounts[$k]['is_default'] = false;
+                }
+            } else if ($isNew && empty($allAccounts)) {
+                $isDefault = true;
+            }
+
+            $dbFile = ($cleanId === 'senior') ? 'cars.db' : "cars_{$cleanId}.db";
+
+            $allAccounts[$cleanId] = [
+                'id' => $cleanId,
+                'name' => $name,
+                'short_name' => $shortName,
+                'theme_color' => $themeColor,
+                'channel_access_token' => $accessToken,
+                'channel_secret' => $channelSecret,
+                'liff_id' => $liffId,
+                'proline_calendar_url' => $prolineCalUrl,
+                'proline_webhook_url' => $prolineWebhookUrl,
+                'db_file' => $dbFile,
+                'is_default' => $isDefault,
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+
+            $saved = saveSystemLineAccounts($allAccounts);
+            if (!$saved) {
+                echo json_encode(['success' => false, 'error' => 'アカウント設定ファイルの保存に失敗しました。サーバーのパーミッションを確認してください']);
+                exit;
+            }
+
+            // 新規アカウントなら該当DBファイルとテーブル構造を自動初期化
+            try {
+                getDbConnection($cleanId);
+            } catch (Exception $e) {
+                // 初期化失敗時はログに記録するが設定自体は保持
+                error_log("DB init error for account {$cleanId}: " . $e->getMessage());
+            }
+
+            // グローバルアカウントをリロード
+            global $SYSTEM_LINE_ACCOUNTS;
+            $SYSTEM_LINE_ACCOUNTS = loadSystemLineAccounts();
+
+            echo json_encode([
+                'success' => true,
+                'message' => $isNew ? "アカウント「{$name}」を新規登録しました" : "アカウント「{$name}」の設定を更新しました",
+                'account_id' => $cleanId,
+                'accounts' => getAccountList()
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+
+        // --- 0-4. アカウント削除 (管理者認証必須) ---
+        case 'delete_account':
+            $authPass = $_POST['password'] ?? ($_GET['password'] ?? ($_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ''));
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $targetAcc = strtolower(trim($_POST['target_account'] ?? ''));
+            if (empty($targetAcc)) {
+                echo json_encode(['success' => false, 'error' => '削除対象のアカウントIDが未指定です']);
+                exit;
+            }
+
+            if ($targetAcc === 'senior') {
+                echo json_encode(['success' => false, 'error' => 'メインの基本アカウント（senior）は削除できません']);
+                exit;
+            }
+
+            $allAccounts = loadSystemLineAccounts();
+            if (!isset($allAccounts[$targetAcc])) {
+                echo json_encode(['success' => false, 'error' => '指定されたアカウントが見つかりません']);
+                exit;
+            }
+
+            if (!empty($allAccounts[$targetAcc]['is_default'])) {
+                echo json_encode(['success' => false, 'error' => 'デフォルトに設定されているアカウントは削除できません。先に別のアカウントをデフォルトに指定してください']);
+                exit;
+            }
+
+            $delName = $allAccounts[$targetAcc]['name'] ?? $targetAcc;
+            unset($allAccounts[$targetAcc]);
+
+            $saved = saveSystemLineAccounts($allAccounts);
+            if (!$saved) {
+                echo json_encode(['success' => false, 'error' => 'アカウント設定ファイルの保存に失敗しました']);
+                exit;
+            }
+
+            // グローバルアカウントをリロード
+            global $SYSTEM_LINE_ACCOUNTS;
+            $SYSTEM_LINE_ACCOUNTS = loadSystemLineAccounts();
+
+            echo json_encode([
+                'success' => true,
+                'message' => "アカウント「{$delName}」を削除しました",
+                'accounts' => getAccountList()
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+
+        // --- 0-5. LINEアクセストークン接続テスト ---
+        case 'test_line_credentials':
+            $authPass = $_POST['password'] ?? ($_GET['password'] ?? ($_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ''));
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $token = trim($_POST['channel_access_token'] ?? '');
+            if (empty($token)) {
+                echo json_encode(['success' => false, 'error' => '検証するチャネルアクセストークンを入力してください']);
+                exit;
+            }
+
+            $res = verifyLineBotCredentials($token);
+            echo json_encode($res, JSON_UNESCAPED_UNICODE);
+            exit;
+
         // --- 1. 車両一覧取得 (検索・フィルター・ページネーション) ---
         case 'list':
             $page = max(1, (int)($_GET['page'] ?? 1));

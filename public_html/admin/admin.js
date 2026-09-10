@@ -228,6 +228,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initAuth();
     initEventListeners();
     initKnowledgeBroadcastStudio();
+    initAccountManagement();
 });
 
 async function loadAccounts() {
@@ -307,6 +308,445 @@ async function handleAccountSwitch(newAccountKey) {
         showToast('⚠️ アカウント切り替えに失敗しました');
     }
 }
+
+// ==============================================================================
+// LINE公式アカウント管理・新規追加モーダル機能
+// ==============================================================================
+
+function initAccountManagement() {
+    const btnOpen = document.getElementById('btnOpenAccountManageModal');
+    const modal = document.getElementById('accountManageModal');
+    const btnClose = document.getElementById('closeAccountManageModalBtn');
+    const btnCloseFooter = document.getElementById('closeAccountManageModalFooterBtn');
+    const tabListBtn = document.getElementById('tabAccListBtn');
+    const tabNewBtn = document.getElementById('tabAccNewBtn');
+    const btnBackToList = document.getElementById('btnBackToAccList');
+    const btnCancelForm = document.getElementById('btnCancelAccForm');
+    const btnSave = document.getElementById('btnSubmitAccountSave');
+    const btnTestLine = document.getElementById('btnTestLineCredentials');
+    const colorPicker = document.getElementById('accFormColorPicker');
+    const colorHex = document.getElementById('accFormColorHex');
+    const idInput = document.getElementById('accFormId');
+    const btnCopyWebhook = document.getElementById('btnCopyAccWebhookUrl');
+
+    if (!btnOpen || !modal) return;
+
+    btnOpen.addEventListener('click', () => {
+        openAccountManageModal();
+    });
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+    };
+    if (btnClose) btnClose.addEventListener('click', closeModal);
+    if (btnCloseFooter) btnCloseFooter.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+
+    if (tabListBtn) tabListBtn.addEventListener('click', showAccountListView);
+    if (tabNewBtn) tabNewBtn.addEventListener('click', () => openAccountEditForm(null));
+    if (btnBackToList) btnBackToList.addEventListener('click', showAccountListView);
+    if (btnCancelForm) btnCancelForm.addEventListener('click', showAccountListView);
+
+    if (colorPicker && colorHex) {
+        colorPicker.addEventListener('input', () => {
+            colorHex.value = colorPicker.value.toUpperCase();
+        });
+        colorHex.addEventListener('input', () => {
+            if (/^#[0-9a-fA-F]{6}$/.test(colorHex.value)) {
+                colorPicker.value = colorHex.value;
+            }
+        });
+    }
+
+    if (idInput) {
+        idInput.addEventListener('input', () => {
+            updateDisplayWebhookUrl(idInput.value.trim().toLowerCase());
+        });
+    }
+
+    if (btnCopyWebhook) {
+        btnCopyWebhook.addEventListener('click', () => {
+            const urlField = document.getElementById('accFormDisplayWebhookUrl');
+            if (urlField && urlField.value) {
+                navigator.clipboard.writeText(urlField.value).then(() => {
+                    showToast('Webhook URLをコピーしました！');
+                }).catch(() => {
+                    urlField.select();
+                    document.execCommand('copy');
+                    showToast('Webhook URLをコピーしました！');
+                });
+            }
+        });
+    }
+
+    if (btnTestLine) {
+        btnTestLine.addEventListener('click', async () => {
+            const token = document.getElementById('accFormAccessToken').value.trim();
+            const resultBanner = document.getElementById('lineTokenTestResultBanner');
+            if (!token) {
+                alert('チャネルアクセストークンを入力してください');
+                return;
+            }
+
+            btnTestLine.disabled = true;
+            btnTestLine.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 検証中...';
+            resultBanner.style.display = 'block';
+            resultBanner.style.background = '#eff6ff';
+            resultBanner.style.border = '1px solid #93c5fd';
+            resultBanner.style.color = '#1e40af';
+            resultBanner.innerHTML = 'LINE Messaging APIに接続してBot認証をテストしています...';
+
+            try {
+                const formData = new FormData();
+                formData.append('channel_access_token', token);
+                formData.append('password', state.password || sessionStorage.getItem('admin_pass') || '1020143');
+                const res = await fetch('../api.php?action=test_line_credentials', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success && data.bot_info) {
+                    const info = data.bot_info;
+                    resultBanner.style.background = '#f0fdf4';
+                    resultBanner.style.border = '1px solid #86efac';
+                    resultBanner.style.color = '#166534';
+                    resultBanner.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            ${info.picture_url ? `<img src="${info.picture_url}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">` : ''}
+                            <div>
+                                <strong style="font-size:12.5px;">✅ 接続成功！ LINEボット名: ${escapeHtml(info.display_name)}</strong><br>
+                                <span style="font-size:11px;">Basic ID: <code>${escapeHtml(info.basic_id || '-')}</code> / チャネル連携正常</span>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    resultBanner.style.background = '#fff1f2';
+                    resultBanner.style.border = '1px solid #fecdd3';
+                    resultBanner.style.color = '#9f1239';
+                    resultBanner.innerHTML = `❌ 接続失敗: ${escapeHtml(data.error || '認証に失敗しました。トークンを確認してください')}`;
+                }
+            } catch (e) {
+                resultBanner.style.background = '#fff1f2';
+                resultBanner.style.border = '1px solid #fecdd3';
+                resultBanner.style.color = '#9f1239';
+                resultBanner.innerHTML = `❌ 通信エラー: ${escapeHtml(e.message)}`;
+            } finally {
+                btnTestLine.disabled = false;
+                btnTestLine.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> LINE接続テスト';
+            }
+        });
+    }
+
+    if (btnSave) {
+        btnSave.addEventListener('click', async () => {
+            await submitAccountForm();
+        });
+    }
+}
+
+function openAccountManageModal() {
+    const modal = document.getElementById('accountManageModal');
+    if (!modal) return;
+    modal.classList.add('active');
+    showAccountListView();
+    renderAccountCardsList();
+}
+
+function showAccountListView() {
+    const accListView = document.getElementById('accListView');
+    const accEditView = document.getElementById('accEditView');
+    const tabListBtn = document.getElementById('tabAccListBtn');
+    const tabNewBtn = document.getElementById('tabAccNewBtn');
+
+    if (accListView) accListView.style.display = 'block';
+    if (accEditView) accEditView.style.display = 'none';
+    if (tabListBtn) tabListBtn.classList.add('active');
+    if (tabNewBtn) tabNewBtn.classList.remove('active');
+
+    renderAccountCardsList();
+}
+
+function renderAccountCardsList() {
+    const wrap = document.getElementById('accountCardsListWrap');
+    const badge = document.getElementById('accCountBadge');
+    if (!wrap) return;
+
+    if (badge) badge.textContent = (state.accounts || []).length;
+
+    if (!state.accounts || state.accounts.length === 0) {
+        wrap.innerHTML = '<div style="text-align:center; padding:20px; color:#64748b;">登録されたアカウントがありません</div>';
+        return;
+    }
+
+    const host = window.location.host;
+    const path = window.location.pathname.replace(/\/admin\/.*$/, '');
+
+    wrap.innerHTML = state.accounts.map(acc => {
+        const isActive = acc.id === state.activeAccount;
+        const isDefault = !!acc.is_default;
+        const isConfigured = !!acc.is_configured;
+        const color = acc.theme_color || '#6366f1';
+        const whUrl = `${window.location.protocol}//${host}${path}/webhook.php${isDefault ? '' : '?account=' + encodeURIComponent(acc.id)}`;
+
+        return `
+            <div class="account-card-item ${isActive ? 'is-active-acc' : ''}">
+                <div class="account-card-left">
+                    <div class="account-card-badge" style="background: ${escapeHtml(color)};">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <div class="account-card-info">
+                        <h4>
+                            <span>${escapeHtml(acc.name)}</span>
+                            ${isActive ? '<span style="font-size:10.5px; background:#e0e7ff; color:#3730a3; padding:1px 6px; border-radius:var(--radius-xs); font-weight:700;">★ 現在選択中</span>' : ''}
+                            ${isDefault ? '<span style="font-size:10.5px; background:#fef3c7; color:#92400e; padding:1px 6px; border-radius:var(--radius-xs); font-weight:700;">標準デフォルト</span>' : ''}
+                            ${!isConfigured ? '<span style="font-size:10.5px; background:#fff1f2; color:#e11d48; padding:1px 6px; border-radius:var(--radius-xs); font-weight:700;">⚠️ LINE未設定</span>' : '<span style="font-size:10.5px; background:#ecfdf5; color:#065f46; padding:1px 6px; border-radius:var(--radius-xs); font-weight:700;">✅ 連携設定済</span>'}
+                        </h4>
+                        <p>
+                            ID: <code>${escapeHtml(acc.id)}</code> &nbsp;|&nbsp; 
+                            DB: <code>${escapeHtml(acc.db_file || 'cars.db')}</code><br>
+                            Webhook: <code style="user-select:all;">${escapeHtml(whUrl)}</code>
+                        </p>
+                    </div>
+                </div>
+                <div class="account-card-actions">
+                    ${!isActive ? `
+                        <button type="button" class="btn-acc-action btn-acc-switch" onclick="handleAccountSwitch('${escapeHtml(acc.id)}')">
+                            <i class="fa-solid fa-arrows-rotate"></i> 切り替え
+                        </button>
+                    ` : ''}
+                    <button type="button" class="btn-acc-action btn-acc-edit" onclick="openAccountEditForm('${escapeHtml(acc.id)}')">
+                        <i class="fa-solid fa-pen-to-square"></i> 編集
+                    </button>
+                    ${!isDefault && acc.id !== 'senior' ? `
+                        <button type="button" class="btn-acc-action btn-acc-delete" onclick="handleAccountDelete('${escapeHtml(acc.id)}', '${escapeHtml(acc.name)}')">
+                            <i class="fa-solid fa-trash-can"></i> 削除
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function openAccountEditForm(accountId) {
+    const accListView = document.getElementById('accListView');
+    const accEditView = document.getElementById('accEditView');
+    const tabListBtn = document.getElementById('tabAccListBtn');
+    const tabNewBtn = document.getElementById('tabAccNewBtn');
+    const formTitle = document.getElementById('accFormTitle');
+    const formMode = document.getElementById('accFormMode');
+    const idInput = document.getElementById('accFormId');
+    const nameInput = document.getElementById('accFormName');
+    const shortNameInput = document.getElementById('accFormShortName');
+    const colorPicker = document.getElementById('accFormColorPicker');
+    const colorHex = document.getElementById('accFormColorHex');
+    const isDefaultCheck = document.getElementById('accFormIsDefault');
+    const tokenInput = document.getElementById('accFormAccessToken');
+    const secretInput = document.getElementById('accFormSecret');
+    const liffIdInput = document.getElementById('accFormLiffId');
+    const calUrlInput = document.getElementById('accFormCalendarUrl');
+    const whUrlInput = document.getElementById('accFormWebhookUrl');
+    const resultBanner = document.getElementById('lineTokenTestResultBanner');
+    const saveMsg = document.getElementById('accSaveStatusMsg');
+
+    if (accListView) accListView.style.display = 'none';
+    if (accEditView) accEditView.style.display = 'block';
+    if (resultBanner) resultBanner.style.display = 'none';
+    if (saveMsg) saveMsg.textContent = '';
+
+    if (!accountId) {
+        // 新規作成モード
+        if (tabListBtn) tabListBtn.classList.remove('active');
+        if (tabNewBtn) tabNewBtn.classList.add('active');
+        if (formTitle) formTitle.innerHTML = '<i class="fa-solid fa-circle-plus" style="color: #10b981;"></i> 新規LINE公式アカウントの追加';
+        if (formMode) formMode.value = 'create';
+        if (idInput) {
+            idInput.value = '';
+            idInput.readOnly = false;
+            idInput.focus();
+        }
+        if (nameInput) nameInput.value = '';
+        if (shortNameInput) shortNameInput.value = '';
+        if (colorPicker) colorPicker.value = '#6366f1';
+        if (colorHex) colorHex.value = '#6366F1';
+        if (isDefaultCheck) isDefaultCheck.checked = false;
+        if (tokenInput) tokenInput.value = '';
+        if (secretInput) secretInput.value = '';
+        if (liffIdInput) liffIdInput.value = '';
+        if (calUrlInput) calUrlInput.value = '';
+        if (whUrlInput) whUrlInput.value = '';
+        updateDisplayWebhookUrl('');
+    } else {
+        // 既存編集モード
+        if (tabListBtn) tabListBtn.classList.remove('active');
+        if (tabNewBtn) tabNewBtn.classList.remove('active');
+        if (formTitle) formTitle.innerHTML = `<i class="fa-solid fa-pen-to-square" style="color: #4f46e5;"></i> アカウント設定の編集 (${escapeHtml(accountId)})`;
+        if (formMode) formMode.value = 'edit';
+        if (idInput) {
+            idInput.value = accountId;
+            idInput.readOnly = true; // 識別IDは編集不可
+        }
+
+        // 詳細情報をAPIから取得
+        try {
+            const res = await fetch(`../api.php?action=get_account_detail&target_account=${encodeURIComponent(accountId)}&password=${encodeURIComponent(state.password || sessionStorage.getItem('admin_pass') || '1020143')}`);
+            const data = await res.json();
+            if (data.success && data.account) {
+                const acc = data.account;
+                if (nameInput) nameInput.value = acc.name || '';
+                if (shortNameInput) shortNameInput.value = acc.short_name || '';
+                const c = acc.theme_color || '#6366f1';
+                if (colorPicker) colorPicker.value = c;
+                if (colorHex) colorHex.value = c.toUpperCase();
+                if (isDefaultCheck) isDefaultCheck.checked = !!acc.is_default;
+                if (tokenInput) tokenInput.value = acc.channel_access_token || '';
+                if (secretInput) secretInput.value = acc.channel_secret || '';
+                if (liffIdInput) liffIdInput.value = acc.liff_id || '';
+                if (calUrlInput) calUrlInput.value = acc.proline_calendar_url || '';
+                if (whUrlInput) whUrlInput.value = acc.proline_webhook_url || '';
+                updateDisplayWebhookUrl(accountId, !!acc.is_default);
+            } else {
+                alert('アカウント情報の読み込みに失敗しました: ' + (data.error || '不明なエラー'));
+            }
+        } catch (e) {
+            console.error('Failed to get account detail:', e);
+            alert('アカウント情報の取得中にエラーが発生しました');
+        }
+    }
+}
+
+function updateDisplayWebhookUrl(accId, isDefault = false) {
+    const displayField = document.getElementById('accFormDisplayWebhookUrl');
+    if (!displayField) return;
+    const host = window.location.host;
+    const path = window.location.pathname.replace(/\/admin\/.*$/, '');
+    const cleanId = (accId || '').toLowerCase().replace(/[^a-z0-9_\-]/g, '');
+    const query = (isDefault || cleanId === 'senior') ? '' : `?account=${cleanId || 'your_id'}`;
+    displayField.value = `${window.location.protocol}//${host}${path}/webhook.php${query}`;
+}
+
+async function submitAccountForm() {
+    const idInput = document.getElementById('accFormId');
+    const nameInput = document.getElementById('accFormName');
+    const shortNameInput = document.getElementById('accFormShortName');
+    const colorHex = document.getElementById('accFormColorHex');
+    const isDefaultCheck = document.getElementById('accFormIsDefault');
+    const tokenInput = document.getElementById('accFormAccessToken');
+    const secretInput = document.getElementById('accFormSecret');
+    const liffIdInput = document.getElementById('accFormLiffId');
+    const calUrlInput = document.getElementById('accFormCalendarUrl');
+    const whUrlInput = document.getElementById('accFormWebhookUrl');
+    const btnSave = document.getElementById('btnSubmitAccountSave');
+    const statusMsg = document.getElementById('accSaveStatusMsg');
+
+    const cleanId = (idInput.value || '').trim().toLowerCase().replace(/[^a-z0-9_\-]/g, '');
+    if (!cleanId || cleanId.length < 2) {
+        alert('アカウント識別IDを半角英小文字・数字（2文字以上）で入力してください');
+        idInput.focus();
+        return;
+    }
+
+    const name = (nameInput.value || '').trim();
+    if (!name) {
+        alert('アカウント表示名を入力してください');
+        nameInput.focus();
+        return;
+    }
+
+    btnSave.disabled = true;
+    btnSave.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 保存中...';
+    if (statusMsg) {
+        statusMsg.style.color = '#4f46e5';
+        statusMsg.textContent = 'アカウント設定を保存しています...';
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('id', cleanId);
+        formData.append('name', name);
+        formData.append('short_name', (shortNameInput.value || '').trim());
+        formData.append('theme_color', (colorHex.value || '').trim());
+        formData.append('is_default', isDefaultCheck.checked ? '1' : '0');
+        formData.append('channel_access_token', (tokenInput.value || '').trim());
+        formData.append('channel_secret', (secretInput.value || '').trim());
+        formData.append('liff_id', (liffIdInput.value || '').trim());
+        formData.append('proline_calendar_url', (calUrlInput.value || '').trim());
+        formData.append('proline_webhook_url', (whUrlInput.value || '').trim());
+        formData.append('password', state.password || sessionStorage.getItem('admin_pass') || '1020143');
+
+        const res = await fetch('../api.php?action=save_account', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            showToast(`✅ ${data.message || 'アカウント設定を保存しました'}`);
+            if (Array.isArray(data.accounts)) {
+                state.accounts = data.accounts;
+                renderAccountSwitcher();
+                updateBrandDisplay();
+            }
+            // 一覧ビューへ復帰
+            showAccountListView();
+        } else {
+            if (statusMsg) {
+                statusMsg.style.color = '#e11d48';
+                statusMsg.textContent = `エラー: ${data.error || '保存に失敗しました'}`;
+            }
+            alert(`保存失敗: ${data.error || '不明なエラー'}`);
+        }
+    } catch (e) {
+        console.error('Account save error:', e);
+        if (statusMsg) {
+            statusMsg.style.color = '#e11d48';
+            statusMsg.textContent = `通信エラー: ${e.message}`;
+        }
+        alert('通信エラーが発生しました: ' + e.message);
+    } finally {
+        btnSave.disabled = false;
+        btnSave.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> この設定で保存する';
+    }
+}
+
+async function handleAccountDelete(accId, accName) {
+    if (!confirm(`本当にアカウント「${accName}」を削除しますか？\n（※登録済みの受講生データベースファイル自体は安全のため残されます）`)) {
+        return;
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('target_account', accId);
+        formData.append('password', state.password || sessionStorage.getItem('admin_pass') || '1020143');
+
+        const res = await fetch('../api.php?action=delete_account', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            showToast(`🗑️ ${data.message || 'アカウントを削除しました'}`);
+            if (Array.isArray(data.accounts)) {
+                state.accounts = data.accounts;
+                renderAccountSwitcher();
+                renderAccountCardsList();
+            }
+        } else {
+            alert(`削除失敗: ${data.error || '不明なエラー'}`);
+        }
+    } catch (e) {
+        console.error('Account delete error:', e);
+        alert('通信エラーが発生しました: ' + e.message);
+    }
+}
+
+// グローバルスコープにも公開 (HTMLインラインonclick用)
+window.handleAccountSwitch = handleAccountSwitch;
+window.openAccountEditForm = openAccountEditForm;
+window.handleAccountDelete = handleAccountDelete;
 
 function initAuth() {
     const savedPass = sessionStorage.getItem('admin_pass');
