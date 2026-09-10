@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * システム共通設定ファイル
  * Xserver環境およびLINE公式アカウント、Discord通知、顧客メンテナンス管理の設定を管理します。
@@ -394,10 +394,22 @@ function getDbFilePath(?string $accountKey = null): string {
         return __DIR__ . '/batch/cars.db';
     }
 
-    // 別アカウント用DBファイル: メインDBと同階層に作成・配置
-    $mainPath = getDbFilePath('senior');
-    $dir = dirname($mainPath);
-    return $dir . '/' . $dbFileName;
+    // 別アカウント用DBファイル: メインDB (cars.db) と同じディレクトリに配置
+    // 再帰呼び出しを避けるため、候補ディレクトリから cars.db を直接探す
+    $seniorDirs = [
+        __DIR__ . '/batch',
+        __DIR__ . '/../batch',
+        __DIR__,
+        __DIR__ . '/../../batch',
+        dirname(__DIR__) . '/batch'
+    ];
+    foreach ($seniorDirs as $sDir) {
+        if (file_exists($sDir . '/cars.db')) {
+            return $sDir . '/' . $dbFileName;
+        }
+    }
+    // cars.db が見つからない場合は batch/ ディレクトリに作成
+    return __DIR__ . '/batch/' . $dbFileName;
 }
 
 define('DB_PATH', getDbFilePath());
