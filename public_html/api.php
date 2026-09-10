@@ -3912,6 +3912,62 @@ try {
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
+        // --- 16. 会社DXアンケート送信 (個別 / 一斉配信) ---
+        case 'send_dx_survey':
+            $authPass = getAdminAuthPassword();
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => 'パスワードが違います'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            require_once __DIR__ . '/webhook.php';
+
+            $targetUid = trim($_POST['user_id'] ?? '');
+            $q1Message = buildDxSurveyQ1Message();
+
+            if (!empty($targetUid)) {
+                // 個別配信
+                $res = sendLinePushMessage($targetUid, [$q1Message]);
+                if (!empty($res['success'])) {
+                    recordCustomerInteraction($db, $targetUid, 'admin_action', '📋 DXアンケート送信');
+                    echo json_encode(['success' => true, 'message' => 'DXアンケートを送信しました！', 'count' => 1], JSON_UNESCAPED_UNICODE);
+                } else {
+                    echo json_encode(['success' => false, 'error' => $res['error'] ?? 'LINE送信に失敗しました'], JSON_UNESCAPED_UNICODE);
+                }
+                exit;
+            } else {
+                // 一斉配信（現在のアカウントの全友だち）
+                $stmt = $db->query("SELECT DISTINCT user_id FROM customer_cars WHERE user_id LIKE 'U%'");
+                $users = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+                if (empty($users)) {
+                    echo json_encode(['success' => false, 'error' => '送信対象の友だち（LINEユーザー）が登録されていません'], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+
+                $sentCount = 0;
+                $failCount = 0;
+                foreach ($users as $uid) {
+                    $res = sendLinePushMessage($uid, [$q1Message]);
+                    if (!empty($res['success'])) {
+                        $sentCount++;
+                        recordCustomerInteraction($db, $uid, 'admin_action', '📋 DXアンケート一斉配信');
+                    } else {
+                        $failCount++;
+                    }
+                }
+
+                echo json_encode([
+                    'success' => true,
+                    'message' => "DXアンケートを一斉配信しました（送信成功: {$sentCount}名" . ($failCount > 0 ? "、失敗: {$failCount}名" : "") . "）",
+                    'sent_count' => $sentCount,
+                    'fail_count' => $failCount,
+                    'total' => count($users)
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
         default:
             http_response_code(400);
             echo json_encode(['success' => false, 'error' => '無効なアクションです。']);

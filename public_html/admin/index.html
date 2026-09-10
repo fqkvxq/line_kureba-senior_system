@@ -93,6 +93,9 @@
                 <button class="btn-secondary" id="openKnowledgeBroadcastModalBtn" onclick="window.openKnowledgeBroadcastModal && window.openKnowledgeBroadcastModal()" title="シニア向けスマホ・PC役立つ情報（詐欺対策・便利ワザ等）をリッチメッセージ配信します" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: #ffffff; border: none; font-weight: 700; box-shadow: 0 2px 6px rgba(2,132,199,0.25);">
                     <i class="fa-solid fa-bullhorn" style="margin-right: 4px;"></i> お役立ち情報配信
                 </button>
+                <button class="btn-secondary" id="openDxSurveyModalBtn" onclick="window.openDxSurveyModal && window.openDxSurveyModal()" title="会社DX関心度アンケート（興味有無・関心テーマ）をLINE配信します" style="display: none; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #ffffff; border: none; font-weight: 700; box-shadow: 0 2px 6px rgba(37,99,235,0.25);">
+                    <i class="fa-solid fa-clipboard-question" style="margin-right: 4px;"></i> DXアンケート配信
+                </button>
                 <button class="btn-primary" id="openAddCustomerModalBtn" style="margin-left: auto;">
                     <i class="fa-solid fa-user-plus"></i> 新規受講生登録
                 </button>
@@ -969,6 +972,126 @@
         </div>
     </div>
 
+    <!-- 会社DX アンケート配信モーダル -->
+    <div class="modal-overlay" id="dxSurveyModal" style="z-index: 1200;">
+        <div class="modal-card" style="max-width: 900px; width: 95%; max-height: 92vh; display: flex; flex-direction: column;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); color: #fff; flex-shrink: 0;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 38px; height: 38px; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.2); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                        <i class="fa-solid fa-clipboard-question"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 16px; font-weight: 800;">会社DX 関心度アンケート配信スタジオ</h3>
+                        <p style="margin: 2px 0 0; font-size: 11px; opacity: 0.9;">DXへの興味有無・関心のあるテーマをLINEトーク上でワンタップヒアリング</p>
+                    </div>
+                </div>
+                <button class="modal-close" id="closeDxSurveyModalBtn" style="color: #e0f2fe;">&times;</button>
+            </div>
+
+            <div class="modal-body" style="padding: 16px; overflow-y: auto; flex: 1; display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 16px;">
+                <!-- 左カラム: 配信設定・アンケート概要 -->
+                <div style="display: flex; flex-direction: column; gap: 14px;">
+                    <!-- 配信対象選択 -->
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label style="font-size: 12px; font-weight: 800; color: #1e293b; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-users" style="color: #2563eb;"></i> 配信対象の指定
+                        </label>
+                        <div style="display: flex; gap: 12px; margin-bottom: 8px;">
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">
+                                <input type="radio" name="dxSurveyTargetType" value="all" checked id="dxSurveyTargetAll">
+                                <span>友だち全員に一斉配信</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">
+                                <input type="radio" name="dxSurveyTargetType" value="single" id="dxSurveyTargetSingle">
+                                <span>特定の顧客・担当者に個別送信</span>
+                            </label>
+                        </div>
+                        <div id="dxSurveySingleTargetWrap" style="display: none; margin-top: 6px;">
+                            <select id="dxSurveyUserSelect" class="form-select" style="font-size: 12px; padding: 6px 10px;">
+                                <option value="">-- 送信対象の顧客を選択 --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- アンケートの流れ説明 -->
+                    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-md); padding: 12px 14px;">
+                        <div style="font-size: 12px; font-weight: 800; color: #1e40af; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> 2ステップ対話アンケートの流れ（自動応答）
+                        </div>
+                        <div style="font-size: 11.5px; line-height: 1.6; color: #1e3a8a;">
+                            <strong>【Q1: DX関心度】</strong><br>
+                            ・🔥 大いにある（すぐにでも取り組みたい）<br>
+                            ・💡 少しある（情報収集中・事例を知りたい）<br>
+                            ・☕ 今はまだない（状況を見守り中）<br>
+                            <div style="margin-top: 6px;">
+                                <strong>【Q2: 関心のあるテーマ・課題】</strong>（Q1で「ある」を選んだ方に自動表示）<br>
+                                💻 ペーパーレス化 / 🤖 生成AI社内活用 / 📱 LINE集客自動化 / 📊 クラウド一元管理 / 🤝 無料相談・他社事例 / ✏️ その他
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- メモ・連携の特徴 -->
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 12px 14px;">
+                        <div style="font-size: 12px; font-weight: 800; color: #334155; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-bell" style="color: #0284c7;"></i> 自動保存 & 即時フォロー機能
+                        </div>
+                        <ul style="margin: 0; padding-left: 18px; font-size: 11.5px; color: #475569; line-height: 1.6;">
+                            <li>回答内容は顧客カルテの<strong>メモ欄および最新やり取り</strong>に自動保存されます。</li>
+                            <li>回答があった瞬間に、スタッフの個人LINEおよびDiscordへ<strong>回答速報通知</strong>がプッシュ送信されます。</li>
+                            <li>顧客一覧テーブルに「DX関心: 大 (AI活用)」などの回答バッジが自動反映されます。</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 右カラム: LINEトーク画面風プレビュー -->
+                <div style="background: #7494c0; border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; justify-content: flex-start; align-items: center;">
+                    <div style="font-size: 11px; font-weight: 800; color: #ffffff; margin-bottom: 8px; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">
+                        📱 LINEトーク画面での見え方プレビュー (Q1)
+                    </div>
+
+                    <div style="background: #ffffff; border-radius: var(--radius-lg); overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.2); width: 100%; max-width: 320px;">
+                        <div style="background: #1e40af; padding: 12px 16px; color: #fff;">
+                            <div style="font-size: 13px; font-weight: 800;">🏢 会社DX アンケート</div>
+                            <div style="font-size: 10px; color: #93c5fd; margin-top: 2px;">2問の選択式アンケート（所要時間: 約30秒）</div>
+                        </div>
+                        <div style="padding: 14px;">
+                            <div style="font-size: 12px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">
+                                Q1. 業務のDX（デジタル化・効率化）に関心はございますか？
+                            </div>
+                            <div style="font-size: 10.5px; color: #64748b; margin-bottom: 12px;">
+                                現在の状況に一番近いものをタップしてください。
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 6px;">
+                                <button type="button" style="background: #2563eb; color: #fff; border: none; padding: 7px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: default;">
+                                    🔥 大いにある（すぐにでも取り組みたい）
+                                </button>
+                                <button type="button" style="background: #3b82f6; color: #fff; border: none; padding: 7px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: default;">
+                                    💡 少しある（情報収集中・事例を知りたい）
+                                </button>
+                                <button type="button" style="background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; padding: 7px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: default;">
+                                    ☕ 今はまだない（状況を見守り中）
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="padding: 12px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+                <div style="font-size: 12px; color: #475569; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-circle-info" style="color: #2563eb;"></i>
+                    <span id="dxSurveyTargetSummaryText">配信先: <strong>友だち全員（一斉配信）</strong></span>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn-cancel" id="cancelDxSurveyBtn">キャンセル</button>
+                    <button type="button" class="btn-save" id="submitDxSurveyBtn" style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);">
+                        <i class="fa-solid fa-paper-plane"></i> このアンケートをLINE配信する
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- LINE公式アカウント管理・新規追加モーダル -->
     <div class="modal-overlay" id="accountManageModal" style="z-index: 1250;">
         <div class="modal-card" style="max-width: 720px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
@@ -1275,6 +1398,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260910_secure_auth_v4"></script>
+    <script src="admin.js?v=20260910_dx_survey_v1"></script>
 </body>
 </html>

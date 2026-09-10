@@ -98,7 +98,8 @@
                         <li class="toc-item"><a href="#sec-multi-account"><i class="fa-solid fa-arrows-rotate" style="color:#6366f1;"></i> 11. 複数LINE公式アカウントの切り替え・運用</a></li>
                         <li class="toc-item"><a href="#sec-line-chat"><i class="fa-solid fa-comments" style="color:#06C755;"></i> 12. 個別LINEチャット・メッセージ返信</a></li>
                         <li class="toc-item"><a href="#sec-discord-notify"><i class="fa-brands fa-discord" style="color:#5865F2;"></i> 13. Discord通知設定</a></li>
-                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 14. よくある質問・トラブルシューティング</a></li>
+                        <li class="toc-item"><a href="#sec-dx-survey"><i class="fa-solid fa-clipboard-question" style="color:#2563eb;"></i> 14. 会社DX 関心度アンケート配信</a></li>
+                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 15. よくある質問・トラブルシューティング</a></li>
                     </ul>
                 </div>
             </aside>
@@ -939,14 +940,82 @@
                     </div>
                 </section>
 
-                <!-- 14. よくある質問・トラブルシューティング -->
+                <!-- 14. 会社DX 関心度アンケート配信・自動ヒアリング機能 -->
+                <section class="manual-section" id="sec-dx-survey">
+                    <div class="section-header">
+                        <div class="section-header-icon" style="background: #eff6ff; color: #2563eb;">
+                            <i class="fa-solid fa-clipboard-question"></i>
+                        </div>
+                        <div class="section-header-text">
+                            <h2>14. 会社DX 関心度アンケート配信・自動ヒアリング機能</h2>
+                            <p>LINEトーク画面上でワンタップ回答できる対話式アンケートと自動カルテ連携</p>
+                        </div>
+                    </div>
+
+                    <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <div class="step-body">
+                                <h4>機能の概要と目的</h4>
+                                <p>「会社DX」アカウントのLINE友だちに対し、企業のDX（デジタル化・業務効率化）への関心度や、具体的に興味のある分野を2ステップで手軽にヒアリングできる対話式アンケート機能です。LINEのリッチカード（Flex Message）を活用し、友だちが画面上の選択肢をタップするだけで回答が完了します。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <div class="step-body">
+                                <h4>2ステップ対話アンケートの流れ（自動応答）</h4>
+                                <p>友だちのLINEトーク画面上で以下のようにスムーズに進行します：</p>
+                                <ul style="margin: 6px 0 0 16px; line-height: 1.7; font-size: 13px;">
+                                    <li><strong>【Q1: DX関心度】</strong>: 「🔥 大いにある（すぐにでも取り組みたい）」「💡 少しある（情報収集中・事例を知りたい）」「☕ 今はまだない（状況を見守り中）」の3択から選択。</li>
+                                    <li><strong>【Q2: 関心のあるテーマ・課題】</strong>: Q1で「大いにある」または「少しある」と答えた友だちに自動で表示。「💻 ペーパーレス化」「🤖 生成AI社内活用」「📱 LINE集客自動化」「📊 クラウド一元管理」「🤝 無料相談・他社事例」「✏️ その他」の中から興味のあるテーマをタップ。</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">3</div>
+                            <div class="step-body">
+                                <h4>管理画面からの配信手順（一斉配信 / 個別送信）</h4>
+                                <ol style="margin: 6px 0 0 16px; line-height: 1.7; font-size: 13px;">
+                                    <li>画面上部のアカウント切り替えで<strong>「会社DX」</strong>を選択します。</li>
+                                    <li>ヘッダーの<strong>「📋 DXアンケート配信」</strong>ボタンをクリックすると配信スタジオが起動します。</li>
+                                    <li><strong>「友だち全員に一斉配信」</strong>または<strong>「特定の顧客・担当者に個別送信」</strong>を選択します。顧客一覧の各行にある<strong>「📋 DXアンケート」</strong>ボタンから直接個別指定して送信することも可能です。</li>
+                                    <li>「このアンケートをLINE配信する」をクリックすると、確認ダイアログののち即座に対象者のトーク画面へFlex Messageが送信されます。</li>
+                                </ol>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">4</div>
+                            <div class="step-body">
+                                <h4>回答結果の自動保存・即時通知</h4>
+                                <ul style="margin: 6px 0 0 16px; line-height: 1.7; font-size: 13px;">
+                                    <li><strong>カルテ自動保存</strong>: 回答された内容は、顧客カルテの<strong>メモ欄（staff_memo）</strong>および<strong>最新やり取り（last_interaction）</strong>に「【会社DXアンケート回答】関心度: 大いにある / 関心テーマ: 生成AI社内活用」として自動追記・タイムスタンプ保存されます。</li>
+                                    <li><strong>一覧テーブルでの回答済バッジ</strong>: アンケート回答済みの顧客には、一覧のメモ列に青い「📋 DXアンケート回答済」バッジが表示され、ひと目で未回答・回答済を判別できます。</li>
+                                    <li><strong>管理者LINE & Discord速報通知</strong>: 友だちが回答した瞬間に、管理者の個人LINEおよびDiscordへ「🏢 会社DX アンケート回答速報」が即時プッシュ通知されます。熱度の高い見込み客に対して即座に個別チャット等でアプローチできます。</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="manual-alert-box tip" style="margin-top: 16px;">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <div>
+                            <strong>キーワード自動応答にも対応</strong><br>
+                            友だちがトーク画面で「アンケート」「dxアンケート」「DX相談」「効率化」などと入力した際にも、システムが自動的にこのQ1アンケートカードを返信します。配信を受け取っていなくても、興味を持った顧客がいつでも能動的にアンケートを回答できます。
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 15. よくある質問・トラブルシューティング -->
                 <section class="manual-section" id="sec-faq">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #fef2f2; color: #ef4444;">
                             <i class="fa-solid fa-circle-question"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>14. よくある質問・トラブルシューティング</h2>
+                            <h2>15. よくある質問・トラブルシューティング</h2>
                             <p>困ったときの解決方法</p>
                         </div>
                     </div>
@@ -1046,6 +1115,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260910_secure_auth_v4"></script>
+    <script src="manual.js?v=20260910_dx_survey_v1"></script>
 </body>
 </html>

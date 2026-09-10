@@ -338,6 +338,14 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
         return;
     }
 
+    // --- 会社DX向けアンケートのキーワード応答 ---
+    if (in_array(mb_strtolower($cleanText), ['アンケート', 'dxアンケート', 'dx相談', 'dx診断', 'dx', '関心度'], true)) {
+        recordCustomerInteraction($db, $userId, 'user_action', "📋 DXアンケート呼出: {$cleanText}");
+        $q1Message = buildDxSurveyQ1Message();
+        sendReplyMessage($replyToken, [$q1Message], $userId);
+        return;
+    }
+
     // --- キーワード自動応答の停止 ---
     // ※管理者側の通知・チャット妨害防止のため、上記以外の通常テキストメッセージに対するボット自動応答は行わず、
     //   通常のスタッフとの1対1チャットに任せてサイレント終了します。
@@ -435,6 +443,16 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             ];
             sendReplyMessage($replyToken, $messages);
             recordCustomerInteraction($db, $userId, 'knowledge_inquiry', "質問受付: {$topic}");
+            break;
+
+        // --- 5-0-2. 会社DXアンケート Q1（興味度回答） ---
+        case 'dx_survey_q1':
+            handleDxSurveyQ1($db, $replyToken, $params, $userId);
+            break;
+
+        // --- 5-0-3. 会社DXアンケート Q2（関心テーマ回答） ---
+        case 'dx_survey_q2':
+            handleDxSurveyQ2($db, $replyToken, $params, $userId);
             break;
 
         // --- 5-1. お知らせリッチメニュー表示 ---
@@ -4263,5 +4281,380 @@ function sendReplyMessage(string $replyToken, array $messages, string $userId = 
         } catch (Throwable $e) {
             writeDebugLog("Pushフォールバック例外: " . $e->getMessage());
         }
+    }
+}
+
+// =========================================================================
+// 会社DXアンケート機能 (DX関心度・関心テーマヒアリング)
+// =========================================================================
+
+/**
+ * 会社DXアンケート Q1（興味度ヒアリング）Flex Messageを生成
+ */
+function buildDxSurveyQ1Message(): array {
+    return [
+        'type' => 'flex',
+        'altText' => '【アンケート】会社DXに関する関心度アンケート（所要時間: 約30秒）',
+        'contents' => [
+            'type' => 'bubble',
+            'size' => 'mega',
+            'header' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'backgroundColor' => '#1e40af',
+                'paddingAll' => '16px',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => '🏢 会社DX アンケート',
+                        'color' => '#ffffff',
+                        'weight' => 'bold',
+                        'size' => 'md'
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => '2問の選択式アンケート（所要時間: 約30秒）',
+                        'color' => '#93c5fd',
+                        'size' => 'xs',
+                        'margin' => 'xs'
+                    ]
+                ]
+            ],
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'paddingAll' => '18px',
+                'spacing' => 'md',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => 'Q1. 業務のDX（デジタル化・効率化）に関心はございますか？',
+                        'weight' => 'bold',
+                        'size' => 'sm',
+                        'color' => '#1e293b',
+                        'wrap' => true
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => '現在の状況に一番近いものをタップしてください。',
+                        'size' => 'xs',
+                        'color' => '#64748b'
+                    ],
+                    [
+                        'type' => 'separator',
+                        'margin' => 'sm'
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => '#2563eb',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'postback',
+                            'label' => '🔥 大いにある（すぐにでも取り組みたい）',
+                            'data' => 'action=dx_survey_q1&answer=high&label=' . urlencode('大いにある'),
+                            'displayText' => '【回答】DXに大いに関心があります'
+                        ]
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => '#3b82f6',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'postback',
+                            'label' => '💡 少しある（情報収集中・事例を知りたい）',
+                            'data' => 'action=dx_survey_q1&answer=medium&label=' . urlencode('少しある'),
+                            'displayText' => '【回答】DXに少し関心があります'
+                        ]
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'secondary',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'postback',
+                            'label' => '☕ 今はまだない（状況を見守り中）',
+                            'data' => 'action=dx_survey_q1&answer=none&label=' . urlencode('今はまだない'),
+                            'displayText' => '【回答】今のところDXへの関心はありません'
+                        ]
+                    ]
+                ]
+            ]
+        ]
+    ];
+}
+
+/**
+ * 会社DXアンケート Q2（関心テーマヒアリング）Flex Messageを生成
+ */
+function buildDxSurveyQ2Message(string $q1Answer, string $q1Label): array {
+    return [
+        'type' => 'flex',
+        'altText' => '【Q2】特にどのような課題・テーマに関心がありますか？',
+        'contents' => [
+            'type' => 'bubble',
+            'size' => 'mega',
+            'header' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'backgroundColor' => '#1e40af',
+                'paddingAll' => '16px',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => '🎯 関心のあるテーマ・お困りごと',
+                        'color' => '#ffffff',
+                        'weight' => 'bold',
+                        'size' => 'md'
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => "Q1回答: 「{$q1Label}」を承りました！続けてお選びください",
+                        'color' => '#93c5fd',
+                        'size' => 'xs',
+                        'margin' => 'xs'
+                    ]
+                ]
+            ],
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'paddingAll' => '16px',
+                'spacing' => 'sm',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => 'Q2. 特にどのような課題・テーマに関心がありますか？',
+                        'weight' => 'bold',
+                        'size' => 'sm',
+                        'color' => '#1e293b',
+                        'wrap' => true
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => '当てはまるものを1つタップしてください。',
+                        'size' => 'xs',
+                        'color' => '#64748b'
+                    ],
+                    [
+                        'type' => 'separator',
+                        'margin' => 'sm'
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => '#2563eb',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'postback',
+                            'label' => '💻 ペーパーレス化・業務効率化',
+                            'data' => 'action=dx_survey_q2&q1=' . urlencode($q1Answer) . '&topic=paperless&label=' . urlencode('ペーパーレス化・業務効率化'),
+                            'displayText' => '【関心分野】ペーパーレス化・業務効率化に関心があります'
+                        ]
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => '#4f46e5',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'postback',
+                            'label' => '🤖 ChatGPT・生成AIの社内活用',
+                            'data' => 'action=dx_survey_q2&q1=' . urlencode($q1Answer) . '&topic=genai&label=' . urlencode('生成AI社内活用'),
+                            'displayText' => '【関心分野】生成AI（ChatGPT等）の社内活用に関心があります'
+                        ]
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => '#0284c7',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'postback',
+                            'label' => '📱 LINE公式アカウント活用・集客自動化',
+                            'data' => 'action=dx_survey_q2&q1=' . urlencode($q1Answer) . '&topic=line_crm&label=' . urlencode('LINE活用・集客自動化'),
+                            'displayText' => '【関心分野】LINE公式アカウント活用・集客自動化に関心があります'
+                        ]
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => '#0891b2',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'postback',
+                            'label' => '📊 クラウド導入・社内データ一元管理',
+                            'data' => 'action=dx_survey_q2&q1=' . urlencode($q1Answer) . '&topic=cloud_data&label=' . urlencode('クラウド・データ一元管理'),
+                            'displayText' => '【関心分野】クラウド導入・社内データ一元管理に関心があります'
+                        ]
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'secondary',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'postback',
+                            'label' => '🤝 まずは他社事例を聞きたい（無料相談）',
+                            'data' => 'action=dx_survey_q2&q1=' . urlencode($q1Answer) . '&topic=consultation&label=' . urlencode('他社事例・無料相談希望'),
+                            'displayText' => '【関心分野】まずは他社事例を聞いてみたい（無料相談希望）'
+                        ]
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'secondary',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'postback',
+                            'label' => '✏️ その他（トークで直接相談）',
+                            'data' => 'action=dx_survey_q2&q1=' . urlencode($q1Answer) . '&topic=other&label=' . urlencode('その他・直接相談'),
+                            'displayText' => '【関心分野】その他について相談したいです'
+                        ]
+                    ]
+                ]
+            ]
+        ]
+    ];
+}
+
+/**
+ * 会社DXアンケート Q1 回答処理
+ */
+function handleDxSurveyQ1(PDO $db, string $replyToken, array $params, string $userId) {
+    $answer = $params['answer'] ?? '';
+    $label = $params['label'] ?? '';
+
+    $userProfile = !empty($userId) ? getLineUserProfile($userId) : null;
+    $userName = $userProfile['displayName'] ?? 'お客様';
+
+    // 「今はまだない」の場合
+    if ($answer === 'none') {
+        $nowStr = date('Y-m-d H:i');
+        $memoLine = "【DXアンケート】興味度: 今はまだない ({$nowStr})";
+        recordCustomerDxSurveyResponse($db, $userId, $memoLine, 'DX関心: 今はまだない');
+
+        $replyText = "アンケートにご回答いただき、誠にありがとうございました！✨\n\n今後、貴社の業務にお役立ていただけるDX導入事例や最新ニュースがございましたら、改めてお届けいたします。\n引き続きよろしくお願いいたします😊";
+        sendReplyMessage($replyToken, [['type' => 'text', 'text' => $replyText]], $userId);
+
+        notifyStaffOfDxSurvey($db, $userName, $userId, '今はまだない', 'なし');
+        return;
+    }
+
+    // 「大いにある」「少しある」の場合は続けてQ2を提示
+    $q2Message = buildDxSurveyQ2Message($answer, $label);
+    sendReplyMessage($replyToken, [$q2Message], $userId);
+}
+
+/**
+ * 会社DXアンケート Q2 回答処理
+ */
+function handleDxSurveyQ2(PDO $db, string $replyToken, array $params, string $userId) {
+    $q1Code = $params['q1'] ?? '';
+    $topic = $params['topic'] ?? '';
+    $label = $params['label'] ?? '';
+
+    $q1Map = [
+        'high' => '大いにある',
+        'medium' => '少しある',
+        'none' => '今はまだない'
+    ];
+    $q1Label = $q1Map[$q1Code] ?? $q1Code;
+
+    $userProfile = !empty($userId) ? getLineUserProfile($userId) : null;
+    $userName = $userProfile['displayName'] ?? 'お客様';
+
+    // DB記録
+    $nowStr = date('Y-m-d H:i');
+    $memoLine = "【DXアンケート回答】興味度: {$q1Label} / 関心テーマ: {$label} ({$nowStr})";
+    recordCustomerDxSurveyResponse($db, $userId, $memoLine, "DX関心: {$q1Label} ({$label})");
+
+    // ユーザーへの完了返信
+    $replyText = "アンケートへのご協力、誠にありがとうございました！✨\n\nご回答いただいたテーマ【{$label}】につきまして、貴社の業界や業務課題に合わせた具体的な導入事例や活用ヒントをご用意可能です。\n\n「もっと詳しく事例を聞きたい」「自社で導入できるか相談したい」などがございましたら、このLINEトーク画面にお気軽にメッセージをお送りください😊";
+    sendReplyMessage($replyToken, [['type' => 'text', 'text' => $replyText]], $userId);
+
+    // 管理者への即時プッシュ通知
+    notifyStaffOfDxSurvey($db, $userName, $userId, $q1Label, $label);
+}
+
+/**
+ * 顧客カルテへのDXアンケート回答記録
+ */
+function recordCustomerDxSurveyResponse(PDO $db, string $userId, string $memoLine, string $preview) {
+    try {
+        $nowJst = date('Y-m-d H:i:s');
+        $stmt = $db->prepare("SELECT id, staff_memo FROM customer_cars WHERE user_id = :uid LIMIT 1");
+        $stmt->execute([':uid' => $userId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($row) {
+            $existingMemo = trim((string)($row['staff_memo'] ?? ''));
+            $newMemo = $existingMemo ? ($existingMemo . "\n" . $memoLine) : $memoLine;
+            $update = $db->prepare("
+                UPDATE customer_cars SET
+                    staff_memo = :memo,
+                    last_interaction_at = :now_jst,
+                    last_interaction_type = 'dx_survey',
+                    last_interaction_preview = :preview,
+                    updated_at = :now_jst2
+                WHERE id = :id
+            ");
+            $update->execute([
+                ':memo' => $newMemo,
+                ':now_jst' => $nowJst,
+                ':preview' => $preview,
+                ':now_jst2' => $nowJst,
+                ':id' => $row['id']
+            ]);
+        }
+    } catch (Throwable $e) {
+        writeDebugLog("recordCustomerDxSurveyResponse エラー", ['error' => $e->getMessage()]);
+    }
+}
+
+/**
+ * DXアンケート回答時のスタッフ通知 (LINE Push + Discord)
+ */
+function notifyStaffOfDxSurvey(PDO $db, string $userName, string $userId, string $q1Label, string $topicLabel) {
+    $msgText = "📋 【会社DX アンケート回答】\n\n👤 {$userName} 様よりDXアンケートの回答が届きました！\n\n■ DXへの関心度: {$q1Label}\n■ 関心テーマ: {$topicLabel}\n\n※管理画面の顧客カルテより詳細を確認し、チャット等で個別フォローいただけます。";
+
+    // 1. 管理者LINEアカウントへPush通知
+    try {
+        sendAdminLineBroadcast([['type' => 'text', 'text' => $msgText]], $db);
+    } catch (Throwable $e) {
+        writeDebugLog("管理者LINE通知エラー(DXアンケート)", ['error' => $e->getMessage()]);
+    }
+
+    // 2. Discord Webhook通知
+    try {
+        if (defined('DISCORD_WEBHOOK_URL') && !empty(DISCORD_WEBHOOK_URL) && DISCORD_WEBHOOK_URL !== 'YOUR_DISCORD_WEBHOOK_URL_HERE') {
+            $payload = [
+                'username' => '会社DX アンケート通知',
+                'content' => "📢 **【会社DX】アンケート回答を受信しました！**",
+                'embeds' => [
+                    [
+                        'title' => '📋 DX関心度アンケート 回答速報',
+                        'color' => 0x2563eb,
+                        'fields' => [
+                            ['name' => '👤 お客様名', 'value' => "**{$userName}** 様", 'inline' => true],
+                            ['name' => '🔥 DXへの関心度', 'value' => "**{$q1Label}**", 'inline' => true],
+                            ['name' => '🎯 関心テーマ', 'value' => "**{$topicLabel}**", 'inline' => false]
+                        ],
+                        'timestamp' => date('c')
+                    ]
+                ]
+            ];
+            $ch = curl_init(DISCORD_WEBHOOK_URL);
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 4,
+                CURLOPT_HTTPHEADER => ['Content-Type: application/json; charset=utf-8'],
+                CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE)
+            ]);
+            curl_exec($ch);
+            curl_close($ch);
+        }
+    } catch (Throwable $e) {
+        writeDebugLog("Discord通知エラー(DXアンケート)", ['error' => $e->getMessage()]);
     }
 }

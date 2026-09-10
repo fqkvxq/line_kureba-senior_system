@@ -278,6 +278,16 @@ const elements = {
     btnSaveDiscordSettings: document.getElementById('btnSaveDiscordSettings'),
     discordTestStatusBanner: document.getElementById('discordTestStatusBanner'),
 
+    // 会社DX アンケートモーダル
+    openDxSurveyModalBtn: document.getElementById('openDxSurveyModalBtn'),
+    dxSurveyModal: document.getElementById('dxSurveyModal'),
+    closeDxSurveyModalBtn: document.getElementById('closeDxSurveyModalBtn'),
+    cancelDxSurveyBtn: document.getElementById('cancelDxSurveyBtn'),
+    submitDxSurveyBtn: document.getElementById('submitDxSurveyBtn'),
+    dxSurveyUserSelect: document.getElementById('dxSurveyUserSelect'),
+    dxSurveySingleTargetWrap: document.getElementById('dxSurveySingleTargetWrap'),
+    dxSurveyTargetSummaryText: document.getElementById('dxSurveyTargetSummaryText'),
+
     // 個別LINEチャットモーダル
     chatModal: document.getElementById('chatModal'),
     btnCloseChatModal: document.getElementById('btnCloseChatModal'),
@@ -298,6 +308,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initAuth();
     initEventListeners();
     initKnowledgeBroadcastStudio();
+    initDxSurveyModal();
     initAccountManagement();
     initChatModal();
     initDiscordSettings();
@@ -338,9 +349,10 @@ function renderAccountSwitcher() {
 
 function updateBrandDisplay() {
     const currentAcc = state.accounts.find(a => a.id === state.activeAccount) || state.activeAccountInfo;
+    const isDx = (state.activeAccount === 'kaisya_dx');
     if (currentAcc) {
         if (elements.systemBrandTitle) {
-            elements.systemBrandTitle.textContent = `${currentAcc.name} 受講生管理`;
+            elements.systemBrandTitle.textContent = isDx ? `${currentAcc.name} 顧客管理` : `${currentAcc.name} 受講生管理`;
         }
         if (elements.systemBrandBadge) {
             elements.systemBrandBadge.style.background = currentAcc.theme_color || '#4f46e5';
@@ -349,6 +361,12 @@ function updateBrandDisplay() {
             elements.accountBadgeDot.style.background = currentAcc.theme_color || '#ff8700';
         }
     }
+
+    // アカウントに応じた配信ボタン出し分け (kaisya_dx vs senior)
+    const dxSurveyBtn = document.getElementById('openDxSurveyModalBtn') || elements.openDxSurveyModalBtn;
+    const kbBtn = document.getElementById('openKnowledgeBroadcastModalBtn') || elements.openKnowledgeBroadcastModalBtn;
+    if (dxSurveyBtn) dxSurveyBtn.style.display = isDx ? 'inline-flex' : 'none';
+    if (kbBtn) kbBtn.style.display = isDx ? 'none' : 'inline-flex';
 }
 
 async function handleAccountSwitch(newAccountKey) {
@@ -1332,8 +1350,12 @@ function renderTable() {
     elements.customerTableBody.innerHTML = filtered.map((c, idx) => {
         const oilBadge = getBadgeHtml(c.oil_next_date);
         const periodicBadge = getBadgeHtml(c.periodic_insp_next_date);
-        const inspBadge = getBadgeHtml(c.inspection_next_date);
-        const memo = c.staff_memo ? escapeHtml(c.staff_memo) : '<span style="color:#cbd5e1">-</span>';
+        let memoContent = c.staff_memo ? escapeHtml(c.staff_memo) : '<span style="color:#cbd5e1">-</span>';
+        if (c.staff_memo && (c.staff_memo.includes('DXアンケート') || c.staff_memo.includes('DX関心度'))) {
+            memoContent = `<span style="display:inline-block; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700; background:#dbeafe; color:#1e40af; margin-bottom:4px;"><i class="fa-solid fa-clipboard-check"></i> DXアンケート回答済</span><br>` + memoContent;
+        }
+        const memo = memoContent;
+        const isDxAccount = (state.activeAccount === 'kaisya_dx');
         const carId = c.id || '';
         const userId = c.user_id || '';
         const hasCustomMenu = Boolean(c.custom_line_menu_id);
@@ -1447,9 +1469,15 @@ function renderTable() {
                         <button class="btn-user-richmenu ${isCustomized ? 'is-active' : ''}" data-action="custom-menu" data-idx="${idx}" title="リッチメニューの確認・個別指定・メッセージ設定">
                             <i class="fa-solid fa-table-cells-large"></i> メニュー設定
                         </button>
-                        <button class="btn-knowledge-user-row" data-action="knowledge-send" data-idx="${idx}" title="この受講生へスマホ・PCお役立ち情報（Flex Message）を個別送信">
-                            <i class="fa-solid fa-bullhorn"></i> お役立ち配信
-                        </button>
+                        ${isDxAccount ? `
+                            <button class="btn-dx-survey-user-row" data-action="dx-survey-send" data-idx="${idx}" title="この顧客へDX関心度アンケート（Flex Message）を送信" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; font-size:11px; padding:4px 8px; border-radius:4px; font-weight:600; cursor:pointer;">
+                                <i class="fa-solid fa-clipboard-question"></i> DXアンケート
+                            </button>
+                        ` : `
+                            <button class="btn-knowledge-user-row" data-action="knowledge-send" data-idx="${idx}" title="この受講生へスマホ・PCお役立ち情報（Flex Message）を個別送信">
+                                <i class="fa-solid fa-bullhorn"></i> お役立ち配信
+                            </button>
+                        `}
                         <button class="btn-remind-oil" data-action="remind-oil" data-idx="${idx}" title="次回レッスン案内リマインドをLINE送信" style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd;">
                             <i class="fa-solid fa-laptop"></i> レッスン
                         </button>
@@ -1491,6 +1519,12 @@ function renderTable() {
                 } else {
                     openKnowledgeBroadcastModal(cust.user_id);
                 }
+            } else if (action === 'dx-survey-send') {
+                if (!cust.user_id || !cust.user_id.startsWith('U')) {
+                    alert('この顧客は手動登録（LINE未連携）のため個別送信できません。');
+                    return;
+                }
+                openDxSurveyModal(cust.user_id);
             } else if (action === 'remind-oil') {
                 sendManualReminder(cust.id, cust.user_id, 'oil', cust.user_name, cust.car_model);
             } else if (action === 'remind-periodic') {
@@ -3849,6 +3883,161 @@ async function submitKnowledgeBroadcast() {
 
 window.openKnowledgeBroadcastModal = openKnowledgeBroadcastModal;
 window.closeKnowledgeBroadcastModal = closeKnowledgeBroadcastModal;
+
+/* ==========================================================================
+   会社DX 関心度アンケート配信スタジオ機能
+   ========================================================================== */
+
+function initDxSurveyModal() {
+    const openBtn = document.getElementById('openDxSurveyModalBtn') || elements.openDxSurveyModalBtn;
+    const closeBtn = document.getElementById('closeDxSurveyModalBtn') || elements.closeDxSurveyModalBtn;
+    const cancelBtn = document.getElementById('cancelDxSurveyBtn') || elements.cancelDxSurveyBtn;
+    const submitBtn = document.getElementById('submitDxSurveyBtn') || elements.submitDxSurveyBtn;
+    const modal = document.getElementById('dxSurveyModal') || elements.dxSurveyModal;
+
+    openBtn?.addEventListener('click', () => openDxSurveyModal());
+    closeBtn?.addEventListener('click', closeDxSurveyModal);
+    cancelBtn?.addEventListener('click', closeDxSurveyModal);
+
+    modal?.addEventListener('click', (e) => {
+        if (e.target === modal) closeDxSurveyModal();
+    });
+
+    document.querySelectorAll('input[name="dxSurveyTargetType"]').forEach(radio => {
+        radio.addEventListener('change', updateDxSurveyTargetUI);
+    });
+
+    const userSelect = document.getElementById('dxSurveyUserSelect') || elements.dxSurveyUserSelect;
+    userSelect?.addEventListener('change', updateDxSurveyTargetUI);
+
+    submitBtn?.addEventListener('click', submitDxSurvey);
+}
+
+function openDxSurveyModal(targetUserId = null) {
+    const modal = document.getElementById('dxSurveyModal') || elements.dxSurveyModal;
+    if (!modal) return;
+
+    populateDxSurveyTargetUsers(targetUserId);
+
+    const allRadio = document.getElementById('dxSurveyTargetAll');
+    const singleRadio = document.getElementById('dxSurveyTargetSingle');
+
+    if (targetUserId) {
+        if (singleRadio) singleRadio.checked = true;
+    } else {
+        if (allRadio) allRadio.checked = true;
+    }
+
+    updateDxSurveyTargetUI();
+    modal.classList.add('active');
+}
+
+function closeDxSurveyModal() {
+    const modal = document.getElementById('dxSurveyModal') || elements.dxSurveyModal;
+    if (modal) modal.classList.remove('active');
+}
+
+function populateDxSurveyTargetUsers(selectedUserId = null) {
+    const select = document.getElementById('dxSurveyUserSelect') || elements.dxSurveyUserSelect;
+    if (!select) return;
+
+    select.innerHTML = '<option value="">-- 送信対象の顧客を選択 --</option>';
+    const lineUsers = state.allCustomers.filter(c => c.user_id && c.user_id.startsWith('U'));
+    lineUsers.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.user_id;
+        const name = c.user_name || '名前なし';
+        const model = c.car_model ? ` (${c.car_model})` : '';
+        opt.textContent = `${name}${model}`;
+        if (selectedUserId && c.user_id === selectedUserId) {
+            opt.selected = true;
+        }
+        select.appendChild(opt);
+    });
+}
+
+function updateDxSurveyTargetUI() {
+    const targetType = document.querySelector('input[name="dxSurveyTargetType"]:checked')?.value || 'all';
+    const singleWrap = document.getElementById('dxSurveySingleTargetWrap') || elements.dxSurveySingleTargetWrap;
+    const summaryText = document.getElementById('dxSurveyTargetSummaryText') || elements.dxSurveyTargetSummaryText;
+    const select = document.getElementById('dxSurveyUserSelect') || elements.dxSurveyUserSelect;
+
+    if (targetType === 'single') {
+        if (singleWrap) singleWrap.style.display = 'block';
+        const uid = select?.value;
+        const cust = state.allCustomers.find(c => c.user_id === uid);
+        const name = cust ? (cust.user_name || '指定顧客') : '選択中の顧客';
+        if (summaryText) summaryText.innerHTML = `配信先: <strong>👤 【${escapeHtml(name)} 様】へ個別送信</strong>`;
+    } else {
+        if (singleWrap) singleWrap.style.display = 'none';
+        if (summaryText) summaryText.innerHTML = '配信先: <strong>👥 LINE公式アカウントの友だち全員（一斉配信）</strong>';
+    }
+}
+
+async function submitDxSurvey() {
+    const targetType = document.querySelector('input[name="dxSurveyTargetType"]:checked')?.value || 'all';
+    const select = document.getElementById('dxSurveyUserSelect') || elements.dxSurveyUserSelect;
+    let targetUid = '';
+    let targetName = 'LINE友だち全員';
+
+    if (targetType === 'single') {
+        targetUid = select?.value || '';
+        if (!targetUid) {
+            alert('送信先の顧客を選択してください');
+            return;
+        }
+        const cust = state.allCustomers.find(c => c.user_id === targetUid);
+        targetName = cust ? `${cust.user_name || '顧客'} 様` : '指定顧客';
+    }
+
+    const confirmMsg = (targetType === 'all')
+        ? '【会社DX LINE公式の友だち全員（一斉配信）】へ、DX関心度アンケート（Flex Message）を今すぐ配信しますか？\n（※全友だちのトーク画面へ即座に送信されます）'
+        : `【${targetName}】へ、DX関心度アンケート（Flex Message）をLINE送信しますか？`;
+
+    if (!confirm(confirmMsg)) return;
+
+    const btn = document.getElementById('submitDxSurveyBtn') || elements.submitDxSurveyBtn;
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> LINE送信中...';
+    }
+
+    try {
+        const payload = new URLSearchParams({
+            action: 'send_dx_survey',
+            account: state.activeAccount || 'kaisya_dx',
+            target_type: (targetType === 'single' ? 'user' : 'all'),
+            user_id: targetUid
+        });
+
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+
+        const data = await res.json();
+        if (data && data.success) {
+            showToast(data.message || 'DXアンケートを送信しました！');
+            closeDxSurveyModal();
+            await fetchCustomers();
+        } else {
+            alert((data && data.error) ? data.error : '送信に失敗しました');
+        }
+    } catch (e) {
+        console.error('DX survey send error:', e);
+        alert('送信エラーが発生しました: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
+
+window.openDxSurveyModal = openDxSurveyModal;
+window.closeDxSurveyModal = closeDxSurveyModal;
 
 /* ==========================================================================
    個別LINEチャット機能（メッセージ履歴閲覧・Push返信・未読管理）
