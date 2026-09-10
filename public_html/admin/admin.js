@@ -1350,8 +1350,10 @@ function renderTable() {
     elements.customerTableBody.innerHTML = filtered.map((c, idx) => {
         const oilBadge = getBadgeHtml(c.oil_next_date);
         const periodicBadge = getBadgeHtml(c.periodic_insp_next_date);
+        const inspBadge = getBadgeHtml(c.inspection_next_date);
         let memoContent = c.staff_memo ? escapeHtml(c.staff_memo) : '<span style="color:#cbd5e1">-</span>';
-        if (c.staff_memo && (c.staff_memo.includes('DXアンケート') || c.staff_memo.includes('DX関心度'))) {
+        const memoStr = String(c.staff_memo || '');
+        if (memoStr.includes('DXアンケート') || memoStr.includes('DX関心度')) {
             memoContent = `<span style="display:inline-block; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700; background:#dbeafe; color:#1e40af; margin-bottom:4px;"><i class="fa-solid fa-clipboard-check"></i> DXアンケート回答済</span><br>` + memoContent;
         }
         const memo = memoContent;
