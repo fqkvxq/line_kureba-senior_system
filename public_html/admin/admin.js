@@ -3859,16 +3859,24 @@ function initChatModal() {
     }
 }
 
+const DEFAULT_AVATAR_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
+
 function openChatModal(cust) {
     if (!cust) return;
     state.activeChatUser = cust;
 
     const uid = cust.user_id || '';
     const name = cust.user_name || '名前なし受講生';
-    const pic = cust.picture_url || 'https://profile.line-scdn.net/static/images/line_default.png';
+    const pic = cust.picture_url || DEFAULT_AVATAR_URL;
     const course = `${cust.car_model || 'コース未設定'}${cust.car_number ? ' / ' + cust.car_number : ''}`;
 
-    if (elements.chatModalAvatar) elements.chatModalAvatar.src = pic;
+    if (elements.chatModalAvatar) {
+        elements.chatModalAvatar.src = pic;
+        elements.chatModalAvatar.onerror = function() {
+            this.onerror = null;
+            this.src = DEFAULT_AVATAR_URL;
+        };
+    }
     if (elements.chatModalUserName) {
         elements.chatModalUserName.innerHTML = `${escapeHtml(name)} <span id="chatModalUidTag" style="font-size: 11px; font-weight: normal; color: #64748b; font-family: monospace;">(${escapeHtml(uid || '未連携')})</span>`;
     }
@@ -3983,7 +3991,7 @@ function renderChatMessages(messages) {
 
     const defaultUserPic = (state.activeChatUser && state.activeChatUser.picture_url)
         ? state.activeChatUser.picture_url
-        : 'https://profile.line-scdn.net/static/images/line_default.png';
+        : DEFAULT_AVATAR_URL;
 
     messages.forEach(msg => {
         const createdAt = msg.created_at || '';
@@ -4030,7 +4038,7 @@ function renderChatMessages(messages) {
         htmlParts.push(`
             <div class="chat-message-row ${rowClass}">
                 ${isIncoming ? `
-                    <img class="chat-msg-avatar" src="${escapeHtml(defaultUserPic)}" alt="User" onerror="this.src='https://profile.line-scdn.net/static/images/line_default.png'">
+                    <img class="chat-msg-avatar" src="${escapeHtml(defaultUserPic)}" alt="User" onerror="this.onerror=null; this.src=DEFAULT_AVATAR_URL;">
                 ` : ''}
                 <div class="chat-bubble-wrapper">
                     <div class="chat-bubble">${bubbleContent}</div>
