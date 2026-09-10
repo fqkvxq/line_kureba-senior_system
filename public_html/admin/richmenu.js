@@ -1631,10 +1631,10 @@ function renderTextOverlayControls() {
                     <!-- HEX直接指定 -->
                     <div style="display: flex; gap: 6px; align-items: center; margin-top: 5px;">
                         <span style="font-size: 10px; color: #64748b; font-weight: 700;">HEX指定:</span>
-                        <input type="color" class="overlay-bg-color-picker" value="${overlay.bg_hex || (overlay.theme === 'blue' ? '#2563eb' : (overlay.theme === 'green' ? '#06C755' : (overlay.theme === 'dark' ? '#0f172a' : (overlay.theme === 'yellow' ? '#f59e0b' : (overlay.theme === 'white' ? '#ffffff' : '#dc2626')))))}" style="width: 20px; height: 20px; border: none; padding: 0; cursor: pointer; border-radius: 3px;" title="背景色">
-                        <input type="text" class="overlay-bg-hex-input" value="${overlay.bg_hex || ''}" placeholder="背景#HEX" maxlength="7" style="width: 62px; font-size: 10px; font-family: monospace; padding: 2px 4px; border: 1px solid #cbd5e1; border-radius: 4px; text-transform: uppercase;" title="背景色HEX">
-                        <input type="color" class="overlay-text-color-picker" value="${overlay.text_hex || '#ffffff'}" style="width: 20px; height: 20px; border: none; padding: 0; cursor: pointer; border-radius: 3px;" title="文字色">
-                        <input type="text" class="overlay-text-hex-input" value="${overlay.text_hex || ''}" placeholder="文字#HEX" maxlength="7" style="width: 62px; font-size: 10px; font-family: monospace; padding: 2px 4px; border: 1px solid #cbd5e1; border-radius: 4px; text-transform: uppercase;" title="文字色HEX">
+                        <input type="color" class="overlay-bg-color-picker" value="${overlay.bg_hex || (overlay.theme === 'blue' ? '#2563eb' : (overlay.theme === 'green' ? '#06C755' : (overlay.theme === 'dark' ? '#0f172a' : (overlay.theme === 'yellow' ? '#f59e0b' : (overlay.theme === 'white' ? '#ffffff' : '#dc2626')))))}" style="width: 20px; height: 20px; border: none; padding: 0; cursor: pointer; border-radius: var(--radius-xs);" title="背景色">
+                        <input type="text" class="overlay-bg-hex-input" value="${overlay.bg_hex || ''}" placeholder="背景#HEX" maxlength="7" style="width: 62px; font-size: 10px; font-family: monospace; padding: 2px 4px; border: 1px solid #cbd5e1; border-radius: var(--radius-xs); text-transform: uppercase;" title="背景色HEX">
+                        <input type="color" class="overlay-text-color-picker" value="${overlay.text_hex || '#ffffff'}" style="width: 20px; height: 20px; border: none; padding: 0; cursor: pointer; border-radius: var(--radius-xs);" title="文字色">
+                        <input type="text" class="overlay-text-hex-input" value="${overlay.text_hex || ''}" placeholder="文字#HEX" maxlength="7" style="width: 62px; font-size: 10px; font-family: monospace; padding: 2px 4px; border: 1px solid #cbd5e1; border-radius: var(--radius-xs); text-transform: uppercase;" title="文字色HEX">
                     </div>
                 </div>
             </div>
@@ -1650,18 +1650,18 @@ function renderTextOverlayControls() {
                             <option value="xl" ${overlay.size === 'xl' ? 'selected' : ''}>特大 (130px)</option>
                             <option value="custom" ${overlay.size === 'custom' ? 'selected' : ''}>任意 (px指定)</option>
                         </select>
-                        <input type="number" class="coord-field-xs overlay-custom-size-input" value="${overlay.custom_font_size || 65}" min="20" max="220" step="1" style="width: 50px; font-size: 11px; padding: 3px; border: 1px solid #cbd5e1; border-radius: 4px; display: ${overlay.size === 'custom' ? 'inline-block' : 'none'};" title="フォントサイズ (px)">
+                        <input type="number" class="coord-field-xs overlay-custom-size-input" value="${overlay.custom_font_size || 65}" min="20" max="220" step="1" style="width: 50px; font-size: 11px; padding: 3px; border: 1px solid #cbd5e1; border-radius: var(--radius-xs); display: ${overlay.size === 'custom' ? 'inline-block' : 'none'};" title="フォントサイズ (px)">
                     </div>
                 </div>
                 ${(overlay.type === 'badge' || overlay.type === 'free') ? `
                 <div style="display: flex; gap: 6px; align-items: flex-end; flex-wrap: wrap;">
                     <div>
                         <span class="option-group-label">X:</span>
-                        <input type="number" class="coord-field-xs overlay-pos-x" value="${Math.round(overlay.x || 60)}" style="width: 52px; font-size: 11px; padding: 3px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                        <input type="number" class="coord-field-xs overlay-pos-x" value="${Math.round(overlay.x || 60)}" style="width: 52px; font-size: 11px; padding: 3px; border: 1px solid #cbd5e1; border-radius: var(--radius-xs);">
                     </div>
                     <div>
                         <span class="option-group-label">Y:</span>
-                        <input type="number" class="coord-field-xs overlay-pos-y" value="${Math.round(overlay.y || 60)}" style="width: 52px; font-size: 11px; padding: 3px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                        <input type="number" class="coord-field-xs overlay-pos-y" value="${Math.round(overlay.y || 60)}" style="width: 52px; font-size: 11px; padding: 3px; border: 1px solid #cbd5e1; border-radius: var(--radius-xs);">
                     </div>
                     <div style="font-size: 10px; color: #06C755; font-weight: 700; padding-bottom: 4px;" title="プレビュー上の文字を直接ドラッグして移動できます">
                         <i class="fa-solid fa-arrows-up-down-left-right"></i> 直接ドラッグ可
@@ -1690,7 +1690,7 @@ function renderTextOverlayControls() {
 
                 <!-- URI 入力 -->
                 <div class="overlay-action-field-group atype-field-uri" style="display: ${actionType === 'uri' ? 'block' : 'none'}; margin-top: 6px;">
-                    <input type="url" class="overlay-action-uri-input" value="${escapeHtml(action.uri || '')}" placeholder="https://example.com" style="width: 100%; box-sizing: border-box; font-size: 11px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                    <input type="url" class="overlay-action-uri-input" value="${escapeHtml(action.uri || '')}" placeholder="https://example.com" style="width: 100%; box-sizing: border-box; font-size: 11px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: var(--radius-xs);">
                     <div class="phrase-chips-row" style="margin-top: 4px; margin-bottom: 0;">
                         <button type="button" class="phrase-chip overlay-action-chip" data-atype="uri" data-val="https://www.goo-net.com/usedcar_shop/0205244/stock.html">Goo-net在庫</button>
                         <button type="button" class="phrase-chip overlay-action-chip" data-atype="uri" data-stamp="1">🎫 スタンプカード</button>
@@ -1699,7 +1699,7 @@ function renderTextOverlayControls() {
 
                 <!-- Postback 入力 -->
                 <div class="overlay-action-field-group atype-field-postback" style="display: ${actionType === 'postback' ? 'block' : 'none'}; margin-top: 6px;">
-                    <input type="text" class="overlay-action-data-input" value="${escapeHtml(action.data || '')}" placeholder="action=search_all" style="width: 100%; box-sizing: border-box; font-size: 11px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                    <input type="text" class="overlay-action-data-input" value="${escapeHtml(action.data || '')}" placeholder="action=search_all" style="width: 100%; box-sizing: border-box; font-size: 11px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: var(--radius-xs);">
                     <div class="phrase-chips-row" style="margin-top: 4px; margin-bottom: 0;">
                         <button type="button" class="phrase-chip overlay-action-chip" data-atype="postback" data-val="action=search_all">在庫全台</button>
                         <button type="button" class="phrase-chip overlay-action-chip" data-atype="postback" data-val="action=open_mycar">点検WEB予約</button>
@@ -1710,12 +1710,12 @@ function renderTextOverlayControls() {
 
                 <!-- Message 入力 -->
                 <div class="overlay-action-field-group atype-field-message" style="display: ${actionType === 'message' ? 'block' : 'none'}; margin-top: 6px;">
-                    <input type="text" class="overlay-action-text-input" value="${escapeHtml(action.text || '')}" placeholder="タップ時に送信するメッセージ" style="width: 100%; box-sizing: border-box; font-size: 11px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                    <input type="text" class="overlay-action-text-input" value="${escapeHtml(action.text || '')}" placeholder="タップ時に送信するメッセージ" style="width: 100%; box-sizing: border-box; font-size: 11px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: var(--radius-xs);">
                 </div>
 
                 <!-- RichMenuSwitch 入力 -->
                 <div class="overlay-action-field-group atype-field-richmenuswitch" style="display: ${actionType === 'richmenuswitch' ? 'block' : 'none'}; margin-top: 6px;">
-                    <select class="overlay-action-switch-select" style="width: 100%; box-sizing: border-box; font-size: 11px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                    <select class="overlay-action-switch-select" style="width: 100%; box-sizing: border-box; font-size: 11px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: var(--radius-xs);">
                         <option value="">-- 切替先メニューを選択 --</option>
                         ${(state.historyList || []).map(m => {
                             const val = m.alias_id || ('rm_' + m.id);

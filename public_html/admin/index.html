@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260910_multi_account_v1">
+    <link rel="stylesheet" href="admin.css?v=20260910_radius_unify_v1">
 </head>
 <body>
     <!-- ログインモーダル (初期表示) -->
@@ -328,16 +328,16 @@
                         <label style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px; display: block;">
                             割り当てるリッチメニューを選択
                         </label>
-                        <select id="directAssignMenuSelect" class="form-select" style="width: 100%; padding: 8px 10px; font-size: 12.5px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+                        <select id="directAssignMenuSelect" class="form-select" style="width: 100%; padding: 8px 10px; font-size: 12.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); background: #fff;">
                             <!-- JSで生成 -->
                         </select>
                     </div>
 
-                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; text-align: center;">
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 14px; text-align: center;">
                         <div style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 8px; text-align: left;">
                             <i class="fa-solid fa-image"></i> 選択中のメニュー画像プレビュー
                         </div>
-                        <div style="max-width: 480px; margin: 0 auto; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); background: #fff;">
+                        <div style="max-width: 480px; margin: 0 auto; border-radius: var(--radius-sm); overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); background: #fff;">
                             <img id="directAssignMenuPreviewImg" src="" alt="プレビュー" style="width: 100%; height: auto; display: block;">
                         </div>
                         <div id="directAssignMenuMeta" style="margin-top: 8px; font-size: 11.5px; color: #475569;"></div>
@@ -354,11 +354,11 @@
                                     <label style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 0;">
                                         ベースとなるリッチメニュー（プロライン等）
                                     </label>
-                                    <button type="button" id="btnReloadBaseMenus" title="LINEサーバーからプロラインの最新メニューを取り込みます" style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 4px; font-size: 11px; color: #4338ca; cursor: pointer; padding: 2px 8px; font-weight: bold;">
+                                    <button type="button" id="btnReloadBaseMenus" title="LINEサーバーからプロラインの最新メニューを取り込みます" style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: var(--radius-xs); font-size: 11px; color: #4338ca; cursor: pointer; padding: 2px 8px; font-weight: bold;">
                                         <i class="fa-solid fa-cloud-arrow-down"></i> プロラインから同期
                                     </button>
                                 </div>
-                                <select id="userMenuBaseSelect" class="form-select" style="width: 100%; padding: 7px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                <select id="userMenuBaseSelect" class="form-select" style="width: 100%; padding: 7px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
                                     <!-- JSで動的生成 -->
                                 </select>
                             </div>
@@ -390,17 +390,17 @@
                                 <label style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">
                                     表示メッセージ本文 (メニュー画像上に焼き込み・改行可)
                                 </label>
-                                <textarea id="userMenuTextInput" rows="2" placeholder="例: 山田様 次回車検は2026/10/20です！ご予約受付中" style="width: 100%; box-sizing: border-box; padding: 8px; font-size: 12.5px; border: 1px solid #cbd5e1; border-radius: 6px;"></textarea>
+                                <textarea id="userMenuTextInput" rows="2" placeholder="例: 山田様 次回車検は2026/10/20です！ご予約受付中" style="width: 100%; box-sizing: border-box; padding: 8px; font-size: 12.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);"></textarea>
                             </div>
 
                             <!-- 文字サイズ & 帯の太さ設定 -->
-                            <div style="background: #f8fafc; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
+                            <div style="background: #f8fafc; padding: 10px 12px; border-radius: var(--radius-md); border: 1px solid #e2e8f0; margin-bottom: 10px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                                     <label style="font-size: 11px; font-weight: 700; color: #334155; margin: 0; display: flex; align-items: center; gap: 5px;">
                                         <i class="fa-solid fa-text-height" style="color: #4f46e5;"></i> 文字フォントサイズ (20px〜220px)
                                     </label>
                                     <div style="display: flex; align-items: center; gap: 4px;">
-                                        <input type="number" id="userMenuFontSizeNumber" min="20" max="220" step="1" value="65" style="width: 55px; text-align: center; padding: 2px 4px; font-size: 11.5px; font-weight: 800; color: #4f46e5; border: 1px solid #c7d2fe; border-radius: 4px; background: #fff;">
+                                        <input type="number" id="userMenuFontSizeNumber" min="20" max="220" step="1" value="65" style="width: 55px; text-align: center; padding: 2px 4px; font-size: 11.5px; font-weight: 800; color: #4f46e5; border: 1px solid #c7d2fe; border-radius: var(--radius-xs); background: #fff;">
                                         <span style="font-size: 11px; font-weight: 700; color: #64748b;">px</span>
                                     </div>
                                 </div>
@@ -415,7 +415,7 @@
                             </div>
 
                             <!-- 背景色 (HEX) & 文字色 (HEX) 設定 -->
-                            <div style="background: #f8fafc; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
+                            <div style="background: #f8fafc; padding: 10px 12px; border-radius: var(--radius-md); border: 1px solid #e2e8f0; margin-bottom: 10px;">
                                 <div class="form-row" style="display: flex; gap: 12px; margin-bottom: 8px;">
                                     <!-- 帯の背景色 -->
                                     <div style="flex: 1;">
@@ -423,8 +423,8 @@
                                             <i class="fa-solid fa-fill-drip" style="color: #ff8700;"></i> 帯の背景色 (HEX)
                                         </label>
                                         <div style="display: flex; align-items: center; gap: 6px;">
-                                            <input type="color" id="userMenuBgColorPicker" value="#ff8700" style="width: 32px; height: 32px; border: none; border-radius: 6px; cursor: pointer; padding: 0; background: none;">
-                                            <input type="text" id="userMenuBgColorHex" value="#ff8700" maxlength="7" placeholder="#ff8700" style="flex: 1; min-width: 0; padding: 5px 8px; font-size: 11.5px; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; text-transform: uppercase;">
+                                            <input type="color" id="userMenuBgColorPicker" value="#ff8700" style="width: 32px; height: 32px; border: none; border-radius: var(--radius-sm); cursor: pointer; padding: 0; background: none;">
+                                            <input type="text" id="userMenuBgColorHex" value="#ff8700" maxlength="7" placeholder="#ff8700" style="flex: 1; min-width: 0; padding: 5px 8px; font-size: 11.5px; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); text-transform: uppercase;">
                                         </div>
                                         <div class="color-quick-chips" style="display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap;">
                                             <button type="button" class="btn-color-quick-chip" data-bg="#ff8700" title="オレンジ (教室カラー・標準)" style="background: #ff8700;"></button>
@@ -445,8 +445,8 @@
                                             <i class="fa-solid fa-font" style="color: #2563eb;"></i> 帯の文字色 (HEX)
                                         </label>
                                         <div style="display: flex; align-items: center; gap: 6px;">
-                                            <input type="color" id="userMenuTextColorPicker" value="#ffffff" style="width: 32px; height: 32px; border: none; border-radius: 6px; cursor: pointer; padding: 0; background: none;">
-                                            <input type="text" id="userMenuTextColorHex" value="#ffffff" maxlength="7" placeholder="#ffffff" style="flex: 1; min-width: 0; padding: 5px 8px; font-size: 11.5px; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; text-transform: uppercase;">
+                                            <input type="color" id="userMenuTextColorPicker" value="#ffffff" style="width: 32px; height: 32px; border: none; border-radius: var(--radius-sm); cursor: pointer; padding: 0; background: none;">
+                                            <input type="text" id="userMenuTextColorHex" value="#ffffff" maxlength="7" placeholder="#ffffff" style="flex: 1; min-width: 0; padding: 5px 8px; font-size: 11.5px; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); text-transform: uppercase;">
                                         </div>
                                         <div class="color-quick-chips" style="display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap;">
                                             <button type="button" class="btn-text-color-quick-chip active" data-color="#ffffff" title="白" style="background: #ffffff; border: 1px solid #cbd5e1;"></button>
@@ -471,14 +471,14 @@
                             <div class="form-row" style="display: flex; gap: 10px; margin-bottom: 0;">
                                 <div style="flex: 1;">
                                     <label style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">配置位置</label>
-                                    <select id="userMenuPosSelect" style="width: 100%; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                    <select id="userMenuPosSelect" style="width: 100%; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
                                         <option value="top">上部テロップ帯</option>
                                         <option value="bottom">下部テロップ帯</option>
                                     </select>
                                 </div>
                                 <div style="flex: 1;">
                                     <label style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">帯の太さ</label>
-                                    <select id="userMenuBannerHeightSelect" style="width: 100%; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+                                    <select id="userMenuBannerHeightSelect" style="width: 100%; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); background: #fff;">
                                         <option value="auto" selected>自動 (文字に合わせる)</option>
                                         <option value="compact">細め (約140px)</option>
                                         <option value="standard">標準 (約185px)</option>
@@ -488,12 +488,12 @@
                             </div>
 
                             <!-- メッセージ帯タップ時のアクション設定 -->
-                            <div class="form-group" style="margin-top: 12px; margin-bottom: 0; background: #f8fafc; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                            <div class="form-group" style="margin-top: 12px; margin-bottom: 0; background: #f8fafc; padding: 10px 12px; border-radius: var(--radius-md); border: 1px solid #e2e8f0;">
                                 <label style="font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
                                     <span><i class="fa-solid fa-hand-pointer" style="color: #4f46e5;"></i> メッセージ帯タップ時の動作</span>
-                                    <span style="font-size: 10px; font-weight: 600; color: #059669; background: #ecfdf5; padding: 1px 6px; border-radius: 4px;">LINE連携</span>
+                                    <span style="font-size: 10px; font-weight: 600; color: #059669; background: #ecfdf5; padding: 1px 6px; border-radius: var(--radius-xs);">LINE連携</span>
                                 </label>
-                                <select id="userMenuBannerActionType" style="width: 100%; padding: 7px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+                                <select id="userMenuBannerActionType" style="width: 100%; padding: 7px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); background: #fff;">
                                     <option value="reservation_cal" selected>📅 レッスン予約・日程変更を開く (おすすめ)</option>
                                     <option value="mycar_liff">💻 受講生マイカルテ・相談を開く (LIFF)</option>
                                     <option value="open_mycar">📋 受講カルテ・予約メニューを表示 (LINEメッセージ)</option>
@@ -504,12 +504,12 @@
 
                                 <!-- URL入力フィールド (uri 選択時のみ) -->
                                 <div id="userMenuBannerUriRow" style="display: none; margin-top: 6px;">
-                                    <input type="url" id="userMenuBannerUriInput" placeholder="https://..." style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                    <input type="url" id="userMenuBannerUriInput" placeholder="https://..." style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
                                 </div>
 
                                 <!-- Postback入力フィールド (postback 選択時のみ) -->
                                 <div id="userMenuBannerPostbackRow" style="display: none; margin-top: 6px;">
-                                    <input type="text" id="userMenuBannerPostbackInput" placeholder="例: action=search_all" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                    <input type="text" id="userMenuBannerPostbackInput" placeholder="例: action=search_all" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
                                 </div>
 
                                 <!-- タップ誘導バッジ（ガイド表示）のON/OFF -->
@@ -555,7 +555,7 @@
         <div class="modal-card" style="max-width: 620px;">
             <div class="modal-header" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff;">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(56, 189, 248, 0.15); display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 18px;">
+                    <div style="width: 36px; height: 36px; border-radius: var(--radius-md); background: rgba(56, 189, 248, 0.15); display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 18px;">
                         <i class="fa-solid fa-bell"></i>
                     </div>
                     <div>
@@ -572,10 +572,10 @@
                         <span><i class="fa-brands fa-line" style="color: #06C755; margin-right: 4px;"></i> 通知先 管理者LINEユーザーID (UID)</span>
                         <span style="font-size: 11px; color: #64748b; font-weight: normal;">改行またはカンマで複数人登録可能</span>
                     </label>
-                    <textarea id="adminLineUidsInput" rows="3" placeholder="例: U1234567890abcdef1234567890abcdef&#10;※Uから始まる33文字のLINEユーザーIDを入力してください" style="width: 100%; box-sizing: border-box; padding: 10px; font-family: monospace; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 8px; line-height: 1.5;"></textarea>
+                    <textarea id="adminLineUidsInput" rows="3" placeholder="例: U1234567890abcdef1234567890abcdef&#10;※Uから始まる33文字のLINEユーザーIDを入力してください" style="width: 100%; box-sizing: border-box; padding: 10px; font-family: monospace; font-size: 12px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); line-height: 1.5;"></textarea>
                     
                     <!-- UIDの確認方法・ヒント -->
-                    <div style="margin-top: 8px; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 11.5px; color: #475569;">
+                    <div style="margin-top: 8px; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); font-size: 11.5px; color: #475569;">
                         <div style="font-weight: bold; color: #0284c7; margin-bottom: 4px;"><i class="fa-solid fa-circle-question"></i> ご自身のLINEユーザーID (UID) の調べ方</div>
                         <ol style="margin: 0; padding-left: 18px; line-height: 1.6;">
                             <li>店舗のLINE公式アカウントをご自身のLINEで「友だち追加」します。</li>
@@ -586,12 +586,12 @@
                 </div>
 
                 <!-- テスト通知送信セクション -->
-                <div style="margin-bottom: 20px; padding: 12px 14px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <div style="margin-bottom: 20px; padding: 12px 14px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; gap: 10px;">
                     <div>
                         <div style="font-weight: bold; font-size: 12.5px; color: #166534;"><i class="fa-solid fa-paper-plane" style="margin-right: 4px;"></i> 動作テスト</div>
                         <div style="font-size: 11px; color: #15803d; margin-top: 2px;">登録・入力されたUIDのLINEへテストメッセージを即座に送信して受信確認できます。</div>
                     </div>
-                    <button type="button" class="btn-secondary" id="testAdminLineNotificationBtn" style="background: #16a34a; color: #fff; border: none; font-size: 12px; font-weight: bold; padding: 8px 14px; white-space: nowrap; cursor: pointer; border-radius: 6px;">
+                    <button type="button" class="btn-secondary" id="testAdminLineNotificationBtn" style="background: #16a34a; color: #fff; border: none; font-size: 12px; font-weight: bold; padding: 8px 14px; white-space: nowrap; cursor: pointer; border-radius: var(--radius-sm);">
                         <i class="fa-solid fa-bell"></i> テスト送信
                     </button>
                 </div>
@@ -602,23 +602,23 @@
                         <i class="fa-solid fa-sliders" style="margin-right: 4px; color: #6366f1;"></i> 通知するイベントの選択
                     </label>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 12px;">
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); cursor: pointer; font-size: 12px;">
                             <input type="checkbox" id="notifyInquiryCheck" checked style="accent-color: #0284c7; width: 16px; height: 16px;">
                             <span>🚗 <strong>車両問い合わせ</strong><br><small style="color: #64748b;">在庫確認・見積依頼など</small></span>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 12px;">
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); cursor: pointer; font-size: 12px;">
                             <input type="checkbox" id="notifyBookingCheck" checked style="accent-color: #0284c7; width: 16px; height: 16px;">
                             <span>🛠️ <strong>来店・点検予約</strong><br><small style="color: #64748b;">オイル交換・車検予約など</small></span>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 12px;">
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); cursor: pointer; font-size: 12px;">
                             <input type="checkbox" id="notifyNewCustomerCheck" checked style="accent-color: #0284c7; width: 16px; height: 16px;">
                             <span>🆕 <strong>新規顧客登録</strong><br><small style="color: #64748b;">マイカー点検連携時</small></span>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 12px;">
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); cursor: pointer; font-size: 12px;">
                             <input type="checkbox" id="notifyReminderCheck" checked style="accent-color: #0284c7; width: 16px; height: 16px;">
                             <span>⏰ <strong>定期リマインド結果</strong><br><small style="color: #64748b;">毎朝の自動送信レポート</small></span>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 12px; grid-column: span 2;">
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); cursor: pointer; font-size: 12px; grid-column: span 2;">
                             <input type="checkbox" id="notifyNewCarsCheck" style="accent-color: #0284c7; width: 16px; height: 16px;">
                             <span>✨ <strong>新着在庫車両の入荷検知</strong><br><small style="color: #64748b;">グーネット掲載の新着車検知時に管理者へ通知</small></span>
                         </label>
@@ -642,7 +642,7 @@
         <div class="modal-card" style="max-width: 660px;">
             <div class="modal-header" style="background: linear-gradient(135deg, #312e81 0%, #4338ca 100%); color: #fff;">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center; color: #c7d2fe; font-size: 20px;">
+                    <div style="width: 38px; height: 38px; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center; color: #c7d2fe; font-size: 20px;">
                         <i class="fa-solid fa-network-wired"></i>
                     </div>
                     <div>
@@ -654,7 +654,7 @@
             </div>
             <div class="modal-body" style="padding: 20px;">
                 <!-- 仕組み解説ボックス -->
-                <div style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 10px; padding: 12px 14px; margin-bottom: 18px; font-size: 12px; color: #3730a3; line-height: 1.6;">
+                <div style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 18px; font-size: 12px; color: #3730a3; line-height: 1.6;">
                     <div style="font-weight: bold; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
                         <i class="fa-solid fa-circle-info"></i> プロライン共存・中継（Webhook Proxy）の仕組み
                     </div>
@@ -667,7 +667,7 @@
                     <label style="font-weight: bold; font-size: 13px; color: #1e293b; display: block; margin-bottom: 6px;">
                         <span><i class="fa-solid fa-link" style="color: #4f46e5; margin-right: 4px;"></i> 転送先 プロライン Webhook URL</span>
                     </label>
-                    <input type="url" id="prolineWebhookUrlInput" placeholder="例: https://autosns.pro/api/webhook/..." style="width: 100%; box-sizing: border-box; padding: 10px 12px; font-family: monospace; font-size: 12.5px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                    <input type="url" id="prolineWebhookUrlInput" placeholder="例: https://autosns.pro/api/webhook/..." style="width: 100%; box-sizing: border-box; padding: 10px 12px; font-family: monospace; font-size: 12.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
                     <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
                         ※ プロライン管理画面（「初期設定」や「LINE公式アカウント連携」）で案内されるWebhook URLを貼り付けてください。
                     </div>
@@ -678,14 +678,14 @@
                     <label style="font-weight: bold; font-size: 13px; color: #1e293b; display: block; margin-bottom: 6px;">
                         <span><i class="fa-solid fa-calendar-days" style="color: #4f46e5; margin-right: 4px;"></i> プロライン カレンダー予約URL</span>
                     </label>
-                    <input type="url" id="prolineCalendarUrlInput" placeholder="例: https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1" style="width: 100%; box-sizing: border-box; padding: 10px 12px; font-family: monospace; font-size: 12.5px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                    <input type="url" id="prolineCalendarUrlInput" placeholder="例: https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1" style="width: 100%; box-sizing: border-box; padding: 10px 12px; font-family: monospace; font-size: 12.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
                     <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
                         ※ 受講生がリッチメニューやマイカルテから開いた際、自動で <code>?uid=受講生のUID&name=お名前</code> が付与されます。
                     </div>
                 </div>
 
                 <!-- 中継有効化トグル -->
-                <div style="margin-bottom: 18px; padding: 12px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div style="margin-bottom: 18px; padding: 12px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md);">
                     <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;">
                         <input type="checkbox" id="prolineRelayEnabledCheck" checked style="accent-color: #4338ca; width: 18px; height: 18px;">
                         <div>
@@ -698,7 +698,7 @@
                 </div>
 
                 <!-- 疎通テスト送信エリア -->
-                <div style="margin-bottom: 18px; padding: 14px; background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 8px;">
+                <div style="margin-bottom: 18px; padding: 14px; background: #faf5ff; border: 1px solid #e9d5ff; border-radius: var(--radius-md);">
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px;">
                         <div>
                             <div style="font-weight: bold; font-size: 12.5px; color: #6b21a8;">
@@ -708,22 +708,22 @@
                                 入力されたプロラインWebhook URLへテスト通信を行い、正常に応答が返るか検証します。
                             </div>
                         </div>
-                        <button type="button" class="btn-secondary" id="testProlineRelayBtn" style="background: #7c3aed; color: #fff; border: none; font-size: 12px; font-weight: bold; padding: 8px 14px; white-space: nowrap; cursor: pointer; border-radius: 6px;">
+                        <button type="button" class="btn-secondary" id="testProlineRelayBtn" style="background: #7c3aed; color: #fff; border: none; font-size: 12px; font-weight: bold; padding: 8px 14px; white-space: nowrap; cursor: pointer; border-radius: var(--radius-sm);">
                             <i class="fa-solid fa-rotate"></i> 疎通テスト
                         </button>
                     </div>
-                    <div id="prolineTestResultBanner" style="display: none; padding: 8px 12px; border-radius: 6px; font-size: 11.5px; line-height: 1.5; margin-top: 8px;"></div>
+                    <div id="prolineTestResultBanner" style="display: none; padding: 8px 12px; border-radius: var(--radius-sm); font-size: 11.5px; line-height: 1.5; margin-top: 8px;"></div>
                 </div>
 
                 <!-- LINE Developers 設定手順リンク/ガイダンス -->
-                <div style="margin-bottom: 16px; padding: 12px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 11.5px; color: #475569;">
+                <div style="margin-bottom: 16px; padding: 12px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); font-size: 11.5px; color: #475569;">
                     <div style="font-weight: bold; color: #0f172a; margin-bottom: 4px;">
                         <i class="fa-brands fa-line" style="color: #06C755;"></i> LINE Developers での設定
                     </div>
                     <ol style="margin: 0; padding-left: 18px; line-height: 1.6;">
                         <li><a href="https://developers.line.biz/" target="_blank" style="color: #4f46e5; text-decoration: underline;">LINE Developers コンソール</a> にログイン。</li>
                         <li>「Messaging API設定」タブの <strong>Webhook URL</strong> に以下を登録します：<br>
-                            <code id="displayOurWebhookUrl" style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 11px; user-select: all;">https://あなたのドメイン/webhook.php</code>
+                            <code id="displayOurWebhookUrl" style="background: #e2e8f0; padding: 2px 6px; border-radius: var(--radius-xs); font-size: 11px; user-select: all;">https://あなたのドメイン/webhook.php</code>
                         </li>
                         <li>「Webhookの利用」を <strong>ON</strong> にします。</li>
                     </ol>
@@ -737,7 +737,7 @@
                             <i class="fa-solid fa-rotate-right"></i> 更新
                         </button>
                     </label>
-                    <div id="prolineRecentLogsWrap" style="background: #0f172a; color: #a5b4fc; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 11px; max-height: 120px; overflow-y: auto; white-space: pre-wrap;">転送ログを読み込み中...</div>
+                    <div id="prolineRecentLogsWrap" style="background: #0f172a; color: #a5b4fc; padding: 10px; border-radius: var(--radius-sm); font-family: monospace; font-size: 11px; max-height: 120px; overflow-y: auto; white-space: pre-wrap;">転送ログを読み込み中...</div>
                 </div>
             </div>
             <div class="modal-footer" style="padding: 12px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
@@ -757,7 +757,7 @@
         <div class="modal-card" style="max-width: 960px; width: 95%; max-height: 92vh; display: flex; flex-direction: column;">
             <div class="modal-header" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #fff; flex-shrink: 0;">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(255, 255, 255, 0.2); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                    <div style="width: 38px; height: 38px; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.2); display: flex; align-items: center; justify-content: center; font-size: 20px;">
                         <i class="fa-solid fa-bullhorn"></i>
                     </div>
                     <div>
@@ -772,7 +772,7 @@
                 <!-- 左カラム: 設定フォーム & テンプレート選択 -->
                 <div style="display: flex; flex-direction: column; gap: 14px;">
                     <!-- 配信対象選択 -->
-                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px;">
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 10px 14px;">
                         <label style="font-weight: 700; font-size: 12px; color: #334155; margin-bottom: 6px; display: block;">
                             <i class="fa-solid fa-users" style="color: #0284c7; margin-right: 4px;"></i> 配信対象
                         </label>
@@ -787,7 +787,7 @@
                             </label>
                         </div>
                         <div id="kbUserSelectWrap" style="display: none; margin-top: 8px;">
-                            <select id="kbTargetUserSelect" style="width: 100%; padding: 6px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+                            <select id="kbTargetUserSelect" style="width: 100%; padding: 6px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); background: #fff;">
                                 <option value="">受講生を選択してください...</option>
                             </select>
                         </div>
@@ -807,15 +807,15 @@
                     </div>
 
                     <!-- 記事編集フォーム -->
-                    <div style="display: flex; flex-direction: column; gap: 10px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;">
+                    <div style="display: flex; flex-direction: column; gap: 10px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 12px;">
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                             <div>
                                 <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">カテゴリ名</label>
-                                <input type="text" id="kbCategoryInput" value="安心・セキュリティ" maxlength="20" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                <input type="text" id="kbCategoryInput" value="安心・セキュリティ" maxlength="20" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
                             </div>
                             <div>
                                 <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">テーマカラー</label>
-                                <select id="kbColorSelect" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+                                <select id="kbColorSelect" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); background: #fff;">
                                     <option value="#e11d48">🔴 警告・安心対策 (赤)</option>
                                     <option value="#0284c7">🔵 スマホ便利ワザ (青)</option>
                                     <option value="#059669">🟢 パソコン快適 (緑)</option>
@@ -827,12 +827,12 @@
 
                         <div>
                             <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">記事タイトル（見出し）</label>
-                            <input type="text" id="kbTitleInput" placeholder="例: 🚨 パソコンの「ウイルス感染警告」は詐欺！慌てず閉じる方法" style="width: 100%; box-sizing: border-box; padding: 8px 10px; font-size: 13px; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px;">
+                            <input type="text" id="kbTitleInput" placeholder="例: 🚨 パソコンの「ウイルス感染警告」は詐欺！慌てず閉じる方法" style="width: 100%; box-sizing: border-box; padding: 8px 10px; font-size: 13px; font-weight: bold; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
                         </div>
 
                         <div>
                             <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">サブタイトル / 要約</label>
-                            <input type="text" id="kbSubtitleInput" placeholder="例: 画面に突然警告音や電話番号が出ても絶対に電話をかけてはいけません！" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                            <input type="text" id="kbSubtitleInput" placeholder="例: 画面に突然警告音や電話番号が出ても絶対に電話をかけてはいけません！" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
                         </div>
 
                         <div>
@@ -840,39 +840,39 @@
                                 <span>覚えておきたいポイント（3点）</span>
                             </label>
                             <div style="display: flex; flex-direction: column; gap: 6px;">
-                                <input type="text" id="kbPoint1" placeholder="ポイント①: 画面の電話番号には絶対に電話しない" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px;">
-                                <input type="text" id="kbPoint2" placeholder="ポイント②: キーボードの「Esc」長押し、または「Ctrl+Alt+Delete」で閉じる" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px;">
-                                <input type="text" id="kbPoint3" placeholder="ポイント③: 不安な時は電源ボタン長押しで強制終了して教室へ相談する" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                <input type="text" id="kbPoint1" placeholder="ポイント①: 画面の電話番号には絶対に電話しない" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
+                                <input type="text" id="kbPoint2" placeholder="ポイント②: キーボードの「Esc」長押し、または「Ctrl+Alt+Delete」で閉じる" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
+                                <input type="text" id="kbPoint3" placeholder="ポイント③: 不安な時は電源ボタン長押しで強制終了して教室へ相談する" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
                             </div>
                         </div>
 
                         <div>
                             <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">👩‍🏫 教室スタッフからのアドバイス</label>
-                            <textarea id="kbAdviceInput" rows="2" placeholder="例: 「警告画面が消えない」「操作が不安」という時は、触らずにそのまま教室へお持ちください。スタッフが一緒に確認します！" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px; resize: vertical;"></textarea>
+                            <textarea id="kbAdviceInput" rows="2" placeholder="例: 「警告画面が消えない」「操作が不安」という時は、触らずにそのまま教室へお持ちください。スタッフが一緒に確認します！" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); resize: vertical;"></textarea>
                         </div>
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                             <div>
                                 <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">メインボタン (予約URL直結)</label>
-                                <input type="text" id="kbBtn1Label" value="📅 教室で直接相談・予約する" maxlength="20" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                <input type="text" id="kbBtn1Label" value="📅 教室で直接相談・予約する" maxlength="20" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
                             </div>
                             <div>
                                 <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">リンク先 URL</label>
-                                <input type="url" id="kbBtn1Url" value="https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11px; font-family: monospace; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                <input type="url" id="kbBtn1Url" value="https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1" style="width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 11px; font-family: monospace; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- 右カラム: リアルタイムLINE受信プレビュー -->
-                <div style="display: flex; flex-direction: column; background: #849ebf; border-radius: 12px; padding: 14px; box-shadow: inset 0 2px 6px rgba(0,0,0,0.15);">
+                <div style="display: flex; flex-direction: column; background: #849ebf; border-radius: var(--radius-md); padding: 14px; box-shadow: inset 0 2px 6px rgba(0,0,0,0.15);">
                     <div style="font-size: 11px; font-weight: 700; color: #ffffff; text-align: center; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 6px;">
                         <i class="fa-brands fa-line" style="font-size: 16px; color: #06C755;"></i>
                         <span>LINE受講生の受信画面プレビュー</span>
                     </div>
 
                     <!-- スマホ風カードプレビュー -->
-                    <div class="kb-preview-card" style="background: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; flex-direction: column;">
+                    <div class="kb-preview-card" style="background: #ffffff; border-radius: var(--radius-lg); overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; flex-direction: column;">
                         <!-- ヘッダー & 本文 -->
                         <div style="padding: 16px;">
                             <div style="font-size: 11px; font-weight: 800; color: #0284c7; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
@@ -888,7 +888,7 @@
                             <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 8px 0;">
 
                             <!-- ポイントボックス -->
-                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-top: 8px;">
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 10px; margin-top: 8px;">
                                 <div style="font-size: 10px; font-weight: bold; color: #64748b; margin-bottom: 6px;">
                                     【覚えておきたいポイント】
                                 </div>
@@ -909,7 +909,7 @@
                             </div>
 
                             <!-- 先生のアドバイス -->
-                            <div id="prevKbAdviceBox" style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 8px 10px; margin-top: 8px;">
+                            <div id="prevKbAdviceBox" style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: var(--radius-sm); padding: 8px 10px; margin-top: 8px;">
                                 <div style="font-size: 10px; font-weight: bold; color: #b45309;">
                                     👩‍🏫 教室スタッフからのアドバイス
                                 </div>
@@ -925,13 +925,13 @@
 
                         <!-- ボタン部 -->
                         <div style="padding: 10px 14px; background: #ffffff; border-top: 1px solid #f1f5f9; display: flex; flex-direction: column; gap: 6px;">
-                            <button type="button" id="prevKbBtn1" style="background: #e11d48; color: #fff; border: none; font-weight: 700; font-size: 12px; padding: 8px; border-radius: 6px; cursor: default; width: 100%;">
+                            <button type="button" id="prevKbBtn1" style="background: #e11d48; color: #fff; border: none; font-weight: 700; font-size: 12px; padding: 8px; border-radius: var(--radius-sm); cursor: default; width: 100%;">
                                 📅 教室で直接相談・予約する
                             </button>
-                            <button type="button" id="prevKbBtnMore" style="background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; font-weight: 600; font-size: 11px; padding: 6px; border-radius: 6px; cursor: default; width: 100%;">
+                            <button type="button" id="prevKbBtnMore" style="background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; font-weight: 600; font-size: 11px; padding: 6px; border-radius: var(--radius-sm); cursor: default; width: 100%;">
                                 📚 その他のお役立ち情報
                             </button>
-                            <button type="button" id="prevKbBtn2" style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-weight: 600; font-size: 11px; padding: 6px; border-radius: 6px; cursor: default; width: 100%;">
+                            <button type="button" id="prevKbBtn2" style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-weight: 600; font-size: 11px; padding: 6px; border-radius: var(--radius-sm); cursor: default; width: 100%;">
                                 💬 LINEで質問・相談する
                             </button>
                         </div>
@@ -957,6 +957,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260910_multi_account_v1"></script>
+    <script src="admin.js?v=20260910_radius_unify_v1"></script>
 </body>
 </html>

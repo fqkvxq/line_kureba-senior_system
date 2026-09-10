@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260910_multi_account_v1">
+    <link rel="stylesheet" href="manual.css?v=20260910_radius_unify_v1">
 </head>
 <body>
     <!-- ログインモーダル -->
@@ -214,7 +214,7 @@
 
                     <p>LINE公式アカウントのWebhook URLは1アカウントにつき1箇所しか指定できません。そこで本システムを<strong>「プロラインの手前に挟む中継プロキシ」</strong>として配置します。</p>
 
-                    <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 16px; margin: 16px 0; font-family: monospace; font-size: 13px; line-height: 1.6; color: #1e293b;">
+                    <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: var(--radius-md); padding: 16px; margin: 16px 0; font-family: monospace; font-size: 13px; line-height: 1.6; color: #1e293b;">
                         【メッセージ・イベントの流れ】<br>
                         受講生のLINE ➡ <strong>[LINE公式アカウント]</strong><br>
                         &nbsp;&nbsp;⬇ (Messaging API Webhook)<br>
@@ -552,7 +552,7 @@
                                     <li><strong>📅 レッスン予約・💻 受講生マイカルテ</strong>: プロライン個別自動ログイン対応URLやカルテ画面へスムーズに誘導できます。</li>
                                     <li><strong>💬 教室スタッフに質問・相談</strong>: 受講生からのお問い合わせ受付カードを返信します。</li>
                                 </ul>
-                                <div class="tip-box" style="margin-top:8px; background:#eff6ff; border-left:4px solid #3b82f6; padding:8px 12px; border-radius:4px; font-size:12px;">
+                                <div class="tip-box" style="margin-top:8px; background:#eff6ff; border-left:4px solid #3b82f6; padding:8px 12px; border-radius: var(--radius-xs); font-size:12px;">
                                     <strong>💡 操作のコツ（簡単プリセット選択）:</strong><br>
                                     アクション種別で「⚡ ボット機能起動」を選択すると、「<strong>💡 シニアお役立ち情報・知恵袋から選ぶ</strong>」ドロップダウンまたはクイックチップが表示されます。読ませたいテーマを選ぶだけで、送信パラメータが自動セットされます（管理者への通知音を防止するサイレント送信仕様）。
                                 </div>
@@ -634,7 +634,7 @@
                                 <h4>厳選20種プリセットからワンクリック選択（全20テーマ完備）</h4>
                                 <p>シニア受講生が日常生活で直面しやすく、教室で最も相談が多いテーマを厳選した<strong>全20テーマの専用テンプレート</strong>を標準装備しています：</p>
                                 
-                                <div style="margin-top: 8px; margin-bottom: 8px; padding: 10px; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px;">
+                                <div style="margin-top: 8px; margin-bottom: 8px; padding: 10px; background: #fff1f2; border: 1px solid #fecdd3; border-radius: var(--radius-md);">
                                     <strong style="color: #9f1239; font-size: 13px;"><i class="fa-solid fa-shield-halved"></i> 🚨【防犯・トラブル・緊急対策編】（全10選）</strong><br>
                                     <span class="badge" style="background:#e11d48;color:#fff;margin:2px;">🚨 パソコン偽警告詐欺対策</span>
                                     <span class="badge" style="background:#ea580c;color:#fff;margin:2px;">⚠️ 偽不在SMS・フィッシング</span>
@@ -648,7 +648,7 @@
                                     <span class="badge" style="background:#7c3aed;color:#fff;margin:2px;">💬 LINE誤送信・24時間送信取消</span>
                                 </div>
 
-                                <div style="margin-top: 8px; margin-bottom: 8px; padding: 10px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px;">
+                                <div style="margin-top: 8px; margin-bottom: 8px; padding: 10px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: var(--radius-md);">
                                     <strong style="color: #0369a1; font-size: 13px;"><i class="fa-solid fa-mobile-screen-button"></i> 📱💻【スマホ・PC快適便利ワザ編】（全10選）</strong><br>
                                     <span class="badge" style="background:#0284c7;color:#fff;margin:2px;">📱 スマホ文字を大きくする設定</span>
                                     <span class="badge" style="background:#7c3aed;color:#fff;margin:2px;">💬 LINE文字サイズの特大化</span>
@@ -704,15 +704,15 @@
                                 <strong>1. 全20テーマの2連カルーセル一覧</strong>：リッチメニューやお役立ちカードの「その他のお役立ち情報」を押すと、<strong>🚨防犯・トラブル対策編（10選）</strong>と<strong>📱💻スマホ・PC快適便利ワザ編（10選）</strong>の2通の横スクロールカルーセルが届き、見出し・要点2点・「詳しく読む」ボタンを見比べながらスムーズに探せます。<br>
                                 <strong>2. 常時表示される丸角クイックリプライ</strong>：画面最下部に人気の11テーマ＋「💬教室に質問・相談」＋「📚全20テーマ一覧」が常時表示され、受講生がタップするだけで次々と知識を深められます（管理者への通知音を鳴らさないサイレント送信仕様）。<br>
                                 <strong>3. 自動応答キーワード</strong>：受講生がトーク画面で「お役立ち」「豆知識」「PDF」「パソコン」「スマホ」などと入力した場合も、自動的にお役立ち案内が返信されます。</p>
-                                <div class="tip-box" style="margin-top:12px;background:#fdf4ff;border-left:4px solid #c026d3;padding:10px 14px;border-radius:4px;">
+                                <div class="tip-box" style="margin-top:12px;background:#fdf4ff;border-left:4px solid #c026d3;padding:10px 14px;border-radius: var(--radius-xs);">
                                     <strong style="color:#86198f;">🎠 横スワイプで見渡せる「2連カルーセル一覧表示」機能:</strong><br>
                                     「📚 全20テーマ一覧」ボタンを押した際や「お役立ち」と送信した際は、<strong>🚨 防犯・トラブル対策編（10選）</strong>と<strong>📱💻 スマホ・PC快適便利ワザ編（10選）</strong>の2連カルーセルで届きます。LINEのカルーセル上限（1通12バブル）を美しくカテゴリ分割してクリアし、シニアの方でも指で左右にスワイプしながら各テーマのポイント要約を見比べ、「📖 詳しく読む」ボタンから瞬時に大文字解説カードを開くことができます。
                                 </div>
-                                <div class="tip-box" style="margin-top:8px;background:#f0fdf4;border-left:4px solid #10b981;padding:10px 14px;border-radius:4px;">
+                                <div class="tip-box" style="margin-top:8px;background:#f0fdf4;border-left:4px solid #10b981;padding:10px 14px;border-radius: var(--radius-xs);">
                                     <strong style="color:#065f46;">🔇 管理者側通知音を防止するサイレント設計:</strong><br>
                                     クイックリプライボタンやカルーセル内の「詳しく読む」ボタンは、タップしても受講生がトーク画面で発言（テキスト送信）した扱いにならない<strong>サイレントPostback（裏側通信）仕様</strong>となっています。そのため、受講生が記事をどんどん読んでも管理者にピコンと着信通知音が鳴り続ける心配はありません。
                                 </div>
-                                <div class="tip-box" style="margin-top:8px;background:#eff6ff;border-left:4px solid #3b82f6;padding:10px 14px;border-radius:4px;">
+                                <div class="tip-box" style="margin-top:8px;background:#eff6ff;border-left:4px solid #3b82f6;padding:10px 14px;border-radius: var(--radius-xs);">
                                     <strong style="color:#1e40af;">🌟 応答後も消えない「常時表示」安心仕様:</strong><br>
                                     LINEの標準仕様では新しいメッセージを受信するとクイックリプライが消えてしまいますが、本システムでは<strong>ボットからのすべての返信応答（質問受付、カルテ案内、お役立ちカード等）の末尾にクイックリプライを自動補完・再生成</strong>しています。そのため、受講生が何通やり取りしてもボタンが消えず、常に画面最下部から次のテーマをワンタップで読み進められます。
                                 </div>
@@ -741,7 +741,7 @@
                                 <h4>ヘッダーの「アカウント切替」からワンクリックで切り替え</h4>
                                 <p>管理画面（受講生カルテ）、リッチメニュー管理、操作マニュアルの画面上部ヘッダーに配置された<strong>「アカウント切替」ドロップダウン</strong>から、操作対象のLINE公式アカウント（例: シニア向けパソコン教室、アップファーレン等）をいつでも瞬時に切り替えることができます。<br>
                                 切り替えると、顧客一覧・リッチメニュー・店舗ロゴ・タイトルバッジが連動してそのアカウント専用のものに自動更新されます。選択したアカウントはブラウザに自動記憶され、次回ログイン時も直近のアカウントが維持されます。</p>
-                                <div class="tip-box" style="margin-top:8px;background:#eff6ff;border-left:4px solid #3b82f6;padding:10px 14px;border-radius:4px;">
+                                <div class="tip-box" style="margin-top:8px;background:#eff6ff;border-left:4px solid #3b82f6;padding:10px 14px;border-radius: var(--radius-xs);">
                                     <strong style="color:#1e40af;">💡 画面リロード不要のスマート同期:</strong><br>
                                     アカウントを切り替えると、ページ全体を再読み込みすることなく、内部通信が自動的に対象アカウントへ切り替わり、該当アカウントの最新データが即時再読み込みされます。
                                 </div>
@@ -779,7 +779,7 @@
                             <div class="step-body">
                                 <h4>新しいLINE公式アカウントを追加したい場合の手順</h4>
                                 <p>今後さらに新しいLINE公式アカウントを増やしたい場合は、サーバー上の設定ファイル <code>config.php</code> 内にある <code>$SYSTEM_LINE_ACCOUNTS</code> 配列にアカウント設定を追記するだけで完了します：</p>
-                                <pre style="background:#1e293b;color:#f8fafc;padding:12px;border-radius:8px;font-size:12px;overflow-x:auto;margin:8px 0;"><code>'new_account_key' =&gt; [
+                                <pre style="background:#1e293b;color:#f8fafc;padding:12px;border-radius: var(--radius-md);font-size:12px;overflow-x:auto;margin:8px 0;"><code>'new_account_key' =&gt; [
     'name' =&gt; '新しい店舗・教室名',
     'subtitle' =&gt; '店舗サブタイトル',
     'badge_icon' =&gt; 'fa-store', // FontAwesomeアイコン
@@ -865,6 +865,14 @@
                                 <p>当システムはWebサーバー設定（`.htaccess`, `.user.ini`）、PHPスクリプト、データベース（SQLite）のすべてで<strong>日本標準時（JST / Asia/Tokyo）</strong>に統一されています。受講生のLINE操作やリマインド送信など、すべて日本時間で正確に記録・配信されます。</p>
                             </div>
                         </div>
+
+                        <div class="step-card">
+                            <div class="step-number">Q</div>
+                            <div class="step-body">
+                                <h4>管理画面の角丸（デザインシステム）はどのように統一されていますか？</h4>
+                                <p>システム全体の視認性と操作性を高めるため、CSSデザインシステムトークン（<code>--radius-xs: 4px</code>, <code>--radius-sm: 8px</code>, <code>--radius-md: 12px</code>, <code>--radius-lg: 16px</code>, <code>--radius-xl: 20px</code>, <code>--radius-full: 9999px</code>）を全画面（受講生カルテ、リッチメニュー作成、操作マニュアル）に完全標準化しています。ボタンや入力枠、モーダル、カードの丸みが美しく統一され、直感的で洗練されたUIを提供します。</p>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -876,6 +884,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260910_multi_account_v1"></script>
+    <script src="manual.js?v=20260910_radius_unify_v1"></script>
 </body>
 </html>

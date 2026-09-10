@@ -880,10 +880,10 @@ function renderTable() {
                             <div class="cust-uid" style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
                                 <span>${escapeHtml(c.user_id || '')}</span>
                                 ${c.user_id && c.user_id.startsWith('U') ? `
-                                    <button class="btn-copy-uid" title="UIDをクリップボードにコピー" onclick="event.stopPropagation(); copyCustUid('${escapeHtml(c.user_id)}');" style="background: none; border: none; color: #64748b; cursor: pointer; padding: 2px 4px; font-size: 11px; border-radius: 4px;" onmouseover="this.style.color='#1e293b'; this.style.background='#f1f5f9';" onmouseout="this.style.color='#64748b'; this.style.background='none';">
+                                    <button class="btn-copy-uid" title="UIDをクリップボードにコピー" onclick="event.stopPropagation(); copyCustUid('${escapeHtml(c.user_id)}');" style="background: none; border: none; color: #64748b; cursor: pointer; padding: 2px 4px; font-size: 11px; border-radius: var(--radius-xs);" onmouseover="this.style.color='#1e293b'; this.style.background='#f1f5f9';" onmouseout="this.style.color='#64748b'; this.style.background='none';">
                                         <i class="fa-regular fa-copy"></i>
                                     </button>
-                                    <button class="btn-add-admin-uid" title="このアカウントを管理者LINE通知先に登録" onclick="event.stopPropagation(); addAdminUidDirectly('${escapeHtml(c.user_id)}', '${escapeHtml(c.user_name || '')}');" style="background: none; border: none; color: #0284c7; cursor: pointer; padding: 2px 4px; font-size: 11px; border-radius: 4px;" onmouseover="this.style.color='#0369a1'; this.style.background='#e0f2fe';" onmouseout="this.style.color='#0284c7'; this.style.background='none';">
+                                    <button class="btn-add-admin-uid" title="このアカウントを管理者LINE通知先に登録" onclick="event.stopPropagation(); addAdminUidDirectly('${escapeHtml(c.user_id)}', '${escapeHtml(c.user_name || '')}');" style="background: none; border: none; color: #0284c7; cursor: pointer; padding: 2px 4px; font-size: 11px; border-radius: var(--radius-xs);" onmouseover="this.style.color='#0369a1'; this.style.background='#e0f2fe';" onmouseout="this.style.color='#0284c7'; this.style.background='none';">
                                         <i class="fa-solid fa-bell"></i> 通知先に登録
                                     </button>
                                 ` : ''}
