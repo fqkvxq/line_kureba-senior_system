@@ -176,15 +176,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
                     'user_name' => '受講生（新規友だち）'
                 ], $db);
             } elseif ($type === 'message') {
-                $msgType = $event['message']['type'] ?? '';
+                $msgType = $event['message']['type'] ?? 'text';
+                $userText = '';
+                $preview = '';
+                $payloadJson = json_encode($event['message'] ?? [], JSON_UNESCAPED_UNICODE);
+
                 if ($msgType === 'text') {
                     $userText = trim($event['message']['text'] ?? '');
                     writeDebugLog("テキスト受信", ['text' => $userText, 'userId' => $userId]);
-                    $preview = mb_substr($userText, 0, 45);
-                    recordCustomerInteraction($db, $userId, 'user_message', "💬 {$preview}");
+                    $preview = "💬 " . mb_substr($userText, 0, 45);
+                } elseif ($msgType === 'sticker') {
+                    $userText = '🎨 スタンプを受信しました';
+                    $preview = '🎨 スタンプを受信';
+                    writeDebugLog("スタンプ受信", ['userId' => $userId]);
+                } elseif ($msgType === 'image') {
+                    $userText = '📷 画像を受信しました';
+                    $preview = '📷 画像を受信';
+                    writeDebugLog("画像受信", ['userId' => $userId]);
+                } else {
+                    $userText = '📎 メッセージを受信しました';
+                    $preview = '📎 メッセージを受信';
+                    writeDebugLog("その他メッセージ受信", ['msgType' => $msgType, 'userId' => $userId]);
+                }
 
-                    // プロラインが有効な場合はプロライン側がチャット・ステップ配信・自動応答を行うため、
-                    // ReplyTokenの二重消費を防ぐために本システムの自動テキスト返信はスキップ
+                // 1. チャットメッセージ履歴テーブルへ保存
+                try {
+                    $nowJst = date('Y-m-d H:i:s');
+                    $chatStmt = $db->prepare("
+                        INSERT INTO chat_messages (
+                            user_id, direction, message_type, message_text, payload_json, is_read, created_at
+                        ) VALUES (
+                            :uid, 'incoming', :mtype, :mtext, :payload, 0, :now
+                        )
+                    ");
+                    $chatStmt->execute([
+                        ':uid' => $userId,
+                        ':mtype' => $msgType,
+                        ':mtext' => $userText,
+                        ':payload' => $payloadJson,
+                        ':now' => $nowJst
+                    ]);
+                } catch (Throwable $chatEx) {
+                    writeDebugLog("chat_messages 保存エラー", ['error' => $chatEx->getMessage()]);
+                }
+
+                // 2. 顧客カルテの最終やり取り更新
+                recordCustomerInteraction($db, $userId, 'user_message', $preview);
+
+                // 3. Discord Webhook通知送信
+                try {
+                    $cStmt = $db->prepare("SELECT user_name, picture_url FROM customer_cars WHERE user_id = :uid LIMIT 1");
+                    $cStmt->execute([':uid' => $userId]);
+                    $cRow = $cStmt->fetch(PDO::FETCH_ASSOC);
+                    $userName = !empty($cRow['user_name']) ? $cRow['user_name'] : '受講生';
+                    $picUrl = $cRow['picture_url'] ?? '';
+
+                    sendDiscordChatMessageNotification([
+                        'user_id' => $userId,
+                        'user_name' => $userName,
+                        'picture_url' => $picUrl,
+                        'message_text' => $userText,
+                        'message_type' => $msgType
+                    ], null, $db);
+                } catch (Throwable $disEx) {
+                    writeDebugLog("Discord新着メッセージ通知エラー", ['error' => $disEx->getMessage()]);
+                }
+
+                // 4. プロライン非中継時の自動返信（中継時はプロラインへ委譲）
+                if ($msgType === 'text') {
                     if ($isProlineActive) {
                         writeDebugLog("プロライン中継モードのため本システムの自動テキスト返信はスキップ（プロラインへ委譲）");
                     } else {
@@ -192,15 +251,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
                             handleTextMessage($db, $replyToken, $userText, $userId);
                         }
                     }
-                } elseif ($msgType === 'sticker') {
-                    writeDebugLog("スタンプ受信", ['userId' => $userId]);
-                    recordCustomerInteraction($db, $userId, 'user_message', "🎨 スタンプを受信");
-                } elseif ($msgType === 'image') {
-                    writeDebugLog("画像受信", ['userId' => $userId]);
-                    recordCustomerInteraction($db, $userId, 'user_message', "📷 画像を受信");
-                } else {
-                    writeDebugLog("その他メッセージ受信", ['msgType' => $msgType, 'userId' => $userId]);
-                    recordCustomerInteraction($db, $userId, 'user_message', "📎 メッセージを受信");
                 }
             } elseif ($type === 'postback') {
                 $postbackData = $event['postback']['data'] ?? '';

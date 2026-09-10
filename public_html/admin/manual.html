@@ -96,7 +96,9 @@
                         <li class="toc-item"><a href="#sec-admin-notify"><i class="fa-solid fa-bell" style="color:#0284c7;"></i> 9. 管理者向けLINE通知設定</a></li>
                         <li class="toc-item"><a href="#sec-knowledge-broadcast"><i class="fa-solid fa-lightbulb" style="color:#f59e0b;"></i> 10. シニア向けお役立ち情報 配信スタジオ</a></li>
                         <li class="toc-item"><a href="#sec-multi-account"><i class="fa-solid fa-arrows-rotate" style="color:#6366f1;"></i> 11. 複数LINE公式アカウントの切り替え・運用</a></li>
-                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 12. よくある質問・トラブルシューティング</a></li>
+                        <li class="toc-item"><a href="#sec-line-chat"><i class="fa-solid fa-comments" style="color:#06C755;"></i> 12. 個別LINEチャット・メッセージ返信</a></li>
+                        <li class="toc-item"><a href="#sec-discord-notify"><i class="fa-brands fa-discord" style="color:#5865F2;"></i> 13. Discord通知設定</a></li>
+                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 14. よくある質問・トラブルシューティング</a></li>
                     </ul>
                 </div>
             </aside>
@@ -159,6 +161,26 @@
                         <div class="summary-card-content">
                             <h3>お役立ち情報配信</h3>
                             <p>シニアに優しい大文字カード（Flex）でスマホ・PC便利ワザや詐欺対策を一斉・個別配信。</p>
+                        </div>
+                    </a>
+
+                    <a href="#sec-line-chat" class="summary-card">
+                        <div class="summary-icon-wrap" style="background: #f0fdf4; color: #16a34a;">
+                            <i class="fa-solid fa-comments"></i>
+                        </div>
+                        <div class="summary-card-content">
+                            <h3>個別チャット・返信</h3>
+                            <p>受講生からのLINEメッセージを管理画面で直接確認し、Pushメッセージで即座に返信対応。</p>
+                        </div>
+                    </a>
+
+                    <a href="#sec-discord-notify" class="summary-card">
+                        <div class="summary-icon-wrap" style="background: #eef2ff; color: #5865F2;">
+                            <i class="fa-brands fa-discord"></i>
+                        </div>
+                        <div class="summary-card-content">
+                            <h3>Discord通知</h3>
+                            <p>メッセージ受信や友だち追加、予約相談をDiscordチャンネルへリアルタイム通知＆直リンク返信。</p>
                         </div>
                     </a>
                 </div>
@@ -801,14 +823,125 @@
                     </div>
                 </section>
 
-                <!-- 12. よくある質問・トラブルシューティング -->
+                <!-- 12. 個別LINEチャット・メッセージ返信 -->
+                <section class="manual-section" id="sec-line-chat">
+                    <div class="section-header">
+                        <div class="section-header-icon" style="background: #f0fdf4; color: #16a34a;">
+                            <i class="fa-solid fa-comments"></i>
+                        </div>
+                        <div class="section-header-text">
+                            <h2>12. 個別LINEチャット・メッセージ返信</h2>
+                            <p>受講生との1対1トーク履歴確認・直接Pushメッセージ返信機能の使い方</p>
+                        </div>
+                    </div>
+
+                    <p>受講生からLINE公式アカウントへ届いたメッセージを管理画面上でリアルタイムに閲覧し、スタッフから受講生のLINEトーク画面へ直接返信メッセージを送信できる機能です。<br>
+                    プロラインの自動応答やステップ配信と一切競合せず、管理画面からいつでもスムーズな受講生サポートが可能です。</p>
+
+                    <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <div class="step-body">
+                                <h4>新着メッセージの確認と未読バッジ</h4>
+                                <p>受講生からメッセージが届くと、受講生一覧テーブルの受講生名横および「💬 チャット」ボタンに赤色の<strong>未読バッジ（件数）</strong>が表示されます。<br>
+                                「最終やり取り」カラムにもメッセージ内容のプレビューと受信日時が自動反映されます。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <div class="step-body">
+                                <h4>チャット画面の起動と会話履歴の確認</h4>
+                                <p>対象受講生の行にある「💬 チャット」ボタンをクリックすると、LINE風のチャットモーダルが開きます。<br>
+                                ・受講生のメッセージは左側（白吹き出し）、スタッフからの返信は右側（緑吹き出し）に時系列で表示されます。<br>
+                                ・画像やスタンプメッセージも分かりやすく表示され、画像をクリックすると拡大表示できます。<br>
+                                ・チャット画面を開いた時点で未読フラグは自動的に既読として処理されます。<br>
+                                ・チャットモーダルを開いている間は10秒ごとに自動更新（ポーリング）され、受講生からの最新メッセージが即座に反映されます。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">3</div>
+                            <div class="step-body">
+                                <h4>メッセージの送信とクイック定型文</h4>
+                                <p>画面下のテキストエリアにメッセージを入力し、<strong>紙飛行機ボタン</strong>をクリックするか、キーボードの <code>Ctrl + Enter</code>（Macは <code>Cmd + Enter</code>）を押すと受講生のLINEトーク画面へプッシュ送信されます。<br>
+                                <strong>便利な定型文チップ</strong>（「挨拶」「確認中」「予約確認」「フォロー」）をクリックすると、ワンタップでよく使う返信文面を入力欄に自動挿入できます。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="manual-alert-box info" style="margin-top: 16px;">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <div>
+                            <strong>プロライン共存の仕組み</strong><br>
+                            本機能は、LINE Messaging APIのPush Messageを使用しています。受講生からのメッセージ受信時にもReplyTokenを消費しないため、プロラインの自動返信・ステップ配信・予約シナリオの動作を一切妨げません。
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 13. Discord通知設定 -->
+                <section class="manual-section" id="sec-discord-notify">
+                    <div class="section-header">
+                        <div class="section-header-icon" style="background: #eef2ff; color: #5865F2;">
+                            <i class="fa-brands fa-discord"></i>
+                        </div>
+                        <div class="section-header-text">
+                            <h2>13. Discord通知設定</h2>
+                            <p>LINEメッセージ受信や友だち追加、予約相談をDiscordチャンネルへリアルタイム通知</p>
+                        </div>
+                    </div>
+
+                    <p>受講生からの新着メッセージや新規友だち追加、予約相談リクエストを、教室スタッフが使用しているDiscordサーバーの指定チャンネルへ即座にリッチ通知します。<br>
+                    通知内には対象受講生のチャット返信直リンクが含まれており、Discordの通知をクリックするだけで管理画面のチャット画面へジャンプして即座に返信できます。</p>
+
+                    <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <div class="step-body">
+                                <h4>Discord Webhook URLの取得</h4>
+                                <p>1. 通知を受信したいDiscordサーバーの通知先チャンネルの「⚙ チャンネル設定」を開きます。<br>
+                                2. 左メニュー「連携」→「ウェブフック」を選択し、「新しいウェブフック」を作成します。<br>
+                                3. お好みの名前（例: 「教室LINE通知Bot」）を設定し、「ウェブフックURLをコピー」をクリックします。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <div class="step-body">
+                                <h4>管理画面でのWebhook登録と通知イベント選択</h4>
+                                <p>1. 管理画面上段のツールバーにある「<span style="color: #5865F2; font-weight: bold;"><i class="fa-brands fa-discord"></i> Discord通知</span>」ボタンをクリックします。<br>
+                                2. コピーしたDiscord Webhook URLを貼り付けます。<br>
+                                3. 通知したいイベント（新着LINEメッセージ、新規友だち追加、予約・個別相談）のON/OFFチェックボックスを選択します。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">3</div>
+                            <div class="step-body">
+                                <h4>テスト通知送信と設定保存</h4>
+                                <p>「テスト通知を送信」ボタンをクリックすると、Discordチャンネルへ即座にテストEmbedメッセージが送信されます。<br>
+                                Discord上にメッセージが届いたことを確認したら、「設定を保存」ボタンをクリックして完了です。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="manual-alert-box tip" style="margin-top: 16px;">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <div>
+                            <strong>ワンクリック返信機能</strong><br>
+                            Discordに届いた通知の「💬 管理画面でチャットを開く」リンクをクリックすると、ブラウザで管理画面が開き、対象の受講生とのチャットモーダルが自動的にポップアップします。急ぎのお問い合わせにも1クリックで対応できます。
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 14. よくある質問・トラブルシューティング -->
                 <section class="manual-section" id="sec-faq">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #fef2f2; color: #ef4444;">
                             <i class="fa-solid fa-circle-question"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>12. よくある質問・トラブルシューティング</h2>
+                            <h2>14. よくある質問・トラブルシューティング</h2>
                             <p>困ったときの解決方法</p>
                         </div>
                     </div>
@@ -866,8 +999,27 @@
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
+                                <h4>手動登録した受講生にチャットで返信できません</h4>
+                                <p>受講生一覧で「新規受講生登録」から手動作成された受講生は、LINEのユーザーID（<code>U...</code>）が未連携の状態です。受講生に教室のLINE公式アカウントを友だち追加していただき、マイカルテを開いてもらうか、メッセージを送信してもらうと自動的にLINE連携が完了し、チャット送受信が可能になります。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">Q</div>
+                            <div class="step-body">
+                                <h4>Discord通知が届かない場合は？</h4>
+                                <p>以下の項目をご確認ください：<br>
+                                1. 管理画面上部の「Discord通知」設定モーダルを開き、Webhook URLが正しく入力されているか確認してください。<br>
+                                2. 「テスト通知を送信」ボタンを押し、緑色の成功バナーが出るか確認してください（Discord側でWebhookが削除されたり権限が変更されている場合はエラーが表示されます）。<br>
+                                3. 送信したいイベントのチェックボックスがONになっているか確認してください。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">Q</div>
+                            <div class="step-body">
                                 <h4>日時の表示がずれていることはありませんか？</h4>
-                                <p>当システムはWebサーバー設定（`.htaccess`, `.user.ini`）、PHPスクリプト、データベース（SQLite）のすべてで<strong>日本標準時（JST / Asia/Tokyo）</strong>に統一されています。受講生のLINE操作やリマインド送信など、すべて日本時間で正確に記録・配信されます。</p>
+                                <p>当システムはWebサーバー設定（`.htaccess`, `.user.ini`）、PHPスクリプト、データベース（SQLite）のすべてで<strong>日本標準時（JST / Asia/Tokyo）</strong>に統一されています。受講生のLINE操作やチャット送受信、リマインド送信など、すべて日本時間で正確に記録・配信されます。</p>
                             </div>
                         </div>
 
@@ -875,7 +1027,7 @@
                             <div class="step-number">Q</div>
                             <div class="step-body">
                                 <h4>管理画面の角丸（デザインシステム）はどのように統一されていますか？</h4>
-                                <p>システム全体の視認性と操作性を高めるため、CSSデザインシステムトークン（<code>--radius-xs: 4px</code>, <code>--radius-sm: 8px</code>, <code>--radius-md: 12px</code>, <code>--radius-lg: 16px</code>, <code>--radius-xl: 20px</code>, <code>--radius-full: 9999px</code>）を全画面（受講生カルテ、リッチメニュー作成、操作マニュアル）に完全標準化しています。ボタンや入力枠、モーダル、カードの丸みが美しく統一され、直感的で洗練されたUIを提供します。</p>
+                                <p>システム全体の視認性と操作性を高めるため、CSSデザインシステムトークン（<code>--radius-xs: 4px</code>, <code>--radius-sm: 8px</code>, <code>--radius-md: 12px</code>, <code>--radius-lg: 16px</code>, <code>--radius-xl: 20px</code>, <code>--radius-full: 9999px</code>）を全画面（受講生カルテ、個別チャット、Discord設定、リッチメニュー作成、操作マニュアル）に完全標準化しています。ボタンや入力枠、モーダル、カードの丸みが美しく統一され、直感的で洗練されたUIを提供します。</p>
                             </div>
                         </div>
                     </div>
@@ -889,6 +1041,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260910_nav_layout_v2"></script>
+    <script src="manual.js?v=20260910_chat_discord_v1"></script>
 </body>
 </html>

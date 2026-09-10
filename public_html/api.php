@@ -283,6 +283,206 @@ try {
             echo json_encode($res, JSON_UNESCAPED_UNICODE);
             exit;
 
+        // --- 0-6. チャット履歴取得 (個別受講生とのやり取り) ---
+        case 'get_chat_messages':
+            $authPass = $_POST['password'] ?? ($_GET['password'] ?? ($_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ''));
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $uid = trim($_GET['uid'] ?? ($_POST['uid'] ?? ($_GET['user_id'] ?? ($_POST['user_id'] ?? ''))));
+            if (empty($uid)) {
+                echo json_encode(['success' => false, 'error' => 'ユーザーID(uid)が未指定です']);
+                exit;
+            }
+
+            // 受講生情報を取得
+            $cStmt = $db->prepare("SELECT id, user_id, user_name, picture_url, car_model, car_number FROM customer_cars WHERE user_id = :uid LIMIT 1");
+            $cStmt->execute([':uid' => $uid]);
+            $customer = $cStmt->fetch(PDO::FETCH_ASSOC);
+
+            // チャット履歴一覧を取得 (古い順)
+            $msgStmt = $db->prepare("
+                SELECT id, user_id, direction, message_type, message_text, payload_json, is_read, sent_by, created_at 
+                FROM chat_messages 
+                WHERE user_id = :uid 
+                ORDER BY id ASC 
+                LIMIT 200
+            ");
+            $msgStmt->execute([':uid' => $uid]);
+            $messages = $msgStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // 未読メッセージを既読に更新
+            $updateRead = $db->prepare("UPDATE chat_messages SET is_read = 1 WHERE user_id = :uid AND direction = 'incoming' AND is_read = 0");
+            $updateRead->execute([':uid' => $uid]);
+
+            echo json_encode([
+                'success' => true,
+                'customer' => $customer ?: ['user_id' => $uid, 'user_name' => 'LINE友だち', 'picture_url' => ''],
+                'messages' => $messages
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+
+        // --- 0-7. チャットメッセージ送信 (管理画面から受講生のLINEへ返信) ---
+        case 'send_chat_message':
+            $authPass = $_POST['password'] ?? ($_GET['password'] ?? ($_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ''));
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $uid = trim($_POST['uid'] ?? ($_POST['user_id'] ?? ''));
+            $message = trim($_POST['message'] ?? ($_POST['text'] ?? ''));
+            $sentBy = trim($_POST['sent_by'] ?? ($_POST['sender_name'] ?? '教室スタッフ'));
+
+            if (empty($uid) || !str_starts_with($uid, 'U')) {
+                echo json_encode(['success' => false, 'error' => '有効なLINE UserID(uid)が必要です']);
+                exit;
+            }
+            if (empty($message)) {
+                echo json_encode(['success' => false, 'error' => 'メッセージ本文を入力してください']);
+                exit;
+            }
+
+            // LINE Messaging API で Push Message 送信
+            require_once __DIR__ . '/webhook.php';
+            $nowJst = date('Y-m-d H:i:s');
+
+            try {
+                $lineResult = sendLinePushMessage($uid, [
+                    [
+                        'type' => 'text',
+                        'text' => $message
+                    ]
+                ]);
+
+                if (!$lineResult) {
+                    echo json_encode(['success' => false, 'error' => 'LINEメッセージの送信に失敗しました。アクセストークン等をご確認ください']);
+                    exit;
+                }
+
+                // 送信ログを chat_messages に保存
+                $stmt = $db->prepare("
+                    INSERT INTO chat_messages (
+                        user_id, direction, message_type, message_text, payload_json, is_read, sent_by, created_at
+                    ) VALUES (
+                        :uid, 'outgoing', 'text', :mtext, '{}', 1, :sent_by, :now
+                    )
+                ");
+                $stmt->execute([
+                    ':uid' => $uid,
+                    ':mtext' => $message,
+                    ':sent_by' => $sentBy,
+                    ':now' => $nowJst
+                ]);
+                $msgId = (int)$db->lastInsertId();
+
+                // 顧客カルテの最新インタラクションを更新
+                $preview = "💬 返信: " . mb_substr($message, 0, 40);
+                recordCustomerInteraction($db, $uid, 'admin_chat', $preview);
+
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'メッセージを送信しました',
+                    'chat_id' => $msgId,
+                    'sent_at' => $nowJst
+                ], JSON_UNESCAPED_UNICODE);
+            } catch (Throwable $e) {
+                writeDebugLog("チャット返信エラー", ['error' => $e->getMessage()]);
+                echo json_encode(['success' => false, 'error' => '送信処理中にエラーが発生しました: ' . $e->getMessage()]);
+            }
+            exit;
+
+        // --- 0-8. 全受講生の未読メッセージ件数一覧取得 ---
+        case 'get_unread_chat_counts':
+            try {
+                $stmt = $db->query("
+                    SELECT user_id, COUNT(*) as unread_count 
+                    FROM chat_messages 
+                    WHERE direction = 'incoming' AND is_read = 0 
+                    GROUP BY user_id
+                ");
+                $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $counts = [];
+                $totalUnread = 0;
+                foreach ($rows as $r) {
+                    $cnt = (int)$r['unread_count'];
+                    $counts[$r['user_id']] = $cnt;
+                    $totalUnread += $cnt;
+                }
+
+                echo json_encode([
+                    'success' => true,
+                    'unread_counts' => $counts,
+                    'total_unread' => $totalUnread
+                ], JSON_UNESCAPED_UNICODE);
+            } catch (Throwable $e) {
+                echo json_encode(['success' => true, 'unread_counts' => [], 'total_unread' => 0]);
+            }
+            exit;
+
+        // --- 0-9. Discord通知設定の取得 ---
+        case 'get_discord_settings':
+            $authPass = $_POST['password'] ?? ($_GET['password'] ?? ($_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ''));
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $settings = getDiscordSettings($db, $activeAccountKey);
+            echo json_encode(['success' => true, 'settings' => $settings], JSON_UNESCAPED_UNICODE);
+            exit;
+
+        // --- 0-10. Discord通知設定の保存 ---
+        case 'save_discord_settings':
+            $authPass = $_POST['password'] ?? ($_GET['password'] ?? ($_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ''));
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $hasConsultation = !empty($_POST['notify_consultation']) || !empty($_POST['notify_inquiry']);
+            $settings = [
+                'webhook_url' => trim($_POST['webhook_url'] ?? ''),
+                'enabled' => !empty($_POST['webhook_url']),
+                'notify_message' => !empty($_POST['notify_message']),
+                'notify_follow' => !empty($_POST['notify_follow']),
+                'notify_consultation' => $hasConsultation,
+                'notify_inquiry' => $hasConsultation
+            ];
+
+            $res = saveDiscordSettings($settings, $db, $activeAccountKey);
+            if ($res) {
+                echo json_encode(['success' => true, 'message' => 'Discord通知設定を保存しました', 'settings' => $settings], JSON_UNESCAPED_UNICODE);
+            } else {
+                echo json_encode(['success' => false, 'error' => '設定の保存に失敗しました']);
+            }
+            exit;
+
+        // --- 0-11. Discord通知の疎通テスト送信 ---
+        case 'test_discord_notification':
+            $authPass = $_POST['password'] ?? ($_GET['password'] ?? ($_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ''));
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $webhookUrl = trim($_POST['webhook_url'] ?? '');
+            if (empty($webhookUrl)) {
+                $settings = getDiscordSettings($db, $activeAccountKey);
+                $webhookUrl = $settings['webhook_url'] ?? '';
+            }
+
+            if (empty($webhookUrl)) {
+                echo json_encode(['success' => false, 'error' => 'Discord Webhook URL を入力してください']);
+                exit;
+            }
+
+            $res = sendDiscordTestNotification($webhookUrl);
+            echo json_encode($res, JSON_UNESCAPED_UNICODE);
+            exit;
+
         // --- 1. 車両一覧取得 (検索・フィルター・ページネーション) ---
         case 'list':
             $page = max(1, (int)($_GET['page'] ?? 1));

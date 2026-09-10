@@ -15,7 +15,11 @@ const state = {
     // マルチアカウント管理
     activeAccount: localStorage.getItem('active_line_account') || 'senior',
     accounts: [],
-    activeAccountInfo: null
+    activeAccountInfo: null,
+    // チャット & Discord
+    unreadChatCounts: {},
+    activeChatUser: null,
+    chatPollTimer: null
 };
 
 // APIリクエストに現在のアクティブアカウントパラメータを自動付与するfetchインターセプター
@@ -220,6 +224,31 @@ const elements = {
     prevKbBtn1: document.getElementById('prevKbBtn1'),
     prevKbBtn2: document.getElementById('prevKbBtn2'),
 
+    // Discord通知設定モーダル
+    openDiscordSettingsBtn: document.getElementById('openDiscordSettingsBtn'),
+    discordSettingsModal: document.getElementById('discordSettingsModal'),
+    btnCloseDiscordModal: document.getElementById('btnCloseDiscordModal'),
+    btnCancelDiscordModal: document.getElementById('btnCancelDiscordModal'),
+    discordWebhookUrlInput: document.getElementById('discordWebhookUrlInput'),
+    discordNotifyMessage: document.getElementById('discordNotifyMessage'),
+    discordNotifyFollow: document.getElementById('discordNotifyFollow'),
+    discordNotifyConsultation: document.getElementById('discordNotifyConsultation'),
+    btnTestDiscordWebhook: document.getElementById('btnTestDiscordWebhook'),
+    btnSaveDiscordSettings: document.getElementById('btnSaveDiscordSettings'),
+    discordTestStatusBanner: document.getElementById('discordTestStatusBanner'),
+
+    // 個別LINEチャットモーダル
+    chatModal: document.getElementById('chatModal'),
+    btnCloseChatModal: document.getElementById('btnCloseChatModal'),
+    btnRefreshChatMessages: document.getElementById('btnRefreshChatMessages'),
+    chatModalAvatar: document.getElementById('chatModalAvatar'),
+    chatModalUserName: document.getElementById('chatModalUserName'),
+    chatModalUidTag: document.getElementById('chatModalUidTag'),
+    chatModalCourseInfo: document.getElementById('chatModalCourseInfo'),
+    chatMessagesContainer: document.getElementById('chatMessagesContainer'),
+    chatInputText: document.getElementById('chatInputText'),
+    btnSendChatMessage: document.getElementById('btnSendChatMessage'),
+
     toast: document.getElementById('adminToast')
 };
 
@@ -229,6 +258,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     initEventListeners();
     initKnowledgeBroadcastStudio();
     initAccountManagement();
+    initChatModal();
+    initDiscordSettings();
 });
 
 async function loadAccounts() {
@@ -1073,14 +1104,30 @@ async function loadDashboard() {
 async function fetchCustomers() {
     try {
         const sortParam = encodeURIComponent(state.currentSort || 'last_interaction');
-        const res = await fetch(`../api.php?action=admin_list_customers&password=${encodeURIComponent(state.password)}&sort=${sortParam}&account=${encodeURIComponent(state.activeAccount)}`);
-        const data = await res.json();
+        const [custRes, unreadRes] = await Promise.all([
+            fetch(`../api.php?action=admin_list_customers&password=${encodeURIComponent(state.password)}&sort=${sortParam}&account=${encodeURIComponent(state.activeAccount)}`),
+            fetch(`../api.php?action=get_unread_chat_counts&password=${encodeURIComponent(state.password)}&account=${encodeURIComponent(state.activeAccount)}`).catch(() => null)
+        ]);
+
+        if (unreadRes && unreadRes.ok) {
+            try {
+                const unreadData = await unreadRes.json();
+                if (unreadData && unreadData.success && unreadData.unread_counts) {
+                    state.unreadChatCounts = unreadData.unread_counts;
+                }
+            } catch (err) {
+                console.warn('Failed to parse unread chat counts:', err);
+            }
+        }
+
+        const data = await custRes.json();
         if (data.success) {
             state.allCustomers = data.customers || [];
             updateBrandDisplay();
             updateStats();
             renderTable();
-        } else if (res.status === 401) {
+            checkUrlChatParam();
+        } else if (custRes.status === 401) {
             sessionStorage.removeItem('admin_pass');
             elements.loginModal.style.display = 'flex';
             elements.adminApp.style.display = 'none';
@@ -1316,7 +1363,14 @@ function renderTable() {
                             </div>
                         `}
                         <div style="min-width: 0;">
-                            <div class="cust-name">${escapeHtml(c.user_name || '名前なし')}</div>
+                            <div class="cust-name" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                <span>${escapeHtml(c.user_name || '名前なし')}</span>
+                                ${state.unreadChatCounts && state.unreadChatCounts[userId] ? `
+                                    <span class="badge-chat-unread" title="未読メッセージ ${state.unreadChatCounts[userId]}件">
+                                        <i class="fa-solid fa-envelope" style="font-size: 9px; margin-right: 2px;"></i>${state.unreadChatCounts[userId]}
+                                    </span>
+                                ` : ''}
+                            </div>
                             <div class="cust-uid" style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
                                 <span>${escapeHtml(c.user_id || '')}</span>
                                 ${c.user_id && c.user_id.startsWith('U') ? `
@@ -1343,6 +1397,12 @@ function renderTable() {
                 <td style="max-width: 160px; font-size: 11px;">${memo}</td>
                 <td>
                     <div class="action-btns">
+                        <button class="btn-table-chat" data-action="chat" data-idx="${idx}" title="この受講生との1対1トーク確認・返信">
+                            <i class="fa-solid fa-comments"></i> チャット
+                            ${state.unreadChatCounts && state.unreadChatCounts[userId] ? `
+                                <span class="badge-chat-unread" style="margin-left: 2px;">${state.unreadChatCounts[userId]}</span>
+                            ` : ''}
+                        </button>
                         <button class="btn-user-richmenu ${isCustomized ? 'is-active' : ''}" data-action="custom-menu" data-idx="${idx}" title="リッチメニューの確認・個別指定・メッセージ設定">
                             <i class="fa-solid fa-table-cells-large"></i> メニュー設定
                         </button>
@@ -1379,7 +1439,9 @@ function renderTable() {
             const cust = filtered[idx];
             if (!cust) return;
 
-            if (action === 'custom-menu') {
+            if (action === 'chat') {
+                openChatModal(cust);
+            } else if (action === 'custom-menu') {
                 openUserRichMenuModal(cust);
             } else if (action === 'knowledge-send') {
                 if (!cust.user_id || !cust.user_id.startsWith('U')) {
@@ -3746,6 +3808,524 @@ async function submitKnowledgeBroadcast() {
 
 window.openKnowledgeBroadcastModal = openKnowledgeBroadcastModal;
 window.closeKnowledgeBroadcastModal = closeKnowledgeBroadcastModal;
+
+/* ==========================================================================
+   個別LINEチャット機能（メッセージ履歴閲覧・Push返信・未読管理）
+   ========================================================================== */
+
+function initChatModal() {
+    if (elements.btnCloseChatModal) {
+        elements.btnCloseChatModal.addEventListener('click', closeChatModal);
+    }
+    if (elements.btnRefreshChatMessages) {
+        elements.btnRefreshChatMessages.addEventListener('click', () => {
+            if (state.activeChatUser && state.activeChatUser.user_id) {
+                loadChatMessages(state.activeChatUser.user_id);
+            }
+        });
+    }
+    if (elements.btnSendChatMessage) {
+        elements.btnSendChatMessage.addEventListener('click', sendChatMessage);
+    }
+    if (elements.chatInputText) {
+        elements.chatInputText.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                sendChatMessage();
+            }
+        });
+    }
+
+    // 定型文クイックチップ
+    document.querySelectorAll('.chat-quick-templates .quick-tpl-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const tpl = chip.getAttribute('data-tpl');
+            if (tpl && elements.chatInputText) {
+                const cur = elements.chatInputText.value;
+                elements.chatInputText.value = cur ? (cur + "\n" + tpl) : tpl;
+                elements.chatInputText.focus();
+                elements.chatInputText.scrollTop = elements.chatInputText.scrollHeight;
+            }
+        });
+    });
+
+    // モーダル背景クリックで閉じる
+    if (elements.chatModal) {
+        elements.chatModal.addEventListener('click', (e) => {
+            if (e.target === elements.chatModal) {
+                closeChatModal();
+            }
+        });
+    }
+}
+
+function openChatModal(cust) {
+    if (!cust) return;
+    state.activeChatUser = cust;
+
+    const uid = cust.user_id || '';
+    const name = cust.user_name || '名前なし受講生';
+    const pic = cust.picture_url || 'https://profile.line-scdn.net/static/images/line_default.png';
+    const course = `${cust.car_model || 'コース未設定'}${cust.car_number ? ' / ' + cust.car_number : ''}`;
+
+    if (elements.chatModalAvatar) elements.chatModalAvatar.src = pic;
+    if (elements.chatModalUserName) {
+        elements.chatModalUserName.innerHTML = `${escapeHtml(name)} <span id="chatModalUidTag" style="font-size: 11px; font-weight: normal; color: #64748b; font-family: monospace;">(${escapeHtml(uid || '未連携')})</span>`;
+    }
+    if (elements.chatModalCourseInfo) elements.chatModalCourseInfo.textContent = course;
+
+    if (elements.chatInputText) {
+        elements.chatInputText.value = '';
+    }
+
+    // 未読数をローカルで即時クリア
+    if (uid && state.unreadChatCounts && state.unreadChatCounts[uid]) {
+        delete state.unreadChatCounts[uid];
+        renderTable();
+    }
+
+    if (elements.chatModal) {
+        elements.chatModal.style.display = 'flex';
+    }
+
+    loadChatMessages(uid);
+
+    // ポーリングタイマー開始（10秒ごとに新着自動確認）
+    if (state.chatPollTimer) clearInterval(state.chatPollTimer);
+    state.chatPollTimer = setInterval(() => {
+        if (state.activeChatUser && state.activeChatUser.user_id && elements.chatModal && elements.chatModal.style.display === 'flex') {
+            loadChatMessages(state.activeChatUser.user_id, true);
+        }
+    }, 10000);
+}
+
+function closeChatModal() {
+    if (elements.chatModal) {
+        elements.chatModal.style.display = 'none';
+    }
+    if (state.chatPollTimer) {
+        clearInterval(state.chatPollTimer);
+        state.chatPollTimer = null;
+    }
+    state.activeChatUser = null;
+    loadUnreadChatCounts();
+}
+
+async function loadChatMessages(userId, isSilent = false) {
+    if (!userId) {
+        if (elements.chatMessagesContainer) {
+            elements.chatMessagesContainer.innerHTML = `
+                <div class="chat-empty-state">
+                    <div class="chat-empty-icon"><i class="fa-solid fa-triangle-exclamation" style="color: #f59e0b;"></i></div>
+                    <p style="font-weight: bold;">LINEユーザーIDが未連携です</p>
+                    <p style="font-size: 12px; opacity: 0.9;">この受講生は手動登録されているため、LINEメッセージを送受信できません。</p>
+                </div>
+            `;
+        }
+        return;
+    }
+
+    if (!isSilent && elements.chatMessagesContainer) {
+        elements.chatMessagesContainer.innerHTML = `
+            <div class="chat-empty-state">
+                <div class="chat-empty-icon"><i class="fa-solid fa-spinner fa-spin"></i></div>
+                <p>メッセージ履歴を読み込み中...</p>
+            </div>
+        `;
+    }
+
+    try {
+        const res = await fetch(`../api.php?action=get_chat_messages&password=${encodeURIComponent(state.password)}&user_id=${encodeURIComponent(userId)}&account=${encodeURIComponent(state.activeAccount)}`);
+        const data = await res.json();
+
+        if (data.success && Array.isArray(data.messages)) {
+            renderChatMessages(data.messages);
+        } else {
+            if (!isSilent && elements.chatMessagesContainer) {
+                elements.chatMessagesContainer.innerHTML = `
+                    <div class="chat-empty-state">
+                        <div class="chat-empty-icon"><i class="fa-solid fa-circle-exclamation"></i></div>
+                        <p>${escapeHtml(data.error || 'メッセージ履歴の取得に失敗しました')}</p>
+                    </div>
+                `;
+            }
+        }
+    } catch (e) {
+        console.error('Failed to load chat messages:', e);
+        if (!isSilent && elements.chatMessagesContainer) {
+            elements.chatMessagesContainer.innerHTML = `
+                <div class="chat-empty-state">
+                    <div class="chat-empty-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <p>通信エラーが発生しました: ${escapeHtml(e.message)}</p>
+                </div>
+            `;
+        }
+    }
+}
+
+function renderChatMessages(messages) {
+    const container = elements.chatMessagesContainer;
+    if (!container) return;
+
+    if (!messages || messages.length === 0) {
+        container.innerHTML = `
+            <div class="chat-empty-state">
+                <div class="chat-empty-icon"><i class="fa-regular fa-comment-dots"></i></div>
+                <p style="font-weight: 700; font-size: 14px;">まだメッセージのやり取りはありません</p>
+                <p style="font-size: 12px; opacity: 0.85;">下の入力欄からメッセージを送信すると、受講生のLINE公式トーク画面へ届きます。</p>
+            </div>
+        `;
+        return;
+    }
+
+    let lastDateStr = '';
+    const htmlParts = [];
+
+    const defaultUserPic = (state.activeChatUser && state.activeChatUser.picture_url)
+        ? state.activeChatUser.picture_url
+        : 'https://profile.line-scdn.net/static/images/line_default.png';
+
+    messages.forEach(msg => {
+        const createdAt = msg.created_at || '';
+        const datePart = createdAt.substring(0, 10);
+        const timePart = createdAt.length >= 16 ? createdAt.substring(11, 16) : '';
+
+        // 日付が変わったら日付セパレータを挿入
+        if (datePart && datePart !== lastDateStr) {
+            lastDateStr = datePart;
+            const parts = datePart.split('-');
+            const m = parseInt(parts[1], 10);
+            const d = parseInt(parts[2], 10);
+            const formattedDate = `${m}月${d}日 (${getDayOfWeek(datePart)})`;
+            htmlParts.push(`
+                <div class="chat-date-separator">
+                    <span class="chat-date-badge">${formattedDate}</span>
+                </div>
+            `);
+        }
+
+        const isIncoming = (msg.direction === 'incoming');
+        const rowClass = isIncoming ? 'chat-row-incoming' : 'chat-row-outgoing';
+        const senderTag = isIncoming ? '受講生' : (msg.sent_by || 'スタッフ');
+
+        let bubbleContent = '';
+        if (msg.message_type === 'image') {
+            let previewUrl = '';
+            try {
+                const payloadObj = typeof msg.payload === 'string' ? JSON.parse(msg.payload || '{}') : (msg.payload || {});
+                previewUrl = payloadObj.url || '';
+            } catch {
+                previewUrl = '';
+            }
+            bubbleContent = previewUrl
+                ? `<img class="chat-image-preview" src="${escapeHtml(previewUrl)}" alt="送信画像" onclick="window.open('${escapeHtml(previewUrl)}')">`
+                : `<i class="fa-regular fa-image"></i> [画像メッセージ]`;
+        } else if (msg.message_type === 'sticker') {
+            bubbleContent = `<div style="font-size: 24px;">😊</div><div style="font-size: 11px; opacity: 0.8;">[スタンプ]</div>`;
+        } else {
+            // テキストメッセージ
+            bubbleContent = formatChatMessageText(msg.message_text || '');
+        }
+
+        htmlParts.push(`
+            <div class="chat-message-row ${rowClass}">
+                ${isIncoming ? `
+                    <img class="chat-msg-avatar" src="${escapeHtml(defaultUserPic)}" alt="User" onerror="this.src='https://profile.line-scdn.net/static/images/line_default.png'">
+                ` : ''}
+                <div class="chat-bubble-wrapper">
+                    <div class="chat-bubble">${bubbleContent}</div>
+                    <div class="chat-msg-meta">
+                        <span class="chat-msg-sender-tag">${escapeHtml(senderTag)}</span>
+                        <span>${escapeHtml(timePart)}</span>
+                    </div>
+                </div>
+            </div>
+        `);
+    });
+
+    container.innerHTML = htmlParts.join('');
+    container.scrollTop = container.scrollHeight;
+}
+
+function formatChatMessageText(text) {
+    if (!text) return '';
+    const escaped = escapeHtml(text);
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return escaped.replace(urlRegex, (url) => {
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline; font-weight: 600;">${url}</a>`;
+    });
+}
+
+function getDayOfWeek(dateStr) {
+    try {
+        const days = ['日', '月', '火', '水', '木', '金', '土'];
+        const d = new Date(dateStr);
+        return days[d.getDay()] || '';
+    } catch {
+        return '';
+    }
+}
+
+async function sendChatMessage() {
+    if (!state.activeChatUser || !state.activeChatUser.user_id) {
+        alert('送信対象の受講生情報が見つかりません');
+        return;
+    }
+
+    const text = elements.chatInputText ? elements.chatInputText.value.trim() : '';
+    if (!text) {
+        elements.chatInputText?.focus();
+        return;
+    }
+
+    const sendBtn = elements.btnSendChatMessage;
+    const origHtml = sendBtn ? sendBtn.innerHTML : '';
+    if (sendBtn) {
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    }
+
+    try {
+        const payload = new URLSearchParams({
+            action: 'send_chat_message',
+            password: state.password,
+            user_id: state.activeChatUser.user_id,
+            text: text,
+            sender_name: 'スタッフ',
+            account: state.activeAccount
+        });
+
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            if (elements.chatInputText) elements.chatInputText.value = '';
+            showToast('メッセージを送信しました！');
+            await loadChatMessages(state.activeChatUser.user_id, true);
+            fetchCustomers();
+        } else {
+            alert(data.error || 'メッセージの送信に失敗しました');
+        }
+    } catch (e) {
+        console.error('Send message error:', e);
+        alert('送信処理中にエラーが発生しました: ' + e.message);
+    } finally {
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = origHtml;
+            elements.chatInputText?.focus();
+        }
+    }
+}
+
+async function loadUnreadChatCounts() {
+    try {
+        const res = await fetch(`../api.php?action=get_unread_chat_counts&password=${encodeURIComponent(state.password)}&account=${encodeURIComponent(state.activeAccount)}`);
+        const data = await res.json();
+        if (data.success && data.unread_counts) {
+            state.unreadChatCounts = data.unread_counts;
+            renderTable();
+        }
+    } catch (e) {
+        console.warn('loadUnreadChatCounts error:', e);
+    }
+}
+
+function checkUrlChatParam() {
+    const params = new URLSearchParams(window.location.search);
+    const chatUid = params.get('chat_uid');
+    if (!chatUid) return;
+
+    const url = new URL(window.location);
+    url.searchParams.delete('chat_uid');
+    window.history.replaceState({}, '', url.pathname + url.search);
+
+    const cust = state.allCustomers.find(c => c.user_id === chatUid);
+    if (cust) {
+        openChatModal(cust);
+    } else {
+        openChatModal({
+            user_id: chatUid,
+            user_name: 'LINE受講生',
+            car_model: '未登録または連携待ち'
+        });
+    }
+}
+
+/* ==========================================================================
+   Discord通知設定機能
+   ========================================================================== */
+
+function initDiscordSettings() {
+    if (elements.openDiscordSettingsBtn) {
+        elements.openDiscordSettingsBtn.addEventListener('click', openDiscordSettings);
+    }
+    if (elements.btnCloseDiscordModal) {
+        elements.btnCloseDiscordModal.addEventListener('click', closeDiscordSettings);
+    }
+    if (elements.btnCancelDiscordModal) {
+        elements.btnCancelDiscordModal.addEventListener('click', closeDiscordSettings);
+    }
+    if (elements.btnSaveDiscordSettings) {
+        elements.btnSaveDiscordSettings.addEventListener('click', saveDiscordSettings);
+    }
+    if (elements.btnTestDiscordWebhook) {
+        elements.btnTestDiscordWebhook.addEventListener('click', testDiscordNotification);
+    }
+
+    if (elements.discordSettingsModal) {
+        elements.discordSettingsModal.addEventListener('click', (e) => {
+            if (e.target === elements.discordSettingsModal) {
+                closeDiscordSettings();
+            }
+        });
+    }
+}
+
+async function openDiscordSettings() {
+    if (elements.discordTestStatusBanner) {
+        elements.discordTestStatusBanner.style.display = 'none';
+    }
+
+    try {
+        const res = await fetch(`../api.php?action=get_discord_settings&password=${encodeURIComponent(state.password)}`);
+        const data = await res.json();
+
+        if (data.success && data.settings) {
+            const s = data.settings;
+            if (elements.discordWebhookUrlInput) elements.discordWebhookUrlInput.value = s.webhook_url || '';
+            if (elements.discordNotifyMessage) elements.discordNotifyMessage.checked = (s.notify_message !== false);
+            if (elements.discordNotifyFollow) elements.discordNotifyFollow.checked = (s.notify_follow !== false);
+            if (elements.discordNotifyConsultation) elements.discordNotifyConsultation.checked = (s.notify_consultation !== false);
+        }
+    } catch (e) {
+        console.error('Failed to load discord settings:', e);
+    }
+
+    if (elements.discordSettingsModal) {
+        elements.discordSettingsModal.style.display = 'flex';
+    }
+}
+
+function closeDiscordSettings() {
+    if (elements.discordSettingsModal) {
+        elements.discordSettingsModal.style.display = 'none';
+    }
+}
+
+async function saveDiscordSettings() {
+    const webhookUrl = elements.discordWebhookUrlInput ? elements.discordWebhookUrlInput.value.trim() : '';
+    const notifyMessage = elements.discordNotifyMessage ? elements.discordNotifyMessage.checked : true;
+    const notifyFollow = elements.discordNotifyFollow ? elements.discordNotifyFollow.checked : true;
+    const notifyConsultation = elements.discordNotifyConsultation ? elements.discordNotifyConsultation.checked : true;
+
+    const btn = elements.btnSaveDiscordSettings;
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 保存中...';
+    }
+
+    try {
+        const payload = new URLSearchParams({
+            action: 'save_discord_settings',
+            password: state.password,
+            webhook_url: webhookUrl,
+            notify_message: notifyMessage ? '1' : '0',
+            notify_follow: notifyFollow ? '1' : '0',
+            notify_consultation: notifyConsultation ? '1' : '0'
+        });
+
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            showToast('Discord通知設定を保存しました！');
+            closeDiscordSettings();
+        } else {
+            alert(data.error || '設定の保存に失敗しました');
+        }
+    } catch (e) {
+        console.error('Save discord settings error:', e);
+        alert('保存エラーが発生しました: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
+
+async function testDiscordNotification() {
+    const webhookUrl = elements.discordWebhookUrlInput ? elements.discordWebhookUrlInput.value.trim() : '';
+    if (!webhookUrl) {
+        alert('テスト送信を行うには、Discord Webhook URL を入力してください。');
+        elements.discordWebhookUrlInput?.focus();
+        return;
+    }
+
+    const banner = elements.discordTestStatusBanner;
+    if (banner) {
+        banner.style.display = 'block';
+        banner.style.background = '#e0f2fe';
+        banner.style.color = '#0284c7';
+        banner.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Discordへテスト通知を送信中...';
+    }
+
+    const testBtn = elements.btnTestDiscordWebhook;
+    if (testBtn) testBtn.disabled = true;
+
+    try {
+        const payload = new URLSearchParams({
+            action: 'test_discord_notification',
+            password: state.password,
+            webhook_url: webhookUrl
+        });
+
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            if (banner) {
+                banner.style.background = '#dcfce7';
+                banner.style.color = '#166534';
+                banner.innerHTML = '<i class="fa-solid fa-circle-check"></i> Discordへのテスト送信に成功しました！チャンネルをご確認ください。';
+            }
+        } else {
+            if (banner) {
+                banner.style.background = '#fee2e2';
+                banner.style.color = '#991b1b';
+                banner.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> テスト送信失敗: ${escapeHtml(data.error || '不明なエラー')}`;
+            }
+        }
+    } catch (e) {
+        if (banner) {
+            banner.style.background = '#fee2e2';
+            banner.style.color = '#991b1b';
+            banner.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> 通信エラー: ${escapeHtml(e.message)}`;
+        }
+    } finally {
+        if (testBtn) testBtn.disabled = false;
+    }
+}
+
+window.openChatModal = openChatModal;
+window.closeChatModal = closeChatModal;
+window.openDiscordSettings = openDiscordSettings;
+window.closeDiscordSettings = closeDiscordSettings;
+
 
 
 

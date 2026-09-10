@@ -584,8 +584,25 @@ function getDbConnection(?string $accountKey = null): PDO {
     try { $pdo->exec("ALTER TABLE rich_menus ADD COLUMN text_overlays_json TEXT DEFAULT '[]'"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE rich_menus ADD COLUMN base_image_url TEXT DEFAULT ''"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE rich_menus ADD COLUMN alias_id TEXT DEFAULT ''"); } catch (Exception $e) {}
-    try { $pdo->exec("ALTER TABLE rich_menus ADD COLUMN is_notice INTEGER DEFAULT 0"); } catch (Exception $e) {}
     try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_rich_menus_notice ON rich_menus(is_notice)"); } catch (Exception $e) {}
+
+    // LINEチャット・メッセージ送受信履歴テーブルの初期化
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS chat_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            direction TEXT NOT NULL, -- 'incoming' (受講生から), 'outgoing' (スタッフから)
+            message_type TEXT NOT NULL DEFAULT 'text', -- 'text', 'image', 'sticker', etc.
+            message_text TEXT,
+            payload_json TEXT DEFAULT '{}',
+            is_read INTEGER DEFAULT 0, -- 0: 未読, 1: 既読
+            sent_by TEXT DEFAULT '',
+            created_at DATETIME DEFAULT (datetime('now', '+9 hours'))
+        )
+    ");
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_chat_user_id ON chat_messages(user_id)"); } catch (Exception $e) {}
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_chat_created_at ON chat_messages(created_at)"); } catch (Exception $e) {}
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_chat_is_read ON chat_messages(is_read)"); } catch (Exception $e) {}
 
     // 既存 customers テーブルからのデータ移行（初回1回のみ）
     try {
@@ -1734,6 +1751,226 @@ function getActiveNoticeRichMenu(?PDO $pdo = null): ?array {
         writeDebugLog("getActiveNoticeRichMenuエラー: " . $e->getMessage());
     }
     return null;
+}
+
+/**
+ * Discord通知設定の取得
+ */
+function getDiscordSettings(?PDO $db = null, ?string $accountKey = null): array {
+    $activeKey = $accountKey ?: getActiveAccountKey();
+    if (!$db) {
+        try {
+            $db = getDbConnection($activeKey);
+        } catch (Throwable $e) {
+            $db = null;
+        }
+    }
+
+    $default = [
+        'webhook_url' => defined('DISCORD_WEBHOOK_URL') ? DISCORD_WEBHOOK_URL : '',
+        'enabled' => true,
+        'notify_message' => true,
+        'notify_follow' => true,
+        'notify_inquiry' => true
+    ];
+
+    if ($db) {
+        try {
+            $stmt = $db->prepare("SELECT value FROM system_settings WHERE key = 'discord_settings'");
+            $stmt->execute();
+            $val = $stmt->fetchColumn();
+            if (!empty($val)) {
+                $saved = json_decode($val, true);
+                if (is_array($saved)) {
+                    return array_merge($default, $saved);
+                }
+            }
+        } catch (Throwable $e) {}
+    }
+
+    return $default;
+}
+
+/**
+ * Discord通知設定の保存
+ */
+function saveDiscordSettings(array $settings, ?PDO $db = null, ?string $accountKey = null): bool {
+    $activeKey = $accountKey ?: getActiveAccountKey();
+    if (!$db) {
+        try {
+            $db = getDbConnection($activeKey);
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    try {
+        $nowJst = date('Y-m-d H:i:s');
+        $clean = [
+            'webhook_url' => trim((string)($settings['webhook_url'] ?? '')),
+            'enabled' => !empty($settings['enabled']),
+            'notify_message' => !empty($settings['notify_message']),
+            'notify_follow' => !empty($settings['notify_follow']),
+            'notify_inquiry' => !empty($settings['notify_inquiry']),
+            'updated_at' => $nowJst
+        ];
+        $json = json_encode($clean, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $stmt = $db->prepare("INSERT OR REPLACE INTO system_settings (key, value, updated_at) VALUES ('discord_settings', :val, :now)");
+        return $stmt->execute([':val' => $json, ':now' => $nowJst]);
+    } catch (Throwable $e) {
+        writeDebugLog("saveDiscordSettings エラー", ['error' => $e->getMessage()]);
+        return false;
+    }
+}
+
+/**
+ * 受講生からのLINE新着メッセージをDiscordへ通知
+ */
+function sendDiscordChatMessageNotification(array $msgData, ?array $userProfile = null, ?PDO $db = null): bool {
+    $discord = getDiscordSettings($db);
+    $webhookUrl = trim($discord['webhook_url'] ?? '');
+
+    if (empty($webhookUrl) || empty($discord['enabled']) || empty($discord['notify_message'])) {
+        return false;
+    }
+
+    $userId = $msgData['user_id'] ?? '';
+    $msgText = $msgData['message_text'] ?? '';
+    $msgType = $msgData['message_type'] ?? 'text';
+    $userName = $msgData['user_name'] ?? '受講生';
+    $userAvatar = $msgData['picture_url'] ?? ($userProfile['pictureUrl'] ?? null);
+
+    if (!empty($userProfile['displayName'])) {
+        $userName = $userProfile['displayName'];
+    }
+
+    // 表示用テキストの整形
+    $displayText = $msgText;
+    if ($msgType === 'sticker') {
+        $displayText = '🎨 [LINEスタンプを受信しました]';
+    } elseif ($msgType === 'image') {
+        $displayText = '📷 [画像を受信しました]';
+    }
+
+    $nowJst = date('Y-m-d H:i:s');
+    $baseUrl = getBaseUrl();
+    $adminChatUrl = "{$baseUrl}/admin/index.html?chat_uid=" . urlencode($userId);
+
+    $embed = [
+        'title' => '💬 【LINE新着メッセージ】' . $userName . ' 様から連絡が届きました',
+        'description' => "```\n" . mb_substr($displayText, 0, 1000) . "\n```",
+        'url' => $adminChatUrl,
+        'color' => 0x06C755, // LINE Green
+        'fields' => [
+            [
+                'name' => '👤 送信者',
+                'value' => "**{$userName} 様** (`{$userId}`)",
+                'inline' => true
+            ],
+            [
+                'name' => '🕒 受信日時',
+                'value' => $nowJst,
+                'inline' => true
+            ],
+            [
+                'name' => '🔗 返信・カルテ確認',
+                'value' => "[管理画面を開いて返信する]({$adminChatUrl})",
+                'inline' => false
+            ]
+        ],
+        'footer' => [
+            'text' => 'LINE受講生・カルテ管理システム | チャット通知'
+        ],
+        'timestamp' => date('c')
+    ];
+
+    if ($userAvatar) {
+        $embed['thumbnail'] = ['url' => $userAvatar];
+        $embed['author'] = [
+            'name' => $userName,
+            'icon_url' => $userAvatar
+        ];
+    }
+
+    $payload = [
+        'username' => 'LINEチャット通知 Bot',
+        'avatar_url' => 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/linecorp_code_withborder.png',
+        'embeds' => [$embed]
+    ];
+
+    $ch = curl_init($webhookUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 5,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json; charset=utf-8'],
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE)
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    return ($httpCode >= 200 && $httpCode < 300);
+}
+
+/**
+ * Discord Webhook 疎通テスト送信
+ */
+function sendDiscordTestNotification(string $webhookUrl): array {
+    $url = trim($webhookUrl);
+    if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
+        return ['success' => false, 'error' => '有効なWebhook URLを入力してください'];
+    }
+
+    $embed = [
+        'title' => '🔔 【接続テスト成功】Discord通知連携が完了しました',
+        'description' => "本システムからのDiscord通知が正常に送信されています。\n今後、受講生からの新着メッセージや友だち追加、予約相談がこのチャンネルに届きます。",
+        'color' => 0x4f46e5, // Indigo
+        'fields' => [
+            [
+                'name' => '📡 連携状態',
+                'value' => '✅ 正常に疎通中 (200 OK)',
+                'inline' => true
+            ],
+            [
+                'name' => '🕒 テスト実行時刻',
+                'value' => date('Y-m-d H:i:s'),
+                'inline' => true
+            ]
+        ],
+        'footer' => [
+            'text' => 'LINE受講生・カルテ管理システム | Discord通知設定'
+        ],
+        'timestamp' => date('c')
+    ];
+
+    $payload = [
+        'username' => 'LINE受講生管理 システム通知',
+        'embeds' => [$embed]
+    ];
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 5,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json; charset=utf-8'],
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE)
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    if ($httpCode >= 200 && $httpCode < 300) {
+        return ['success' => true, 'message' => 'Discordへのテスト送信に成功しました！チャンネルをご確認ください'];
+    }
+
+    return [
+        'success' => false,
+        'http_code' => $httpCode,
+        'error' => $curlErr ?: ($res ?: "HTTPステータス: {$httpCode} が返されました。Webhook URLを確認してください")
+    ];
 }
 
 /**

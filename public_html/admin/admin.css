@@ -1732,3 +1732,465 @@ body {
         min-width: 140px;
     }
 }
+
+/* ==========================================================================
+   個別チャット（LINE 1対1トーク・返信） & Discord通知設定 UI
+   ========================================================================== */
+
+/* 未読メッセージバッジ */
+.badge-chat-unread {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9999px;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    margin-left: 6px;
+    box-shadow: 0 1px 3px rgba(239, 68, 68, 0.4);
+    animation: pulseBadge 2s infinite;
+}
+
+@keyframes pulseBadge {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+}
+
+/* アクションボタン: チャット */
+.btn-table-chat {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-table-chat:hover {
+    background: #16a34a;
+    color: #ffffff;
+    border-color: #16a34a;
+}
+
+/* チャットモーダル */
+.chat-modal-dialog {
+    max-width: 680px;
+    width: 94%;
+    height: 85vh;
+    max-height: 820px;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+    background: #ffffff;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+}
+
+.chat-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: #ffffff;
+    border-bottom: 1px solid var(--gray-200);
+    flex-shrink: 0;
+}
+
+.chat-user-profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.chat-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--gray-200);
+    background: #f8fafc;
+}
+
+.chat-user-meta h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gray-800);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chat-user-sub {
+    font-size: 12px;
+    color: var(--gray-600);
+    margin-top: 2px;
+}
+
+/* チャットログ表示エリア */
+.chat-messages-container {
+    flex: 1;
+    overflow-y: auto;
+    background: #849ebf; /* LINE風の落ち着いたブルーグレー背景 */
+    padding: 18px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.chat-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: auto;
+    color: rgba(255, 255, 255, 0.9);
+    text-align: center;
+    padding: 24px;
+}
+
+.chat-empty-icon {
+    font-size: 40px;
+    margin-bottom: 10px;
+    opacity: 0.8;
+}
+
+.chat-empty-state p {
+    margin: 4px 0;
+    font-size: 13px;
+}
+
+/* 日付セパレータ */
+.chat-date-separator {
+    text-align: center;
+    margin: 10px 0;
+}
+
+.chat-date-badge {
+    display: inline-block;
+    background: rgba(0, 0, 0, 0.22);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 12px;
+    border-radius: 9999px;
+}
+
+/* チャット行 */
+.chat-message-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    max-width: 82%;
+}
+
+.chat-row-incoming {
+    align-self: flex-start;
+}
+
+.chat-row-outgoing {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+
+.chat-msg-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    margin-bottom: 2px;
+}
+
+.chat-bubble-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-bubble {
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    word-break: break-word;
+    white-space: pre-wrap;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.chat-row-incoming .chat-bubble {
+    background: #ffffff;
+    color: var(--dark);
+    border-bottom-left-radius: 4px;
+}
+
+.chat-row-outgoing .chat-bubble {
+    background: #5ac463; /* LINE風の鮮やかなグリーン */
+    color: #ffffff;
+    border-bottom-right-radius: 4px;
+}
+
+.chat-bubble img.chat-image-preview {
+    max-width: 240px;
+    max-height: 240px;
+    border-radius: 8px;
+    display: block;
+    cursor: pointer;
+}
+
+.chat-msg-meta {
+    font-size: 10.5px;
+    color: rgba(255, 255, 255, 0.85);
+    margin-top: 3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.chat-row-incoming .chat-msg-meta {
+    justify-content: flex-start;
+}
+
+.chat-row-outgoing .chat-msg-meta {
+    justify-content: flex-end;
+}
+
+.chat-msg-sender-tag {
+    font-size: 10px;
+    opacity: 0.9;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* 入力エリア */
+.chat-footer {
+    background: #f8fafc;
+    border-top: 1px solid var(--gray-200);
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* 定型文クイックチップ */
+.chat-quick-templates {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+}
+
+.quick-tpl-chip {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    background: #ffffff;
+    border: 1px solid var(--gray-200);
+    color: var(--gray-600);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+
+.quick-tpl-chip:hover {
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    border-color: var(--primary);
+}
+
+.chat-input-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.chat-input-textarea {
+    flex: 1;
+    min-height: 48px;
+    max-height: 120px;
+    resize: none;
+    padding: 10px 14px;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    font-size: 13.5px;
+    font-family: inherit;
+    line-height: 1.4;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chat-input-textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(6, 199, 85, 0.15);
+}
+
+.chat-send-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: var(--primary);
+    color: #ffffff;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    transition: background 0.15s ease, transform 0.1s ease;
+    flex-shrink: 0;
+}
+
+.chat-send-btn:hover {
+    background: var(--primary-dark);
+    transform: scale(1.03);
+}
+
+.chat-send-btn:disabled {
+    background: var(--gray-400);
+    cursor: not-allowed;
+    transform: none;
+}
+
+.chat-notice-hint {
+    font-size: 11px;
+    color: var(--gray-400);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Discord通知設定モーダル */
+.discord-settings-dialog {
+    max-width: 540px;
+    width: 92%;
+    background: #ffffff;
+    border-radius: var(--radius-xl);
+    padding: 24px;
+    box-shadow: var(--shadow-lg);
+}
+
+.discord-settings-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 14px;
+}
+
+.discord-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.discord-field-group label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gray-800);
+}
+
+.discord-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    font-family: inherit;
+    box-sizing: border-box;
+    outline: none;
+}
+
+.discord-input:focus {
+    border-color: #5865F2; /* Discord Blurple */
+    box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.15);
+}
+
+.discord-hint {
+    font-size: 11.5px;
+    color: var(--gray-600);
+    line-height: 1.4;
+}
+
+.discord-toggle-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #f8fafc;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--gray-200);
+}
+
+.discord-toggle-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--gray-800);
+    cursor: pointer;
+}
+
+.discord-toggle-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #5865F2;
+}
+
+.discord-actions-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 12px;
+    border-top: 1px solid var(--gray-200);
+    margin-top: 8px;
+}
+
+.btn-discord-test {
+    background: #f0f2ff;
+    color: #5865F2;
+    border: 1px solid #c7cdff;
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-discord-test:hover {
+    background: #5865F2;
+    color: #ffffff;
+}
+
+.btn-discord-save {
+    background: var(--primary);
+    color: #ffffff;
+    border: none;
+    padding: 9px 20px;
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.btn-discord-save:hover {
+    background: var(--primary-dark);
+}
+

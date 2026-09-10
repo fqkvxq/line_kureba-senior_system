@@ -78,6 +78,9 @@
 
             <!-- ヘッダー下段: 業務アクションツールバー -->
             <div class="admin-header-actions">
+                <button class="btn-secondary" id="openDiscordSettingsBtn" title="メッセージ受信・友だち追加等のDiscord通知設定" style="background: #5865F2; color: #ffffff; border: 1px solid #4752c4; font-weight: 600;">
+                    <i class="fa-brands fa-discord" style="color: #ffffff; margin-right: 4px;"></i> Discord通知
+                </button>
                 <button class="btn-secondary" id="openProlineSettingsBtn" title="プロライン(ProLine)へのWebhook中継設定・テスト" style="background: #4338ca; color: #ffffff; border: 1px solid #6366f1; font-weight: 600;">
                     <i class="fa-solid fa-network-wired" style="color: #a5b4fc; margin-right: 4px;"></i> プロライン連携
                 </button>
@@ -1155,9 +1158,123 @@
         </div>
     </div>
 
+    <!-- 個別LINEチャット（メッセージ送受信・会話ログ）モーダル -->
+    <div class="modal-overlay" id="chatModal" style="display: none;">
+        <div class="chat-modal-dialog">
+            <div class="chat-modal-header">
+                <div class="chat-user-profile">
+                    <img id="chatModalAvatar" class="chat-avatar" src="https://profile.line-scdn.net/static/images/line_default.png" alt="Avatar" onerror="this.src='https://profile.line-scdn.net/static/images/line_default.png'">
+                    <div class="chat-user-meta">
+                        <h3 id="chatModalUserName">受講生のお名前 <span id="chatModalUidTag" style="font-size: 11px; font-weight: normal; color: #64748b; font-family: monospace;"></span></h3>
+                        <div class="chat-user-sub" id="chatModalCourseInfo">受講コース情報</div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button type="button" id="btnRefreshChatMessages" class="btn-secondary" style="font-size: 12px; padding: 6px 12px; height: auto;" title="チャット履歴を最新に更新">
+                        <i class="fa-solid fa-arrows-rotate"></i> 更新
+                    </button>
+                    <button class="modal-close" id="btnCloseChatModal" title="閉じる"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+
+            <!-- メッセージ履歴表示エリア -->
+            <div class="chat-messages-container" id="chatMessagesContainer">
+                <div class="chat-empty-state">
+                    <div class="chat-empty-icon"><i class="fa-regular fa-comments"></i></div>
+                    <p>メッセージ履歴を読み込み中...</p>
+                </div>
+            </div>
+
+            <!-- チャット入力フッター -->
+            <div class="chat-footer">
+                <div class="chat-quick-templates">
+                    <span style="font-size: 11px; color: #64748b; font-weight: bold; margin-right: 4px;">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> 定型文:
+                    </span>
+                    <button type="button" class="quick-tpl-chip" data-tpl="お世話になっております。アップファーレンです。メッセージありがとうございます！">挨拶</button>
+                    <button type="button" class="quick-tpl-chip" data-tpl="ご連絡ありがとうございます。担当スタッフより順次詳しく回答いたしますので、少々お待ちいただけますでしょうか。">確認中</button>
+                    <button type="button" class="quick-tpl-chip" data-tpl="次回のレッスン日時は【 日 時 】で承りました。当日教室にてお待ちしております！">予約確認</button>
+                    <button type="button" class="quick-tpl-chip" data-tpl="パソコンの調子はいかがでしょうか？ご不明な点やお困りのことがございましたら、いつでもこちらにご返信くださいね。">フォロー</button>
+                </div>
+
+                <div class="chat-input-row">
+                    <textarea id="chatInputText" class="chat-input-textarea" placeholder="受講生へ送信するLINEメッセージを入力... (Ctrl + Enterで送信)" rows="2"></textarea>
+                    <button type="button" id="btnSendChatMessage" class="chat-send-btn" title="LINEメッセージを送信">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+
+                <div class="chat-notice-hint">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>送信したメッセージは、受講生のLINE公式アカウントトーク画面へPush配信されます。</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Discord通知設定モーダル -->
+    <div class="modal-overlay" id="discordSettingsModal" style="display: none;">
+        <div class="discord-settings-dialog">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 38px; height: 38px; border-radius: 50%; background: #5865F2; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px;">
+                        <i class="fa-brands fa-discord"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 16px; color: #0f172a;">Discord通知設定</h3>
+                        <span style="font-size: 11.5px; color: #64748b;">LINEメッセージや受講生アクションをDiscordチャンネルへ自動通知</span>
+                    </div>
+                </div>
+                <button class="modal-close" id="btnCloseDiscordModal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="discord-settings-body">
+                <div class="discord-field-group">
+                    <label for="discordWebhookUrlInput">Discord Webhook URL</label>
+                    <input type="url" id="discordWebhookUrlInput" class="discord-input" placeholder="https://discord.com/api/webhooks/..." autocomplete="off">
+                    <span class="discord-hint">
+                        ※ Discordサーバーの「チャンネル設定」→「連携」→「ウェブフック」からWebhook URLを作成して貼り付けてください。
+                    </span>
+                </div>
+
+                <div class="discord-field-group">
+                    <label>通知するイベントの選択</label>
+                    <div class="discord-toggle-list">
+                        <label class="discord-toggle-item">
+                            <span><i class="fa-solid fa-comment-dots" style="color: #06C755; margin-right: 6px;"></i> 受講生からの新着LINEメッセージ</span>
+                            <input type="checkbox" id="discordNotifyMessage" checked>
+                        </label>
+                        <label class="discord-toggle-item">
+                            <span><i class="fa-solid fa-user-plus" style="color: #3b82f6; margin-right: 6px;"></i> 新規友だち追加（フォロー時）</span>
+                            <input type="checkbox" id="discordNotifyFollow" checked>
+                        </label>
+                        <label class="discord-toggle-item">
+                            <span><i class="fa-solid fa-calendar-check" style="color: #f59e0b; margin-right: 6px;"></i> 予約・個別相談リクエスト</span>
+                            <input type="checkbox" id="discordNotifyConsultation" checked>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="discordTestStatusBanner" style="display: none; padding: 8px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 600;"></div>
+
+                <div class="discord-actions-bar">
+                    <button type="button" id="btnTestDiscordWebhook" class="btn-discord-test">
+                        <i class="fa-solid fa-paper-plane"></i> テスト通知を送信
+                    </button>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="btn-cancel" id="btnCancelDiscordModal">キャンセル</button>
+                        <button type="button" id="btnSaveDiscordSettings" class="btn-discord-save">
+                            <i class="fa-solid fa-floppy-disk"></i> 設定を保存
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260910_nav_layout_v2"></script>
+    <script src="admin.js?v=20260910_chat_discord_v1"></script>
 </body>
 </html>
