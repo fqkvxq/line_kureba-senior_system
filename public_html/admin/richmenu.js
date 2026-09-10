@@ -45,10 +45,40 @@ const state = {
     isOverlayDragging: false,
     dragOverlayItem: null,
     dragOverlayEl: null,
-    overlayDragStart: null
+    overlayDragStart: null,
+
+    // マルチアカウント管理
+    activeAccount: localStorage.getItem('active_line_account') || 'senior',
+    accounts: [],
+    activeAccountInfo: null
+};
+
+// APIリクエストに現在のアクティブアカウントパラメータを自動付与するfetchインターセプター
+const originalFetch = window.fetch;
+window.fetch = function (resource, init = {}) {
+    let url = (typeof resource === 'string') ? resource : (resource && resource.url ? resource.url : '');
+    if (url.includes('api.php') && state.activeAccount) {
+        const acc = state.activeAccount;
+        if (!url.includes('account=')) {
+            url += (url.includes('?') ? '&' : '?') + 'account=' + encodeURIComponent(acc);
+            if (typeof resource === 'string') {
+                resource = url;
+            }
+        }
+        if (init && init.body && init.body instanceof URLSearchParams && !init.body.has('account')) {
+            init.body.append('account', acc);
+        }
+    }
+    return originalFetch.call(this, resource, init);
 };
 
 const elements = {
+    // アカウント切替
+    accountSelect: document.getElementById('accountSelect'),
+    accountBadgeDot: document.getElementById('accountBadgeDot'),
+    systemBrandTitle: document.getElementById('systemBrandTitle'),
+    systemBrandBadge: document.getElementById('systemBrandBadge'),
+
     // 認証
     loginModal: document.getElementById('loginModal'),
     adminPasswordInput: document.getElementById('adminPasswordInput'),
@@ -164,10 +194,88 @@ const elements = {
 };
 
 // ================= 初期化 =================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadAccounts();
     initAuth();
     initEventListeners();
 });
+
+async function loadAccounts() {
+    try {
+        const savedAccount = localStorage.getItem('active_line_account') || '';
+        const url = `../api.php?action=get_accounts${savedAccount ? '&account=' + encodeURIComponent(savedAccount) : ''}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.accounts)) {
+            state.accounts = data.accounts;
+            state.activeAccount = data.active_account || 'senior';
+            state.activeAccountInfo = data.active_account_info || null;
+            localStorage.setItem('active_line_account', state.activeAccount);
+            renderAccountSwitcher();
+            updateBrandDisplay();
+        }
+    } catch (e) {
+        console.error('Failed to load accounts in richmenu:', e);
+    }
+}
+
+function renderAccountSwitcher() {
+    if (!elements.accountSelect) return;
+    elements.accountSelect.innerHTML = state.accounts.map(acc => {
+        const isSelected = acc.id === state.activeAccount;
+        const configNote = !acc.is_configured ? ' (⚠️未設定)' : '';
+        return `<option value="${escapeHtml(acc.id)}" ${isSelected ? 'selected' : ''}>${escapeHtml(acc.name)}${configNote}</option>`;
+    }).join('');
+
+    const currentAcc = state.accounts.find(a => a.id === state.activeAccount);
+    if (currentAcc && elements.accountBadgeDot) {
+        elements.accountBadgeDot.style.background = currentAcc.theme_color || '#ff8700';
+    }
+}
+
+function updateBrandDisplay() {
+    const currentAcc = state.accounts.find(a => a.id === state.activeAccount) || state.activeAccountInfo;
+    if (currentAcc) {
+        if (elements.systemBrandTitle) {
+            elements.systemBrandTitle.textContent = `${currentAcc.name} 管理`;
+        }
+        if (elements.systemBrandBadge) {
+            elements.systemBrandBadge.style.background = currentAcc.theme_color || '#4f46e5';
+        }
+        if (elements.accountBadgeDot) {
+            elements.accountBadgeDot.style.background = currentAcc.theme_color || '#ff8700';
+        }
+    }
+}
+
+async function handleAccountSwitch(newAccountKey) {
+    if (!newAccountKey || newAccountKey === state.activeAccount) return;
+    try {
+        const res = await fetch('../api.php?action=switch_account', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `account=${encodeURIComponent(newAccountKey)}`
+        });
+        const data = await res.json();
+        if (data.success) {
+            state.activeAccount = data.active_account;
+            state.activeAccountInfo = data.active_account_info;
+            state.accounts = data.accounts || state.accounts;
+            localStorage.setItem('active_line_account', state.activeAccount);
+            renderAccountSwitcher();
+            updateBrandDisplay();
+            showToast(`🔄 「${state.activeAccountInfo ? state.activeAccountInfo.name : newAccountKey}」に切り替えました`);
+
+            // リッチメニュー履歴を再読み込み
+            if (state.password) {
+                loadHistoryList();
+            }
+        }
+    } catch (e) {
+        console.error('Account switch failed:', e);
+        showToast('⚠️ アカウント切り替えに失敗しました');
+    }
+}
 
 function initAuth() {
     const savedPass = sessionStorage.getItem('admin_pass');
@@ -225,6 +333,13 @@ function logout() {
 
 // ================= イベントリスナー設定 =================
 function initEventListeners() {
+    // アカウント切り替え
+    if (elements.accountSelect) {
+        elements.accountSelect.addEventListener('change', (e) => {
+            handleAccountSwitch(e.target.value);
+        });
+    }
+
     // 認証
     elements.loginBtn.addEventListener('click', attemptLogin);
     elements.adminPasswordInput.addEventListener('keypress', (e) => {

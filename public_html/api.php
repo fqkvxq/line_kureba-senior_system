@@ -28,10 +28,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . '/config.php';
 
 try {
-    $db = getDbConnection();
+    // リクエストのアカウント指定を反映
+    $requestedAccount = $_REQUEST['account'] ?? ($_SERVER['HTTP_X_LINE_ACCOUNT'] ?? null);
+    if (!empty($requestedAccount)) {
+        setActiveAccountKey($requestedAccount);
+    }
+    $activeAccountKey = getActiveAccountKey();
+    $db = getDbConnection($activeAccountKey);
     $action = $_GET['action'] ?? ($_POST['action'] ?? 'list');
 
     switch ($action) {
+        // --- 0. アカウント一覧取得 & 現在のアクティブアカウント情報 (マルチアカウント対応) ---
+        case 'get_accounts':
+            $accConfig = getAccountConfig($activeAccountKey);
+            $hasToken = !empty($accConfig['channel_access_token']) && $accConfig['channel_access_token'] !== 'YOUR_CHANNEL_ACCESS_TOKEN_HERE';
+            $hasSecret = !empty($accConfig['channel_secret']) && $accConfig['channel_secret'] !== 'YOUR_CHANNEL_SECRET_HERE';
+            echo json_encode([
+                'success' => true,
+                'accounts' => getAccountList(),
+                'active_account' => $activeAccountKey,
+                'active_account_info' => [
+                    'id' => $accConfig['id'],
+                    'name' => $accConfig['name'],
+                    'short_name' => $accConfig['short_name'] ?? $accConfig['name'],
+                    'theme_color' => $accConfig['theme_color'] ?? '#ff8700',
+                    'liff_id' => $accConfig['liff_id'] ?? '',
+                    'is_configured' => ($hasToken && $hasSecret)
+                ]
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+
+        // --- 0-1. アカウント切り替え ---
+        case 'switch_account':
+            $targetAcc = $_POST['account'] ?? ($_GET['account'] ?? '');
+            if (empty($targetAcc)) {
+                echo json_encode(['success' => false, 'error' => 'アカウントIDが未指定です']);
+                exit;
+            }
+            setActiveAccountKey($targetAcc);
+            $newKey = getActiveAccountKey();
+            @setcookie('active_line_account', $newKey, time() + 86400 * 30, '/');
+            $accConfig = getAccountConfig($newKey);
+            $hasToken = !empty($accConfig['channel_access_token']) && $accConfig['channel_access_token'] !== 'YOUR_CHANNEL_ACCESS_TOKEN_HERE';
+            $hasSecret = !empty($accConfig['channel_secret']) && $accConfig['channel_secret'] !== 'YOUR_CHANNEL_SECRET_HERE';
+            echo json_encode([
+                'success' => true,
+                'active_account' => $newKey,
+                'active_account_info' => [
+                    'id' => $accConfig['id'],
+                    'name' => $accConfig['name'],
+                    'short_name' => $accConfig['short_name'] ?? $accConfig['name'],
+                    'theme_color' => $accConfig['theme_color'] ?? '#ff8700',
+                    'liff_id' => $accConfig['liff_id'] ?? '',
+                    'is_configured' => ($hasToken && $hasSecret)
+                ],
+                'accounts' => getAccountList()
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+
         // --- 1. 車両一覧取得 (検索・フィルター・ページネーション) ---
         case 'list':
             $page = max(1, (int)($_GET['page'] ?? 1));
@@ -902,7 +956,9 @@ try {
                 'success' => true,
                 'customers' => $customers,
                 'total' => count($customers),
-                'default_menu_title' => $defaultMenuTitle
+                'default_menu_title' => $defaultMenuTitle,
+                'active_account' => $activeAccountKey,
+                'active_account_name' => getAccountShopName($activeAccountKey)
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 

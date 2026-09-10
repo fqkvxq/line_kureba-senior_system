@@ -9,11 +9,46 @@ date_default_timezone_set('Asia/Tokyo');
 ini_set('date.timezone', 'Asia/Tokyo');
 putenv('TZ=Asia/Tokyo');
 
-// --- LINE公式アカウント設定 ---
-define('LINE_CHANNEL_ACCESS_TOKEN', 'n1ItOIEh+8mNJiEpXK+hG0T4/b1Z9taR2FkYQrAwA6J/3XMdUUfHnkP3DX+7u+nGgirA4helNntS1qT2m2kOtV7yiYM2MwxrEB7qj09J/yXhItpCqKGS7l4lcaffcvukX/jHGFOLDSloz0vBLIQAdQdB04t89/1O/w1cDnyilFU='); // チャネルアクセストークン (長期)
-define('LINE_CHANNEL_SECRET', 'a5dbfb92fa7be994b6e8f38f870b97b8');             // チャネルシークレット
-define('LINE_LIFF_ID', '2000276344-YL1wXh0h');                           // LIFF ID (例: 1234567890-AbcdEfgh)
-define('LIFF_ID', '2000276344-YL1wXh0h');                                // エイリアス用LIFF ID
+// --- 複数LINE公式アカウント設定 (マルチテナント対応) ---
+// 切り替えて運用したいLINE公式アカウントをここで定義します。
+// 必要に応じて新しいアカウント配列を追加するだけで、何個でもアカウントを増設可能です。
+global $SYSTEM_LINE_ACCOUNTS, $CURRENT_ACTIVE_LINE_ACCOUNT_KEY;
+$CURRENT_ACTIVE_LINE_ACCOUNT_KEY = null;
+
+$SYSTEM_LINE_ACCOUNTS = [
+    'senior' => [
+        'id' => 'senior',
+        'name' => 'シニア向けパソコン教室',
+        'short_name' => 'パソコン教室',
+        'theme_color' => '#ff8700', // 教室ブランドカラー (オレンジ)
+        'channel_access_token' => 'n1ItOIEh+8mNJiEpXK+hG0T4/b1Z9taR2FkYQrAwA6J/3XMdUUfHnkP3DX+7u+nGgirA4helNntS1qT2m2kOtV7yiYM2MwxrEB7qj09J/yXhItpCqKGS7l4lcaffcvukX/jHGFOLDSloz0vBLIQAdQdB04t89/1O/w1cDnyilFU=',
+        'channel_secret' => 'a5dbfb92fa7be994b6e8f38f870b97b8',
+        'liff_id' => '2000276344-YL1wXh0h',
+        'proline_calendar_url' => 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1',
+        'proline_webhook_url' => '',
+        'db_file' => 'cars.db', // 既存メインDB
+        'is_default' => true,
+    ],
+    'upfahren' => [
+        'id' => 'upfahren',
+        'name' => 'アップファーレン (車両点検・車検)',
+        'short_name' => 'アップファーレン',
+        'theme_color' => '#2563eb', // ブルー
+        'channel_access_token' => '', // 2つ目のアカウントのチャネルアクセストークンを貼り付け
+        'channel_secret' => '',       // 2つ目のアカウントのチャネルシークレット
+        'liff_id' => '',              // 2つ目のアカウントのLIFF ID
+        'proline_calendar_url' => '',
+        'proline_webhook_url' => '',
+        'db_file' => 'cars_upfahren.db', // 専用DB
+        'is_default' => false,
+    ],
+];
+
+// --- 後方互換用 定数フォールバック (単一アカウント時代の定数参照を安全に維持) ---
+define('LINE_CHANNEL_ACCESS_TOKEN', $SYSTEM_LINE_ACCOUNTS['senior']['channel_access_token']);
+define('LINE_CHANNEL_SECRET', $SYSTEM_LINE_ACCOUNTS['senior']['channel_secret']);
+define('LINE_LIFF_ID', $SYSTEM_LINE_ACCOUNTS['senior']['liff_id']);
+define('LIFF_ID', $SYSTEM_LINE_ACCOUNTS['senior']['liff_id']);
 
 // --- 新着車両の自動配信設定 ---
 define('ENABLE_NEW_CAR_BROADCAST', false); // 新着検知時にLINE公式アカウントの友だち全員へ自動一斉配信するか (true: 送信する, false: 送信しない)
@@ -35,7 +70,6 @@ define('PROLINE_WEBHOOK_URL', ''); // プロラインのWebhook URL (例: https:
 define('PROLINE_RELAY_ENABLED', true); // プロラインへのWebhook転送を有効にするか (true: 有効, false: 無効)
 define('PROLINE_CALENDAR_URL', 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1'); // レッスン予約・日程変更URL (受講生自動ログインLIFF)
 
-
 // --- リッチメニュー画像保存ディレクトリ ---
 define('RICHMENU_UPLOAD_DIR', __DIR__ . '/uploads/richmenu');
 if (!is_dir(RICHMENU_UPLOAD_DIR)) {
@@ -43,36 +77,189 @@ if (!is_dir(RICHMENU_UPLOAD_DIR)) {
 }
 @chmod(RICHMENU_UPLOAD_DIR, 0777);
 
-/**
- * データベースファイルのパスを自動検出
- */
-function getDbFilePath(): string {
-    $candidates = [
-        __DIR__ . '/batch/cars.db',
-        __DIR__ . '/../batch/cars.db',
-        __DIR__ . '/cars.db',
-        __DIR__ . '/../../batch/cars.db',
-        dirname(__DIR__) . '/batch/cars.db'
-    ];
+// ==============================================================================
+// マルチアカウント管理・アクセサ関数群
+// ==============================================================================
 
-    foreach ($candidates as $path) {
-        if (file_exists($path)) {
-            return $path;
+/**
+ * 現在のアクティブアカウントキーを設定
+ */
+function setActiveAccountKey(string $key): void {
+    global $SYSTEM_LINE_ACCOUNTS, $CURRENT_ACTIVE_LINE_ACCOUNT_KEY;
+    if (isset($SYSTEM_LINE_ACCOUNTS[$key])) {
+        $CURRENT_ACTIVE_LINE_ACCOUNT_KEY = $key;
+    }
+}
+
+/**
+ * 現在のアクティブアカウントキーを取得
+ */
+function getActiveAccountKey(): string {
+    global $SYSTEM_LINE_ACCOUNTS, $CURRENT_ACTIVE_LINE_ACCOUNT_KEY;
+    if (!empty($CURRENT_ACTIVE_LINE_ACCOUNT_KEY) && isset($SYSTEM_LINE_ACCOUNTS[$CURRENT_ACTIVE_LINE_ACCOUNT_KEY])) {
+        return $CURRENT_ACTIVE_LINE_ACCOUNT_KEY;
+    }
+
+    $req = $_REQUEST['account'] ?? ($_SERVER['HTTP_X_LINE_ACCOUNT'] ?? ($_COOKIE['active_line_account'] ?? null));
+    if (!empty($req) && isset($SYSTEM_LINE_ACCOUNTS[$req])) {
+        $CURRENT_ACTIVE_LINE_ACCOUNT_KEY = $req;
+        return $CURRENT_ACTIVE_LINE_ACCOUNT_KEY;
+    }
+
+    foreach ($SYSTEM_LINE_ACCOUNTS as $k => $acc) {
+        if (!empty($acc['is_default'])) {
+            $CURRENT_ACTIVE_LINE_ACCOUNT_KEY = $k;
+            return $CURRENT_ACTIVE_LINE_ACCOUNT_KEY;
         }
     }
 
-    // デフォルト
-    return __DIR__ . '/batch/cars.db';
+    $keys = array_keys($SYSTEM_LINE_ACCOUNTS);
+    $CURRENT_ACTIVE_LINE_ACCOUNT_KEY = $keys[0] ?? 'senior';
+    return $CURRENT_ACTIVE_LINE_ACCOUNT_KEY;
+}
+
+/**
+ * 登録されているアカウント一覧（管理画面用サマリー）を取得
+ */
+function getAccountList(): array {
+    global $SYSTEM_LINE_ACCOUNTS;
+    $list = [];
+    $activeKey = getActiveAccountKey();
+    foreach ($SYSTEM_LINE_ACCOUNTS as $k => $acc) {
+        $hasToken = !empty($acc['channel_access_token']) && $acc['channel_access_token'] !== 'YOUR_CHANNEL_ACCESS_TOKEN_HERE';
+        $hasSecret = !empty($acc['channel_secret']) && $acc['channel_secret'] !== 'YOUR_CHANNEL_SECRET_HERE';
+        $list[] = [
+            'id' => $acc['id'],
+            'name' => $acc['name'],
+            'short_name' => $acc['short_name'] ?? $acc['name'],
+            'theme_color' => $acc['theme_color'] ?? '#6366f1',
+            'is_default' => !empty($acc['is_default']),
+            'is_active' => ($k === $activeKey),
+            'is_configured' => ($hasToken && $hasSecret),
+            'has_token' => $hasToken,
+            'db_file' => $acc['db_file'] ?? "cars_{$k}.db"
+        ];
+    }
+    return $list;
+}
+
+/**
+ * アカウント設定配列を取得
+ */
+function getAccountConfig(?string $key = null): array {
+    global $SYSTEM_LINE_ACCOUNTS;
+    $targetKey = $key ?: getActiveAccountKey();
+    if (isset($SYSTEM_LINE_ACCOUNTS[$targetKey])) {
+        return $SYSTEM_LINE_ACCOUNTS[$targetKey];
+    }
+    foreach ($SYSTEM_LINE_ACCOUNTS as $acc) {
+        if (!empty($acc['is_default'])) return $acc;
+    }
+    return reset($SYSTEM_LINE_ACCOUNTS) ?: [];
+}
+
+/**
+ * チャネルアクセストークンを取得
+ */
+function getLineAccessToken(?string $key = null): string {
+    $conf = getAccountConfig($key);
+    if (!empty($conf['channel_access_token'])) {
+        return $conf['channel_access_token'];
+    }
+    return defined('LINE_CHANNEL_ACCESS_TOKEN') ? LINE_CHANNEL_ACCESS_TOKEN : '';
+}
+
+/**
+ * チャネルシークレットを取得
+ */
+function getLineChannelSecret(?string $key = null): string {
+    $conf = getAccountConfig($key);
+    if (!empty($conf['channel_secret'])) {
+        return $conf['channel_secret'];
+    }
+    return defined('LINE_CHANNEL_SECRET') ? LINE_CHANNEL_SECRET : '';
+}
+
+/**
+ * LIFF IDを取得
+ */
+function getLineLiffId(?string $key = null): string {
+    $conf = getAccountConfig($key);
+    if (!empty($conf['liff_id'])) {
+        return $conf['liff_id'];
+    }
+    return defined('LINE_LIFF_ID') ? LINE_LIFF_ID : '';
+}
+
+/**
+ * 店舗・教室名を取得
+ */
+function getAccountShopName(?string $key = null): string {
+    $conf = getAccountConfig($key);
+    if (!empty($conf['name'])) {
+        return $conf['name'];
+    }
+    return defined('SHOP_NAME') ? SHOP_NAME : 'LINE公式アカウント';
+}
+
+/**
+ * プロライン予約カレンダーURLを取得
+ */
+function getAccountProlineCalendarUrl(?string $key = null): string {
+    $conf = getAccountConfig($key);
+    if (!empty($conf['proline_calendar_url'])) {
+        return $conf['proline_calendar_url'];
+    }
+    return defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : '';
+}
+
+/**
+ * データベースファイルのパスを自動検出 (アカウント別対応)
+ */
+function getDbFilePath(?string $accountKey = null): string {
+    $key = $accountKey ?: getActiveAccountKey();
+    $conf = getAccountConfig($key);
+    $dbFileName = !empty($conf['db_file']) ? $conf['db_file'] : 'cars.db';
+
+    // デフォルト（既存メインDB）の場合
+    if ($dbFileName === 'cars.db') {
+        $candidates = [
+            __DIR__ . '/batch/cars.db',
+            __DIR__ . '/../batch/cars.db',
+            __DIR__ . '/cars.db',
+            __DIR__ . '/../../batch/cars.db',
+            dirname(__DIR__) . '/batch/cars.db'
+        ];
+
+        foreach ($candidates as $path) {
+            if (file_exists($path)) {
+                return $path;
+            }
+        }
+        return __DIR__ . '/batch/cars.db';
+    }
+
+    // 別アカウント用DBファイル: メインDBと同階層に作成・配置
+    $mainPath = getDbFilePath('senior');
+    $dir = dirname($mainPath);
+    return $dir . '/' . $dbFileName;
 }
 
 define('DB_PATH', getDbFilePath());
 
 /**
- * データベース接続オブジェクト (PDO) を取得
+ * データベース接続オブジェクト (PDO) を取得 (アカウント別対応・接続プール)
+ * @param string|null $accountKey 指定アカウントキー (未指定時は現在のアクティブアカウント)
  * @return PDO
  */
-function getDbConnection(): PDO {
-    $dbFile = DB_PATH;
+function getDbConnection(?string $accountKey = null): PDO {
+    static $dbPool = [];
+    $key = $accountKey ?: getActiveAccountKey();
+    if (isset($dbPool[$key])) {
+        return $dbPool[$key];
+    }
+
+    $dbFile = getDbFilePath($key);
     $dir = dirname($dbFile);
     if (!is_dir($dir)) {
         @mkdir($dir, 0777, true);
@@ -287,6 +474,7 @@ function getDbConnection(): PDO {
         }
     } catch (Exception $e) {}
 
+    $dbPool[$key] = $pdo;
     return $pdo;
 }
 
@@ -311,7 +499,8 @@ function getBaseUrl(): string {
  * LINEユーザーのプロフィール情報（表示名・アイコン）を取得
  */
 function getLineUserProfile(string $userId): ?array {
-    if (empty($userId) || LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+    $token = getLineAccessToken();
+    if (empty($userId) || empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return null;
     }
 
@@ -321,7 +510,7 @@ function getLineUserProfile(string $userId): ?array {
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 3,
         CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+            'Authorization: Bearer ' . $token
         ]
     ]);
     $res = curl_exec($ch);
@@ -340,7 +529,8 @@ function getLineUserProfile(string $userId): ?array {
  * GET https://api.line.me/v2/bot/followers/ids
  */
 function getLineFollowerUserIds(?string $start = null): array {
-    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+    $token = getLineAccessToken();
+    if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
     }
 
@@ -354,7 +544,7 @@ function getLineFollowerUserIds(?string $start = null): array {
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 15,
         CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+            'Authorization: Bearer ' . $token
         ]
     ]);
     $res = curl_exec($ch);
@@ -593,7 +783,8 @@ function getUserCustomRichMenuId(?PDO $db, string $userId): ?string {
  * GET https://api.line.me/v2/bot/user/{userId}/richmenu
  */
 function lineGetUserRichMenuId(string $userId): ?string {
-    if (empty($userId) || LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+    $token = getLineAccessToken();
+    if (empty($userId) || empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return null;
     }
 
@@ -603,7 +794,7 @@ function lineGetUserRichMenuId(string $userId): ?string {
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 6,
         CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+            'Authorization: Bearer ' . $token
         ]
     ]);
     $res = curl_exec($ch);
@@ -654,7 +845,8 @@ function isNoticeMenu(?PDO $db, string $aliasOrMenuId): bool {
  * 特定のユーザーへ個別プッシュ送信 (Push Message API)
  */
 function sendLinePushMessage(string $userId, array $messages): array {
-    if (empty($userId) || LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+    $token = getLineAccessToken();
+    if (empty($userId) || empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => 'Token or userId missing'];
     }
 
@@ -679,7 +871,7 @@ function sendLinePushMessage(string $userId, array $messages): array {
         CURLOPT_TIMEOUT => 8,
         CURLOPT_HTTPHEADER => [
             'Content-Type: application/json; charset=utf-8',
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+            'Authorization: Bearer ' . $token
         ],
         CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE)
     ]);
@@ -726,8 +918,9 @@ function sendLinePushMessage(string $userId, array $messages): array {
  * LINE公式アカウントの友だち全員へメッセージを一斉送信 (Broadcast API)
  */
 function sendLineBroadcastMessage(array $messages): array {
-    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
-        writeDebugLog("一斉配信スキップ: LINE_CHANNEL_ACCESS_TOKEN が未設定です");
+    $token = getLineAccessToken();
+    if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+        writeDebugLog("一斉配信スキップ: LINEアクセストークンが未設定です");
         return ['success' => false, 'error' => 'Token not configured'];
     }
 
@@ -751,7 +944,7 @@ function sendLineBroadcastMessage(array $messages): array {
         CURLOPT_TIMEOUT => 15,
         CURLOPT_HTTPHEADER => [
             'Content-Type: application/json; charset=utf-8',
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+            'Authorization: Bearer ' . $token
         ],
         CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE)
     ]);
@@ -797,7 +990,8 @@ function sendLineBroadcastMessage(array $messages): array {
  * LINE Messaging API: リッチメニュー作成 (メタデータ)
  */
 function lineCreateRichMenu(array $menuData): array {
-    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+    $token = getLineAccessToken();
+    if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
     }
 
@@ -809,7 +1003,7 @@ function lineCreateRichMenu(array $menuData): array {
         CURLOPT_TIMEOUT => 10,
         CURLOPT_HTTPHEADER => [
             'Content-Type: application/json; charset=utf-8',
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+            'Authorization: Bearer ' . $token
         ],
         CURLOPT_POSTFIELDS => json_encode($menuData, JSON_UNESCAPED_UNICODE)
     ]);
@@ -832,7 +1026,8 @@ function lineCreateRichMenu(array $menuData): array {
  * LINE Messaging API: リッチメニュー画像アップロード
  */
 function lineUploadRichMenuImage(string $richMenuId, string $imageFilePath, string $contentType): array {
-    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+    $token = getLineAccessToken();
+    if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
     }
 
@@ -849,7 +1044,7 @@ function lineUploadRichMenuImage(string $richMenuId, string $imageFilePath, stri
         CURLOPT_TIMEOUT => 20,
         CURLOPT_HTTPHEADER => [
             "Content-Type: {$contentType}",
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+            'Authorization: Bearer ' . $token
         ],
         CURLOPT_POSTFIELDS => $imageData
     ]);
@@ -869,7 +1064,8 @@ function lineUploadRichMenuImage(string $richMenuId, string $imageFilePath, stri
  * LINE Messaging API: デフォルトリッチメニュー設定 (友だち全員に適用)
  */
 function lineSetDefaultRichMenu(string $richMenuId): array {
-    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+    $token = getLineAccessToken();
+    if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
     }
 
@@ -881,7 +1077,7 @@ function lineSetDefaultRichMenu(string $richMenuId): array {
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 10,
         CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN,
+            'Authorization: Bearer ' . $token,
             'Content-Length: 0'
         ]
     ]);
@@ -908,7 +1104,8 @@ function lineSetDefaultRichMenu(string $richMenuId): array {
  * LINE Messaging API: デフォルトリッチメニュー解除
  */
 function lineCancelDefaultRichMenu(): array {
-    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+    $token = getLineAccessToken();
+    if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
     }
 
@@ -919,7 +1116,7 @@ function lineCancelDefaultRichMenu(): array {
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 10,
         CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+            'Authorization: Bearer ' . $token
         ]
     ]);
     $res = curl_exec($ch);
@@ -944,7 +1141,8 @@ function lineCancelDefaultRichMenu(): array {
  * LINE Messaging API: 現在のデフォルトリッチメニューID取得
  */
 function lineGetDefaultRichMenuId(): ?string {
-    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+    $token = getLineAccessToken();
+    if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return null;
     }
 
@@ -954,7 +1152,7 @@ function lineGetDefaultRichMenuId(): ?string {
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 10,
         CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+            'Authorization: Bearer ' . $token
         ]
     ]);
     $res = curl_exec($ch);
@@ -972,7 +1170,8 @@ function lineGetDefaultRichMenuId(): ?string {
  * LINE Messaging API: リッチメニュー詳細取得 (LINEサーバー上の実データ)
  */
 function lineGetRichMenu(string $richMenuId): ?array {
-    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE' || empty($richMenuId)) {
+    $token = getLineAccessToken();
+    if (empty($richMenuId) || empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return null;
     }
 
@@ -982,7 +1181,7 @@ function lineGetRichMenu(string $richMenuId): ?array {
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 10,
         CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+            'Authorization: Bearer ' . $token
         ]
     ]);
     $res = curl_exec($ch);
@@ -1001,7 +1200,8 @@ function lineGetRichMenu(string $richMenuId): ?array {
  * GET https://api.line.me/v2/bot/richmenu/list
  */
 function lineGetRichMenuList(): array {
-    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+    $token = getLineAccessToken();
+    if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => 'LINEアクセストークン未設定', 'richmenus' => []];
     }
 
@@ -1011,7 +1211,7 @@ function lineGetRichMenuList(): array {
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 15,
         CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+            'Authorization: Bearer ' . $token
         ]
     ]);
     $res = curl_exec($ch);
@@ -1039,7 +1239,8 @@ function lineGetRichMenuList(): array {
  * LINE Messaging API: リッチメニュー削除
  */
 function lineDeleteRichMenu(string $richMenuId): array {
-    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+    $token = getLineAccessToken();
+    if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
     }
 
@@ -1050,7 +1251,7 @@ function lineDeleteRichMenu(string $richMenuId): array {
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 10,
         CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+            'Authorization: Bearer ' . $token
         ]
     ]);
     $res = curl_exec($ch);
@@ -1076,7 +1277,8 @@ function lineDeleteRichMenu(string $richMenuId): array {
  * LINE Messaging API: リッチメニューエイリアス作成・更新
  */
 function lineCreateOrUpdateRichMenuAlias(string $richMenuId, string $aliasId): array {
-    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+    $token = getLineAccessToken();
+    if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
     }
 
@@ -1089,7 +1291,7 @@ function lineCreateOrUpdateRichMenuAlias(string $richMenuId, string $aliasId): a
         CURLOPT_TIMEOUT => 10,
         CURLOPT_HTTPHEADER => [
             'Content-Type: application/json; charset=utf-8',
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+            'Authorization: Bearer ' . $token
         ],
         CURLOPT_POSTFIELDS => json_encode([
             'richMenuId' => $richMenuId,
@@ -1114,7 +1316,7 @@ function lineCreateOrUpdateRichMenuAlias(string $richMenuId, string $aliasId): a
         CURLOPT_TIMEOUT => 10,
         CURLOPT_HTTPHEADER => [
             'Content-Type: application/json; charset=utf-8',
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+            'Authorization: Bearer ' . $token
         ],
         CURLOPT_POSTFIELDS => json_encode([
             'richMenuId' => $richMenuId
@@ -1137,7 +1339,8 @@ function lineCreateOrUpdateRichMenuAlias(string $richMenuId, string $aliasId): a
  * LINE Messaging API: リッチメニューエイリアス削除
  */
 function lineDeleteRichMenuAlias(string $aliasId): array {
-    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+    $token = getLineAccessToken();
+    if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
     }
 
@@ -1148,7 +1351,7 @@ function lineDeleteRichMenuAlias(string $aliasId): array {
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 10,
         CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+            'Authorization: Bearer ' . $token
         ]
     ]);
     $res = curl_exec($ch);
@@ -1167,7 +1370,8 @@ function lineDeleteRichMenuAlias(string $aliasId): array {
  * LINE Messaging API: リッチメニューエイリアス一覧取得
  */
 function lineGetRichMenuAliasList(): array {
-    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+    $token = getLineAccessToken();
+    if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'aliases' => []];
     }
 
@@ -1177,7 +1381,7 @@ function lineGetRichMenuAliasList(): array {
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 10,
         CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+            'Authorization: Bearer ' . $token
         ]
     ]);
     $res = curl_exec($ch);
@@ -1196,7 +1400,8 @@ function lineGetRichMenuAliasList(): array {
  * GET https://api-data.line.me/v2/bot/richmenu/{richMenuId}/content
  */
 function lineGetRichMenuImage(string $richMenuId): ?string {
-    if (empty($richMenuId) || LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+    $token = getLineAccessToken();
+    if (empty($richMenuId) || empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return null;
     }
 
@@ -1206,7 +1411,7 @@ function lineGetRichMenuImage(string $richMenuId): ?string {
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 15,
         CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+            'Authorization: Bearer ' . $token
         ]
     ]);
     $res = curl_exec($ch);
@@ -1225,7 +1430,8 @@ function lineGetRichMenuImage(string $richMenuId): ?string {
  * @return string|null 個別紐付けリッチメニューID（個別紐付けなし/全体デフォルト表示中の場合はnull）
  */
 function lineGetUserRichMenu(string $userId): ?string {
-    if (empty($userId) || LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+    $token = getLineAccessToken();
+    if (empty($userId) || empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return null;
     }
 
@@ -1235,7 +1441,7 @@ function lineGetUserRichMenu(string $userId): ?string {
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 5,
         CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+            'Authorization: Bearer ' . $token
         ]
     ]);
     $res = curl_exec($ch);
@@ -1256,7 +1462,8 @@ function lineGetUserRichMenu(string $userId): ?string {
  * POST https://api.line.me/v2/bot/user/{userId}/richmenu/{richMenuId}
  */
 function lineLinkUserRichMenu(string $userId, string $richMenuId): array {
-    if (empty($userId) || empty($richMenuId) || LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+    $token = getLineAccessToken();
+    if (empty($userId) || empty($richMenuId) || empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => '無効なパラメータまたはアクセストークン未設定'];
     }
 
@@ -1268,7 +1475,7 @@ function lineLinkUserRichMenu(string $userId, string $richMenuId): array {
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 10,
         CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN,
+            'Authorization: Bearer ' . $token,
             'Content-Length: 0'
         ]
     ]);
@@ -1296,7 +1503,8 @@ function lineLinkUserRichMenu(string $userId, string $richMenuId): array {
  * DELETE https://api.line.me/v2/bot/user/{userId}/richmenu
  */
 function lineUnlinkUserRichMenu(string $userId): array {
-    if (empty($userId) || LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+    $token = getLineAccessToken();
+    if (empty($userId) || empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => '無効なパラメータまたはアクセストークン未設定'];
     }
 
@@ -1307,7 +1515,7 @@ function lineUnlinkUserRichMenu(string $userId): array {
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 10,
         CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+            'Authorization: Bearer ' . $token
         ]
     ]);
     $res = curl_exec($ch);

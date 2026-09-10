@@ -1,12 +1,88 @@
-/**
- * アップファーレン 店舗管理 操作マニュアル用 JavaScript
- */
+const manualState = {
+    accounts: [],
+    activeAccount: 'senior',
+    activeAccountInfo: null
+};
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadAccounts();
     initAuth();
     initSearch();
     initScrollSpy();
 });
+
+async function loadAccounts() {
+    const accountSelect = document.getElementById('accountSelect');
+    const badgeDot = document.getElementById('accountBadgeDot');
+    const brandTitle = document.getElementById('systemBrandTitle');
+    const brandBadge = document.getElementById('systemBrandBadge');
+
+    try {
+        const savedAccount = localStorage.getItem('active_line_account') || '';
+        const url = `../api.php?action=get_accounts${savedAccount ? '&account=' + encodeURIComponent(savedAccount) : ''}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.accounts)) {
+            manualState.accounts = data.accounts;
+            manualState.activeAccount = data.active_account || 'senior';
+            manualState.activeAccountInfo = data.active_account_info || null;
+            localStorage.setItem('active_line_account', manualState.activeAccount);
+
+            if (accountSelect) {
+                accountSelect.innerHTML = manualState.accounts.map(acc => {
+                    const isSelected = acc.id === manualState.activeAccount;
+                    const configNote = !acc.is_configured ? ' (⚠️未設定)' : '';
+                    return `<option value="${escapeHtml(acc.id)}" ${isSelected ? 'selected' : ''}>${escapeHtml(acc.name)}${configNote}</option>`;
+                }).join('');
+
+                accountSelect.addEventListener('change', async (e) => {
+                    const newKey = e.target.value;
+                    if (!newKey || newKey === manualState.activeAccount) return;
+                    try {
+                        const switchRes = await fetch('../api.php?action=switch_account', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: `account=${encodeURIComponent(newKey)}`
+                        });
+                        const switchData = await switchRes.json();
+                        if (switchData.success) {
+                            manualState.activeAccount = switchData.active_account;
+                            manualState.activeAccountInfo = switchData.active_account_info;
+                            localStorage.setItem('active_line_account', manualState.activeAccount);
+                            updateBrandDisplay();
+                        }
+                    } catch (err) {
+                        console.error('Account switch failed:', err);
+                    }
+                });
+            }
+
+            updateBrandDisplay();
+        }
+    } catch (e) {
+        console.error('Failed to load accounts in manual:', e);
+    }
+
+    function updateBrandDisplay() {
+        const currentAcc = manualState.accounts.find(a => a.id === manualState.activeAccount) || manualState.activeAccountInfo;
+        if (currentAcc) {
+            if (brandTitle) brandTitle.textContent = `${currentAcc.name} 管理システム`;
+            if (brandBadge) brandBadge.style.background = currentAcc.theme_color || '#4f46e5';
+            if (badgeDot) badgeDot.style.background = currentAcc.theme_color || '#ff8700';
+        }
+    }
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    })[m]);
+}
 
 function initAuth() {
     const savedPass = sessionStorage.getItem('admin_pass');

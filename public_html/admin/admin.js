@@ -11,7 +11,31 @@ const state = {
     richMenus: [],
     activeUserMenuCust: null,
     loadedBaseImg: null,
-    userMenuBannerBounds: null
+    userMenuBannerBounds: null,
+    // マルチアカウント管理
+    activeAccount: localStorage.getItem('active_line_account') || 'senior',
+    accounts: [],
+    activeAccountInfo: null
+};
+
+// APIリクエストに現在のアクティブアカウントパラメータを自動付与するfetchインターセプター
+const originalFetch = window.fetch;
+window.fetch = function (resource, init = {}) {
+    let url = (typeof resource === 'string') ? resource : (resource && resource.url ? resource.url : '');
+    if (url.includes('api.php') && state.activeAccount) {
+        const acc = state.activeAccount;
+        if (!url.includes('account=')) {
+            url += (url.includes('?') ? '&' : '?') + 'account=' + encodeURIComponent(acc);
+            if (typeof resource === 'string') {
+                resource = url;
+            }
+        }
+        // POSTボディにURLSearchParamsがある場合もaccountを付与
+        if (init && init.body && init.body instanceof URLSearchParams && !init.body.has('account')) {
+            init.body.append('account', acc);
+        }
+    }
+    return originalFetch.call(this, resource, init);
 };
 
 const elements = {
@@ -21,6 +45,12 @@ const elements = {
     loginErrorMsg: document.getElementById('loginErrorMsg'),
     adminApp: document.getElementById('adminApp'),
     logoutBtn: document.getElementById('logoutBtn'),
+
+    // アカウント切替
+    accountSelect: document.getElementById('accountSelect'),
+    accountBadgeDot: document.getElementById('accountBadgeDot'),
+    systemBrandTitle: document.getElementById('systemBrandTitle'),
+    systemBrandBadge: document.getElementById('systemBrandBadge'),
 
     // 統計
     statTotalUsers: document.getElementById('statTotalUsers'),
@@ -193,11 +223,90 @@ const elements = {
     toast: document.getElementById('adminToast')
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadAccounts();
     initAuth();
     initEventListeners();
     initKnowledgeBroadcastStudio();
 });
+
+async function loadAccounts() {
+    try {
+        const savedAccount = localStorage.getItem('active_line_account') || '';
+        const url = `../api.php?action=get_accounts${savedAccount ? '&account=' + encodeURIComponent(savedAccount) : ''}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.accounts)) {
+            state.accounts = data.accounts;
+            state.activeAccount = data.active_account || 'senior';
+            state.activeAccountInfo = data.active_account_info || null;
+            localStorage.setItem('active_line_account', state.activeAccount);
+            renderAccountSwitcher();
+            updateBrandDisplay();
+        }
+    } catch (e) {
+        console.error('Failed to load accounts:', e);
+    }
+}
+
+function renderAccountSwitcher() {
+    if (!elements.accountSelect) return;
+    elements.accountSelect.innerHTML = state.accounts.map(acc => {
+        const isSelected = acc.id === state.activeAccount;
+        const configNote = !acc.is_configured ? ' (⚠️未設定)' : '';
+        return `<option value="${escapeHtml(acc.id)}" ${isSelected ? 'selected' : ''}>${escapeHtml(acc.name)}${configNote}</option>`;
+    }).join('');
+
+    const currentAcc = state.accounts.find(a => a.id === state.activeAccount);
+    if (currentAcc && elements.accountBadgeDot) {
+        elements.accountBadgeDot.style.background = currentAcc.theme_color || '#ff8700';
+    }
+}
+
+function updateBrandDisplay() {
+    const currentAcc = state.accounts.find(a => a.id === state.activeAccount) || state.activeAccountInfo;
+    if (currentAcc) {
+        if (elements.systemBrandTitle) {
+            elements.systemBrandTitle.textContent = `${currentAcc.name} 受講生管理`;
+        }
+        if (elements.systemBrandBadge) {
+            elements.systemBrandBadge.style.background = currentAcc.theme_color || '#4f46e5';
+        }
+        if (elements.accountBadgeDot) {
+            elements.accountBadgeDot.style.background = currentAcc.theme_color || '#ff8700';
+        }
+    }
+}
+
+async function handleAccountSwitch(newAccountKey) {
+    if (!newAccountKey || newAccountKey === state.activeAccount) return;
+    try {
+        const res = await fetch('../api.php?action=switch_account', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `account=${encodeURIComponent(newAccountKey)}`
+        });
+        const data = await res.json();
+        if (data.success) {
+            state.activeAccount = data.active_account;
+            state.activeAccountInfo = data.active_account_info;
+            state.accounts = data.accounts || state.accounts;
+            localStorage.setItem('active_line_account', state.activeAccount);
+            renderAccountSwitcher();
+            updateBrandDisplay();
+            showToast(`🔄 「${state.activeAccountInfo ? state.activeAccountInfo.name : newAccountKey}」に切り替えました`);
+            
+            // 対象アカウントのデータを再取得
+            state.richMenus = [];
+            if (state.password) {
+                await Promise.all([fetchCustomers(), loadRichMenus()]);
+            }
+        }
+    } catch (e) {
+        console.error('Account switch failed:', e);
+        showToast('⚠️ アカウント切り替えに失敗しました');
+    }
+}
 
 function initAuth() {
     const savedPass = sessionStorage.getItem('admin_pass');
@@ -211,6 +320,12 @@ function initAuth() {
 }
 
 function initEventListeners() {
+    // アカウント切替
+    if (elements.accountSelect) {
+        elements.accountSelect.addEventListener('change', (e) => {
+            handleAccountSwitch(e.target.value);
+        });
+    }
     // プロライン連携設定モーダル開閉 & 操作
     if (elements.openProlineSettingsBtn) elements.openProlineSettingsBtn.addEventListener('click', openProlineSettingsModal);
     if (elements.closeProlineSettingsModalBtn) elements.closeProlineSettingsModalBtn.addEventListener('click', closeProlineSettingsModal);
@@ -485,7 +600,7 @@ async function attemptLogin() {
     elements.loginErrorMsg.textContent = '';
 
     try {
-        const res = await fetch(`../api.php?action=admin_list_customers&password=${encodeURIComponent(pass)}`);
+        const res = await fetch(`../api.php?action=admin_list_customers&password=${encodeURIComponent(pass)}&account=${encodeURIComponent(state.activeAccount)}`);
         const data = await res.json();
 
         if (data.success) {
@@ -494,6 +609,7 @@ async function attemptLogin() {
             elements.loginModal.style.display = 'none';
             elements.adminApp.style.display = 'block';
             state.allCustomers = data.customers || [];
+            updateBrandDisplay();
             updateStats();
             renderTable();
             loadRichMenus();
@@ -517,10 +633,11 @@ async function loadDashboard() {
 async function fetchCustomers() {
     try {
         const sortParam = encodeURIComponent(state.currentSort || 'last_interaction');
-        const res = await fetch(`../api.php?action=admin_list_customers&password=${encodeURIComponent(state.password)}&sort=${sortParam}`);
+        const res = await fetch(`../api.php?action=admin_list_customers&password=${encodeURIComponent(state.password)}&sort=${sortParam}&account=${encodeURIComponent(state.activeAccount)}`);
         const data = await res.json();
         if (data.success) {
             state.allCustomers = data.customers || [];
+            updateBrandDisplay();
             updateStats();
             renderTable();
         } else if (res.status === 401) {
@@ -546,7 +663,7 @@ async function syncLineFollowers() {
     }
 
     try {
-        const res = await fetch(`../api.php?action=admin_sync_line_followers&password=${encodeURIComponent(state.password)}`);
+        const res = await fetch(`../api.php?action=admin_sync_line_followers&password=${encodeURIComponent(state.password)}&account=${encodeURIComponent(state.activeAccount)}`);
         const data = await res.json();
 
         if (data.success) {

@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260910_tap_hint_off_v1">
+    <link rel="stylesheet" href="admin.css?v=20260910_multi_account_v1">
 </head>
 <body>
     <!-- ログインモーダル (初期表示) -->
@@ -35,10 +35,23 @@
         <!-- サイドバー/ヘッダー -->
         <header class="admin-header">
             <div class="admin-brand">
-                <div class="brand-badge" style="background: #4f46e5; color: #fff;"><i class="fa-solid fa-laptop"></i></div>
+                <div class="brand-badge" id="systemBrandBadge" style="background: #4f46e5; color: #fff;"><i class="fa-solid fa-laptop"></i></div>
                 <div>
-                    <h1>シニア向けパソコン教室 受講生管理</h1>
-                    <span>次回レッスン・定期サポート リマインドダッシュボード</span>
+                    <h1 id="systemBrandTitle">シニア向けパソコン教室 受講生管理</h1>
+                    <span id="systemBrandSubtitle">次回レッスン・定期サポート リマインドダッシュボード</span>
+                </div>
+            </div>
+
+            <!-- アカウント切り替えスイッチャー -->
+            <div class="account-switcher-wrap" id="accountSwitcherWrap">
+                <label for="accountSelect" class="account-switcher-label">
+                    <i class="fa-solid fa-arrows-rotate"></i> アカウント:
+                </label>
+                <div class="account-select-box">
+                    <span class="account-badge-dot" id="accountBadgeDot"></span>
+                    <select id="accountSelect" class="account-select-dropdown" title="操作対象のLINE公式アカウントを切り替えます">
+                        <option value="senior">シニア向けパソコン教室</option>
+                    </select>
                 </div>
             </div>
 
@@ -944,6 +957,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260910_tap_hint_off_v1"></script>
+    <script src="admin.js?v=20260910_multi_account_v1"></script>
 </body>
 </html>

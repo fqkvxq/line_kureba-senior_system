@@ -6,6 +6,16 @@
 
 require_once __DIR__ . '/config.php';
 
+// Webhookの対象アカウントをクエリパラメータから特定 (未指定時はデフォルトアカウント)
+$webhookAccount = $_GET['account'] ?? ($_REQUEST['account'] ?? null);
+if (!empty($webhookAccount)) {
+    setActiveAccountKey($webhookAccount);
+}
+$activeAccount = getActiveAccountKey();
+$activeConfig = getAccountConfig($activeAccount);
+$channelAccessToken = getLineAccessToken($activeAccount);
+$channelSecret = getLineChannelSecret($activeAccount);
+
 // --- ブラウザ等からの直接GETアクセスの場合は診断画面を表示 ---
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     header('Content-Type: text/html; charset=utf-8');
@@ -13,10 +23,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // DB状態確認
     $dbStatus = 'エラー';
     $studentCount = 0;
-    $dbPath = DB_PATH;
     $db = null;
     try {
-        $db = getDbConnection();
+        $db = getDbConnection($activeAccount);
         $stmt = $db->query("SELECT COUNT(*) as cnt FROM customer_cars");
         $studentCount = (int)$stmt->fetch()['cnt'];
         $dbStatus = "正常稼働中 (受講生登録: {$studentCount}名)";
@@ -24,8 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $dbStatus = "接続失敗: " . htmlspecialchars($e->getMessage());
     }
 
-    $tokenConfigured = (LINE_CHANNEL_ACCESS_TOKEN !== 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') ? '<span style="color:green;">設定済み</span>' : '<span style="color:red;">未設定 (config.phpに貼り付けてください)</span>';
-    $secretConfigured = (LINE_CHANNEL_SECRET !== 'YOUR_CHANNEL_SECRET_HERE') ? '<span style="color:green;">設定済み</span>' : '<span style="color:red;">未設定</span>';
+    $tokenConfigured = (!empty($channelAccessToken) && $channelAccessToken !== 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') ? '<span style="color:green;">設定済み</span>' : '<span style="color:red;">未設定 (config.phpに貼り付けてください)</span>';
+    $secretConfigured = (!empty($channelSecret) && $channelSecret !== 'YOUR_CHANNEL_SECRET_HERE') ? '<span style="color:green;">設定済み</span>' : '<span style="color:red;">未設定</span>';
     
     // プロライン連携状態
     $proline = getProlineSettings($db);
@@ -37,12 +46,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $prolineUrlDisplay = !empty($proline['webhook_url']) ? htmlspecialchars($proline['webhook_url']) : '（未登録）';
     $prolineLastRelay = !empty($proline['last_relay_at']) ? "{$proline['last_relay_at']} / {$proline['last_relay_status']}" : 'まだ転送履歴はありません';
 
+    $accountListHtml = '';
+    foreach (getAccountList() as $acc) {
+        $isCurrent = ($acc['id'] === $activeAccount);
+        $badge = $isCurrent ? '<strong style="color:#4f46e5;">[現在選択中]</strong>' : '';
+        $whUrl = "https://" . ($_SERVER['HTTP_HOST'] ?? 'example.com') . dirname($_SERVER['SCRIPT_NAME'] ?? '') . "/webhook.php" . ($acc['is_default'] ? '' : "?account={$acc['id']}");
+        $whUrl = str_replace('\\', '/', $whUrl);
+        $accountListHtml .= "<tr><td>{$acc['name']} ({$acc['id']}) {$badge}</td><td><code style='font-size:11px;'>{$whUrl}</code></td></tr>";
+    }
+
     echo <<<HTML
     <!DOCTYPE html>
     <html lang="ja">
     <head><meta charset="utf-8"><title>LINE受講生管理 ＆ プロライン中継 診断</title>
     <style>body{font-family:sans-serif;padding:30px;line-height:1.6;background:#f8fafc;color:#1e293b}
-    .card{background:#fff;padding:24px;border-radius:12px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);max-width:680px;margin:0 auto}
+    .card{background:#fff;padding:24px;border-radius:12px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);max-width:760px;margin:0 auto}
     h2{margin-top:0;color:#06C755}table{width:100%;border-collapse:collapse;margin:16px 0}
     td,th{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:14px}
     .log-box{background:#0f172a;color:#a5f3fc;padding:12px;border-radius:8px;font-family:monospace;font-size:12px;max-height:260px;overflow-y:auto;white-space:pre-wrap}
@@ -50,9 +68,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     </style></head>
     <body>
     <div class="card">
-        <h2>💻 シニア向けパソコン教室 LINE Webhook 稼働ステータス</h2>
+        <h2>💻 LINE Webhook 稼働ステータス (対象: {$activeConfig['name']})</h2>
         <table>
             <tr><th>項目</th><th>状態</th></tr>
+            <tr><td>対象アカウントID</td><td><code>{$activeAccount}</code> ({$activeConfig['name']})</td></tr>
             <tr><td>Webhook エンドポイント</td><td>正常応答中 (200 OK)</td></tr>
             <tr><td>チャネルアクセストークン</td><td>{$tokenConfigured}</td></tr>
             <tr><td>チャネルシークレット</td><td>{$secretConfigured}</td></tr>
@@ -61,30 +80,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             <tr><td>プロライン転送先URL</td><td><small style="word-break:break-all;"><code>{$prolineUrlDisplay}</code></small></td></tr>
             <tr><td>直近の転送結果</td><td><small>{$prolineLastRelay}</small></td></tr>
         </table>
-        <h3>📋 プロライン転送ログ (最新20件)</h3>
-        <div class="log-box">
+
+        <h3>🔗 登録アカウントごとの Webhook URL 一覧</h3>
+        <table>
+            <tr><th>アカウント名</th><th>LINE Developers登録用 Webhook URL</th></tr>
+            {$accountListHtml}
+        </table>
 HTML;
     $prolineLogFile = __DIR__ . '/proline_relay.log';
     if (file_exists($prolineLogFile)) {
         $lines = array_slice(file($prolineLogFile), -20);
-        echo htmlspecialchars(implode('', $lines));
+        $prolineLogContent = htmlspecialchars(implode('', $lines));
     } else {
-        echo "プロラインへの転送ログはまだありません。LINEでイベントが発生すると記録されます。\n";
+        $prolineLogContent = "プロラインへの転送ログはまだありません。LINEでイベントが発生すると記録されます。\n";
     }
-    echo <<<HTML
-        </div>
-        <h3 style="margin-top:20px;">📋 システムデバッグログ (最新20件)</h3>
-        <div class="log-box">
-HTML;
+
     $logFile = __DIR__ . '/webhook_debug.log';
     if (file_exists($logFile)) {
         $lines = array_slice(file($logFile), -20);
-        echo htmlspecialchars(implode('', $lines));
+        $sysLogContent = htmlspecialchars(implode('', $lines));
     } else {
-        echo "ログはまだありません。";
+        $sysLogContent = "ログはまだありません。";
     }
+
     echo <<<HTML
-        </div>
+        <h3>📋 プロライン転送ログ (最新20件)</h3>
+        <div class="log-box">{$prolineLogContent}</div>
+        <h3 style="margin-top:20px;">📋 システムデバッグログ (最新20件)</h3>
+        <div class="log-box">{$sysLogContent}</div>
     </div>
     </body></html>
 HTML;
@@ -96,13 +119,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
     // 生のリクエストボディを取得
     $rawInput = file_get_contents('php://input');
     $lineSignature = $_SERVER['HTTP_X_LINE_SIGNATURE'] ?? '';
-    writeDebugLog("Webhook受信", ['bytes' => strlen($rawInput)]);
+    writeDebugLog("Webhook受信", ['account' => $activeAccount, 'bytes' => strlen($rawInput)]);
 
     // 署名検証 (Channel Secretが設定されている場合)
-    if (LINE_CHANNEL_SECRET !== 'YOUR_CHANNEL_SECRET_HERE' && !empty($lineSignature)) {
-        $hash = base64_encode(hash_hmac('sha256', $rawInput, LINE_CHANNEL_SECRET, true));
+    if (!empty($channelSecret) && $channelSecret !== 'YOUR_CHANNEL_SECRET_HERE' && !empty($lineSignature)) {
+        $hash = base64_encode(hash_hmac('sha256', $rawInput, $channelSecret, true));
         if (!hash_equals($hash, $lineSignature)) {
-            writeDebugLog("署名検証エラー (Signature mismatch)");
+            writeDebugLog("署名検証エラー (Signature mismatch)", ['account' => $activeAccount]);
             http_response_code(403);
             echo 'Invalid signature';
             exit;
@@ -110,9 +133,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
     }
 
     try {
-        $db = getDbConnection();
+        $db = getDbConnection($activeAccount);
     } catch (Exception $e) {
-        writeDebugLog("DB接続例外: " . $e->getMessage());
+        writeDebugLog("DB接続例外: " . $e->getMessage(), ['account' => $activeAccount]);
         http_response_code(500);
         exit;
     }
@@ -4136,8 +4159,9 @@ function sendReplyMessage(string $replyToken, array $messages, string $userId = 
     if (empty($messages)) {
         return;
     }
-    if (LINE_CHANNEL_ACCESS_TOKEN === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
-        writeDebugLog("返信スキップ: LINE_CHANNEL_ACCESS_TOKEN が未設定です");
+    $token = getLineAccessToken();
+    if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+        writeDebugLog("返信スキップ: LINEアクセストークンが未設定です");
         return;
     }
 
@@ -4165,7 +4189,7 @@ function sendReplyMessage(string $replyToken, array $messages, string $userId = 
         CURLOPT_TIMEOUT => 10,
         CURLOPT_HTTPHEADER => [
             'Content-Type: application/json; charset=utf-8',
-            'Authorization: Bearer ' . LINE_CHANNEL_ACCESS_TOKEN
+            'Authorization: Bearer ' . $token
         ],
         CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE)
     ]);
