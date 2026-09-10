@@ -78,7 +78,7 @@
 
             <!-- ヘッダー下段: 業務アクションツールバー -->
             <div class="admin-header-actions">
-                <button class="btn-secondary" id="openDiscordSettingsBtn" title="メッセージ受信・友だち追加等のDiscord通知設定" style="background: #5865F2; color: #ffffff; border: 1px solid #4752c4; font-weight: 600;">
+                <button class="btn-secondary" id="openDiscordSettingsBtn" onclick="window.openDiscordSettings && window.openDiscordSettings()" title="メッセージ受信・友だち追加等のDiscord通知設定" style="background: #5865F2; color: #ffffff; border: 1px solid #4752c4; font-weight: 600;">
                     <i class="fa-brands fa-discord" style="color: #ffffff; margin-right: 4px;"></i> Discord通知
                 </button>
                 <button class="btn-secondary" id="openProlineSettingsBtn" title="プロライン(ProLine)へのWebhook中継設定・テスト" style="background: #4338ca; color: #ffffff; border: 1px solid #6366f1; font-weight: 600;">
@@ -1159,7 +1159,7 @@
     </div>
 
     <!-- 個別LINEチャット（メッセージ送受信・会話ログ）モーダル -->
-    <div class="modal-overlay" id="chatModal" style="display: none;">
+    <div class="modal-overlay" id="chatModal" style="z-index: 1100;">
         <div class="chat-modal-dialog">
             <div class="chat-modal-header">
                 <div class="chat-user-profile">
@@ -1213,7 +1213,7 @@
     </div>
 
     <!-- Discord通知設定モーダル -->
-    <div class="modal-overlay" id="discordSettingsModal" style="display: none;">
+    <div class="modal-overlay" id="discordSettingsModal" style="z-index: 1100;">
         <div class="discord-settings-dialog">
             <div class="modal-header">
                 <div style="display: flex; align-items: center; gap: 10px;">
@@ -1275,6 +1275,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260910_fix_avatar_v2"></script>
+    <script src="admin.js?v=20260910_fix_modal_v3"></script>
 </body>
 </html>

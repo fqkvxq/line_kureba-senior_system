@@ -1397,7 +1397,7 @@ function renderTable() {
                 <td style="max-width: 160px; font-size: 11px;">${memo}</td>
                 <td>
                     <div class="action-btns">
-                        <button class="btn-table-chat" data-action="chat" data-idx="${idx}" title="この受講生との1対1トーク確認・返信">
+                        <button class="btn-table-chat" data-action="chat" data-idx="${idx}" onclick="event.stopPropagation(); window.openChatModalByUid && window.openChatModalByUid('${escapeHtml(c.user_id || '')}');" title="この受講生との1対1トーク確認・返信">
                             <i class="fa-solid fa-comments"></i> チャット
                             ${state.unreadChatCounts && state.unreadChatCounts[userId] ? `
                                 <span class="badge-chat-unread" style="margin-left: 2px;">${state.unreadChatCounts[userId]}</span>
@@ -3893,7 +3893,7 @@ function openChatModal(cust) {
     }
 
     if (elements.chatModal) {
-        elements.chatModal.style.display = 'flex';
+        elements.chatModal.classList.add('active');
     }
 
     loadChatMessages(uid);
@@ -3901,7 +3901,7 @@ function openChatModal(cust) {
     // ポーリングタイマー開始（10秒ごとに新着自動確認）
     if (state.chatPollTimer) clearInterval(state.chatPollTimer);
     state.chatPollTimer = setInterval(() => {
-        if (state.activeChatUser && state.activeChatUser.user_id && elements.chatModal && elements.chatModal.style.display === 'flex') {
+        if (state.activeChatUser && state.activeChatUser.user_id && elements.chatModal && elements.chatModal.classList.contains('active')) {
             loadChatMessages(state.activeChatUser.user_id, true);
         }
     }, 10000);
@@ -3909,7 +3909,7 @@ function openChatModal(cust) {
 
 function closeChatModal() {
     if (elements.chatModal) {
-        elements.chatModal.style.display = 'none';
+        elements.chatModal.classList.remove('active');
     }
     if (state.chatPollTimer) {
         clearInterval(state.chatPollTimer);
@@ -4199,6 +4199,10 @@ async function openDiscordSettings() {
         elements.discordTestStatusBanner.style.display = 'none';
     }
 
+    if (elements.discordSettingsModal) {
+        elements.discordSettingsModal.classList.add('active');
+    }
+
     try {
         const res = await fetch(`../api.php?action=get_discord_settings&password=${encodeURIComponent(state.password)}`);
         const data = await res.json();
@@ -4213,15 +4217,11 @@ async function openDiscordSettings() {
     } catch (e) {
         console.error('Failed to load discord settings:', e);
     }
-
-    if (elements.discordSettingsModal) {
-        elements.discordSettingsModal.style.display = 'flex';
-    }
 }
 
 function closeDiscordSettings() {
     if (elements.discordSettingsModal) {
-        elements.discordSettingsModal.style.display = 'none';
+        elements.discordSettingsModal.classList.remove('active');
     }
 }
 
@@ -4333,6 +4333,22 @@ window.openChatModal = openChatModal;
 window.closeChatModal = closeChatModal;
 window.openDiscordSettings = openDiscordSettings;
 window.closeDiscordSettings = closeDiscordSettings;
+window.openChatModalByUid = function(uid) {
+    if (!uid) return;
+    let cust = null;
+    if (state.customers && Array.isArray(state.customers)) {
+        cust = state.customers.find(c => c.user_id === uid);
+    }
+    if (cust) {
+        openChatModal(cust);
+    } else {
+        openChatModal({
+            user_id: uid,
+            user_name: 'LINE受講生',
+            car_model: '未登録または連携待ち'
+        });
+    }
+};
 
 
 
