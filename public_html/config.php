@@ -34,7 +34,7 @@ $DEFAULT_SYSTEM_LINE_ACCOUNTS = [
         'is_default' => true,
     ],
     'kaisya_dx' => [
-            'id' => 'kaisya_dx',
+        'id' => 'kaisya_dx',
         'name' => '会社DXのKUREBA',
         'short_name' => '会社DXのKUREBA',
         'theme_color' => '#2563eb', // ブルー
