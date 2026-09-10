@@ -588,6 +588,7 @@ function getDbConnection(?string $accountKey = null): PDO {
             width INTEGER DEFAULT 2500,
             height INTEGER DEFAULT 1686,
             is_active INTEGER DEFAULT 0,
+            is_notice INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT (datetime('now', '+9 hours')),
             updated_at DATETIME DEFAULT (datetime('now', '+9 hours'))
         )
@@ -596,6 +597,7 @@ function getDbConnection(?string $accountKey = null): PDO {
     try { $pdo->exec("ALTER TABLE rich_menus ADD COLUMN text_overlays_json TEXT DEFAULT '[]'"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE rich_menus ADD COLUMN base_image_url TEXT DEFAULT ''"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE rich_menus ADD COLUMN alias_id TEXT DEFAULT ''"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE rich_menus ADD COLUMN is_notice INTEGER DEFAULT 0"); } catch (Exception $e) {}
     try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_rich_menus_notice ON rich_menus(is_notice)"); } catch (Exception $e) {}
 
     // LINEチャット・メッセージ送受信履歴テーブルの初期化
