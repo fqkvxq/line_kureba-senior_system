@@ -819,6 +819,10 @@
     'proline_calendar_url' =&gt; 'https://...',
 ],</code></pre>
                                 <p>追記すると、管理画面の切替ドロップダウンに自動的に反映され、初回アクセス時に専用データベースとテーブルが自動生成されます。</p>
+                                <div class="tip-box" style="margin-top:8px;background:#f0fdf4;border-left:4px solid #16a34a;padding:10px 14px;border-radius: var(--radius-xs);">
+                                    <strong style="color:#166534;"><i class="fa-solid fa-shield-halved"></i> セキュア認証通信（パスワード漏洩防止仕様）:</strong><br>
+                                    管理画面とAPI間の認証通信は、URLパラメータではなくHTTPリクエストヘッダー（<code>X-Admin-Password</code>）で保護されて送信されます。ブラウザの開発者ツール（コンソール）やWebサーバーのアクセスログにパスワードが露出しない安全設計となっています。
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1042,6 +1046,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260910_multiact_fix"></script>
+    <script src="manual.js?v=20260910_secure_auth_v4"></script>
 </body>
 </html>

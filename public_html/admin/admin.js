@@ -22,21 +22,62 @@ const state = {
     chatPollTimer: null
 };
 
-// APIリクエストに現在のアクティブアカウントパラメータを自動付与するfetchインターセプター
+// APIリクエストに安全な認証ヘッダーとアクティブアカウントを自動付与するfetchインターセプター
 const originalFetch = window.fetch;
 window.fetch = function (resource, init = {}) {
     let url = (typeof resource === 'string') ? resource : (resource && resource.url ? resource.url : '');
-    if (url.includes('api.php') && state.activeAccount) {
-        const acc = state.activeAccount;
-        if (!url.includes('account=')) {
-            url += (url.includes('?') ? '&' : '?') + 'account=' + encodeURIComponent(acc);
-            if (typeof resource === 'string') {
-                resource = url;
+    if (url.includes('api.php')) {
+        const currentPass = state.password || sessionStorage.getItem('admin_pass') || '';
+        if (!init.headers) {
+            init.headers = {};
+        }
+        if (init.headers instanceof Headers) {
+            if (currentPass && !init.headers.has('X-Admin-Password')) {
+                init.headers.set('X-Admin-Password', currentPass);
+            }
+            if (state.activeAccount && !init.headers.has('X-Line-Account')) {
+                init.headers.set('X-Line-Account', state.activeAccount);
+            }
+        } else if (Array.isArray(init.headers)) {
+            if (currentPass && !init.headers.some(h => h[0].toLowerCase() === 'x-admin-password')) {
+                init.headers.push(['X-Admin-Password', currentPass]);
+            }
+            if (state.activeAccount && !init.headers.some(h => h[0].toLowerCase() === 'x-line-account')) {
+                init.headers.push(['X-Line-Account', state.activeAccount]);
+            }
+        } else {
+            if (currentPass && !init.headers['X-Admin-Password']) {
+                init.headers['X-Admin-Password'] = currentPass;
+            }
+            if (state.activeAccount && !init.headers['X-Line-Account']) {
+                init.headers['X-Line-Account'] = state.activeAccount;
             }
         }
-        // POSTボディにURLSearchParamsがある場合もaccountを付与
-        if (init && init.body && init.body instanceof URLSearchParams && !init.body.has('account')) {
-            init.body.append('account', acc);
+
+        // 【セキュリティ強化】URLクエリから password=... を安全に完全除去（コンソールやサーバーログへの露出防止）
+        if (url.includes('password=')) {
+            url = url.replace(/([?&])password=[^&]*(&|$)/g, function(match, p1, p2) {
+                return p2 === '&' ? p1 : '';
+            }).replace(/\?$/, '');
+            if (typeof resource === 'string') {
+                resource = url;
+            } else if (resource && resource.url) {
+                resource = new Request(url, init);
+            }
+        }
+
+        if (state.activeAccount) {
+            const acc = state.activeAccount;
+            if (!url.includes('account=')) {
+                url += (url.includes('?') ? '&' : '?') + 'account=' + encodeURIComponent(acc);
+                if (typeof resource === 'string') {
+                    resource = url;
+                }
+            }
+            // POSTボディにURLSearchParamsがある場合もaccountを付与
+            if (init && init.body && init.body instanceof URLSearchParams && !init.body.has('account')) {
+                init.body.append('account', acc);
+            }
         }
     }
     return originalFetch.call(this, resource, init);
@@ -432,7 +473,7 @@ function initAccountManagement() {
             try {
                 const formData = new FormData();
                 formData.append('channel_access_token', token);
-                formData.append('password', state.password || sessionStorage.getItem('admin_pass') || '1020143');
+                formData.append('password', state.password || sessionStorage.getItem('admin_pass') || '');
                 const res = await fetch('../api.php?action=test_line_credentials', {
                     method: 'POST',
                     body: formData
@@ -622,7 +663,7 @@ async function openAccountEditForm(accountId) {
 
         // 詳細情報をAPIから取得
         try {
-            const res = await fetch(`../api.php?action=get_account_detail&target_account=${encodeURIComponent(accountId)}&password=${encodeURIComponent(state.password || sessionStorage.getItem('admin_pass') || '1020143')}`);
+            const res = await fetch(`../api.php?action=get_account_detail&target_account=${encodeURIComponent(accountId)}`);
             const data = await res.json();
             if (data.success && data.account) {
                 const acc = data.account;
@@ -705,7 +746,7 @@ async function submitAccountForm() {
         formData.append('liff_id', (liffIdInput.value || '').trim());
         formData.append('proline_calendar_url', (calUrlInput.value || '').trim());
         formData.append('proline_webhook_url', (whUrlInput.value || '').trim());
-        formData.append('password', state.password || sessionStorage.getItem('admin_pass') || '1020143');
+        formData.append('password', state.password || sessionStorage.getItem('admin_pass') || '');
 
         const res = await fetch('../api.php?action=save_account', {
             method: 'POST',
@@ -750,7 +791,7 @@ async function handleAccountDelete(accId, accName) {
     try {
         const formData = new FormData();
         formData.append('target_account', accId);
-        formData.append('password', state.password || sessionStorage.getItem('admin_pass') || '1020143');
+        formData.append('password', state.password || sessionStorage.getItem('admin_pass') || '');
 
         const res = await fetch('../api.php?action=delete_account', {
             method: 'POST',
@@ -1071,7 +1112,7 @@ async function attemptLogin() {
     elements.loginErrorMsg.textContent = '';
 
     try {
-        const res = await fetch(`../api.php?action=admin_list_customers&password=${encodeURIComponent(pass)}&account=${encodeURIComponent(state.activeAccount)}`);
+        const res = await fetch(`../api.php?action=admin_list_customers&account=${encodeURIComponent(state.activeAccount)}`);
         const data = await res.json();
 
         if (data.success) {
@@ -1105,8 +1146,8 @@ async function fetchCustomers() {
     try {
         const sortParam = encodeURIComponent(state.currentSort || 'last_interaction');
         const [custRes, unreadRes] = await Promise.all([
-            fetch(`../api.php?action=admin_list_customers&password=${encodeURIComponent(state.password)}&sort=${sortParam}&account=${encodeURIComponent(state.activeAccount)}`),
-            fetch(`../api.php?action=get_unread_chat_counts&password=${encodeURIComponent(state.password)}&account=${encodeURIComponent(state.activeAccount)}`).catch(() => null)
+            fetch(`../api.php?action=admin_list_customers&sort=${sortParam}&account=${encodeURIComponent(state.activeAccount)}`),
+            fetch(`../api.php?action=get_unread_chat_counts&account=${encodeURIComponent(state.activeAccount)}`).catch(() => null)
         ]);
 
         if (unreadRes && unreadRes.ok) {
@@ -1150,7 +1191,7 @@ async function syncLineFollowers() {
     }
 
     try {
-        const res = await fetch(`../api.php?action=admin_sync_line_followers&password=${encodeURIComponent(state.password)}&account=${encodeURIComponent(state.activeAccount)}`);
+        const res = await fetch(`../api.php?action=admin_sync_line_followers&account=${encodeURIComponent(state.activeAccount)}`);
         const data = await res.json();
 
         if (data.success) {
@@ -1961,7 +2002,7 @@ function escapeHtml(str) {
 // ==========================================================================
 async function loadRichMenus() {
     try {
-        const res = await fetch(`../api.php?action=admin_list_richmenus&password=${encodeURIComponent(state.password)}`);
+        const res = await fetch(`../api.php?action=admin_list_richmenus`);
         const data = await res.json();
         if (data.success) {
             state.richMenus = data.menus || data.rich_menus || [];
@@ -2078,7 +2119,7 @@ function updateDirectAssignPreview() {
         // 画像エラーハンドラー
         elements.directAssignMenuPreviewImg.onerror = function() {
             this.onerror = null;
-            this.src = `../api.php?action=richmenu_image&id=${menu.id}&password=${encodeURIComponent(state.password)}`;
+            this.src = `../api.php?action=richmenu_image&id=${menu.id}`;
         };
         elements.directAssignMenuPreviewImg.src = menu.image_url || menu.base_image_url || `../api.php?action=richmenu_image&id=${menu.id}`;
     }
@@ -2129,7 +2170,7 @@ async function checkUserRealtimeMenuStatus(userId) {
     }
 
     try {
-        const res = await fetch(`../api.php?action=admin_get_user_richmenu_status&password=${encodeURIComponent(state.password)}&uid=${encodeURIComponent(userId)}`);
+        const res = await fetch(`../api.php?action=admin_get_user_richmenu_status&uid=${encodeURIComponent(userId)}`);
         const data = await res.json();
 
         if (data.success) {
@@ -2869,7 +2910,7 @@ async function openAdminLineSettingsModal() {
     }
 
     try {
-        const res = await fetch(`../api.php?action=admin_get_line_notification_settings&password=${encodeURIComponent(state.password)}`);
+        const res = await fetch(`../api.php?action=admin_get_line_notification_settings`);
         const data = await res.json();
         
         if (data.success && data.settings) {
@@ -3053,7 +3094,7 @@ async function loadProlineSettings() {
     if (!elements.prolineRecentLogsWrap) return;
     try {
         elements.prolineRecentLogsWrap.textContent = '設定と中継ログを読み込み中...';
-        const res = await fetch(`../api.php?action=admin_get_proline_settings&password=${encodeURIComponent(state.password)}`);
+        const res = await fetch(`../api.php?action=admin_get_proline_settings`);
         const data = await res.json();
         if (data.success) {
             if (elements.prolineWebhookUrlInput) {
@@ -3943,7 +3984,7 @@ async function loadChatMessages(userId, isSilent = false) {
     }
 
     try {
-        const res = await fetch(`../api.php?action=get_chat_messages&password=${encodeURIComponent(state.password)}&user_id=${encodeURIComponent(userId)}&account=${encodeURIComponent(state.activeAccount)}`);
+        const res = await fetch(`../api.php?action=get_chat_messages&user_id=${encodeURIComponent(userId)}&account=${encodeURIComponent(state.activeAccount)}`);
         const data = await res.json();
 
         if (data.success && Array.isArray(data.messages)) {
@@ -4132,7 +4173,7 @@ async function sendChatMessage() {
 
 async function loadUnreadChatCounts() {
     try {
-        const res = await fetch(`../api.php?action=get_unread_chat_counts&password=${encodeURIComponent(state.password)}&account=${encodeURIComponent(state.activeAccount)}`);
+        const res = await fetch(`../api.php?action=get_unread_chat_counts&account=${encodeURIComponent(state.activeAccount)}`);
         const data = await res.json();
         if (data.success && data.unread_counts) {
             state.unreadChatCounts = data.unread_counts;
@@ -4204,7 +4245,7 @@ async function openDiscordSettings() {
     }
 
     try {
-        const res = await fetch(`../api.php?action=get_discord_settings&password=${encodeURIComponent(state.password)}`);
+        const res = await fetch(`../api.php?action=get_discord_settings`);
         const data = await res.json();
 
         if (data.success && data.settings) {

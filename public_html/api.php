@@ -17,7 +17,7 @@ header('Pragma: no-cache');
 header('Expires: 0');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Admin-Password, X-Line-Account');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -26,6 +26,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // 共通設定・DB接続
 require_once __DIR__ . '/config.php';
+
+/**
+ * 管理者認証パスワードを取得 (X-Admin-Passwordヘッダー優先、Bearer、POST/GET互換)
+ */
+function getAdminAuthPassword(): string {
+    $pass = $_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? '';
+    if (!$pass && !empty($_SERVER['HTTP_AUTHORIZATION'])) {
+        if (preg_match('/Bearer\s+(\S+)/i', $_SERVER['HTTP_AUTHORIZATION'], $matches)) {
+            $pass = $matches[1];
+        }
+    }
+    if (!$pass) {
+        $pass = $_POST['password'] ?? ($_GET['password'] ?? '');
+    }
+    return trim((string)$pass);
+}
 
 try {
     // リクエストのアカウント指定を反映
@@ -88,7 +104,7 @@ try {
 
         // --- 0-2. アカウント詳細情報取得 (編集用・管理者認証必須) ---
         case 'get_account_detail':
-            $authPass = $_POST['password'] ?? ($_GET['password'] ?? ($_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ''));
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
                 exit;
@@ -127,7 +143,7 @@ try {
 
         // --- 0-3. アカウント追加・更新保存 (管理者認証必須) ---
         case 'save_account':
-            $authPass = $_POST['password'] ?? ($_GET['password'] ?? ($_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ''));
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
                 exit;
@@ -217,7 +233,7 @@ try {
 
         // --- 0-4. アカウント削除 (管理者認証必須) ---
         case 'delete_account':
-            $authPass = $_POST['password'] ?? ($_GET['password'] ?? ($_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ''));
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
                 exit;
@@ -267,7 +283,7 @@ try {
 
         // --- 0-5. LINEアクセストークン接続テスト ---
         case 'test_line_credentials':
-            $authPass = $_POST['password'] ?? ($_GET['password'] ?? ($_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ''));
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
                 exit;
@@ -285,7 +301,7 @@ try {
 
         // --- 0-6. チャット履歴取得 (個別受講生とのやり取り) ---
         case 'get_chat_messages':
-            $authPass = $_POST['password'] ?? ($_GET['password'] ?? ($_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ''));
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
                 exit;
@@ -326,7 +342,7 @@ try {
 
         // --- 0-7. チャットメッセージ送信 (管理画面から受講生のLINEへ返信) ---
         case 'send_chat_message':
-            $authPass = $_POST['password'] ?? ($_GET['password'] ?? ($_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ''));
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
                 exit;
@@ -424,7 +440,7 @@ try {
 
         // --- 0-9. Discord通知設定の取得 ---
         case 'get_discord_settings':
-            $authPass = $_POST['password'] ?? ($_GET['password'] ?? ($_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ''));
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
                 exit;
@@ -436,7 +452,7 @@ try {
 
         // --- 0-10. Discord通知設定の保存 ---
         case 'save_discord_settings':
-            $authPass = $_POST['password'] ?? ($_GET['password'] ?? ($_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ''));
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
                 exit;
@@ -462,7 +478,7 @@ try {
 
         // --- 0-11. Discord通知の疎通テスト送信 ---
         case 'test_discord_notification':
-            $authPass = $_POST['password'] ?? ($_GET['password'] ?? ($_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ''));
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
                 exit;
@@ -1214,7 +1230,7 @@ try {
 
         // --- 7. 店舗管理者用: 顧客一覧取得 ---
         case 'admin_list_customers':
-            $authPass = $_POST['password'] ?? ($_GET['password'] ?? '');
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => 'パスワードが違います']);
@@ -1361,7 +1377,7 @@ try {
 
         // --- 8. 店舗管理者用: 顧客情報の登録・編集 ---
         case 'admin_save_customer':
-            $authPass = $_POST['password'] ?? '';
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗']);
@@ -1448,7 +1464,7 @@ try {
 
         // --- 8-2. 店舗管理者用: LINE既存友だちの一括同期・自動取り込み ---
         case 'admin_sync_line_followers':
-            $authPass = $_POST['password'] ?? ($_GET['password'] ?? '');
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
@@ -1548,7 +1564,7 @@ try {
 
         // --- 9. 店舗管理者用: 顧客・車両削除 ---
         case 'admin_delete_customer':
-            $authPass = $_POST['password'] ?? '';
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗']);
@@ -1581,7 +1597,7 @@ try {
 
         // --- 10. 店舗管理者用: 個別手動リマインドLINE送信 ---
         case 'admin_send_reminder':
-            $authPass = $_POST['password'] ?? '';
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗']);
@@ -1876,7 +1892,7 @@ try {
 
         // --- 10-2. シニア向けスマホ・PC役立つ情報 リッチメッセージ配信 ---
         case 'admin_send_knowledge_message':
-            $authPass = $_POST['password'] ?? '';
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
@@ -2232,7 +2248,7 @@ try {
 
         // --- 11. リッチメニュー管理: 一覧取得 ---
         case 'admin_list_richmenus':
-            $authPass = $_POST['password'] ?? ($_GET['password'] ?? '');
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
@@ -2377,7 +2393,7 @@ try {
 
         // --- 12. リッチメニュー管理: 作成 & 公開 ---
         case 'admin_save_richmenu':
-            $authPass = $_POST['password'] ?? $_GET['password'] ?? '';
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
@@ -2784,7 +2800,7 @@ try {
 
         // --- 12-2. リッチメニュー管理: お知らせ専用メニューのアクティブ切り替え ---
         case 'admin_set_active_notice':
-            $authPass = $_POST['password'] ?? ($_GET['password'] ?? '');
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
@@ -2813,7 +2829,7 @@ try {
 
         // --- 13. リッチメニュー管理: 本番適用切り替え ---
         case 'admin_apply_richmenu':
-            $authPass = $_POST['password'] ?? '';
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
@@ -2920,7 +2936,7 @@ try {
 
         // --- 14. リッチメニュー管理: 削除 ---
         case 'admin_delete_richmenu':
-            $authPass = $_POST['password'] ?? '';
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
@@ -2965,7 +2981,7 @@ try {
 
         // --- 15. リッチメニュー管理: 管理名（タイトル）変更 ---
         case 'admin_rename_richmenu':
-            $authPass = $_POST['password'] ?? '';
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
@@ -3005,7 +3021,7 @@ try {
 
         // --- 16. 特定ユーザー向け個別リッチメニュー適用 ---
         case 'admin_set_user_custom_richmenu':
-            $authPass = $_POST['password'] ?? '';
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
@@ -3372,7 +3388,7 @@ try {
 
         // --- 17. 特定ユーザーの個別リッチメニュー解除（全体共通メニューへ戻す） ---
         case 'admin_unlink_user_richmenu':
-            $authPass = $_POST['password'] ?? '';
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
@@ -3422,7 +3438,7 @@ try {
 
         // --- 17-2. 特定ユーザーの現在表示中リッチメニュー実態確認 ---
         case 'admin_get_user_richmenu_status':
-            $authPass = $_POST['password'] ?? ($_GET['password'] ?? '');
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
@@ -3520,7 +3536,7 @@ try {
 
         // --- 17-3. 作成済みリッチメニューを特定ユーザーに個別割り当て ---
         case 'admin_assign_richmenu_to_user':
-            $authPass = $_POST['password'] ?? '';
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
@@ -3664,7 +3680,7 @@ try {
 
         // --- 18. 管理者LINE通知設定: 設定取得 ---
         case 'admin_get_line_notification_settings':
-            $authPass = $_POST['password'] ?? ($_GET['password'] ?? '');
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
@@ -3681,7 +3697,7 @@ try {
 
         // --- 18-2. 管理者LINE通知設定: 設定保存 ---
         case 'admin_save_line_notification_settings':
-            $authPass = $_POST['password'] ?? '';
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
@@ -3732,7 +3748,7 @@ try {
 
         // --- 18-3. 管理者LINE通知設定: テスト通知送信 ---
         case 'admin_test_line_notification':
-            $authPass = $_POST['password'] ?? '';
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
@@ -3786,7 +3802,7 @@ try {
 
         // --- 19. プロライン連携設定取得 ---
         case 'admin_get_proline_settings':
-            $authPass = $_POST['password'] ?? ($_GET['password'] ?? '');
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗']);
@@ -3811,7 +3827,7 @@ try {
 
         // --- 20. プロライン連携設定保存 ---
         case 'admin_save_proline_settings':
-            $authPass = $_POST['password'] ?? '';
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗']);
@@ -3828,7 +3844,7 @@ try {
 
         // --- 21. プロラインWebhook中継 疎通テスト送信 ---
         case 'admin_test_proline_relay':
-            $authPass = $_POST['password'] ?? '';
+            $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => '認証失敗']);

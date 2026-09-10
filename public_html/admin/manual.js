@@ -111,7 +111,9 @@ function initAuth() {
             loginBtn.disabled = true;
             loginBtn.textContent = '認証中...';
 
-            const res = await fetch(`../api.php?action=admin_get_customers&password=${encodeURIComponent(pass)}`);
+            const res = await fetch(`../api.php?action=admin_list_customers`, {
+                headers: { 'X-Admin-Password': pass }
+            });
             const data = await res.json();
 
             if (data.success) {

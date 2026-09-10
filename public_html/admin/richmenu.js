@@ -53,20 +53,61 @@ const state = {
     activeAccountInfo: null
 };
 
-// APIリクエストに現在のアクティブアカウントパラメータを自動付与するfetchインターセプター
+// APIリクエストに安全な認証ヘッダーとアクティブアカウントを自動付与するfetchインターセプター
 const originalFetch = window.fetch;
 window.fetch = function (resource, init = {}) {
     let url = (typeof resource === 'string') ? resource : (resource && resource.url ? resource.url : '');
-    if (url.includes('api.php') && state.activeAccount) {
-        const acc = state.activeAccount;
-        if (!url.includes('account=')) {
-            url += (url.includes('?') ? '&' : '?') + 'account=' + encodeURIComponent(acc);
-            if (typeof resource === 'string') {
-                resource = url;
+    if (url.includes('api.php')) {
+        const currentPass = state.password || sessionStorage.getItem('admin_pass') || '';
+        if (!init.headers) {
+            init.headers = {};
+        }
+        if (init.headers instanceof Headers) {
+            if (currentPass && !init.headers.has('X-Admin-Password')) {
+                init.headers.set('X-Admin-Password', currentPass);
+            }
+            if (state.activeAccount && !init.headers.has('X-Line-Account')) {
+                init.headers.set('X-Line-Account', state.activeAccount);
+            }
+        } else if (Array.isArray(init.headers)) {
+            if (currentPass && !init.headers.some(h => h[0].toLowerCase() === 'x-admin-password')) {
+                init.headers.push(['X-Admin-Password', currentPass]);
+            }
+            if (state.activeAccount && !init.headers.some(h => h[0].toLowerCase() === 'x-line-account')) {
+                init.headers.push(['X-Line-Account', state.activeAccount]);
+            }
+        } else {
+            if (currentPass && !init.headers['X-Admin-Password']) {
+                init.headers['X-Admin-Password'] = currentPass;
+            }
+            if (state.activeAccount && !init.headers['X-Line-Account']) {
+                init.headers['X-Line-Account'] = state.activeAccount;
             }
         }
-        if (init && init.body && init.body instanceof URLSearchParams && !init.body.has('account')) {
-            init.body.append('account', acc);
+
+        // 【セキュリティ強化】URLクエリから password=... を安全に完全除去（コンソールやサーバーログへの露出防止）
+        if (url.includes('password=')) {
+            url = url.replace(/([?&])password=[^&]*(&|$)/g, function(match, p1, p2) {
+                return p2 === '&' ? p1 : '';
+            }).replace(/\?$/, '');
+            if (typeof resource === 'string') {
+                resource = url;
+            } else if (resource && resource.url) {
+                resource = new Request(url, init);
+            }
+        }
+
+        if (state.activeAccount) {
+            const acc = state.activeAccount;
+            if (!url.includes('account=')) {
+                url += (url.includes('?') ? '&' : '?') + 'account=' + encodeURIComponent(acc);
+                if (typeof resource === 'string') {
+                    resource = url;
+                }
+            }
+            if (init && init.body && init.body instanceof URLSearchParams && !init.body.has('account')) {
+                init.body.append('account', acc);
+            }
         }
     }
     return originalFetch.call(this, resource, init);
@@ -560,7 +601,7 @@ async function openAccountEditForm(accountId) {
 
         // 詳細情報をAPIから取得
         try {
-            const res = await fetch(`../api.php?action=get_account_detail&target_account=${encodeURIComponent(accountId)}&password=${encodeURIComponent(state.password || sessionStorage.getItem('admin_pass') || '1020143')}`);
+            const res = await fetch(`../api.php?action=get_account_detail&target_account=${encodeURIComponent(accountId)}`);
             const data = await res.json();
             if (data.success && data.account) {
                 const acc = data.account;
@@ -743,7 +784,7 @@ function attemptLogin() {
     }
 
     showLoading('認証中...');
-    fetch('../api.php?action=admin_list_richmenus&password=' + encodeURIComponent(pass))
+    fetch('../api.php?action=admin_list_richmenus')
         .then(res => res.json())
         .then(data => {
             hideLoading();
@@ -2854,7 +2895,7 @@ function loadHistoryList() {
     if (!state.password && pass) {
         state.password = pass;
     }
-    fetch('../api.php?action=admin_list_richmenus&password=' + encodeURIComponent(pass))
+    fetch('../api.php?action=admin_list_richmenus')
         .then(res => {
             if (!res.ok) {
                 throw new Error(`HTTPエラー ${res.status}: ${res.statusText}`);
@@ -3996,7 +4037,7 @@ function publishNoticeMenu() {
         formData.append('areas', JSON.stringify(areas));
         formData.append('image', blob, 'notice_menu.png');
 
-        fetch('../api.php?action=admin_save_richmenu&password=' + encodeURIComponent(currentPass), {
+        fetch('../api.php?action=admin_save_richmenu', {
             method: 'POST',
             body: formData
         })
