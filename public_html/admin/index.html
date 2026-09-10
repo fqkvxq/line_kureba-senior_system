@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260910_account_manage_v1">
+    <link rel="stylesheet" href="admin.css?v=20260910_nav_layout_v2">
 </head>
 <body>
     <!-- ログインモーダル (初期表示) -->
@@ -34,37 +34,49 @@
     <div class="admin-wrapper" id="adminApp" style="display: none;">
         <!-- サイドバー/ヘッダー -->
         <header class="admin-header">
-            <div class="admin-brand">
-                <div class="brand-badge" id="systemBrandBadge" style="background: #4f46e5; color: #fff;"><i class="fa-solid fa-laptop"></i></div>
-                <div>
-                    <h1 id="systemBrandTitle">シニア向けパソコン教室 受講生管理</h1>
-                    <span id="systemBrandSubtitle">次回レッスン・定期サポート リマインドダッシュボード</span>
+            <!-- ヘッダー上段: ブランド・ナビゲーション・アカウント切替 -->
+            <div class="admin-header-top">
+                <div class="admin-header-left">
+                    <div class="admin-brand">
+                        <div class="brand-badge" id="systemBrandBadge" style="background: #4f46e5; color: #fff;"><i class="fa-solid fa-laptop"></i></div>
+                        <div>
+                            <h1 id="systemBrandTitle">シニア向けパソコン教室 受講生管理</h1>
+                            <span id="systemBrandSubtitle">次回レッスン・定期サポート リマインドダッシュボード</span>
+                        </div>
+                    </div>
+
+                    <!-- ナビゲーションリンク -->
+                    <nav class="admin-nav-links">
+                        <a href="index.html" class="nav-link active"><i class="fa-solid fa-users"></i> 受講生・カルテ管理</a>
+                        <a href="richmenu.html" class="nav-link"><i class="fa-solid fa-table-cells-large"></i> リッチメニュー管理</a>
+                        <a href="manual.html" class="nav-link"><i class="fa-solid fa-book-open"></i> 操作マニュアル</a>
+                    </nav>
+                </div>
+
+                <div class="admin-header-right">
+                    <!-- アカウント切り替えスイッチャー -->
+                    <div class="account-switcher-wrap" id="accountSwitcherWrap" style="display: flex; align-items: center; gap: 8px;">
+                        <label for="accountSelect" class="account-switcher-label">
+                            <i class="fa-solid fa-arrows-rotate"></i> アカウント:
+                        </label>
+                        <div class="account-select-box">
+                            <span class="account-badge-dot" id="accountBadgeDot"></span>
+                            <select id="accountSelect" class="account-select-dropdown" title="操作対象のLINE公式アカウントを切り替えます">
+                                <option value="senior">シニア向けパソコン教室</option>
+                            </select>
+                        </div>
+                        <button type="button" class="btn-account-manage" id="btnOpenAccountManageModal" title="LINE公式アカウントの追加・編集・接続設定">
+                            <i class="fa-solid fa-gear"></i>
+                        </button>
+                    </div>
+
+                    <button class="btn-logout" id="logoutBtn" title="ログアウト">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    </button>
                 </div>
             </div>
 
-            <!-- アカウント切り替えスイッチャー -->
-            <div class="account-switcher-wrap" id="accountSwitcherWrap" style="display: flex; align-items: center; gap: 8px;">
-                <label for="accountSelect" class="account-switcher-label">
-                    <i class="fa-solid fa-arrows-rotate"></i> アカウント:
-                </label>
-                <div class="account-select-box">
-                    <span class="account-badge-dot" id="accountBadgeDot"></span>
-                    <select id="accountSelect" class="account-select-dropdown" title="操作対象のLINE公式アカウントを切り替えます">
-                        <option value="senior">シニア向けパソコン教室</option>
-                    </select>
-                </div>
-                <button type="button" class="btn-account-manage" id="btnOpenAccountManageModal" title="LINE公式アカウントの追加・編集・接続設定">
-                    <i class="fa-solid fa-gear"></i>
-                </button>
-            </div>
-
-            <!-- ナビゲーションリンク -->
-            <nav class="admin-nav-links">
-                <a href="index.html" class="nav-link active"><i class="fa-solid fa-users"></i> 受講生・カルテ管理</a>
-                <a href="richmenu.html" class="nav-link"><i class="fa-solid fa-table-cells-large"></i> リッチメニュー管理</a>
-                <a href="manual.html" class="nav-link"><i class="fa-solid fa-book-open"></i> 操作マニュアル</a>
-            </nav>
-
+            <!-- ヘッダー下段: 業務アクションツールバー -->
             <div class="admin-header-actions">
                 <button class="btn-secondary" id="openProlineSettingsBtn" title="プロライン(ProLine)へのWebhook中継設定・テスト" style="background: #4338ca; color: #ffffff; border: 1px solid #6366f1; font-weight: 600;">
                     <i class="fa-solid fa-network-wired" style="color: #a5b4fc; margin-right: 4px;"></i> プロライン連携
@@ -78,11 +90,8 @@
                 <button class="btn-secondary" id="openKnowledgeBroadcastModalBtn" onclick="window.openKnowledgeBroadcastModal && window.openKnowledgeBroadcastModal()" title="シニア向けスマホ・PC役立つ情報（詐欺対策・便利ワザ等）をリッチメッセージ配信します" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: #ffffff; border: none; font-weight: 700; box-shadow: 0 2px 6px rgba(2,132,199,0.25);">
                     <i class="fa-solid fa-bullhorn" style="margin-right: 4px;"></i> お役立ち情報配信
                 </button>
-                <button class="btn-primary" id="openAddCustomerModalBtn">
+                <button class="btn-primary" id="openAddCustomerModalBtn" style="margin-left: auto;">
                     <i class="fa-solid fa-user-plus"></i> 新規受講生登録
-                </button>
-                <button class="btn-logout" id="logoutBtn" title="ログアウト">
-                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
                 </button>
             </div>
         </header>
@@ -1149,6 +1158,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260910_account_manage_v1"></script>
+    <script src="admin.js?v=20260910_nav_layout_v2"></script>
 </body>
 </html>

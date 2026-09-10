@@ -22,7 +22,7 @@ define('LINE_ACCOUNTS_DATA_FILE', LINE_ACCOUNTS_DATA_DIR . '/line_accounts.json'
 $DEFAULT_SYSTEM_LINE_ACCOUNTS = [
     'senior' => [
         'id' => 'senior',
-        'name' => 'シニア向けパソコン教室',
+        'name' => 'スマホ・パソコン教室KUREBA',
         'short_name' => 'パソコン教室',
         'theme_color' => '#ff8700', // 教室ブランドカラー (オレンジ)
         'channel_access_token' => 'n1ItOIEh+8mNJiEpXK+hG0T4/b1Z9taR2FkYQrAwA6J/3XMdUUfHnkP3DX+7u+nGgirA4helNntS1qT2m2kOtV7yiYM2MwxrEB7qj09J/yXhItpCqKGS7l4lcaffcvukX/jHGFOLDSloz0vBLIQAdQdB04t89/1O/w1cDnyilFU=',

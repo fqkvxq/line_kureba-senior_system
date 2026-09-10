@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260910_account_manage_v1">
+    <link rel="stylesheet" href="manual.css?v=20260910_nav_layout_v2">
 </head>
 <body>
     <!-- ログインモーダル -->
@@ -33,38 +33,43 @@
     <div class="admin-wrapper" id="adminApp" style="display: none;">
         <!-- ヘッダー -->
         <header class="admin-header">
-            <div class="admin-brand">
-                <div class="brand-badge" id="systemBrandBadge"><i class="fa-solid fa-graduation-cap"></i></div>
-                <div>
-                    <h1 id="systemBrandTitle">シニア向けパソコン教室 管理システム</h1>
-                    <span id="systemBrandSubtitle">システム操作マニュアル & プロライン連携設定ガイド</span>
+            <!-- ヘッダー上段: ブランド・ナビゲーション・アカウント切替 -->
+            <div class="admin-header-top">
+                <div class="admin-header-left">
+                    <div class="admin-brand">
+                        <div class="brand-badge" id="systemBrandBadge"><i class="fa-solid fa-graduation-cap"></i></div>
+                        <div>
+                            <h1 id="systemBrandTitle">シニア向けパソコン教室 管理システム</h1>
+                            <span id="systemBrandSubtitle">システム操作マニュアル & プロライン連携設定ガイド</span>
+                        </div>
+                    </div>
+
+                    <!-- ナビゲーションリンク -->
+                    <nav class="admin-nav-links">
+                        <a href="index.html" class="nav-link"><i class="fa-solid fa-users"></i> 受講生・カルテ管理</a>
+                        <a href="richmenu.html" class="nav-link"><i class="fa-solid fa-table-cells-large"></i> リッチメニュー管理</a>
+                        <a href="manual.html" class="nav-link active"><i class="fa-solid fa-book-open"></i> 操作マニュアル</a>
+                    </nav>
                 </div>
-            </div>
 
-            <!-- アカウント切り替えスイッチャー -->
-            <div class="account-switcher-wrap" id="accountSwitcherWrap">
-                <label for="accountSelect" class="account-switcher-label">
-                    <i class="fa-solid fa-arrows-rotate"></i> アカウント:
-                </label>
-                <div class="account-select-box">
-                    <span class="account-badge-dot" id="accountBadgeDot"></span>
-                    <select id="accountSelect" class="account-select-dropdown" title="操作対象のLINE公式アカウントを切り替えます">
-                        <option value="senior">シニア向けパソコン教室</option>
-                    </select>
+                <div class="admin-header-right">
+                    <!-- アカウント切り替えスイッチャー -->
+                    <div class="account-switcher-wrap" id="accountSwitcherWrap" style="display: flex; align-items: center; gap: 8px;">
+                        <label for="accountSelect" class="account-switcher-label">
+                            <i class="fa-solid fa-arrows-rotate"></i> アカウント:
+                        </label>
+                        <div class="account-select-box">
+                            <span class="account-badge-dot" id="accountBadgeDot"></span>
+                            <select id="accountSelect" class="account-select-dropdown" title="操作対象のLINE公式アカウントを切り替えます">
+                                <option value="senior">シニア向けパソコン教室</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button class="btn-logout" id="logoutBtn" title="ログアウト">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    </button>
                 </div>
-            </div>
-
-            <!-- ナビゲーションリンク -->
-            <nav class="admin-nav-links">
-                <a href="index.html" class="nav-link"><i class="fa-solid fa-users"></i> 受講生・カルテ管理</a>
-                <a href="richmenu.html" class="nav-link"><i class="fa-solid fa-table-cells-large"></i> リッチメニュー管理</a>
-                <a href="manual.html" class="nav-link active"><i class="fa-solid fa-book-open"></i> 操作マニュアル</a>
-            </nav>
-
-            <div class="admin-header-actions">
-                <button class="btn-logout" id="logoutBtn" title="ログアウト">
-                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                </button>
             </div>
         </header>
 
@@ -884,6 +889,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260910_radius_unify_v1"></script>
+    <script src="manual.js?v=20260910_nav_layout_v2"></script>
 </body>
 </html>
