@@ -1845,8 +1845,8 @@ function renderUserMenuPreview() {
     if (!rawText) return;
 
     // HEXカラー設定の取得 (背景色 & 文字色)
-    const rawBgHex = elements.userMenuBgColorHex ? elements.userMenuBgColorHex.value : (elements.userMenuBgColorPicker ? elements.userMenuBgColorPicker.value : '#e11d48');
-    const bgHex = sanitizeHexColor(rawBgHex, '#e11d48');
+    const rawBgHex = elements.userMenuBgColorHex ? elements.userMenuBgColorHex.value : (elements.userMenuBgColorPicker ? elements.userMenuBgColorPicker.value : '#ff8700');
+    const bgHex = sanitizeHexColor(rawBgHex, '#ff8700');
 
     const rawTextHex = elements.userMenuTextColorHex ? elements.userMenuTextColorHex.value : (elements.userMenuTextColorPicker ? elements.userMenuTextColorPicker.value : '#ffffff');
     const textHex = sanitizeHexColor(rawTextHex, '#ffffff');

@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260908_hex_v1">
+    <link rel="stylesheet" href="admin.css?v=20260910_orange_bar_v1">
 </head>
 <body>
     <!-- ログインモーダル (初期表示) -->
@@ -407,17 +407,18 @@
                                     <!-- 帯の背景色 -->
                                     <div style="flex: 1;">
                                         <label style="font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">
-                                            <i class="fa-solid fa-fill-drip" style="color: #e11d48;"></i> 帯の背景色 (HEX)
+                                            <i class="fa-solid fa-fill-drip" style="color: #ff8700;"></i> 帯の背景色 (HEX)
                                         </label>
                                         <div style="display: flex; align-items: center; gap: 6px;">
-                                            <input type="color" id="userMenuBgColorPicker" value="#e11d48" style="width: 32px; height: 32px; border: none; border-radius: 6px; cursor: pointer; padding: 0; background: none;">
-                                            <input type="text" id="userMenuBgColorHex" value="#e11d48" maxlength="7" placeholder="#e11d48" style="flex: 1; min-width: 0; padding: 5px 8px; font-size: 11.5px; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; text-transform: uppercase;">
+                                            <input type="color" id="userMenuBgColorPicker" value="#ff8700" style="width: 32px; height: 32px; border: none; border-radius: 6px; cursor: pointer; padding: 0; background: none;">
+                                            <input type="text" id="userMenuBgColorHex" value="#ff8700" maxlength="7" placeholder="#ff8700" style="flex: 1; min-width: 0; padding: 5px 8px; font-size: 11.5px; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; text-transform: uppercase;">
                                         </div>
                                         <div class="color-quick-chips" style="display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap;">
+                                            <button type="button" class="btn-color-quick-chip" data-bg="#ff8700" title="オレンジ (教室カラー・標準)" style="background: #ff8700;"></button>
                                             <button type="button" class="btn-color-quick-chip" data-bg="#e11d48" title="赤 (重要・急ぎ)" style="background: #e11d48;"></button>
                                             <button type="button" class="btn-color-quick-chip" data-bg="#2563eb" title="青 (スマート)" style="background: #2563eb;"></button>
                                             <button type="button" class="btn-color-quick-chip" data-bg="#059669" title="緑 (LINE定番)" style="background: #059669;"></button>
-                                            <button type="button" class="btn-color-quick-chip" data-bg="#d97706" title="金・オレンジ (プレミアム)" style="background: #d97706;"></button>
+                                            <button type="button" class="btn-color-quick-chip" data-bg="#d97706" title="金・琥珀 (プレミアム)" style="background: #d97706;"></button>
                                             <button type="button" class="btn-color-quick-chip" data-bg="#0f172a" title="黒・濃紺 (シック)" style="background: #0f172a;"></button>
                                             <button type="button" class="btn-color-quick-chip" data-bg="#7c3aed" title="紫 (エレガント)" style="background: #7c3aed;"></button>
                                             <button type="button" class="btn-color-quick-chip" data-bg="#db2777" title="ピンク (華やか)" style="background: #db2777;"></button>
@@ -943,6 +944,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260908_fix_broadcast_v1"></script>
+    <script src="admin.js?v=20260910_orange_bar_v1"></script>
 </body>
 </html>
