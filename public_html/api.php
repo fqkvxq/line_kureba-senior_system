@@ -28,33 +28,86 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . '/config.php';
 
 /**
- * 管理者認証パスワードを取得 (X-Admin-Passwordヘッダー優先、Bearer、POST/GET互換)
+ * 管理者認証パスワードを取得 (X-Admin-Passwordヘッダー、Bearer、POST/GET、Cookie互換)
  */
 function getAdminAuthPassword(): string {
-    $pass = $_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ($_SERVER['REDIRECT_HTTP_X_ADMIN_PASSWORD'] ?? '');
-    if (!$pass && function_exists('apache_request_headers')) {
-        $headers = apache_request_headers();
-        foreach ($headers as $key => $val) {
-            if (strcasecmp($key, 'X-Admin-Password') === 0) {
-                $pass = $val;
+    // 1. 環境変数 (FastCGI等による各種プレフィックス対応)
+    $pass = $_SERVER['HTTP_X_ADMIN_PASSWORD'] 
+        ?? ($_SERVER['REDIRECT_HTTP_X_ADMIN_PASSWORD'] 
+        ?? ($_SERVER['REDIRECT_REDIRECT_HTTP_X_ADMIN_PASSWORD'] ?? ''));
+
+    // 2. apache_request_headers / getallheaders
+    if (!$pass) {
+        $headerFuncs = ['getallheaders', 'apache_request_headers'];
+        foreach ($headerFuncs as $fn) {
+            if (function_exists($fn)) {
+                $headers = @$fn();
+                if (is_array($headers)) {
+                    foreach ($headers as $key => $val) {
+                        if (strcasecmp($key, 'X-Admin-Password') === 0) {
+                            $pass = $val;
+                            break 2;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. Authorization: Bearer <pass>
+    if (!$pass) {
+        $authHeader = $_SERVER['HTTP_AUTHORIZATION'] 
+            ?? ($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] 
+            ?? ($_SERVER['REDIRECT_REDIRECT_HTTP_AUTHORIZATION'] ?? ''));
+        if (!$authHeader && function_exists('getallheaders')) {
+            $headers = @getallheaders();
+            if (is_array($headers)) {
+                foreach ($headers as $k => $v) {
+                    if (strcasecmp($k, 'Authorization') === 0) {
+                        $authHeader = $v;
+                        break;
+                    }
+                }
+            }
+        }
+        if ($authHeader && preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
+            $pass = $matches[1];
+        }
+    }
+
+    // 4. $_SERVERの全キー走査 (FastCGIで任意プレフィックスが付くケース)
+    if (!$pass) {
+        foreach ($_SERVER as $k => $v) {
+            if (is_string($v) && preg_match('/(?:HTTP_)?(?:REDIRECT_)*X_ADMIN_PASSWORD$/i', $k)) {
+                $pass = $v;
                 break;
             }
         }
     }
-    if (!$pass && !empty($_SERVER['HTTP_AUTHORIZATION'])) {
-        if (preg_match('/Bearer\s+(\S+)/i', $_SERVER['HTTP_AUTHORIZATION'], $matches)) {
-            $pass = $matches[1];
-        }
-    }
-    if (!$pass && !empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
-        if (preg_match('/Bearer\s+(\S+)/i', $_SERVER['REDIRECT_HTTP_AUTHORIZATION'], $matches)) {
-            $pass = $matches[1];
-        }
-    }
+
+    // 5. POST / GET / REQUEST パラメータ (フォールバック)
     if (!$pass) {
-        $pass = $_POST['password'] ?? ($_GET['password'] ?? '');
+        $pass = $_POST['password'] ?? ($_GET['password'] ?? ($_REQUEST['password'] ?? ''));
     }
-    return trim((string)$pass);
+
+    // 6. Cookie (セッション維持フォールバック)
+    if (!$pass) {
+        $pass = $_COOKIE['admin_pass'] ?? '';
+    }
+
+    $pass = trim((string)$pass);
+
+    // 有効なパスワードであればCookieをセットして次回以降の通信を安定化
+    if ($pass === ADMIN_PASSWORD && empty($_COOKIE['admin_pass'])) {
+        @setcookie('admin_pass', $pass, [
+            'expires' => time() + 86400 * 30,
+            'path' => '/',
+            'httponly' => false,
+            'samesite' => 'Lax'
+        ]);
+    }
+
+    return $pass;
 }
 
 try {

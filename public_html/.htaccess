@@ -13,3 +13,22 @@ SetEnv TZ Asia/Tokyo
 <IfModule mod_php.c>
     php_value date.timezone "Asia/Tokyo"
 </IfModule>
+
+# ------------------------------------------------------------------------------
+# FastCGI / Xserver環境向け: HTTP認証ヘッダーおよびカスタムヘッダー転送設定
+# ------------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTP:Authorization} ^(.*)
+    RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
+    RewriteCond %{HTTP:X-Admin-Password} ^(.*)
+    RewriteRule .* - [e=HTTP_X_ADMIN_PASSWORD:%1]
+    RewriteCond %{HTTP:X-Line-Account} ^(.*)
+    RewriteRule .* - [e=HTTP_X_LINE_ACCOUNT:%1]
+</IfModule>
+<IfModule mod_setenvif.c>
+    SetEnvIfNoCase Authorization "(.*)" HTTP_AUTHORIZATION=$1
+    SetEnvIfNoCase X-Admin-Password "(.*)" HTTP_X_ADMIN_PASSWORD=$1
+    SetEnvIfNoCase X-Line-Account "(.*)" HTTP_X_LINE_ACCOUNT=$1
+</IfModule>
+
