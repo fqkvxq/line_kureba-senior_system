@@ -85,7 +85,13 @@ function escapeHtml(str) {
 }
 
 function initAuth() {
-    const savedPass = sessionStorage.getItem('admin_pass');
+    const getCookie = (name) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
+        return '';
+    };
+    const savedPass = sessionStorage.getItem('admin_pass') || getCookie('admin_pass');
     const loginModal = document.getElementById('loginModal');
     const adminApp = document.getElementById('adminApp');
     const adminPasswordInput = document.getElementById('adminPasswordInput');
@@ -95,6 +101,7 @@ function initAuth() {
 
     if (savedPass) {
         // すでに認証済み
+        sessionStorage.setItem('admin_pass', savedPass);
         if (loginModal) loginModal.style.display = 'none';
         if (adminApp) adminApp.style.display = 'flex';
     } else {
@@ -111,22 +118,30 @@ function initAuth() {
             loginBtn.disabled = true;
             loginBtn.textContent = '認証中...';
 
-            const res = await fetch(`../api.php?action=admin_list_customers`, {
-                headers: { 'X-Admin-Password': pass }
+            const res = await fetch(`../api.php?action=admin_list_customers&password=${encodeURIComponent(pass)}`, {
+                headers: { 
+                    'X-Admin-Password': pass,
+                    'Authorization': `Bearer ${pass}`
+                }
             });
             const data = await res.json();
 
             if (data.success) {
                 sessionStorage.setItem('admin_pass', pass);
+                document.cookie = "admin_pass=" + encodeURIComponent(pass) + "; path=/; max-age=" + (86400 * 30) + "; SameSite=Lax";
                 if (loginModal) loginModal.style.display = 'none';
                 if (adminApp) adminApp.style.display = 'flex';
             } else {
+                sessionStorage.removeItem('admin_pass');
+                document.cookie = "admin_pass=; path=/; max-age=0; SameSite=Lax";
                 if (loginErrorMsg) {
                     loginErrorMsg.textContent = data.error || 'パスワードが正しくありません';
                     loginErrorMsg.style.display = 'block';
                 }
             }
         } catch (e) {
+            sessionStorage.removeItem('admin_pass');
+            document.cookie = "admin_pass=; path=/; max-age=0; SameSite=Lax";
             if (loginErrorMsg) {
                 loginErrorMsg.textContent = '通信エラーが発生しました';
                 loginErrorMsg.style.display = 'block';
@@ -147,6 +162,7 @@ function initAuth() {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
             sessionStorage.removeItem('admin_pass');
+            document.cookie = "admin_pass=; path=/; max-age=0; SameSite=Lax";
             if (adminApp) adminApp.style.display = 'none';
             if (loginModal) loginModal.style.display = 'flex';
             if (adminPasswordInput) adminPasswordInput.value = '';

@@ -58,13 +58,22 @@ const originalFetch = window.fetch;
 window.fetch = function (resource, init = {}) {
     let url = (typeof resource === 'string') ? resource : (resource && resource.url ? resource.url : '');
     if (url.includes('api.php')) {
-        const currentPass = state.password || sessionStorage.getItem('admin_pass') || '';
+        const getCookie = (name) => {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
+            return '';
+        };
+        const currentPass = state.password || sessionStorage.getItem('admin_pass') || getCookie('admin_pass') || '';
         if (!init.headers) {
             init.headers = {};
         }
         if (init.headers instanceof Headers) {
             if (currentPass && !init.headers.has('X-Admin-Password')) {
                 init.headers.set('X-Admin-Password', currentPass);
+            }
+            if (currentPass && !init.headers.has('Authorization')) {
+                init.headers.set('Authorization', 'Bearer ' + currentPass);
             }
             if (state.activeAccount && !init.headers.has('X-Line-Account')) {
                 init.headers.set('X-Line-Account', state.activeAccount);
@@ -73,6 +82,9 @@ window.fetch = function (resource, init = {}) {
             if (currentPass && !init.headers.some(h => h[0].toLowerCase() === 'x-admin-password')) {
                 init.headers.push(['X-Admin-Password', currentPass]);
             }
+            if (currentPass && !init.headers.some(h => h[0].toLowerCase() === 'authorization')) {
+                init.headers.push(['Authorization', 'Bearer ' + currentPass]);
+            }
             if (state.activeAccount && !init.headers.some(h => h[0].toLowerCase() === 'x-line-account')) {
                 init.headers.push(['X-Line-Account', state.activeAccount]);
             }
@@ -80,20 +92,29 @@ window.fetch = function (resource, init = {}) {
             if (currentPass && !init.headers['X-Admin-Password']) {
                 init.headers['X-Admin-Password'] = currentPass;
             }
+            if (currentPass && !init.headers['Authorization']) {
+                init.headers['Authorization'] = 'Bearer ' + currentPass;
+            }
             if (state.activeAccount && !init.headers['X-Line-Account']) {
                 init.headers['X-Line-Account'] = state.activeAccount;
             }
         }
 
-        // 【セキュリティ強化】URLクエリから password=... を安全に完全除去（コンソールやサーバーログへの露出防止）
-        if (url.includes('password=')) {
-            url = url.replace(/([?&])password=[^&]*(&|$)/g, function(match, p1, p2) {
-                return p2 === '&' ? p1 : '';
-            }).replace(/\?$/, '');
-            if (typeof resource === 'string') {
-                resource = url;
-            } else if (resource && resource.url) {
-                resource = new Request(url, init);
+        // FastCGI / プロキシ等でHTTPヘッダーが欠落する環境への安全なフォールバック: URLパラメータ & POSTボディへのパスワード自動付与
+        if (currentPass) {
+            if (!url.includes('password=')) {
+                url += (url.includes('?') ? '&' : '?') + 'password=' + encodeURIComponent(currentPass);
+                if (typeof resource === 'string') {
+                    resource = url;
+                } else if (resource && resource.url) {
+                    resource = new Request(url, init);
+                }
+            }
+            if (init && init.body && init.body instanceof URLSearchParams && !init.body.has('password')) {
+                init.body.append('password', currentPass);
+            }
+            if (init && init.body && typeof FormData !== 'undefined' && init.body instanceof FormData && !init.body.has('password')) {
+                init.body.append('password', currentPass);
             }
         }
 
@@ -103,9 +124,14 @@ window.fetch = function (resource, init = {}) {
                 url += (url.includes('?') ? '&' : '?') + 'account=' + encodeURIComponent(acc);
                 if (typeof resource === 'string') {
                     resource = url;
+                } else if (resource && resource.url) {
+                    resource = new Request(url, init);
                 }
             }
             if (init && init.body && init.body instanceof URLSearchParams && !init.body.has('account')) {
+                init.body.append('account', acc);
+            }
+            if (init && init.body && typeof FormData !== 'undefined' && init.body instanceof FormData && !init.body.has('account')) {
                 init.body.append('account', acc);
             }
         }
@@ -759,9 +785,16 @@ window.openAccountEditForm = openAccountEditForm;
 window.handleAccountDelete = handleAccountDelete;
 
 function initAuth() {
-    const savedPass = sessionStorage.getItem('admin_pass');
+    const getCookie = (name) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
+        return '';
+    };
+    const savedPass = sessionStorage.getItem('admin_pass') || getCookie('admin_pass');
     if (savedPass) {
         state.password = savedPass;
+        sessionStorage.setItem('admin_pass', savedPass);
         showApp();
     } else {
         elements.loginModal.style.display = 'flex';
@@ -784,20 +817,33 @@ function attemptLogin() {
     }
 
     showLoading('認証中...');
-    fetch('../api.php?action=admin_list_richmenus')
+    state.password = pass;
+    fetch('../api.php?action=admin_list_richmenus&password=' + encodeURIComponent(pass), {
+        headers: { 
+            'X-Admin-Password': pass,
+            'Authorization': `Bearer ${pass}`
+        }
+    })
         .then(res => res.json())
         .then(data => {
             hideLoading();
             if (data.success) {
                 state.password = pass;
                 sessionStorage.setItem('admin_pass', pass);
+                document.cookie = "admin_pass=" + encodeURIComponent(pass) + "; path=/; max-age=" + (86400 * 30) + "; SameSite=Lax";
                 elements.loginErrorMsg.textContent = '';
                 showApp();
             } else {
+                state.password = '';
+                sessionStorage.removeItem('admin_pass');
+                document.cookie = "admin_pass=; path=/; max-age=0; SameSite=Lax";
                 elements.loginErrorMsg.textContent = data.error || 'パスワードが正しくありません';
             }
         })
         .catch(err => {
+            state.password = '';
+            sessionStorage.removeItem('admin_pass');
+            document.cookie = "admin_pass=; path=/; max-age=0; SameSite=Lax";
             hideLoading();
             elements.loginErrorMsg.textContent = '通信エラーが発生しました';
         });
@@ -805,6 +851,7 @@ function attemptLogin() {
 
 function logout() {
     sessionStorage.removeItem('admin_pass');
+    document.cookie = "admin_pass=; path=/; max-age=0; SameSite=Lax";
     state.password = '';
     elements.adminApp.style.display = 'none';
     elements.loginModal.style.display = 'flex';

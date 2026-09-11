@@ -1100,6 +1100,17 @@
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
+                                <h4>管理画面のパスワードログインができない・エラーになる場合は？</h4>
+                                <p>以下の点をご確認ください：<br>
+                                <strong>1. 管理者パスワードの入力確認</strong>：デフォルトパスワードは <code>1020143</code> に設定されています（変更は <code>public_html/config.php</code> の <code>ADMIN_PASSWORD</code> で行えます）。前後に余分なスペースが入っていないかご確認ください。<br>
+                                <strong>2. サーバーのHTTPヘッダー転送環境</strong>：当システムはXserverなどの共有ホスティング環境（Apache + FastCGI / PHP-FPM）に対応するため、<code>.htaccess</code> によるヘッダー転送、Bearerトークン、URLパラメータ、セッションCookieによる多重認証に対応しています。最新のコードがサーバーに反映されていることをご確認ください。<br>
+                                <strong>3. ブラウザのCookie・ストレージ設定</strong>：ログイン状態の保持のためブラウザのCookieおよびセッションストレージ（sessionStorage）を使用します。シークレットモードやCookieブロック設定を行っている場合は許可してください。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">Q</div>
+                            <div class="step-body">
                                 <h4>管理画面の角丸（デザインシステム）はどのように統一されていますか？</h4>
                                 <p>システム全体の視認性と操作性を高めるため、CSSデザインシステムトークン（<code>--radius-xs: 4px</code>, <code>--radius-sm: 8px</code>, <code>--radius-md: 12px</code>, <code>--radius-lg: 16px</code>, <code>--radius-xl: 20px</code>, <code>--radius-full: 9999px</code>）を全画面（受講生カルテ、個別チャット、Discord設定、リッチメニュー作成、操作マニュアル）に完全標準化しています。ボタンや入力枠、モーダル、カードの丸みが美しく統一され、直感的で洗練されたUIを提供します。</p>
                             </div>
@@ -1115,6 +1126,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260910_dx_survey_v2"></script>
+    <script src="manual.js?v=20260911_auth_robust_v2"></script>
 </body>
 </html>

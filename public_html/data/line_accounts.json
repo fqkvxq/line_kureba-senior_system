@@ -1,34 +1,32 @@
 {
-    "version": "1.0",
-    "updated_at": "2026-09-11 10:08:29",
-    "accounts": {
-        "senior": {
-            "id": "senior",
-            "name": "スマホ・パソコン教室KUREBA",
-            "short_name": "パソコン教室",
-            "theme_color": "#ff8700",
-            "channel_access_token": "n1ItOIEh+8mNJiEpXK+hG0T4/b1Z9taR2FkYQrAwA6J/3XMdUUfHnkP3DX+7u+nGgirA4helNntS1qT2m2kOtV7yiYM2MwxrEB7qj09J/yXhItpCqKGS7l4lcaffcvukX/jHGFOLDSloz0vBLIQAdQdB04t89/1O/w1cDnyilFU=",
-            "channel_secret": "a5dbfb92fa7be994b6e8f38f870b97b8",
-            "liff_id": "2000276344-YL1wXh0h",
-            "proline_calendar_url": "https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1",
-            "proline_webhook_url": "",
-            "db_file": "cars.db",
-            "is_default": true,
-            "updated_at": "2026-09-11 10:08:29"
-        },
-        "kaisya_dx": {
-            "id": "kaisya_dx",
-            "name": "会社DXのKUREBA",
-            "short_name": "会社DXのKUREBA",
-            "theme_color": "#2563eb",
-            "channel_access_token": "5rGB+M9chkEMdXpO7S5+jAtrqX+7FUNDF9IsZ2/i3zi02/QlGQQTolaYjeLMDo92ckuD2MORgkaCID1MxpbDPD3INS8jHs+wxyyNfKzj9xT1eZ5jPqWy4S0DM2l7IJo7MDIeOzqcr5JtMQaq38OQNQdB04t89/1O/w1cDnyilFU=",
-            "channel_secret": "70b7887d48cbb85870eb8ee6f43dc6aa",
-            "liff_id": "",
-            "proline_calendar_url": "",
-            "proline_webhook_url": "",
-            "db_file": "kaisyadx.db",
-            "is_default": false,
-            "updated_at": "2026-09-11 10:08:29"
-        }
+  "accounts": [
+    {
+      "id": "senior",
+      "name": "スマホ・パソコン教室KUREBA",
+      "short_name": "パソコン教室",
+      "theme_color": "#ff8700",
+      "channel_access_token": "n1ItOIEh+8mNJiEpXK+hG0T4/b1Z9taR2FkYQrAwA6J/3XMdUUfHnkP3DX+7u+nGgirA4helNntS1qT2m2kOtV7yiYM2MwxrEB7qj09J/yXhItpCqKGS7l4lcaffcvukX/jHGFOLDSloz0vBLIQAdQdB04t89/1O/w1cDnyilFU=",
+      "channel_secret": "a5dbfb92fa7be994b6e8f38f870b97b8",
+      "liff_id": "2000276344-YL1wXh0h",
+      "proline_calendar_url": "https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1",
+      "proline_webhook_url": "",
+      "db_file": "cars.db",
+      "is_default": true,
+      "is_configured": true
+    },
+    {
+      "id": "kaisya_dx",
+      "name": "会社DXのKUREBA",
+      "short_name": "会社DXのKUREBA",
+      "theme_color": "#2563eb",
+      "channel_access_token": "5rGB+M9chkEMdXpO7S5+jAtrqX+7FUNDF9IsZ2/i3zi02/QlGQQTolaYjeLMDo92ckuD2MORgkaCID1MxpbDPD3INS8jHs+wxyyNfKzj9xT1eZ5jPqWy4S0DM2l7IJo7MDIeOzqcr5JtMQaq38OQNQdB04t89/1O/w1cDnyilFU=",
+      "channel_secret": "70b7887d48cbb85870eb8ee6f43dc6aa",
+      "liff_id": "",
+      "proline_calendar_url": "",
+      "proline_webhook_url": "",
+      "db_file": "kaisyadx.db",
+      "is_default": false,
+      "is_configured": true
     }
+  ]
 }
