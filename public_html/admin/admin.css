@@ -131,9 +131,17 @@ body {
 
 /* メイン管理画面 */
 .admin-wrapper {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 24px 20px 60px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 20px 24px 60px;
+    box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    .admin-wrapper {
+        padding: 16px 12px 60px;
+    }
 }
 
 /* ヘッダー */
