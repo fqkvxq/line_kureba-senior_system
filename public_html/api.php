@@ -31,9 +31,23 @@ require_once __DIR__ . '/config.php';
  * 管理者認証パスワードを取得 (X-Admin-Passwordヘッダー優先、Bearer、POST/GET互換)
  */
 function getAdminAuthPassword(): string {
-    $pass = $_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? '';
+    $pass = $_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ($_SERVER['REDIRECT_HTTP_X_ADMIN_PASSWORD'] ?? '');
+    if (!$pass && function_exists('apache_request_headers')) {
+        $headers = apache_request_headers();
+        foreach ($headers as $key => $val) {
+            if (strcasecmp($key, 'X-Admin-Password') === 0) {
+                $pass = $val;
+                break;
+            }
+        }
+    }
     if (!$pass && !empty($_SERVER['HTTP_AUTHORIZATION'])) {
         if (preg_match('/Bearer\s+(\S+)/i', $_SERVER['HTTP_AUTHORIZATION'], $matches)) {
+            $pass = $matches[1];
+        }
+    }
+    if (!$pass && !empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        if (preg_match('/Bearer\s+(\S+)/i', $_SERVER['REDIRECT_HTTP_AUTHORIZATION'], $matches)) {
             $pass = $matches[1];
         }
     }

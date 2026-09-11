@@ -74,8 +74,11 @@ window.fetch = function (resource, init = {}) {
                     resource = url;
                 }
             }
-            // POSTボディにURLSearchParamsがある場合もaccountを付与
+            // POSTボディにURLSearchParamsまたはFormDataがある場合もaccountを付与
             if (init && init.body && init.body instanceof URLSearchParams && !init.body.has('account')) {
+                init.body.append('account', acc);
+            }
+            if (init && init.body && typeof FormData !== 'undefined' && init.body instanceof FormData && !init.body.has('account')) {
                 init.body.append('account', acc);
             }
         }
@@ -1130,7 +1133,10 @@ async function attemptLogin() {
     elements.loginErrorMsg.textContent = '';
 
     try {
-        const res = await fetch(`../api.php?action=admin_list_customers&account=${encodeURIComponent(state.activeAccount)}`);
+        state.password = pass;
+        const res = await fetch(`../api.php?action=admin_list_customers&account=${encodeURIComponent(state.activeAccount)}`, {
+            headers: { 'X-Admin-Password': pass }
+        });
         const data = await res.json();
 
         if (data.success) {
@@ -1144,9 +1150,13 @@ async function attemptLogin() {
             renderTable();
             loadRichMenus();
         } else {
+            state.password = '';
+            sessionStorage.removeItem('admin_pass');
             elements.loginErrorMsg.textContent = data.error || 'パスワードが違います';
         }
     } catch (e) {
+        state.password = '';
+        sessionStorage.removeItem('admin_pass');
         elements.loginErrorMsg.textContent = 'サーバー通信エラーが発生しました';
     } finally {
         elements.loginBtn.disabled = false;

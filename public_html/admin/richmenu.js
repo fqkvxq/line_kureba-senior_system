@@ -108,6 +108,9 @@ window.fetch = function (resource, init = {}) {
             if (init && init.body && init.body instanceof URLSearchParams && !init.body.has('account')) {
                 init.body.append('account', acc);
             }
+            if (init && init.body && typeof FormData !== 'undefined' && init.body instanceof FormData && !init.body.has('account')) {
+                init.body.append('account', acc);
+            }
         }
     }
     return originalFetch.call(this, resource, init);
@@ -784,7 +787,10 @@ function attemptLogin() {
     }
 
     showLoading('認証中...');
-    fetch('../api.php?action=admin_list_richmenus')
+    state.password = pass;
+    fetch('../api.php?action=admin_list_richmenus', {
+        headers: { 'X-Admin-Password': pass }
+    })
         .then(res => res.json())
         .then(data => {
             hideLoading();
@@ -794,10 +800,14 @@ function attemptLogin() {
                 elements.loginErrorMsg.textContent = '';
                 showApp();
             } else {
+                state.password = '';
+                sessionStorage.removeItem('admin_pass');
                 elements.loginErrorMsg.textContent = data.error || 'パスワードが正しくありません';
             }
         })
         .catch(err => {
+            state.password = '';
+            sessionStorage.removeItem('admin_pass');
             hideLoading();
             elements.loginErrorMsg.textContent = '通信エラーが発生しました';
         });
