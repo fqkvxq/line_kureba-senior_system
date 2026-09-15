@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260910_nav_layout_v2">
+    <link rel="stylesheet" href="manual.css?v=20260915_pagination_v1">
 </head>
 <body>
     <!-- ログインモーダル -->
@@ -403,15 +403,27 @@
                                 </ul>
                             </div>
                         </div>
+                        <div class="step-card">
+                            <div class="step-number">3</div>
+                            <div class="step-body">
+                                <h4>ページネーション（ページ分割表示）と高速検索</h4>
+                                <ul>
+                                    <li><strong>ページ分割表示</strong>: 受講生が1,000名規模に増えてもブラウザが重くならず快適に動作するよう、1ページあたり50件ずつのスマート分割表示を採用しています。</li>
+                                    <li><strong>表示件数の切り替え</strong>: テーブル下部のセレクターから「25件」「50件」「100件」「全件」をいつでもワンクリックで変更できます。</li>
+                                    <li><strong>高速デバウンス検索</strong>: 検索ボックスに受講生名やコース名を入力する際、入力確定を自動検知して高速フィルタリングを行い、ブラウザのフリーズを防ぎます。</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="callout callout-success">
                         <i class="fa-solid fa-lightbulb"></i>
                         <div>
-                            <strong>期日バッジの色の見方:</strong><br>
+                            <strong>期日バッジの色の見方 & ページ操作Tips:</strong><br>
                             ・<span class="badge-feature badge-rose">赤色</span>: 期日超過、または当日〜7日以内の緊急ステータス<br>
                             ・<span class="badge-feature badge-amber">黄色</span>: 残り30日以内のリマインド推奨ステータス<br>
-                            ・<span class="badge-feature badge-green">緑色</span>: 余裕あり（30日以上先）
+                            ・<span class="badge-feature badge-green">緑色</span>: 余裕あり（30日以上先）<br>
+                            ・<span class="badge-feature badge-indigo">ページ移動</span>: ページ番号や「次へ」「前へ」を押すと、自動的にテーブル上部へスムーズスクロールします。
                         </div>
                     </div>
                 </section>
@@ -1116,6 +1128,14 @@
                                 <strong>角丸トークン（デザインシステム）</strong>：CSSデザインシステムトークン（<code>--radius-xs: 4px</code>, <code>--radius-sm: 8px</code>, <code>--radius-md: 12px</code>, <code>--radius-lg: 16px</code>, <code>--radius-xl: 20px</code>, <code>--radius-full: 9999px</code>）を全画面（受講生カルテ、個別チャット、Discord設定、リッチメニュー作成、操作マニュアル）に完全標準化し、統一感ある美しいUIを提供します。</p>
                             </div>
                         </div>
+                        <div class="step-card">
+                            <div class="step-number">Q</div>
+                            <div class="step-body">
+                                <h4>受講生数が1,000名近くなっても管理画面が重く・フリーズしない理由は？</h4>
+                                <p><strong>スマートページネーション & イベント委譲</strong>：大量の受講生データ（900名超）を一括で描画するとブラウザのメモリやCPUを圧迫するため、当システムでは1ページあたり50件に分割描画するページネーションを搭載しています。また、ボタンごとの個別イベントバインドを廃止し、テーブル親コンテナでのイベント委譲処理を行うことで、極めて軽快な動作を実現しています。<br>
+                                <strong>検索デバウンス処理</strong>：検索ボックス入力時に過剰な再描画が発生しないよう、キー入力のタイピング完了を自動待機（250ms）してから絞り込みを実行するため、日本語入力中でもスムーズに検索できます。</p>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -1127,6 +1147,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260911_auth_robust_v2"></script>
+    <script src="manual.js?v=20260915_pagination_v1"></script>
 </body>
 </html>

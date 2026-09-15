@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260911_fullwidth_v1">
+    <link rel="stylesheet" href="admin.css?v=20260915_pagination_v1">
 </head>
 <body>
     <!-- ログインモーダル (初期表示) -->
@@ -185,6 +185,25 @@
                 <div class="empty-placeholder" id="emptyTablePlaceholder" style="display: none;">
                     <i class="fa-solid fa-inbox"></i>
                     <p>該当する受講生データが見つかりませんでした。</p>
+                </div>
+            </div>
+
+            <!-- ページネーション コントロール -->
+            <div class="pagination-bar" id="paginationBar" style="display: none;">
+                <div class="pagination-left">
+                    <span class="pagination-info" id="paginationInfoText">1〜50件を表示中 (全991件)</span>
+                    <div class="page-size-wrap">
+                        <label for="pageSizeSelect">表示件数:</label>
+                        <select id="pageSizeSelect" class="form-select page-size-select">
+                            <option value="25">25件</option>
+                            <option value="50" selected>50件</option>
+                            <option value="100">100件</option>
+                            <option value="all">全件</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="pagination-nav" id="paginationNav">
+                    <!-- JSで動的生成 -->
                 </div>
             </div>
         </main>
@@ -1398,6 +1417,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260911_auth_robust_v2"></script>
+    <script src="admin.js?v=20260915_pagination_v1"></script>
 </body>
 </html>

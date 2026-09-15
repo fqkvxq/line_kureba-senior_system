@@ -15,7 +15,11 @@ const state = {
     // マルチアカウント管理
     activeAccount: localStorage.getItem('active_line_account') || 'senior',
     accounts: [],
-    activeAccountInfo: null,
+    // ページネーション & 検索
+    currentPage: 1,
+    pageSize: 50,
+    searchDebounceTimer: null,
+    currentFilteredList: [],
     // チャット & Discord
     unreadChatCounts: {},
     activeChatUser: null,
@@ -141,6 +145,12 @@ const elements = {
     // テーブル
     customerTableBody: document.getElementById('customerTableBody'),
     emptyTablePlaceholder: document.getElementById('emptyTablePlaceholder'),
+
+    // ページネーション
+    paginationBar: document.getElementById('paginationBar'),
+    paginationInfoText: document.getElementById('paginationInfoText'),
+    pageSizeSelect: document.getElementById('pageSizeSelect'),
+    paginationNav: document.getElementById('paginationNav'),
 
     // 顧客登録・編集モーダル
     customerEditModal: document.getElementById('customerEditModal'),
@@ -926,16 +936,32 @@ function initEventListeners() {
         elements.adminPasswordInput.value = '';
     });
 
-    // 検索入力
-    elements.adminSearchInput.addEventListener('input', (e) => {
-        state.searchQuery = e.target.value.trim().toLowerCase();
-        renderTable();
-    });
+    // 検索入力 (デバウンス250msで入力中のブラウザ固まりを完全に防止)
+    if (elements.adminSearchInput) {
+        elements.adminSearchInput.addEventListener('input', (e) => {
+            clearTimeout(state.searchDebounceTimer);
+            state.searchDebounceTimer = setTimeout(() => {
+                state.searchQuery = e.target.value.trim().toLowerCase();
+                state.currentPage = 1; // 検索時は1ページ目へ
+                renderTable();
+            }, 250);
+        });
+    }
+
+    // 表示件数切り替え (25件 / 50件 / 100件 / 全件)
+    if (elements.pageSizeSelect) {
+        elements.pageSizeSelect.addEventListener('change', (e) => {
+            state.pageSize = e.target.value;
+            state.currentPage = 1; // 表示件数変更時は1ページ目へ
+            renderTable();
+        });
+    }
 
     // 並び替えセレクト
     if (elements.adminSortSelect) {
         elements.adminSortSelect.addEventListener('change', (e) => {
             state.currentSort = e.target.value;
+            state.currentPage = 1;
             renderTable();
         });
     }
@@ -946,6 +972,7 @@ function initEventListeners() {
             elements.tabBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             state.currentFilter = btn.getAttribute('data-filter');
+            state.currentPage = 1; // タブ切り替え時は1ページ目へ
             renderTable();
         });
     });
@@ -958,9 +985,13 @@ function initEventListeners() {
                 b.classList.toggle('active', b.dataset.filter === filter);
             });
             state.currentFilter = filter;
+            state.currentPage = 1; // 統計カードクリック時も1ページ目へ
             renderTable();
         });
     });
+
+    // 受講生テーブルのイベント委譲初期化
+    initCustomerTableEvents();
 
     // 顧客登録・編集モーダル開閉
     elements.openAddCustomerModalBtn.addEventListener('click', () => openEditModal(null));
@@ -1347,54 +1378,30 @@ function renderTable() {
         return true;
     });
 
-    if (filtered.length === 0) {
+    state.currentFilteredList = filtered;
+    const totalFiltered = filtered.length;
+
+    if (totalFiltered === 0) {
         elements.customerTableBody.innerHTML = '';
         elements.emptyTablePlaceholder.style.display = 'block';
+        if (elements.paginationBar) elements.paginationBar.style.display = 'none';
         return;
     }
 
     elements.emptyTablePlaceholder.style.display = 'none';
 
-    // 並び替え処理
-    const sort = state.currentSort || 'last_interaction';
-    const parseSafeTime = (val) => {
-        if (!val) return 0;
-        const str = String(val).replace(/-/g, '/').replace('T', ' ');
-        const t = new Date(str).getTime();
-        return isNaN(t) ? 0 : t;
-    };
+    // ページネーション計算
+    const pageSize = (state.pageSize === 'all') ? totalFiltered : (parseInt(state.pageSize, 10) || 50);
+    const totalPages = (state.pageSize === 'all') ? 1 : Math.max(1, Math.ceil(totalFiltered / pageSize));
+    if (state.currentPage > totalPages) state.currentPage = totalPages;
+    if (state.currentPage < 1) state.currentPage = 1;
 
-    filtered.sort((a, b) => {
-        if (sort === 'last_interaction') {
-            const timeA = parseSafeTime(a.last_interaction_at || a.updated_at || a.created_at);
-            const timeB = parseSafeTime(b.last_interaction_at || b.updated_at || b.created_at);
-            return timeB - timeA;
-        } else if (sort === 'insp_soon') {
-            if (!a.inspection_next_date && !b.inspection_next_date) return 0;
-            if (!a.inspection_next_date) return 1;
-            if (!b.inspection_next_date) return -1;
-            return parseSafeTime(a.inspection_next_date) - parseSafeTime(b.inspection_next_date);
-        } else if (sort === 'oil_soon') {
-            if (!a.oil_next_date && !b.oil_next_date) return 0;
-            if (!a.oil_next_date) return 1;
-            if (!b.oil_next_date) return -1;
-            return parseSafeTime(a.oil_next_date) - parseSafeTime(b.oil_next_date);
-        } else if (sort === 'periodic_soon') {
-            if (!a.periodic_insp_next_date && !b.periodic_insp_next_date) return 0;
-            if (!a.periodic_insp_next_date) return 1;
-            if (!b.periodic_insp_next_date) return -1;
-            return parseSafeTime(a.periodic_insp_next_date) - parseSafeTime(b.periodic_insp_next_date);
-        } else if (sort === 'name_asc') {
-            return (a.user_name || '').localeCompare(b.user_name || '', 'ja');
-        } else if (sort === 'created_desc') {
-            return parseSafeTime(b.created_at) - parseSafeTime(a.created_at);
-        } else if (sort === 'updated_desc') {
-            return parseSafeTime(b.updated_at) - parseSafeTime(a.updated_at);
-        }
-        return 0;
-    });
+    const startIndex = (state.currentPage - 1) * pageSize;
+    const endIndex = (state.pageSize === 'all') ? totalFiltered : Math.min(startIndex + pageSize, totalFiltered);
+    const pagedList = (state.pageSize === 'all') ? filtered : filtered.slice(startIndex, endIndex);
 
-    elements.customerTableBody.innerHTML = filtered.map((c, idx) => {
+    elements.customerTableBody.innerHTML = pagedList.map((c, pageIdx) => {
+        const globalIdx = startIndex + pageIdx;
         const oilBadge = getBadgeHtml(c.oil_next_date);
         const periodicBadge = getBadgeHtml(c.periodic_insp_next_date);
         const inspBadge = getBadgeHtml(c.inspection_next_date);
@@ -1461,11 +1468,11 @@ function renderTable() {
         `;
 
         return `
-            <tr data-index="${idx}">
+            <tr data-index="${globalIdx}">
                 <td>
                     <div style="display: flex; align-items: center; gap: 10px;">
                         ${c.picture_url ? `
-                            <img src="${escapeHtml(c.picture_url)}" alt="" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1.5px solid #e2e8f0; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08);" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                            <img src="${escapeHtml(c.picture_url)}" alt="" loading="lazy" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1.5px solid #e2e8f0; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08);" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
                             <div style="display: none; width: 38px; height: 38px; border-radius: 50%; background: #e2e8f0; color: #64748b; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">
                                 <i class="fa-solid fa-user"></i>
                             </div>
@@ -1509,37 +1516,37 @@ function renderTable() {
                 <td style="max-width: 160px; font-size: 11px;">${memo}</td>
                 <td>
                     <div class="action-btns">
-                        <button class="btn-table-chat" data-action="chat" data-idx="${idx}" onclick="event.stopPropagation(); window.openChatModalByUid && window.openChatModalByUid('${escapeHtml(c.user_id || '')}');" title="この受講生との1対1トーク確認・返信">
+                        <button class="btn-table-chat" data-action="chat" data-idx="${globalIdx}" title="この受講生との1対1トーク確認・返信">
                             <i class="fa-solid fa-comments"></i> チャット
                             ${state.unreadChatCounts && state.unreadChatCounts[userId] ? `
                                 <span class="badge-chat-unread" style="margin-left: 2px;">${state.unreadChatCounts[userId]}</span>
                             ` : ''}
                         </button>
-                        <button class="btn-user-richmenu ${isCustomized ? 'is-active' : ''}" data-action="custom-menu" data-idx="${idx}" title="リッチメニューの確認・個別指定・メッセージ設定">
+                        <button class="btn-user-richmenu ${isCustomized ? 'is-active' : ''}" data-action="custom-menu" data-idx="${globalIdx}" title="リッチメニューの確認・個別指定・メッセージ設定">
                             <i class="fa-solid fa-table-cells-large"></i> メニュー設定
                         </button>
                         ${isDxAccount ? `
-                            <button class="btn-dx-survey-user-row" data-action="dx-survey-send" data-idx="${idx}" title="この顧客へDX関心度アンケート（Flex Message）を送信" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; font-size:11px; padding:4px 8px; border-radius:4px; font-weight:600; cursor:pointer;">
+                            <button class="btn-dx-survey-user-row" data-action="dx-survey-send" data-idx="${globalIdx}" title="この顧客へDX関心度アンケート（Flex Message）を送信" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; font-size:11px; padding:4px 8px; border-radius:4px; font-weight:600; cursor:pointer;">
                                 <i class="fa-solid fa-clipboard-question"></i> DXアンケート
                             </button>
                         ` : `
-                            <button class="btn-knowledge-user-row" data-action="knowledge-send" data-idx="${idx}" title="この受講生へスマホ・PCお役立ち情報（Flex Message）を個別送信">
+                            <button class="btn-knowledge-user-row" data-action="knowledge-send" data-idx="${globalIdx}" title="この受講生へスマホ・PCお役立ち情報（Flex Message）を個別送信">
                                 <i class="fa-solid fa-bullhorn"></i> お役立ち配信
                             </button>
                         `}
-                        <button class="btn-remind-oil" data-action="remind-oil" data-idx="${idx}" title="次回レッスン案内リマインドをLINE送信" style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd;">
+                        <button class="btn-remind-oil" data-action="remind-oil" data-idx="${globalIdx}" title="次回レッスン案内リマインドをLINE送信" style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd;">
                             <i class="fa-solid fa-laptop"></i> レッスン
                         </button>
-                        <button class="btn-remind-periodic" data-action="remind-periodic" data-idx="${idx}" title="定期PC健康診断リマインドをLINE送信" style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0;">
+                        <button class="btn-remind-periodic" data-action="remind-periodic" data-idx="${globalIdx}" title="定期PC健康診断リマインドをLINE送信" style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0;">
                             <i class="fa-solid fa-shield-virus"></i> PC診断
                         </button>
-                        <button class="btn-remind-insp" data-action="remind-insp" data-idx="${idx}" title="会員更新・月謝期日リマインドをLINE送信" style="background:#fffbeb; color:#d97706; border:1px solid #fde68a;">
+                        <button class="btn-remind-insp" data-action="remind-insp" data-idx="${globalIdx}" title="会員更新・月謝期日リマインドをLINE送信" style="background:#fffbeb; color:#d97706; border:1px solid #fde68a;">
                             <i class="fa-solid fa-calendar-check"></i> 更新期日
                         </button>
-                        <button class="btn-edit" data-action="edit" data-idx="${idx}" title="編集">
+                        <button class="btn-edit" data-action="edit" data-idx="${globalIdx}" title="編集">
                             <i class="fa-solid fa-pen"></i>
                         </button>
-                        <button class="btn-delete" data-action="delete" data-idx="${idx}" title="削除">
+                        <button class="btn-delete" data-action="delete" data-idx="${globalIdx}" title="削除">
                             <i class="fa-solid fa-trash"></i>
                         </button>
                     </div>
@@ -1548,13 +1555,139 @@ function renderTable() {
         `;
     }).join('');
 
-    // 安全なイベントリスナー登録
-    elements.customerTableBody.querySelectorAll('.action-btns button').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+    // ページネーションコントロールの描画
+    renderPagination(totalFiltered, totalPages, startIndex, endIndex);
+
+    // イベント委譲リスナーの初回登録（多重バインド防止）
+    initCustomerTableEvents();
+}
+
+/**
+ * ページネーション ナビゲーションUIの生成
+ */
+function renderPagination(totalCount, totalPages, startIndex, endIndex) {
+    if (!elements.paginationBar) return;
+
+    if (totalCount === 0) {
+        elements.paginationBar.style.display = 'none';
+        return;
+    }
+
+    elements.paginationBar.style.display = 'flex';
+    if (elements.paginationInfoText) {
+        elements.paginationInfoText.innerHTML = `<strong>${startIndex + 1}〜${endIndex}件</strong> を表示中 (全${totalCount.toLocaleString()}件)`;
+    }
+
+    if (!elements.paginationNav) return;
+
+    if (totalPages <= 1) {
+        elements.paginationNav.innerHTML = '';
+        return;
+    }
+
+    const current = state.currentPage;
+    let buttonsHtml = '';
+
+    // 「最初へ」「前へ」
+    const prevDisabled = current === 1 ? 'disabled' : '';
+    buttonsHtml += `
+        <button type="button" class="page-btn" data-page="1" ${prevDisabled} title="最初のページへ">
+            <i class="fa-solid fa-angles-left"></i>
+        </button>
+        <button type="button" class="page-btn" data-page="${current - 1}" ${prevDisabled} title="前のページへ">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+    `;
+
+    // ページ番号リスト (省略記号 ... つき)
+    const pageNumbers = getPageNumbers(current, totalPages);
+    pageNumbers.forEach(p => {
+        if (p === '...') {
+            buttonsHtml += `<span class="page-ellipsis">…</span>`;
+        } else {
+            const isActive = (p === current);
+            buttonsHtml += `
+                <button type="button" class="page-btn ${isActive ? 'active' : ''}" data-page="${p}" ${isActive ? 'disabled' : ''}>
+                    ${p}
+                </button>
+            `;
+        }
+    });
+
+    // 「次へ」「最後へ」
+    const nextDisabled = current === totalPages ? 'disabled' : '';
+    buttonsHtml += `
+        <button type="button" class="page-btn" data-page="${current + 1}" ${nextDisabled} title="次のページへ">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
+        <button type="button" class="page-btn" data-page="${totalPages}" ${nextDisabled} title="最後のページへ">
+            <i class="fa-solid fa-angles-right"></i>
+        </button>
+    `;
+
+    elements.paginationNav.innerHTML = buttonsHtml;
+}
+
+/**
+ * ページ番号配列の算出ヘルパー（省略記号対応）
+ */
+function getPageNumbers(current, total) {
+    if (total <= 7) {
+        return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    const pages = [];
+    if (current <= 4) {
+        for (let i = 1; i <= 5; i++) pages.push(i);
+        pages.push('...');
+        pages.push(total);
+    } else if (current >= total - 3) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = total - 4; i <= total; i++) pages.push(i);
+    } else {
+        pages.push(1);
+        pages.push('...');
+        pages.push(current - 1);
+        pages.push(current);
+        pages.push(current + 1);
+        pages.push('...');
+        pages.push(total);
+    }
+    return pages;
+}
+
+/**
+ * ページ切り替え & テーブル上部スクロール
+ */
+function changePage(newPage) {
+    state.currentPage = newPage;
+    renderTable();
+    const tableContainer = document.querySelector('.table-container');
+    if (tableContainer) {
+        const top = tableContainer.getBoundingClientRect().top + window.pageYOffset - 80;
+        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    }
+}
+
+/**
+ * テーブルおよびページネーションのイベント委譲（Event Delegation）
+ * 毎回の大量リスナー登録を廃止し、親コンテナで一括処理
+ */
+let isTableEventDelegated = false;
+function initCustomerTableEvents() {
+    if (isTableEventDelegated) return;
+    isTableEventDelegated = true;
+
+    // テーブルボディの委譲クリック
+    if (elements.customerTableBody) {
+        elements.customerTableBody.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-action]');
+            if (!btn) return;
             e.stopPropagation();
+
             const action = btn.getAttribute('data-action');
             const idx = parseInt(btn.getAttribute('data-idx'), 10);
-            const cust = filtered[idx];
+            const cust = state.currentFilteredList ? state.currentFilteredList[idx] : null;
             if (!cust) return;
 
             if (action === 'chat') {
@@ -1586,7 +1719,19 @@ function renderTable() {
                 deleteCarRecord(cust);
             }
         });
-    });
+    }
+
+    // ページネーションナビの委譲クリック
+    if (elements.paginationNav) {
+        elements.paginationNav.addEventListener('click', (e) => {
+            const btn = e.target.closest('.page-btn[data-page]');
+            if (!btn || btn.disabled) return;
+            const targetPage = parseInt(btn.getAttribute('data-page'), 10);
+            if (targetPage && targetPage !== state.currentPage) {
+                changePage(targetPage);
+            }
+        });
+    }
 }
 
 window.sendManualReminder = async function(carId, userId, type, userName, carModel) {
