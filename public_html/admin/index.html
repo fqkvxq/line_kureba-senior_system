@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260916_grid_actions_v1">
+    <link rel="stylesheet" href="admin.css?v=20260916_col_picker_v1">
 </head>
 <body>
     <!-- ログインモーダル (初期表示) -->
@@ -172,21 +172,72 @@
                         <option value="created_desc">🆕 友だち登録が新しい順</option>
                     </select>
                 </div>
+                <!-- 表示カラム選択ドロップダウン -->
+                <div class="col-picker-container" id="colPickerContainer">
+                    <button type="button" class="btn-col-picker-toggle" id="btnToggleColPicker" title="表示する列をカスタマイズ">
+                        <i class="fa-solid fa-table-columns"></i>
+                        <span>表示項目</span>
+                        <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i>
+                    </button>
+                    <div class="col-picker-menu" id="colPickerMenu" style="display: none;">
+                        <div class="col-picker-header">
+                            <span><i class="fa-solid fa-sliders" style="color: #4f46e5;"></i> 表示カラム設定</span>
+                            <button type="button" class="btn-col-reset" id="btnResetColPicker" title="すべての列を表示に戻す">初期化</button>
+                        </div>
+                        <div class="col-picker-body">
+                            <label class="col-picker-item is-fixed" title="お名前列は固定表示です">
+                                <input type="checkbox" checked disabled>
+                                <span><i class="fa-solid fa-user"></i> お名前 (固定)</span>
+                            </label>
+                            <label class="col-picker-item">
+                                <input type="checkbox" class="col-toggle-cb" data-col="course" checked>
+                                <span><i class="fa-solid fa-laptop"></i> 受講コース・使用機器</span>
+                            </label>
+                            <label class="col-picker-item">
+                                <input type="checkbox" class="col-toggle-cb" data-col="oil" checked>
+                                <span><i class="fa-solid fa-laptop-code"></i> 次回レッスン</span>
+                            </label>
+                            <label class="col-picker-item">
+                                <input type="checkbox" class="col-toggle-cb" data-col="periodic" checked>
+                                <span><i class="fa-solid fa-shield-virus"></i> 定期PC診断</span>
+                            </label>
+                            <label class="col-picker-item">
+                                <input type="checkbox" class="col-toggle-cb" data-col="insp" checked>
+                                <span><i class="fa-solid fa-calendar-check"></i> 会員更新・月謝</span>
+                            </label>
+                            <label class="col-picker-item">
+                                <input type="checkbox" class="col-toggle-cb" data-col="interaction" checked>
+                                <span><i class="fa-regular fa-comment-dots"></i> 最終やり取り</span>
+                            </label>
+                            <label class="col-picker-item">
+                                <input type="checkbox" class="col-toggle-cb" data-col="memo" checked>
+                                <span><i class="fa-solid fa-clipboard-list"></i> 指導カルテ・特記事項</span>
+                            </label>
+                            <label class="col-picker-item is-fixed" title="操作ボタン列は固定表示です">
+                                <input type="checkbox" checked disabled>
+                                <span><i class="fa-solid fa-bolt"></i> 操作 (固定)</span>
+                            </label>
+                        </div>
+                        <div class="col-picker-footer">
+                            <span id="colPickerCountText">表示中: 8 / 8 列</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- 顧客データテーブル -->
             <div class="table-container">
-                <table class="data-table">
+                <table class="data-table" id="customerDataTable">
                     <thead>
                         <tr>
-                            <th>お名前</th>
-                            <th>受講コース・使用機器</th>
-                            <th>次回レッスン</th>
-                            <th>定期PC診断</th>
-                            <th>会員更新・月謝</th>
-                            <th style="min-width: 155px;"><i class="fa-regular fa-comment-dots"></i> 最終やり取り</th>
-                            <th>指導カルテ・特記事項</th>
-                            <th>操作</th>
+                            <th data-col="name">お名前</th>
+                            <th data-col="course">受講コース・使用機器</th>
+                            <th data-col="oil">次回レッスン</th>
+                            <th data-col="periodic">定期PC診断</th>
+                            <th data-col="insp">会員更新・月謝</th>
+                            <th data-col="interaction" style="min-width: 155px;"><i class="fa-regular fa-comment-dots"></i> 最終やり取り</th>
+                            <th data-col="memo">指導カルテ・特記事項</th>
+                            <th data-col="actions">操作</th>
                         </tr>
                     </thead>
                     <tbody id="customerTableBody">
@@ -1428,6 +1479,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260916_grid_actions_v1"></script>
+    <script src="admin.js?v=20260916_col_picker_v1"></script>
 </body>
 </html>

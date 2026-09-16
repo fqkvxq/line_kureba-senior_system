@@ -1,3 +1,34 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -9,7 +40,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260916_grid_actions_v1">
+    <link rel="stylesheet" href="manual.css?v=20260916_col_picker_v1">
 </head>
 <body>
     <!-- ログインモーダル -->
@@ -424,6 +455,18 @@
                                 </ul>
                             </div>
                         </div>
+
+                        <div class="step-card">
+                            <div class="step-number">4</div>
+                            <div class="step-body">
+                                <h4>表示カラムの選択（表示・非表示のカスタマイズ）</h4>
+                                <ul>
+                                    <li><strong>表示項目の自由切替</strong>: ツールバーの「<i class="fa-solid fa-table-columns"></i> 表示項目」ボタンから、テーブルに表示したい列をチェックボックスでいつでも自由に切り替えられます。</li>
+                                    <li><strong>用途に合わせたスリム化</strong>: 例えば「チャット対応のみを行いたいときは期日列を隠す」「ノートPCなど画面幅が狭いときはメモ列を隠す」など、状況に応じた最適な表示レイアウトが作れます。</li>
+                                    <li><strong>設定の自動保存</strong>: 選択した表示設定はブラウザ（localStorage）に自動保存され、次回アクセス時やページ切り替え時も常に維持されます。「初期化」を押すといつでも全表示に戻せます。</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="callout callout-success">
@@ -433,7 +476,7 @@
                             ・<span class="badge-feature badge-rose">赤色</span>: 期日超過、または当日〜7日以内の緊急ステータス<br>
                             ・<span class="badge-feature badge-amber">黄色</span>: 残り30日以内のリマインド推奨ステータス<br>
                             ・<span class="badge-feature badge-green">緑色</span>: 余裕あり（30日以上先）<br>
-                            ・<span class="badge-feature badge-indigo">整然としたボタングリッド</span>: 操作ボタンは2行4列の均等マス目で配置されており、画面幅を圧迫せずスマートフォンやタブレット、ノートPCでも快適に操作可能です。
+                            ・<span class="badge-feature badge-indigo">表示カラム選択</span>: 必要な項目だけに絞り込むことで、小さな画面やタブレットでも横スクロールなしで快適に受講生一覧を一覧できます。
                         </div>
                     </div>
                 </section>
@@ -1157,6 +1200,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260916_grid_actions_v1"></script>
+    <script src="manual.js?v=20260916_col_picker_v1"></script>
 </body>
 </html>

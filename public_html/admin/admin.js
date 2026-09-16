@@ -1181,6 +1181,129 @@ function initEventListeners() {
     if (elements.syncLineFollowersBtn) {
         elements.syncLineFollowersBtn.addEventListener('click', syncLineFollowers);
     }
+
+    // 表示カラム設定の初期化
+    initColumnPicker();
+}
+
+/**
+ * 表示カラム設定の管理 (localStorage連携 & 即時DOMトグル)
+ */
+const DEFAULT_COLUMN_VISIBILITY = {
+    course: true,
+    oil: true,
+    periodic: true,
+    insp: true,
+    interaction: true,
+    memo: true
+};
+
+const COLUMN_STORAGE_KEY = 'kureba_admin_column_visibility_v1';
+
+function getColumnVisibility() {
+    try {
+        const saved = localStorage.getItem(COLUMN_STORAGE_KEY);
+        if (saved) {
+            return { ...DEFAULT_COLUMN_VISIBILITY, ...JSON.parse(saved) };
+        }
+    } catch (e) {
+        console.warn('Failed to load column visibility from localStorage', e);
+    }
+    return { ...DEFAULT_COLUMN_VISIBILITY };
+}
+
+function saveColumnVisibility(config) {
+    try {
+        localStorage.setItem(COLUMN_STORAGE_KEY, JSON.stringify(config));
+    } catch (e) {
+        console.warn('Failed to save column visibility to localStorage', e);
+    }
+}
+
+function applyColumnVisibility(config) {
+    const table = document.getElementById('customerDataTable');
+    if (!table) return;
+
+    let visibleCount = 2; // お名前 と 操作（固定2列）
+    const totalCount = 8; // 全8列
+
+    Object.keys(DEFAULT_COLUMN_VISIBILITY).forEach(colKey => {
+        const isVisible = (config[colKey] !== false);
+        const className = `hide-col-${colKey}`;
+        if (isVisible) {
+            table.classList.remove(className);
+            visibleCount++;
+        } else {
+            table.classList.add(className);
+        }
+
+        // チェックボックスの状態を同期
+        const cb = document.querySelector(`.col-toggle-cb[data-col="${colKey}"]`);
+        if (cb) {
+            cb.checked = isVisible;
+        }
+    });
+
+    const countText = document.getElementById('colPickerCountText');
+    if (countText) {
+        countText.textContent = `表示中: ${visibleCount} / ${totalCount} 列`;
+    }
+}
+
+function initColumnPicker() {
+    const btnToggle = document.getElementById('btnToggleColPicker');
+    const menu = document.getElementById('colPickerMenu');
+    const btnReset = document.getElementById('btnResetColPicker');
+    const container = document.getElementById('colPickerContainer');
+
+    // 初期設定の読み込み & 反映
+    const currentConfig = getColumnVisibility();
+    applyColumnVisibility(currentConfig);
+
+    if (!btnToggle || !menu) return;
+
+    // ドロップダウン開閉トグル
+    btnToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = (menu.style.display !== 'none');
+        menu.style.display = isOpen ? 'none' : 'block';
+        btnToggle.classList.toggle('active', !isOpen);
+    });
+
+    // カラムチェックボックス変更イベント
+    document.querySelectorAll('.col-toggle-cb').forEach(cb => {
+        cb.addEventListener('change', () => {
+            const colKey = cb.dataset.col;
+            if (!colKey) return;
+            const config = getColumnVisibility();
+            config[colKey] = cb.checked;
+            saveColumnVisibility(config);
+            applyColumnVisibility(config);
+        });
+    });
+
+    // 初期化ボタン
+    if (btnReset) {
+        btnReset.addEventListener('click', (e) => {
+            e.stopPropagation();
+            saveColumnVisibility(DEFAULT_COLUMN_VISIBILITY);
+            applyColumnVisibility(DEFAULT_COLUMN_VISIBILITY);
+            showToast('表示カラム設定を初期化しました');
+        });
+    }
+
+    // メニュー内クリックで閉じないようにする
+    menu.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+
+    // 外側クリックでメニューを閉じる
+    document.addEventListener('click', (e) => {
+        if (container && !container.contains(e.target)) {
+            menu.style.display = 'none';
+            btnToggle.classList.remove('active');
+        }
+    });
 }
 
 async function attemptLogin() {
@@ -1469,7 +1592,7 @@ function renderTable() {
 
         return `
             <tr data-index="${globalIdx}">
-                <td>
+                <td data-col="name">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         ${c.picture_url ? `
                             <img src="${escapeHtml(c.picture_url)}" alt="" loading="lazy" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1.5px solid #e2e8f0; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08);" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
@@ -1505,16 +1628,16 @@ function renderTable() {
                         </div>
                     </div>
                 </td>
-                <td>
+                <td data-col="course">
                     <div class="car-tag">${escapeHtml(c.car_model || '-')}</div>
                     <div class="car-no">${escapeHtml(c.car_number || '')}</div>
                 </td>
-                <td>${oilBadge}</td>
-                <td>${periodicBadge}</td>
-                <td>${inspBadge}</td>
-                <td>${interactionCellHtml}</td>
-                <td style="max-width: 160px; font-size: 11px;">${memo}</td>
-                <td>
+                <td data-col="oil">${oilBadge}</td>
+                <td data-col="periodic">${periodicBadge}</td>
+                <td data-col="insp">${inspBadge}</td>
+                <td data-col="interaction">${interactionCellHtml}</td>
+                <td data-col="memo" style="max-width: 160px; font-size: 11px;">${memo}</td>
+                <td data-col="actions">
                     <div class="action-btns">
                         <!-- 行1: メイン操作・個別対応 -->
                         <button class="btn-table-chat" data-action="chat" data-idx="${globalIdx}" title="この受講生との1対1トーク確認・返信">
