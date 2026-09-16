@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260915_pagination_v1">
+    <link rel="stylesheet" href="admin.css?v=20260916_grid_actions_v1">
 </head>
 <body>
     <!-- ログインモーダル (初期表示) -->
@@ -78,27 +78,38 @@
 
             <!-- ヘッダー下段: 業務アクションツールバー -->
             <div class="admin-header-actions">
-                <button class="btn-secondary" id="openDiscordSettingsBtn" onclick="window.openDiscordSettings && window.openDiscordSettings()" title="メッセージ受信・友だち追加等のDiscord通知設定" style="background: #5865F2; color: #ffffff; border: 1px solid #4752c4; font-weight: 600;">
-                    <i class="fa-brands fa-discord" style="color: #ffffff; margin-right: 4px;"></i> Discord通知
-                </button>
-                <button class="btn-secondary" id="openProlineSettingsBtn" title="プロライン(ProLine)へのWebhook中継設定・テスト" style="background: #4338ca; color: #ffffff; border: 1px solid #6366f1; font-weight: 600;">
-                    <i class="fa-solid fa-network-wired" style="color: #a5b4fc; margin-right: 4px;"></i> プロライン連携
-                </button>
-                <button class="btn-secondary" id="openAdminLineSettingsBtn" title="管理者へのLINE通知設定（問い合わせ・新規受講生等）" style="background: #1e293b; color: #ffffff; border: 1px solid #334155; font-weight: 600;">
-                    <i class="fa-solid fa-bell" style="color: #38bdf8; margin-right: 4px;"></i> 管理者LINE通知
-                </button>
-                <button class="btn-secondary" id="syncLineFollowersBtn" title="LINE公式アカウントの全友だちを取得して受講生一覧に一括登録・更新します" style="background: #06C755; color: #ffffff; border: none; font-weight: bold; box-shadow: 0 2px 4px rgba(6,199,85,0.2);">
-                    <i class="fa-brands fa-line" style="font-size: 16px; margin-right: 4px;"></i> LINE友だち一括同期
-                </button>
-                <button class="btn-secondary" id="openKnowledgeBroadcastModalBtn" onclick="window.openKnowledgeBroadcastModal && window.openKnowledgeBroadcastModal()" title="シニア向けスマホ・PC役立つ情報（詐欺対策・便利ワザ等）をリッチメッセージ配信します" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: #ffffff; border: none; font-weight: 700; box-shadow: 0 2px 6px rgba(2,132,199,0.25);">
-                    <i class="fa-solid fa-bullhorn" style="margin-right: 4px;"></i> お役立ち情報配信
-                </button>
-                <button class="btn-secondary" id="openDxSurveyModalBtn" onclick="window.openDxSurveyModal && window.openDxSurveyModal()" title="会社DX関心度アンケート（興味有無・関心テーマ）をLINE配信します" style="display: none; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #ffffff; border: none; font-weight: 700; box-shadow: 0 2px 6px rgba(37,99,235,0.25);">
-                    <i class="fa-solid fa-clipboard-question" style="margin-right: 4px;"></i> DXアンケート配信
-                </button>
-                <button class="btn-primary" id="openAddCustomerModalBtn" style="margin-left: auto;">
-                    <i class="fa-solid fa-user-plus"></i> 新規受講生登録
-                </button>
+                <!-- 連携・通知設定グループ -->
+                <div class="header-action-group">
+                    <button type="button" class="btn-hdr-action btn-hdr-discord" id="openDiscordSettingsBtn" onclick="window.openDiscordSettings && window.openDiscordSettings()" title="メッセージ受信・友だち追加等のDiscord通知設定">
+                        <i class="fa-brands fa-discord"></i> Discord通知
+                    </button>
+                    <button type="button" class="btn-hdr-action btn-hdr-proline" id="openProlineSettingsBtn" title="プロライン(ProLine)へのWebhook中継設定・テスト">
+                        <i class="fa-solid fa-network-wired"></i> プロライン連携
+                    </button>
+                    <button type="button" class="btn-hdr-action btn-hdr-adminline" id="openAdminLineSettingsBtn" title="管理者へのLINE通知設定（問い合わせ・新規受講生等）">
+                        <i class="fa-solid fa-bell"></i> 管理者LINE通知
+                    </button>
+                </div>
+
+                <!-- 配信・同期グループ -->
+                <div class="header-action-group">
+                    <button type="button" class="btn-hdr-action btn-hdr-sync" id="syncLineFollowersBtn" title="LINE公式アカウントの全友だちを取得して受講生一覧に一括登録・更新します">
+                        <i class="fa-brands fa-line" style="font-size: 15px;"></i> LINE友だち一括同期
+                    </button>
+                    <button type="button" class="btn-hdr-action btn-hdr-broadcast" id="openKnowledgeBroadcastModalBtn" onclick="window.openKnowledgeBroadcastModal && window.openKnowledgeBroadcastModal()" title="シニア向けスマホ・PC役立つ情報（詐欺対策・便利ワザ等）をリッチメッセージ配信します">
+                        <i class="fa-solid fa-bullhorn"></i> お役立ち情報配信
+                    </button>
+                    <button type="button" class="btn-hdr-action btn-hdr-dxsurvey" id="openDxSurveyModalBtn" onclick="window.openDxSurveyModal && window.openDxSurveyModal()" title="会社DX関心度アンケート（興味有無・関心テーマ）をLINE配信します" style="display: none;">
+                        <i class="fa-solid fa-clipboard-question"></i> DXアンケート配信
+                    </button>
+                </div>
+
+                <!-- 新規登録ボタン -->
+                <div class="header-action-group header-action-group-right">
+                    <button type="button" class="btn-primary" id="openAddCustomerModalBtn">
+                        <i class="fa-solid fa-user-plus"></i> 新規受講生登録
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -838,7 +849,7 @@
                             </label>
                             <span style="font-size: 11px; color: #64748b;">全10種搭載</span>
                         </div>
-                        <div class="kb-preset-chips-wrap" id="kbPresetChipsWrap" style="display: flex; flex-wrap: wrap; gap: 6px; max-height: 120px; overflow-y: auto; padding: 4px 0;">
+                        <div class="kb-preset-chips-wrap" id="kbPresetChipsWrap" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; max-height: 140px; overflow-y: auto; padding: 4px 0;">
                             <!-- プリセットチップがJSで動的生成される -->
                         </div>
                     </div>
@@ -1417,6 +1428,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260915_pagination_v1"></script>
+    <script src="admin.js?v=20260916_grid_actions_v1"></script>
 </body>
 </html>

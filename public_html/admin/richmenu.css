@@ -661,27 +661,39 @@
 }
 
 .quick-chips-wrap {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
     gap: 4px;
+    margin-top: 4px;
 }
 
 .quick-chip {
     background: #fff;
     border: 1px solid #cbd5e1;
     color: var(--gray-800);
-    font-size: 10px;
+    font-size: 10.5px;
     font-weight: 700;
-    padding: 3px 7px;
+    height: 26px;
+    padding: 0 6px;
     border-radius: var(--radius-xs);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
+    width: 100%;
 }
 
 .quick-chip:hover {
     background: #ecfdf5;
     border-color: #06C755;
     color: #059669;
+    transform: translateY(-1px);
 }
 
 .quick-chip.chip-highlight {

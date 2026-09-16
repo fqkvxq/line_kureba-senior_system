@@ -1516,38 +1516,41 @@ function renderTable() {
                 <td style="max-width: 160px; font-size: 11px;">${memo}</td>
                 <td>
                     <div class="action-btns">
+                        <!-- 行1: メイン操作・個別対応 -->
                         <button class="btn-table-chat" data-action="chat" data-idx="${globalIdx}" title="この受講生との1対1トーク確認・返信">
                             <i class="fa-solid fa-comments"></i> チャット
                             ${state.unreadChatCounts && state.unreadChatCounts[userId] ? `
-                                <span class="badge-chat-unread" style="margin-left: 2px;">${state.unreadChatCounts[userId]}</span>
+                                <span class="badge-chat-unread">${state.unreadChatCounts[userId]}</span>
                             ` : ''}
                         </button>
                         <button class="btn-user-richmenu ${isCustomized ? 'is-active' : ''}" data-action="custom-menu" data-idx="${globalIdx}" title="リッチメニューの確認・個別指定・メッセージ設定">
-                            <i class="fa-solid fa-table-cells-large"></i> メニュー設定
+                            <i class="fa-solid fa-table-cells-large"></i> メニュー
                         </button>
                         ${isDxAccount ? `
-                            <button class="btn-dx-survey-user-row" data-action="dx-survey-send" data-idx="${globalIdx}" title="この顧客へDX関心度アンケート（Flex Message）を送信" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; font-size:11px; padding:4px 8px; border-radius:4px; font-weight:600; cursor:pointer;">
-                                <i class="fa-solid fa-clipboard-question"></i> DXアンケート
+                            <button class="btn-dx-survey-user-row" data-action="dx-survey-send" data-idx="${globalIdx}" title="この顧客へDX関心度アンケート（Flex Message）を送信">
+                                <i class="fa-solid fa-clipboard-question"></i> アンケート
                             </button>
                         ` : `
                             <button class="btn-knowledge-user-row" data-action="knowledge-send" data-idx="${globalIdx}" title="この受講生へスマホ・PCお役立ち情報（Flex Message）を個別送信">
-                                <i class="fa-solid fa-bullhorn"></i> お役立ち配信
+                                <i class="fa-solid fa-bullhorn"></i> お役立ち
                             </button>
                         `}
-                        <button class="btn-remind-oil" data-action="remind-oil" data-idx="${globalIdx}" title="次回レッスン案内リマインドをLINE送信" style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd;">
+                        <button class="btn-edit" data-action="edit" data-idx="${globalIdx}" title="受講生情報を編集">
+                            <i class="fa-solid fa-pen"></i> 編集
+                        </button>
+
+                        <!-- 行2: 各種リマインド & 削除 -->
+                        <button class="btn-remind-oil" data-action="remind-oil" data-idx="${globalIdx}" title="次回レッスン案内リマインドをLINE送信">
                             <i class="fa-solid fa-laptop"></i> レッスン
                         </button>
-                        <button class="btn-remind-periodic" data-action="remind-periodic" data-idx="${globalIdx}" title="定期PC健康診断リマインドをLINE送信" style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0;">
+                        <button class="btn-remind-periodic" data-action="remind-periodic" data-idx="${globalIdx}" title="定期PC健康診断リマインドをLINE送信">
                             <i class="fa-solid fa-shield-virus"></i> PC診断
                         </button>
-                        <button class="btn-remind-insp" data-action="remind-insp" data-idx="${globalIdx}" title="会員更新・月謝期日リマインドをLINE送信" style="background:#fffbeb; color:#d97706; border:1px solid #fde68a;">
-                            <i class="fa-solid fa-calendar-check"></i> 更新期日
+                        <button class="btn-remind-insp" data-action="remind-insp" data-idx="${globalIdx}" title="会員更新・月謝期日リマインドをLINE送信">
+                            <i class="fa-solid fa-calendar-check"></i> 会員更新
                         </button>
-                        <button class="btn-edit" data-action="edit" data-idx="${globalIdx}" title="編集">
-                            <i class="fa-solid fa-pen"></i>
-                        </button>
-                        <button class="btn-delete" data-action="delete" data-idx="${globalIdx}" title="削除">
-                            <i class="fa-solid fa-trash"></i>
+                        <button class="btn-delete" data-action="delete" data-idx="${globalIdx}" title="この受講生データを削除">
+                            <i class="fa-solid fa-trash"></i> 削除
                         </button>
                     </div>
                 </td>

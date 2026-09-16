@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260915_pagination_v1">
+    <link rel="stylesheet" href="manual.css?v=20260916_grid_actions_v1">
 </head>
 <body>
     <!-- ログインモーダル -->
@@ -376,17 +376,23 @@
                         </div>
                     </div>
 
-                    <p>受講生一覧テーブルの「<i class="fa-solid fa-pen"></i> 編集」ボタンからカルテ編集モーダルを開き、各期日や受講状況を管理します。</p>
+                    <p>受講生一覧テーブルでは、受講生ごとに必要なアクションを迅速に行えるよう、<strong>「4列 × 2行」の整然とした操作ボタングリッド</strong>を採用しています。全ボタンの高さ・幅・フォントサイズが統一され、直感的な配色で分かりやすく整理されています。</p>
 
                     <div class="step-flow">
                         <div class="step-card">
                             <div class="step-number">1</div>
                             <div class="step-body">
-                                <h4>受講コース・使用機器の入力</h4>
+                                <h4>操作ボタングリッドの構成（4列 × 2行）</h4>
+                                <p>各受講生行の右端にある「操作」列には、8つの機能が整列配置されています：</p>
                                 <ul>
-                                    <li><strong>受講生氏名</strong>: 受講生の実名（LINE名とは別に教室管理名として保持）</li>
-                                    <li><strong>受講コース名</strong>: 【シニア安心】パソコン入門コース、スマホ・タブレット活用コース、Word・Excel実用コースなど</li>
-                                    <li><strong>機器/会員番号</strong>: Windows 11 ノートPC、iPad Air、会員No.1024 など</li>
+                                    <li><strong>【上段1】💬 チャット（緑）</strong>: 受講生との1対1トーク履歴の確認、返信、未読バッジの確認</li>
+                                    <li><strong>【上段2】🎛️ メニュー（紫）</strong>: 次回期日メッセージを帯合成した個別リッチメニューの設定・解除</li>
+                                    <li><strong>【上段3】📢 お役立ち / 📋 アンケート（青）</strong>: シニア向け役立つ情報やDXアンケートの個別Flex送信</li>
+                                    <li><strong>【上段4】✏️ 編集（スレート）</strong>: カルテ編集モーダルを開き、受講コースや期日情報を更新</li>
+                                    <li><strong>【下段1】💻 レッスン（水色）</strong>: 次回レッスン案内のFlexリマインドLINEを送信</li>
+                                    <li><strong>【下段2】🔍 PC診断（エメラルド）</strong>: 定期PC健康診断案内のFlexリマインドLINEを送信</li>
+                                    <li><strong>【下段3】🗓️ 会員更新（橙）</strong>: 会員更新・月謝期日案内のFlexリマインドLINEを送信</li>
+                                    <li><strong>【下段4】🗑️ 削除（赤）</strong>: 受講生レコードの削除（誤登録や重複データの整理）</li>
                                 </ul>
                             </div>
                         </div>
@@ -394,8 +400,11 @@
                         <div class="step-card">
                             <div class="step-number">2</div>
                             <div class="step-body">
-                                <h4>3大メンテナンス期日の入力</h4>
+                                <h4>受講コース・使用機器・期日の入力</h4>
                                 <ul>
+                                    <li><strong>受講生氏名</strong>: 受講生の実名（LINE名とは別に教室管理名として保持）</li>
+                                    <li><strong>受講コース名</strong>: 【シニア安心】パソコン入門コース、スマホ・タブレット活用コース、Word・Excel実用コースなど</li>
+                                    <li><strong>機器/会員番号</strong>: Windows 11 ノートPC、iPad Air、会員No.1024 など</li>
                                     <li><strong>次回レッスン予定日</strong>: 次回予約している受講日時</li>
                                     <li><strong>定期PC健康診断日</strong>: パソコンの動作チェック、空き容量整理、セキュリティ確認の推奨日</li>
                                     <li><strong>会員更新・月謝期日</strong>: 月謝のお支払い期日または年次会員更新日</li>
@@ -403,6 +412,7 @@
                                 </ul>
                             </div>
                         </div>
+
                         <div class="step-card">
                             <div class="step-number">3</div>
                             <div class="step-body">
@@ -419,11 +429,11 @@
                     <div class="callout callout-success">
                         <i class="fa-solid fa-lightbulb"></i>
                         <div>
-                            <strong>期日バッジの色の見方 & ページ操作Tips:</strong><br>
+                            <strong>期日バッジの色の見方 & 操作Tips:</strong><br>
                             ・<span class="badge-feature badge-rose">赤色</span>: 期日超過、または当日〜7日以内の緊急ステータス<br>
                             ・<span class="badge-feature badge-amber">黄色</span>: 残り30日以内のリマインド推奨ステータス<br>
                             ・<span class="badge-feature badge-green">緑色</span>: 余裕あり（30日以上先）<br>
-                            ・<span class="badge-feature badge-indigo">ページ移動</span>: ページ番号や「次へ」「前へ」を押すと、自動的にテーブル上部へスムーズスクロールします。
+                            ・<span class="badge-feature badge-indigo">整然としたボタングリッド</span>: 操作ボタンは2行4列の均等マス目で配置されており、画面幅を圧迫せずスマートフォンやタブレット、ノートPCでも快適に操作可能です。
                         </div>
                     </div>
                 </section>
@@ -1147,6 +1157,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260915_pagination_v1"></script>
+    <script src="manual.js?v=20260916_grid_actions_v1"></script>
 </body>
 </html>

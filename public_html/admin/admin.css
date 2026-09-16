@@ -327,30 +327,152 @@ body {
 .admin-header-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: space-between;
+    gap: 12px;
     flex-wrap: wrap;
-    padding-top: 12px;
+    padding-top: 14px;
     border-top: 1px dashed #e2e8f0;
     width: 100%;
+}
+
+.header-action-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.header-action-group-right {
+    margin-left: auto;
+}
+
+/* ヘッダー共通アクションボタン */
+.btn-hdr-action {
+    height: 36px;
+    padding: 0 14px;
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    user-select: none;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.btn-hdr-action:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.btn-hdr-action:active {
+    transform: translateY(0);
+}
+
+.btn-hdr-action i {
+    font-size: 13px;
+}
+
+/* 各ヘッダーボタン固有スタイル */
+.btn-hdr-discord {
+    background: #5865F2;
+    color: #ffffff;
+    border-color: #4752c4;
+}
+.btn-hdr-discord:hover {
+    background: #4752c4;
+}
+
+.btn-hdr-proline {
+    background: #4338ca;
+    color: #ffffff;
+    border-color: #6366f1;
+}
+.btn-hdr-proline:hover {
+    background: #3730a3;
+}
+.btn-hdr-proline i {
+    color: #a5b4fc;
+}
+
+.btn-hdr-adminline {
+    background: #1e293b;
+    color: #ffffff;
+    border-color: #334155;
+}
+.btn-hdr-adminline:hover {
+    background: #0f172a;
+}
+.btn-hdr-adminline i {
+    color: #38bdf8;
+}
+
+.btn-hdr-sync {
+    background: #06C755;
+    color: #ffffff;
+    border-color: #059669;
+    box-shadow: 0 2px 6px rgba(6, 199, 85, 0.25);
+}
+.btn-hdr-sync:hover {
+    background: #059669;
+    box-shadow: 0 4px 10px rgba(6, 199, 85, 0.35);
+}
+
+.btn-hdr-broadcast {
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    color: #ffffff;
+    border-color: #0284c7;
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+}
+.btn-hdr-broadcast:hover {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    box-shadow: 0 4px 10px rgba(2, 132, 199, 0.35);
+}
+
+.btn-hdr-dxsurvey {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: #ffffff;
+    border-color: #1d4ed8;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+}
+.btn-hdr-dxsurvey:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
 }
 
 .btn-primary {
     background: var(--primary);
     color: #fff;
     border: none;
-    padding: 10px 18px;
+    height: 36px;
+    padding: 0 16px;
     border-radius: var(--radius-sm);
     font-size: 13px;
     font-weight: 700;
-    display: flex;
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(6, 199, 85, 0.25);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    box-sizing: border-box;
 }
 
 .btn-primary:hover {
     background: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(6, 199, 85, 0.35);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
 }
 
 .btn-logout {
@@ -361,6 +483,12 @@ body {
     height: 42px;
     border-radius: var(--radius-sm);
     cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-logout:hover {
+    background: #f1f5f9;
+    color: var(--gray-800);
 }
 
 /* 統計カード */
@@ -547,93 +675,185 @@ body {
 .date-over { background: #fee2e2; color: #b91c1c; }
 .date-ok { background: #ecfdf5; color: #047857; }
 
+/* 受講生一覧 テーブル内操作ボタングリッド (4列 × 2行) */
 .action-btns {
-    display: flex;
-    gap: 6px;
-    flex-wrap: nowrap;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    width: 100%;
+    min-width: 320px;
+    max-width: 400px;
+    align-items: stretch;
 }
 
-.btn-remind-oil {
-    background: #fef3c7;
-    color: #92400e;
-    border: 1px solid #fde68a;
-    padding: 6px 8px;
-    border-radius: var(--radius-sm);
+/* 操作ボタングリッド共通ベース */
+.action-btns button,
+.action-btns .btn-table-chat,
+.action-btns .btn-user-richmenu,
+.action-btns .btn-knowledge-user-row,
+.action-btns .btn-dx-survey-user-row,
+.action-btns .btn-remind-oil,
+.action-btns .btn-remind-periodic,
+.action-btns .btn-remind-insp,
+.action-btns .btn-edit,
+.action-btns .btn-delete {
+    height: 28px;
+    padding: 0 4px;
+    border-radius: var(--radius-xs);
     font-size: 11px;
     font-weight: 700;
     cursor: pointer;
     white-space: nowrap;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 4px;
-    transition: all 0.2s;
+    justify-content: center;
+    gap: 3px;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+    user-select: none;
+    box-sizing: border-box;
+    width: 100%;
+    text-align: center;
 }
 
-.btn-remind-oil:hover {
-    background: #fde68a;
+.action-btns button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
-.btn-remind-periodic {
-    background: #d1fae5;
-    color: #065f46;
-    border: 1px solid #a7f3d0;
-    padding: 6px 8px;
-    border-radius: var(--radius-sm);
+.action-btns button:active {
+    transform: translateY(0);
+}
+
+.action-btns button i {
     font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    transition: all 0.2s;
+    flex-shrink: 0;
 }
 
-.btn-remind-periodic:hover {
-    background: #a7f3d0;
+/* 1行目: メイン操作・個別対応 */
+/* 1. チャット */
+.action-btns .btn-table-chat {
+    background: #f0fdf4;
+    color: #15803d;
+    border-color: #bbf7d0;
+    position: relative;
+}
+.action-btns .btn-table-chat:hover {
+    background: #16a34a;
+    color: #ffffff;
+    border-color: #16a34a;
+}
+.action-btns .btn-table-chat .badge-chat-unread {
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 9px;
+    padding: 1px 4px;
+    border-radius: 8px;
+    font-weight: 800;
+    line-height: 1;
+    margin-left: 2px;
 }
 
-.btn-remind-insp {
-    background: #dbeafe;
-    color: #1e40af;
-    border: 1px solid #bfdbfe;
-    padding: 6px 8px;
-    border-radius: var(--radius-sm);
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    transition: all 0.2s;
+/* 2. メニュー設定 */
+.action-btns .btn-user-richmenu {
+    background: #eef2ff;
+    color: #4338ca;
+    border-color: #c7d2fe;
+}
+.action-btns .btn-user-richmenu:hover {
+    background: #4f46e5;
+    color: #ffffff;
+    border-color: #4f46e5;
+}
+.action-btns .btn-user-richmenu.is-active {
+    background: #4f46e5;
+    color: #ffffff;
+    border-color: #3730a3;
+    box-shadow: 0 1px 4px rgba(79, 70, 229, 0.35);
 }
 
-.btn-remind-insp:hover {
-    background: #bfdbfe;
+/* 3. お役立ち配信 / DXアンケート */
+.action-btns .btn-knowledge-user-row {
+    background: #f0f9ff;
+    color: #0284c7;
+    border-color: #bae6fd;
+}
+.action-btns .btn-knowledge-user-row:hover {
+    background: #0284c7;
+    color: #ffffff;
+    border-color: #0284c7;
 }
 
-.btn-edit {
-    background: #e0f2fe;
+.action-btns .btn-dx-survey-user-row {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+.action-btns .btn-dx-survey-user-row:hover {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+}
+
+/* 4. 編集 */
+.action-btns .btn-edit {
+    background: #f8fafc;
+    color: #475569;
+    border-color: #cbd5e1;
+}
+.action-btns .btn-edit:hover {
+    background: #334155;
+    color: #ffffff;
+    border-color: #334155;
+}
+
+/* 2行目: 各種リマインド & 削除 */
+/* 5. レッスン案内 */
+.action-btns .btn-remind-oil {
+    background: #f0f9ff;
     color: #0369a1;
-    border: none;
-    padding: 6px 12px;
-    border-radius: var(--radius-sm);
-    font-size: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    white-space: nowrap;
+    border-color: #bae6fd;
+}
+.action-btns .btn-remind-oil:hover {
+    background: #0284c7;
+    color: #ffffff;
+    border-color: #0284c7;
 }
 
-.btn-delete {
-    background: #fee2e2;
-    color: #b91c1c;
-    border: none;
-    padding: 6px 10px;
-    border-radius: var(--radius-sm);
-    font-size: 12px;
-    cursor: pointer;
-    white-space: nowrap;
+/* 6. PC健康診断 */
+.action-btns .btn-remind-periodic {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+}
+.action-btns .btn-remind-periodic:hover {
+    background: #059669;
+    color: #ffffff;
+    border-color: #059669;
+}
+
+/* 7. 会員更新・月謝 */
+.action-btns .btn-remind-insp {
+    background: #fffbeb;
+    color: #b45309;
+    border-color: #fde68a;
+}
+.action-btns .btn-remind-insp:hover {
+    background: #d97706;
+    color: #ffffff;
+    border-color: #d97706;
+}
+
+/* 8. 削除 */
+.action-btns .btn-delete {
+    background: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
+}
+.action-btns .btn-delete:hover {
+    background: #dc2626;
+    color: #ffffff;
+    border-color: #dc2626;
 }
 
 .empty-placeholder {
@@ -983,8 +1203,8 @@ body {
 
 /* クイック定型文チップ */
 .phrase-chips-grid {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     gap: 6px;
     margin-bottom: 10px;
 }
@@ -993,21 +1213,40 @@ body {
     background: #fff;
     border: 1px solid #cbd5e1;
     color: #334155;
-    padding: 5px 9px;
+    padding: 6px 8px;
     border-radius: var(--radius-sm);
     font-size: 11px;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all 0.15s ease;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 4px;
+    width: 100%;
+    box-sizing: border-box;
+    white-space: nowrap;
+}
+
+.btn-phrase-chip.btn-phrase-nearest {
+    grid-column: 1 / -1;
+    justify-content: center;
+    background: #eef2ff;
+    border-color: #c7d2fe;
+    color: #4338ca;
 }
 
 .btn-phrase-chip:hover {
     background: #eff6ff;
     border-color: #3b82f6;
     color: #1d4ed8;
+    transform: translateY(-1px);
+}
+
+.btn-phrase-chip.btn-phrase-nearest:hover {
+    background: #e0e7ff;
+    border-color: #818cf8;
+    color: #3730a3;
 }
 
 .btn-phrase-chip i {
@@ -1428,14 +1667,20 @@ body {
     color: #334155;
     font-size: 11.5px;
     font-weight: 700;
-    padding: 5px 10px;
+    padding: 6px 10px;
     border-radius: var(--radius-sm);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    justify-content: flex-start;
+    gap: 6px;
     transition: all 0.15s ease;
     user-select: none;
+    width: 100%;
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .kb-preset-btn:hover {
