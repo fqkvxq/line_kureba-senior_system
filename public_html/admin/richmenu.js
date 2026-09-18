@@ -11,7 +11,7 @@ const state = {
     resendTimerInterval: null,
     resendCountdown: 0,
     currentView: 'editor', // 'editor' or 'history'
-    
+
     // エディタ設定状態
     menuSize: 'large', // 'large' (2500x1686) or 'small' (2500x843)
     width: 2500,
@@ -20,7 +20,7 @@ const state = {
     imageSrc: '', // data URL or server URL
     baseImageFile: null, // 装飾テキスト無しのクリーンな元画像ファイル
     baseImageSrc: '', // 装飾テキスト無しのクリーンな元画像URL
-    
+
     // エリア配列: [{ id, bounds: {x, y, width, height}, action: {type, data, uri, text, displayText} }]
     areas: [],
     selectedAreaId: null,
@@ -1048,7 +1048,7 @@ async function attemptResend2FA() {
 async function logout() {
     try {
         await fetch('../api.php?action=admin_logout', { method: 'POST' });
-    } catch (e) {}
+    } catch (e) { }
     sessionStorage.removeItem('admin_auth_token');
     sessionStorage.removeItem('admin_pass');
     document.cookie = "admin_auth_token=; path=/; max-age=0; SameSite=Lax";
@@ -1983,7 +1983,7 @@ function updateAreaConfigForm() {
     // 切替先メニューのプルダウン一覧を更新
     if (elements.switchMenuSelect) {
         elements.switchMenuSelect.innerHTML = '<option value="">-- 切替先メニューを選択 --</option>';
-        
+
         // お知らせメニュー編集時、または自動分岐を推奨するオプション
         const autoBranchOpt = document.createElement('option');
         autoBranchOpt.value = 'default_branch';
@@ -2097,10 +2097,10 @@ function syncCurrentAreaFromForm() {
     } else if (selectedType === 'richmenuswitch') {
         let swAlias = (elements.switchMenuSelect ? elements.switchMenuSelect.value : '') || '';
         const branchCustom = elements.switchBranchCustomCheck ? elements.switchBranchCustomCheck.checked : true;
-        
+
         // default_branch が選ばれた場合、本番公開中メニューのエイリアス、または最初の通常メニューのエイリアスを自動特定
         if (swAlias === 'default_branch' || !swAlias) {
-            const normalLiveMenu = (state.historyList || []).find(m => (!m.is_notice || m.is_notice == 0) && (m.is_active == 1 || m.line_menu_id === state.currentLineDefaultId)) 
+            const normalLiveMenu = (state.historyList || []).find(m => (!m.is_notice || m.is_notice == 0) && (m.is_active == 1 || m.line_menu_id === state.currentLineDefaultId))
                 || (state.historyList || []).find(m => (!m.is_notice || m.is_notice == 0));
             swAlias = normalLiveMenu ? (normalLiveMenu.alias_id || ('rm_' + normalLiveMenu.id)) : '';
         }
@@ -2109,8 +2109,8 @@ function syncCurrentAreaFromForm() {
         area.action.branchCustom = branchCustom;
         const fromNoticeFlag = (state.isNotice ? '&from_notice=1' : '');
         const branchFlag = (branchCustom ? '&branch_custom=1' : '');
-        area.action.data = swAlias 
-            ? `action=richmenu_switched&to_alias=${encodeURIComponent(swAlias)}${fromNoticeFlag}${branchFlag}` 
+        area.action.data = swAlias
+            ? `action=richmenu_switched&to_alias=${encodeURIComponent(swAlias)}${fromNoticeFlag}${branchFlag}`
             : `action=richmenu_switched${fromNoticeFlag}${branchFlag}`;
     }
 
@@ -2223,7 +2223,7 @@ function renderTextOverlays() {
 
             try {
                 el.setPointerCapture(e.pointerId);
-            } catch (err) {}
+            } catch (err) { }
 
             const origW = Number(state.width) || 2500;
             const origH = Number(state.height) || 1686;
@@ -2264,7 +2264,7 @@ function renderTextOverlays() {
         const releaseOverlayDrag = (ev) => {
             try {
                 if (ev && ev.pointerId) el.releasePointerCapture(ev.pointerId);
-            } catch (err) {}
+            } catch (err) { }
             if (state.isOverlayDragging) {
                 state.isOverlayDragging = false;
                 if (state.dragOverlayEl) {
@@ -2465,10 +2465,10 @@ function renderTextOverlayControls() {
                     <select class="overlay-action-switch-select" style="width: 100%; box-sizing: border-box; font-size: 11px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: var(--radius-xs);">
                         <option value="">-- 切替先メニューを選択 --</option>
                         ${(state.historyList || []).map(m => {
-                            const val = m.alias_id || ('rm_' + m.id);
-                            const isLive = (m.is_active == 1 || (m.line_menu_id && m.line_menu_id === state.currentLineDefaultId));
-                            return `<option value="${escapeHtml(val)}" ${(action.richMenuAliasId === val) ? 'selected' : ''}>${isLive ? '★ ' : ''}${escapeHtml(m.title)}</option>`;
-                        }).join('')}
+            const val = m.alias_id || ('rm_' + m.id);
+            const isLive = (m.is_active == 1 || (m.line_menu_id && m.line_menu_id === state.currentLineDefaultId));
+            return `<option value="${escapeHtml(val)}" ${(action.richMenuAliasId === val) ? 'selected' : ''}>${isLive ? '★ ' : ''}${escapeHtml(m.title)}</option>`;
+        }).join('')}
                     </select>
                 </div>
             </div>
@@ -2745,7 +2745,7 @@ async function compositeRichMenuImage() {
         if (document.fonts && document.fonts.ready) {
             await document.fonts.ready;
         }
-    } catch (e) {}
+    } catch (e) { }
 
     // 3. 各装飾テキストの合成描画
     const themeColors = {
@@ -2768,8 +2768,8 @@ async function compositeRichMenuImage() {
             border: overlay.bg_hex ? 'rgba(255,255,255,0.35)' : defaultTheme.border
         };
         const canvasScale = W / 2500;
-        const baseFontSize = (overlay.size === 'custom' && overlay.custom_font_size) 
-            ? overlay.custom_font_size 
+        const baseFontSize = (overlay.size === 'custom' && overlay.custom_font_size)
+            ? overlay.custom_font_size
             : (OVERLAY_FONT_SIZES[overlay.size] || OVERLAY_FONT_SIZES.md);
         const fontSize = Math.round(baseFontSize * canvasScale);
         const type = overlay.type || 'banner_top';
@@ -3394,20 +3394,20 @@ function applyMenuToLive(id, title) {
         method: 'POST',
         body: formData
     })
-    .then(res => res.json())
-    .then(data => {
-        hideLoading();
-        if (data.success) {
-            showToast(data.message || '本番に適用しました！', 'success');
-            loadHistoryList();
-        } else {
-            showToast(data.error || '適用に失敗しました', 'error');
-        }
-    })
-    .catch(err => {
-        hideLoading();
-        showToast('通信エラーが発生しました: ' + err.message, 'error');
-    });
+        .then(res => res.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                showToast(data.message || '本番に適用しました！', 'success');
+                loadHistoryList();
+            } else {
+                showToast(data.error || '適用に失敗しました', 'error');
+            }
+        })
+        .catch(err => {
+            hideLoading();
+            showToast('通信エラーが発生しました: ' + err.message, 'error');
+        });
 }
 
 async function setActiveNotice(id, title) {
@@ -3451,20 +3451,20 @@ function deleteHistoryMenu(id, title) {
         method: 'POST',
         body: formData
     })
-    .then(res => res.json())
-    .then(data => {
-        hideLoading();
-        if (data.success) {
-            showToast(data.message || '削除しました', 'success');
-            loadHistoryList();
-        } else {
-            showToast(data.error || '削除に失敗しました', 'error');
-        }
-    })
-    .catch(err => {
-        hideLoading();
-        showToast('通信エラーが発生しました: ' + err.message, 'error');
-    });
+        .then(res => res.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                showToast(data.message || '削除しました', 'success');
+                loadHistoryList();
+            } else {
+                showToast(data.error || '削除に失敗しました', 'error');
+            }
+        })
+        .catch(err => {
+            hideLoading();
+            showToast('通信エラーが発生しました: ' + err.message, 'error');
+        });
 }
 
 function loadMenuIntoEditor(item) {
@@ -4307,25 +4307,25 @@ function publishNoticeMenu() {
             method: 'POST',
             body: formData
         })
-        .then(res => res.json())
-        .then(data => {
-            hideLoading();
-            if (data.success) {
-                const toastMsg = publishToAll ?
-                    '🎉 お知らせリッチメニューを一斉公開しました！友だち全員に表示されます' :
-                    '🎉 お知らせ専用メニューを保存し、クイックリプライ「📢 お知らせ」の連携対象に設定しました！';
-                showToast(toastMsg, 'success');
-                closeNoticeWizard();
-                switchView('history');
-                loadHistoryList();
-            } else {
-                showToast(data.error || 'お知らせの保存に失敗しました', 'error');
-            }
-        })
-        .catch(err => {
-            hideLoading();
-            showToast('通信エラーが発生しました: ' + err.message, 'error');
-        });
+            .then(res => res.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    const toastMsg = publishToAll ?
+                        '🎉 お知らせリッチメニューを一斉公開しました！友だち全員に表示されます' :
+                        '🎉 お知らせ専用メニューを保存し、クイックリプライ「📢 お知らせ」の連携対象に設定しました！';
+                    showToast(toastMsg, 'success');
+                    closeNoticeWizard();
+                    switchView('history');
+                    loadHistoryList();
+                } else {
+                    showToast(data.error || 'お知らせの保存に失敗しました', 'error');
+                }
+            })
+            .catch(err => {
+                hideLoading();
+                showToast('通信エラーが発生しました: ' + err.message, 'error');
+            });
     }, 'image/png');
 }
 
