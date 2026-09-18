@@ -850,9 +850,16 @@ try {
 
                 writeDebugLog("店舗初期連携完了", ['uid' => $userId, 'name' => $userName, 'car_id' => $newCarId]);
 
-                // Discordに新規ユーザー登録を通知
+                // Discord & Slack に新規ユーザー登録を通知
                 if (function_exists('sendDiscordNewCustomerNotification')) {
                     sendDiscordNewCustomerNotification($userId, $userName);
+                }
+                if (function_exists('sendSlackFollowNotification')) {
+                    sendSlackFollowNotification([
+                        'user_id' => $userId,
+                        'user_name' => $userName,
+                        'event_text' => '新しいユーザーが追加されました！'
+                    ], null, $db);
                 }
 
                 // LINEメッセージで連携完了を通知

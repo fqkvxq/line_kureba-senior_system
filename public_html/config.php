@@ -2071,10 +2071,31 @@ function sendSlackChatMessageNotification(array $msgData, ?array $userProfile = 
     $userId = $msgData['user_id'] ?? '';
     $msgText = $msgData['message_text'] ?? '';
     $msgType = $msgData['message_type'] ?? 'text';
-    $userName = $msgData['user_name'] ?? '受講生';
+    $userName = $msgData['user_name'] ?? '';
+    $userAvatar = $msgData['picture_url'] ?? ($userProfile['pictureUrl'] ?? '');
 
     if (!empty($userProfile['displayName'])) {
         $userName = $userProfile['displayName'];
+    }
+
+    // アイコンや名前が未設定または初期値の場合はLINE公式APIからプロフィールを直接取得
+    if ((empty($userAvatar) || empty($userName) || $userName === '受講生' || $userName === '新規顧客') && !empty($userId) && str_starts_with($userId, 'U')) {
+        $fetchedProf = getLineUserProfile($userId);
+        if ($fetchedProf) {
+            if (!empty($fetchedProf['displayName'])) {
+                $userName = $fetchedProf['displayName'];
+            }
+            if (!empty($fetchedProf['pictureUrl'])) {
+                $userAvatar = $fetchedProf['pictureUrl'];
+            }
+        }
+    }
+
+    if (empty($userName)) {
+        $userName = 'LINE受講生';
+    }
+    if (empty($userAvatar)) {
+        $userAvatar = 'https://cdn-icons-png.flaticon.com/512/3670/3670089.png'; // 高画質LINEロゴ
     }
 
     // 表示用テキストの整形
@@ -2085,75 +2106,130 @@ function sendSlackChatMessageNotification(array $msgData, ?array $userProfile = 
         $displayText = '📷 [画像を受信しました]';
     }
 
-    $nowJst = date('Y-m-d H:i:s');
-    $baseUrl = getBaseUrl();
-    $adminChatUrl = "{$baseUrl}/admin/index.html?chat_uid=" . urlencode($userId);
+    $payload = [
+        'username' => $userName,
+        'icon_url' => $userAvatar,
+        'text' => "{$userName}: {$displayText}"
+    ];
 
-    $fallbackText = "💬 【LINE新着メッセージ】{$userName} 様から連絡が届きました: {$displayText}";
+    $ch = curl_init($webhookUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 5,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json; charset=utf-8'],
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE)
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    return ($httpCode >= 200 && $httpCode < 300);
+}
+
+/**
+ * 新規友だち追加（フォロー時）のSlack通知
+ */
+function sendSlackFollowNotification(array $followData, ?array $userProfile = null, ?PDO $db = null): bool {
+    $slack = getSlackSettings($db);
+    $webhookUrl = trim($slack['webhook_url'] ?? '');
+
+    if (empty($webhookUrl) || empty($slack['enabled']) || empty($slack['notify_follow'])) {
+        return false;
+    }
+
+    $userId = $followData['user_id'] ?? '';
+    $userName = $followData['user_name'] ?? '';
+    $userAvatar = $followData['picture_url'] ?? ($userProfile['pictureUrl'] ?? '');
+
+    if (!empty($userProfile['displayName'])) {
+        $userName = $userProfile['displayName'];
+    }
+
+    if ((empty($userAvatar) || empty($userName) || $userName === '受講生') && !empty($userId) && str_starts_with($userId, 'U')) {
+        $fetchedProf = getLineUserProfile($userId);
+        if ($fetchedProf) {
+            if (!empty($fetchedProf['displayName'])) {
+                $userName = $fetchedProf['displayName'];
+            }
+            if (!empty($fetchedProf['pictureUrl'])) {
+                $userAvatar = $fetchedProf['pictureUrl'];
+            }
+        }
+    }
+
+    if (empty($userName)) {
+        $userName = '新規受講生';
+    }
+    if (empty($userAvatar)) {
+        $userAvatar = 'https://cdn-icons-png.flaticon.com/512/3670/3670089.png';
+    }
+
+    $eventText = $followData['event_text'] ?? '新しいユーザーが追加されました！';
 
     $payload = [
-        'text' => $fallbackText,
-        'username' => 'LINE受講生通知 Bot',
-        'icon_emoji' => ':speech_balloon:',
-        'attachments' => [
-            [
-                'color' => '#06C755', // LINE Green
-                'blocks' => [
-                    [
-                        'type' => 'header',
-                        'text' => [
-                            'type' => 'plain_text',
-                            'text' => "💬 【LINE新着メッセージ】{$userName} 様",
-                            'emoji' => true
-                        ]
-                    ],
-                    [
-                        'type' => 'section',
-                        'text' => [
-                            'type' => 'mrkdwn',
-                            'text' => "*メッセージ内容:*\n```\n" . mb_substr($displayText, 0, 1000) . "\n```"
-                        ]
-                    ],
-                    [
-                        'type' => 'section',
-                        'fields' => [
-                            [
-                                'type' => 'mrkdwn',
-                                'text' => "*👤 送信者:*\n*{$userName} 様*\n(`{$userId}`)"
-                            ],
-                            [
-                                'type' => 'mrkdwn',
-                                'text' => "*🕒 受信日時:*\n{$nowJst}"
-                            ]
-                        ]
-                    ],
-                    [
-                        'type' => 'actions',
-                        'elements' => [
-                            [
-                                'type' => 'button',
-                                'text' => [
-                                    'type' => 'plain_text',
-                                    'text' => '💬 カルテを開いて返信する',
-                                    'emoji' => true
-                                ],
-                                'url' => $adminChatUrl,
-                                'style' => 'primary'
-                            ]
-                        ]
-                    ],
-                    [
-                        'type' => 'context',
-                        'elements' => [
-                            [
-                                'type' => 'mrkdwn',
-                                'text' => 'LINE受講生・カルテ管理システム | Slack通知'
-                            ]
-                        ]
-                    ]
-                ]
-            ]
-        ]
+        'username' => $userName,
+        'icon_url' => $userAvatar,
+        'text' => "{$userName}: {$eventText}"
+    ];
+
+    $ch = curl_init($webhookUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 5,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json; charset=utf-8'],
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE)
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    return ($httpCode >= 200 && $httpCode < 300);
+}
+
+/**
+ * 予約・相談リクエストのSlack通知
+ */
+function sendSlackInquiryNotification(array $car, string $inquiryType, ?array $userProfile = null, ?string $rawUserId = null, ?PDO $db = null): bool {
+    $slack = getSlackSettings($db);
+    $webhookUrl = trim($slack['webhook_url'] ?? '');
+
+    if (empty($webhookUrl) || empty($slack['enabled']) || empty($slack['notify_consultation'])) {
+        return false;
+    }
+
+    $userId = $rawUserId ?: ($car['user_id'] ?? '');
+    $userName = $car['user_name'] ?? '';
+    $userAvatar = $userProfile['pictureUrl'] ?? '';
+
+    if (!empty($userProfile['displayName'])) {
+        $userName = $userProfile['displayName'];
+    }
+
+    if ((empty($userAvatar) || empty($userName) || $userName === '受講生') && !empty($userId) && str_starts_with($userId, 'U')) {
+        $fetchedProf = getLineUserProfile($userId);
+        if ($fetchedProf) {
+            if (!empty($fetchedProf['displayName'])) {
+                $userName = $fetchedProf['displayName'];
+            }
+            if (!empty($fetchedProf['pictureUrl'])) {
+                $userAvatar = $fetchedProf['pictureUrl'];
+            }
+        }
+    }
+
+    if (empty($userName)) {
+        $userName = 'LINE受講生';
+    }
+    if (empty($userAvatar)) {
+        $userAvatar = 'https://cdn-icons-png.flaticon.com/512/3670/3670089.png';
+    }
+
+    $payload = [
+        'username' => $userName,
+        'icon_url' => $userAvatar,
+        'text' => "{$userName}: 【予約・相談リクエスト】{$inquiryType}"
     ];
 
     $ch = curl_init($webhookUrl);
@@ -2180,57 +2256,12 @@ function sendSlackTestNotification(string $webhookUrl): array {
         return ['success' => false, 'error' => '有効なWebhook URLを入力してください'];
     }
 
-    $nowJst = date('Y-m-d H:i:s');
-    $baseUrl = getBaseUrl();
+    $nowJst = date('H:i');
 
     $payload = [
-        'text' => '🔔 【接続テスト成功】Slack通知連携が完了しました',
-        'username' => 'LINE受講生管理 システム通知',
-        'icon_emoji' => ':bell:',
-        'attachments' => [
-            [
-                'color' => '#4A154B', // Slack Purple
-                'blocks' => [
-                    [
-                        'type' => 'header',
-                        'text' => [
-                            'type' => 'plain_text',
-                            'text' => '🔔 【接続テスト成功】Slack通知連携が完了しました',
-                            'emoji' => true
-                        ]
-                    ],
-                    [
-                        'type' => 'section',
-                        'text' => [
-                            'type' => 'mrkdwn',
-                            'text' => "本システムからのSlack通知が正常に送信されています。\n今後、受講生からの新着メッセージや友だち追加、予約相談がこのチャンネルに届きます。"
-                        ]
-                    ],
-                    [
-                        'type' => 'section',
-                        'fields' => [
-                            [
-                                'type' => 'mrkdwn',
-                                'text' => "*📡 連携状態:*\n✅ 正常に疎通中 (200 OK)"
-                            ],
-                            [
-                                'type' => 'mrkdwn',
-                                'text' => "*🕒 テスト実行時刻:*\n{$nowJst}"
-                            ]
-                        ]
-                    ],
-                    [
-                        'type' => 'context',
-                        'elements' => [
-                            [
-                                'type' => 'mrkdwn',
-                                'text' => 'LINE受講生・カルテ管理システム | Slack通知設定'
-                            ]
-                        ]
-                    ]
-                ]
-            ]
-        ]
+        'username' => 'LINE受講生通知',
+        'icon_url' => 'https://cdn-icons-png.flaticon.com/512/3670/3670089.png',
+        'text' => "LINE受講生通知: Slack通知連携テストが成功しました！（{$nowJst}）"
     ];
 
     $ch = curl_init($url);

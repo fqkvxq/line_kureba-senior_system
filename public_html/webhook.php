@@ -171,10 +171,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
             if ($type === 'follow') {
                 // 友だち追加時: 受講生登録、管理者通知、リッチメニュー自動適用など
                 recordCustomerInteraction($db, $userId, 'follow', "友だち登録");
-                notifyAdminOfEvent('follow', [
-                    'user_id' => $userId,
-                    'user_name' => '受講生（新規友だち）'
-                ], $db);
+                try {
+                    $prof = getLineUserProfile($userId);
+                    $uName = $prof['displayName'] ?? '受講生';
+                    $pUrl = $prof['pictureUrl'] ?? '';
+                    sendSlackFollowNotification([
+                        'user_id' => $userId,
+                        'user_name' => $uName,
+                        'picture_url' => $pUrl,
+                        'event_text' => '新しいユーザーが追加されました！'
+                    ], $prof, $db);
+                } catch (Throwable $sEx) {
+                    writeDebugLog("Slackフォロー通知エラー", ['error' => $sEx->getMessage()]);
+                }
             } elseif ($type === 'message') {
                 $msgType = $event['message']['type'] ?? 'text';
                 $userText = '';
@@ -228,8 +237,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
                     $cStmt = $db->prepare("SELECT user_name, picture_url FROM customer_cars WHERE user_id = :uid LIMIT 1");
                     $cStmt->execute([':uid' => $userId]);
                     $cRow = $cStmt->fetch(PDO::FETCH_ASSOC);
-                    $userName = !empty($cRow['user_name']) ? $cRow['user_name'] : '受講生';
+                    $userName = !empty($cRow['user_name']) ? $cRow['user_name'] : '';
                     $picUrl = $cRow['picture_url'] ?? '';
+
+                    $userProfile = null;
+                    if (empty($userName) || empty($picUrl) || $userName === '受講生' || $userName === '新規顧客') {
+                        $userProfile = getLineUserProfile($userId);
+                        if (!empty($userProfile['displayName'])) {
+                            $userName = $userProfile['displayName'];
+                        }
+                        if (!empty($userProfile['pictureUrl'])) {
+                            $picUrl = $userProfile['pictureUrl'];
+                        }
+                    }
+                    if (empty($userName)) {
+                        $userName = 'LINE受講生';
+                    }
 
                     $msgDataPayload = [
                         'user_id' => $userId,
@@ -239,8 +262,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
                         'message_type' => $msgType
                     ];
 
-                    sendDiscordChatMessageNotification($msgDataPayload, null, $db);
-                    sendSlackChatMessageNotification($msgDataPayload, null, $db);
+                    sendDiscordChatMessageNotification($msgDataPayload, $userProfile, $db);
+                    sendSlackChatMessageNotification($msgDataPayload, $userProfile, $db);
                 } catch (Throwable $disEx) {
                     writeDebugLog("チャット通知送信エラー", ['error' => $disEx->getMessage()]);
                 }
@@ -1387,10 +1410,13 @@ function handleSubmitInquiry(PDO $db, string $replyToken, string $carId, string 
     $userProfile = !empty($userId) ? getLineUserProfile($userId) : null;
     $userName = $userProfile['displayName'] ?? 'お客様';
 
-    // 1. Discord へ正式問い合わせ通知を送信！
+    // 1. Discord & Slack へ正式問い合わせ通知を送信！
     if (function_exists('sendDiscordInquiryNotification')) {
         sendDiscordInquiryNotification($car, $inquiryType, $userProfile, $userId);
         writeDebugLog("正式問い合わせ通知送信完了", ['carId' => $carId, 'type' => $inquiryType, 'user' => $userName]);
+    }
+    if (function_exists('sendSlackInquiryNotification')) {
+        sendSlackInquiryNotification($car, $inquiryType, $userProfile, $userId);
     }
 
     // 2. ユーザーへ受付完了メッセージを返信
@@ -1569,10 +1595,13 @@ function handleSubmitMaintenanceBooking(string $replyToken, string $bookingType,
     $userProfile = !empty($userId) ? getLineUserProfile($userId) : null;
     $userName = $userProfile['displayName'] ?? 'お客様';
 
-    // 1. Discord へ予約申し込み通知を送信！
+    // 1. Discord & Slack へ予約申し込み通知を送信！
     if (function_exists('sendDiscordMaintenanceBookingNotification')) {
         sendDiscordMaintenanceBookingNotification($bookingType, $carModel, $prefTime, $userProfile, $userId);
         writeDebugLog("メンテナンス予約Discord通知完了", ['type' => $bookingType, 'car' => $carModel, 'user' => $userName, 'pref' => $prefTime]);
+    }
+    if (function_exists('sendSlackInquiryNotification')) {
+        sendSlackInquiryNotification(['user_id' => $userId, 'user_name' => $userName], "{$bookingType}（{$carModel} / {$prefTime}）", $userProfile, $userId);
     }
 
     // 2. ユーザーへ受付完了メッセージを返信
