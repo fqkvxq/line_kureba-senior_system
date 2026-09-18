@@ -2714,6 +2714,13 @@ async function openUserRichMenuModal(cust) {
         btn.classList.toggle('active', btn.dataset.height === '300');
     });
 
+    // 文字サイズ初期化（デフォルトは超特大180px）
+    if (elements.userMenuFontSizeInput) elements.userMenuFontSizeInput.value = 180;
+    if (elements.userMenuFontSizeNumber) elements.userMenuFontSizeNumber.value = 180;
+    document.querySelectorAll('.btn-size-quick-chip').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.size === '180');
+    });
+
     // LINEリアルタイム表示ステータスの確認実行
     checkUserRealtimeMenuStatus(cust.user_id);
 
@@ -2924,12 +2931,12 @@ function renderUserMenuPreview() {
     const useGradient = elements.userMenuGradientToggle ? elements.userMenuGradientToggle.checked : true;
     const pos = elements.userMenuPosSelect ? elements.userMenuPosSelect.value : 'top';
 
-    // 文字フォントサイズ (20px 〜 250px)
-    let requestedFontSize = 65;
+    // 文字フォントサイズ (20px 〜 250px: デフォルト180px)
+    let requestedFontSize = 180;
     if (elements.userMenuFontSizeNumber && elements.userMenuFontSizeNumber.value) {
-        requestedFontSize = parseInt(elements.userMenuFontSizeNumber.value, 10) || 65;
+        requestedFontSize = parseInt(elements.userMenuFontSizeNumber.value, 10) || 180;
     } else if (elements.userMenuFontSizeInput && elements.userMenuFontSizeInput.value) {
-        requestedFontSize = parseInt(elements.userMenuFontSizeInput.value, 10) || 65;
+        requestedFontSize = parseInt(elements.userMenuFontSizeInput.value, 10) || 180;
     }
     requestedFontSize = Math.max(20, Math.min(250, requestedFontSize));
 
