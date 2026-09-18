@@ -6,6 +6,10 @@ const DEFAULT_PROLINE_BOOKING_URL = 'https://liff.line.me/2000276344-XlmvL9qZ?r=
 
 const state = {
     password: '',
+    authToken: '',
+    twoFactorSessionToken: '',
+    resendTimerInterval: null,
+    resendCountdown: 0,
     currentView: 'editor', // 'editor' or 'history'
     
     // エディタ設定状態
@@ -64,35 +68,51 @@ window.fetch = function (resource, init = {}) {
             if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
             return '';
         };
+        const currentToken = state.authToken || sessionStorage.getItem('admin_auth_token') || getCookie('admin_auth_token') || '';
         const currentPass = state.password || sessionStorage.getItem('admin_pass') || getCookie('admin_pass') || '';
         if (!init.headers) {
             init.headers = {};
         }
         if (init.headers instanceof Headers) {
+            if (currentToken && !init.headers.has('X-Admin-Auth-Token')) {
+                init.headers.set('X-Admin-Auth-Token', currentToken);
+            }
             if (currentPass && !init.headers.has('X-Admin-Password')) {
                 init.headers.set('X-Admin-Password', currentPass);
             }
-            if (currentPass && !init.headers.has('Authorization')) {
+            if (currentToken && !init.headers.has('Authorization')) {
+                init.headers.set('Authorization', 'Bearer ' + currentToken);
+            } else if (currentPass && !init.headers.has('Authorization')) {
                 init.headers.set('Authorization', 'Bearer ' + currentPass);
             }
             if (state.activeAccount && !init.headers.has('X-Line-Account')) {
                 init.headers.set('X-Line-Account', state.activeAccount);
             }
         } else if (Array.isArray(init.headers)) {
+            if (currentToken && !init.headers.some(h => h[0].toLowerCase() === 'x-admin-auth-token')) {
+                init.headers.push(['X-Admin-Auth-Token', currentToken]);
+            }
             if (currentPass && !init.headers.some(h => h[0].toLowerCase() === 'x-admin-password')) {
                 init.headers.push(['X-Admin-Password', currentPass]);
             }
-            if (currentPass && !init.headers.some(h => h[0].toLowerCase() === 'authorization')) {
+            if (currentToken && !init.headers.some(h => h[0].toLowerCase() === 'authorization')) {
+                init.headers.push(['Authorization', 'Bearer ' + currentToken]);
+            } else if (currentPass && !init.headers.some(h => h[0].toLowerCase() === 'authorization')) {
                 init.headers.push(['Authorization', 'Bearer ' + currentPass]);
             }
             if (state.activeAccount && !init.headers.some(h => h[0].toLowerCase() === 'x-line-account')) {
                 init.headers.push(['X-Line-Account', state.activeAccount]);
             }
         } else {
+            if (currentToken && !init.headers['X-Admin-Auth-Token']) {
+                init.headers['X-Admin-Auth-Token'] = currentToken;
+            }
             if (currentPass && !init.headers['X-Admin-Password']) {
                 init.headers['X-Admin-Password'] = currentPass;
             }
-            if (currentPass && !init.headers['Authorization']) {
+            if (currentToken && !init.headers['Authorization']) {
+                init.headers['Authorization'] = 'Bearer ' + currentToken;
+            } else if (currentPass && !init.headers['Authorization']) {
                 init.headers['Authorization'] = 'Bearer ' + currentPass;
             }
             if (state.activeAccount && !init.headers['X-Line-Account']) {
@@ -100,21 +120,26 @@ window.fetch = function (resource, init = {}) {
             }
         }
 
-        // FastCGI / プロキシ等でHTTPヘッダーが欠落する環境への安全なフォールバック: URLパラメータ & POSTボディへのパスワード自動付与
-        if (currentPass) {
-            if (!url.includes('password=')) {
-                url += (url.includes('?') ? '&' : '?') + 'password=' + encodeURIComponent(currentPass);
-                if (typeof resource === 'string') {
-                    resource = url;
-                } else if (resource && resource.url) {
-                    resource = new Request(url, init);
+        // FastCGI / プロキシ等でHTTPヘッダーが欠落する環境への安全なフォールバック: URLパラメータ & POSTボディへのパスワード/トークン自動付与
+        if (currentToken && !url.includes('auth_token=')) {
+            url += (url.includes('?') ? '&' : '?') + 'auth_token=' + encodeURIComponent(currentToken);
+        }
+        if (currentPass && !url.includes('password=')) {
+            url += (url.includes('?') ? '&' : '?') + 'password=' + encodeURIComponent(currentPass);
+        }
+        if (currentToken || currentPass) {
+            if (typeof resource === 'string') {
+                resource = url;
+            } else if (resource && resource.url) {
+                resource = new Request(url, init);
+            }
+            if (currentPass) {
+                if (init && init.body && init.body instanceof URLSearchParams && !init.body.has('password')) {
+                    init.body.append('password', currentPass);
                 }
-            }
-            if (init && init.body && init.body instanceof URLSearchParams && !init.body.has('password')) {
-                init.body.append('password', currentPass);
-            }
-            if (init && init.body && typeof FormData !== 'undefined' && init.body instanceof FormData && !init.body.has('password')) {
-                init.body.append('password', currentPass);
+                if (init && init.body && typeof FormData !== 'undefined' && init.body instanceof FormData && !init.body.has('password')) {
+                    init.body.append('password', currentPass);
+                }
             }
         }
 
@@ -148,8 +173,16 @@ const elements = {
 
     // 認証
     loginModal: document.getElementById('loginModal'),
+    loginStep1Wrap: document.getElementById('loginStep1Wrap'),
+    loginStep2Wrap: document.getElementById('loginStep2Wrap'),
+    login2FAEmailHint: document.getElementById('login2FAEmailHint'),
     adminPasswordInput: document.getElementById('adminPasswordInput'),
+    admin2FACodeInput: document.getElementById('admin2FACodeInput'),
     loginBtn: document.getElementById('loginBtn'),
+    btnVerify2FA: document.getElementById('btnVerify2FA'),
+    btnBackToPassword: document.getElementById('btnBackToPassword'),
+    btnResend2FACode: document.getElementById('btnResend2FACode'),
+    resendTimerText: document.getElementById('resendTimerText'),
     loginErrorMsg: document.getElementById('loginErrorMsg'),
     adminApp: document.getElementById('adminApp'),
     logoutBtn: document.getElementById('logoutBtn'),
@@ -784,6 +817,55 @@ window.handleAccountSwitch = handleAccountSwitch;
 window.openAccountEditForm = openAccountEditForm;
 window.handleAccountDelete = handleAccountDelete;
 
+function showLoginError(msg) {
+    if (elements.loginErrorMsg) {
+        elements.loginErrorMsg.textContent = msg;
+        elements.loginErrorMsg.style.display = 'block';
+    }
+}
+
+function hideLoginError() {
+    if (elements.loginErrorMsg) {
+        elements.loginErrorMsg.textContent = '';
+        elements.loginErrorMsg.style.display = 'none';
+    }
+}
+
+function startResendTimer(seconds = 60) {
+    if (state.resendTimerInterval) clearInterval(state.resendTimerInterval);
+    state.resendCountdown = seconds;
+
+    const updateUI = () => {
+        if (elements.resendTimerText) {
+            elements.resendTimerText.textContent = state.resendCountdown > 0 ? `(${state.resendCountdown}秒)` : '';
+        }
+        if (elements.btnResend2FACode) {
+            elements.btnResend2FACode.disabled = state.resendCountdown > 0;
+            elements.btnResend2FACode.style.opacity = state.resendCountdown > 0 ? '0.5' : '1';
+            elements.btnResend2FACode.style.cursor = state.resendCountdown > 0 ? 'not-allowed' : 'pointer';
+        }
+    };
+
+    updateUI();
+    state.resendTimerInterval = setInterval(() => {
+        state.resendCountdown--;
+        if (state.resendCountdown <= 0) {
+            clearInterval(state.resendTimerInterval);
+            state.resendCountdown = 0;
+        }
+        updateUI();
+    }, 1000);
+}
+
+function backToPasswordStep() {
+    if (state.resendTimerInterval) clearInterval(state.resendTimerInterval);
+    state.twoFactorSessionToken = '';
+    hideLoginError();
+    if (elements.loginStep2Wrap) elements.loginStep2Wrap.style.display = 'none';
+    if (elements.loginStep1Wrap) elements.loginStep1Wrap.style.display = 'block';
+    if (elements.adminPasswordInput) elements.adminPasswordInput.focus();
+}
+
 function initAuth() {
     const getCookie = (name) => {
         const value = `; ${document.cookie}`;
@@ -791,15 +873,33 @@ function initAuth() {
         if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
         return '';
     };
+    const savedToken = sessionStorage.getItem('admin_auth_token') || getCookie('admin_auth_token');
     const savedPass = sessionStorage.getItem('admin_pass') || getCookie('admin_pass');
-    if (savedPass) {
-        state.password = savedPass;
-        sessionStorage.setItem('admin_pass', savedPass);
+    if (savedToken || savedPass) {
+        state.authToken = savedToken || '';
+        state.password = savedPass || '';
+        if (savedToken) sessionStorage.setItem('admin_auth_token', savedToken);
+        if (savedPass) sessionStorage.setItem('admin_pass', savedPass);
         showApp();
     } else {
         elements.loginModal.style.display = 'flex';
         elements.adminApp.style.display = 'none';
     }
+}
+
+function finishLoginSuccess(pass, authToken) {
+    state.password = pass;
+    state.authToken = authToken || '';
+    if (authToken) {
+        sessionStorage.setItem('admin_auth_token', authToken);
+        document.cookie = "admin_auth_token=" + encodeURIComponent(authToken) + "; path=/; max-age=" + (86400 * 30) + "; SameSite=Lax";
+    }
+    if (pass) {
+        sessionStorage.setItem('admin_pass', pass);
+        document.cookie = "admin_pass=" + encodeURIComponent(pass) + "; path=/; max-age=" + (86400 * 30) + "; SameSite=Lax";
+    }
+    hideLoginError();
+    showApp();
 }
 
 function showApp() {
@@ -809,54 +909,163 @@ function showApp() {
     loadHistoryList();
 }
 
-function attemptLogin() {
-    const pass = elements.adminPasswordInput.value.trim();
+async function attemptLogin() {
+    const pass = elements.adminPasswordInput ? elements.adminPasswordInput.value.trim() : '';
     if (!pass) {
-        elements.loginErrorMsg.textContent = 'パスワードを入力してください';
+        showLoginError('パスワードを入力してください');
         return;
     }
 
-    showLoading('認証中...');
-    state.password = pass;
-    fetch('../api.php?action=admin_list_richmenus&password=' + encodeURIComponent(pass), {
-        headers: { 
-            'X-Admin-Password': pass,
-            'Authorization': `Bearer ${pass}`
-        }
-    })
-        .then(res => res.json())
-        .then(data => {
-            hideLoading();
-            if (data.success) {
-                state.password = pass;
-                sessionStorage.setItem('admin_pass', pass);
-                document.cookie = "admin_pass=" + encodeURIComponent(pass) + "; path=/; max-age=" + (86400 * 30) + "; SameSite=Lax";
-                elements.loginErrorMsg.textContent = '';
-                showApp();
-            } else {
-                state.password = '';
-                sessionStorage.removeItem('admin_pass');
-                document.cookie = "admin_pass=; path=/; max-age=0; SameSite=Lax";
-                elements.loginErrorMsg.textContent = data.error || 'パスワードが正しくありません';
-            }
-        })
-        .catch(err => {
-            state.password = '';
-            sessionStorage.removeItem('admin_pass');
-            document.cookie = "admin_pass=; path=/; max-age=0; SameSite=Lax";
-            hideLoading();
-            elements.loginErrorMsg.textContent = '通信エラーが発生しました';
+    if (elements.loginBtn) {
+        elements.loginBtn.disabled = true;
+        elements.loginBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 確認中...';
+    }
+    hideLoginError();
+
+    try {
+        const payload = new URLSearchParams({
+            action: 'admin_login_step1',
+            password: pass
         });
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await res.json();
+
+        if (!data.success) {
+            showLoginError(data.error || 'パスワードが正しくありません');
+            return;
+        }
+
+        if (data.require_2fa) {
+            state.twoFactorSessionToken = data.session_token;
+            state.password = pass;
+            if (elements.login2FAEmailHint) {
+                elements.login2FAEmailHint.textContent = data.email_hint || 'kawai@kureba.co.jp';
+            }
+            if (elements.loginStep1Wrap) elements.loginStep1Wrap.style.display = 'none';
+            if (elements.loginStep2Wrap) elements.loginStep2Wrap.style.display = 'block';
+            if (elements.admin2FACodeInput) {
+                elements.admin2FACodeInput.value = '';
+                elements.admin2FACodeInput.focus();
+            }
+            startResendTimer(60);
+        } else {
+            finishLoginSuccess(pass, data.auth_token);
+        }
+    } catch (e) {
+        console.error('Login Step1 Error:', e);
+        showLoginError('通信エラーが発生しました: ' + e.message);
+    } finally {
+        if (elements.loginBtn) {
+            elements.loginBtn.disabled = false;
+            elements.loginBtn.innerHTML = 'ログイン';
+        }
+    }
 }
 
-function logout() {
+async function attemptVerify2FA() {
+    const code = elements.admin2FACodeInput ? elements.admin2FACodeInput.value.trim() : '';
+    if (!code || code.length < 6) {
+        showLoginError('6桁の認証コードを入力してください');
+        return;
+    }
+
+    if (elements.btnVerify2FA) {
+        elements.btnVerify2FA.disabled = true;
+        elements.btnVerify2FA.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 認証中...';
+    }
+    hideLoginError();
+
+    try {
+        const payload = new URLSearchParams({
+            action: 'admin_login_verify_2fa',
+            session_token: state.twoFactorSessionToken,
+            code: code
+        });
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await res.json();
+
+        if (data.success && data.auth_token) {
+            if (state.resendTimerInterval) clearInterval(state.resendTimerInterval);
+            finishLoginSuccess(state.password || '1020143', data.auth_token);
+        } else {
+            showLoginError(data.error || '認証コードが正しくありません');
+        }
+    } catch (e) {
+        console.error('Verify 2FA Error:', e);
+        showLoginError('認証通信エラー: ' + e.message);
+    } finally {
+        if (elements.btnVerify2FA) {
+            elements.btnVerify2FA.disabled = false;
+            elements.btnVerify2FA.innerHTML = '認証してログイン';
+        }
+    }
+}
+
+async function attemptResend2FA() {
+    if (state.resendCountdown > 0) return;
+    if (!state.twoFactorSessionToken) return;
+
+    if (elements.btnResend2FACode) {
+        elements.btnResend2FACode.disabled = true;
+    }
+    hideLoginError();
+
+    try {
+        const payload = new URLSearchParams({
+            action: 'admin_login_resend_2fa',
+            session_token: state.twoFactorSessionToken
+        });
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            showToast('認証コードを再送信しました！メールをご確認ください。');
+            startResendTimer(60);
+        } else {
+            showLoginError(data.error || 'コードの再送信に失敗しました');
+        }
+    } catch (e) {
+        showLoginError('再送信エラー: ' + e.message);
+    } finally {
+        if (elements.btnResend2FACode && state.resendCountdown <= 0) {
+            elements.btnResend2FACode.disabled = false;
+        }
+    }
+}
+
+async function logout() {
+    try {
+        await fetch('../api.php?action=admin_logout', { method: 'POST' });
+    } catch (e) {}
+    sessionStorage.removeItem('admin_auth_token');
     sessionStorage.removeItem('admin_pass');
+    document.cookie = "admin_auth_token=; path=/; max-age=0; SameSite=Lax";
     document.cookie = "admin_pass=; path=/; max-age=0; SameSite=Lax";
     state.password = '';
+    state.authToken = '';
+    state.twoFactorSessionToken = '';
+    if (state.resendTimerInterval) clearInterval(state.resendTimerInterval);
     elements.adminApp.style.display = 'none';
     elements.loginModal.style.display = 'flex';
-    elements.adminPasswordInput.value = '';
-    elements.loginErrorMsg.textContent = '';
+    if (elements.loginStep1Wrap) elements.loginStep1Wrap.style.display = 'block';
+    if (elements.loginStep2Wrap) elements.loginStep2Wrap.style.display = 'none';
+    if (elements.adminPasswordInput) {
+        elements.adminPasswordInput.value = '';
+        elements.adminPasswordInput.focus();
+    }
+    hideLoginError();
 }
 
 // ================= イベントリスナー設定 =================
@@ -869,11 +1078,21 @@ function initEventListeners() {
     }
 
     // 認証
-    elements.loginBtn.addEventListener('click', attemptLogin);
-    elements.adminPasswordInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') attemptLogin();
-    });
-    elements.logoutBtn.addEventListener('click', logout);
+    if (elements.loginBtn) elements.loginBtn.addEventListener('click', attemptLogin);
+    if (elements.adminPasswordInput) {
+        elements.adminPasswordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') attemptLogin();
+        });
+    }
+    if (elements.btnVerify2FA) elements.btnVerify2FA.addEventListener('click', attemptVerify2FA);
+    if (elements.admin2FACodeInput) {
+        elements.admin2FACodeInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') attemptVerify2FA();
+        });
+    }
+    if (elements.btnBackToPassword) elements.btnBackToPassword.addEventListener('click', backToPasswordStep);
+    if (elements.btnResend2FACode) elements.btnResend2FACode.addEventListener('click', attemptResend2FA);
+    if (elements.logoutBtn) elements.logoutBtn.addEventListener('click', logout);
 
     // ビュー切り替え
     elements.tabEditorBtn.addEventListener('click', () => switchView('editor'));

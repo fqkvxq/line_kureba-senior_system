@@ -28,9 +28,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . '/config.php';
 
 /**
- * 管理者認証パスワードを取得 (X-Admin-Passwordヘッダー、Bearer、POST/GET、Cookie互換)
+ * 管理者認証パスワード / 2FA認証トークンを取得・検証
  */
-function getAdminAuthPassword(): string {
+function getAdminAuthPassword(?PDO $db = null): string {
+    // 0. 2FA認証トークンの検証
+    $token = $_SERVER['HTTP_X_ADMIN_AUTH_TOKEN']
+        ?? ($_COOKIE['admin_auth_token']
+        ?? ($_POST['auth_token']
+        ?? ($_GET['auth_token'] ?? '')));
+
+    if (!$token && function_exists('getallheaders')) {
+        $headers = @getallheaders();
+        if (is_array($headers)) {
+            foreach ($headers as $k => $v) {
+                if (strcasecmp($k, 'X-Admin-Auth-Token') === 0) {
+                    $token = $v;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!empty($token)) {
+        if ($db === null) {
+            try { $db = getDbConnection(); } catch (Exception $e) {}
+        }
+        if ($db && isValidAdminAuthToken($db, trim($token))) {
+            return ADMIN_PASSWORD; // 認証トークンが有効な場合、ADMIN_PASSWORDと一致したとみなす
+        }
+    }
+
     // 1. 環境変数 (FastCGI等による各種プレフィックス対応)
     $pass = $_SERVER['HTTP_X_ADMIN_PASSWORD'] 
         ?? ($_SERVER['REDIRECT_HTTP_X_ADMIN_PASSWORD'] 
@@ -54,7 +81,7 @@ function getAdminAuthPassword(): string {
         }
     }
 
-    // 3. Authorization: Bearer <pass>
+    // 3. Authorization: Bearer <pass_or_token>
     if (!$pass) {
         $authHeader = $_SERVER['HTTP_AUTHORIZATION'] 
             ?? ($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] 
@@ -71,7 +98,14 @@ function getAdminAuthPassword(): string {
             }
         }
         if ($authHeader && preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
-            $pass = $matches[1];
+            $bearerVal = $matches[1];
+            if ($db === null) {
+                try { $db = getDbConnection(); } catch (Exception $e) {}
+            }
+            if ($db && isValidAdminAuthToken($db, $bearerVal)) {
+                return ADMIN_PASSWORD;
+            }
+            $pass = $bearerVal;
         }
     }
 
@@ -625,6 +659,104 @@ try {
 
             $res = sendSlackTestNotification($webhookUrl);
             echo json_encode($res, JSON_UNESCAPED_UNICODE);
+            exit;
+
+        // --- 0-15. 管理者ログイン STEP 1 (パスワード検証 & 2FAコード送信) ---
+        case 'admin_login_step1':
+            $inputPass = trim($_POST['password'] ?? ($_GET['password'] ?? ''));
+            if ($inputPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => 'パスワードが正しくありません'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // 2FAが有効な場合
+            if (defined('ENABLE_ADMIN_2FA') && ENABLE_ADMIN_2FA) {
+                $targetEmail = defined('ADMIN_2FA_EMAIL') ? ADMIN_2FA_EMAIL : 'kawai@kureba.co.jp';
+                $sessionRes = createAdmin2FASession($db, $targetEmail);
+                echo json_encode([
+                    'success' => true,
+                    'require_2fa' => true,
+                    'session_token' => $sessionRes['session_token'],
+                    'email_hint' => $sessionRes['email_hint'],
+                    'expires_in' => $sessionRes['expires_in'],
+                    'mail_sent' => $sessionRes['mail_sent'],
+                    'message' => "認証コードを {$sessionRes['email_hint']} へ送信しました"
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // 2FAが無効な場合は直接認証トークン発行
+            $authToken = createAdminAuthToken($db);
+            @setcookie('admin_auth_token', $authToken, [
+                'expires' => time() + 86400 * 30,
+                'path' => '/',
+                'httponly' => false,
+                'samesite' => 'Lax'
+            ]);
+            @setcookie('admin_pass', ADMIN_PASSWORD, [
+                'expires' => time() + 86400 * 30,
+                'path' => '/',
+                'httponly' => false,
+                'samesite' => 'Lax'
+            ]);
+            echo json_encode([
+                'success' => true,
+                'require_2fa' => false,
+                'auth_token' => $authToken,
+                'message' => 'ログインに成功しました'
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+
+        // --- 0-16. 管理者ログイン STEP 2 (2FA 6桁コード検証) ---
+        case 'admin_login_verify_2fa':
+            $sessionToken = trim($_POST['session_token'] ?? ($_GET['session_token'] ?? ''));
+            $inputCode = trim($_POST['code'] ?? ($_GET['code'] ?? ''));
+
+            if (empty($sessionToken) || empty($inputCode)) {
+                echo json_encode(['success' => false, 'error' => '認証コードを入力してください'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            $verifyRes = verifyAdmin2FACode($db, $sessionToken, $inputCode);
+            if ($verifyRes['success'] && !empty($verifyRes['auth_token'])) {
+                $authToken = $verifyRes['auth_token'];
+                @setcookie('admin_auth_token', $authToken, [
+                    'expires' => time() + 86400 * 30,
+                    'path' => '/',
+                    'httponly' => false,
+                    'samesite' => 'Lax'
+                ]);
+                @setcookie('admin_pass', ADMIN_PASSWORD, [
+                    'expires' => time() + 86400 * 30,
+                    'path' => '/',
+                    'httponly' => false,
+                    'samesite' => 'Lax'
+                ]);
+            }
+            echo json_encode($verifyRes, JSON_UNESCAPED_UNICODE);
+            exit;
+
+        // --- 0-17. 2FAコード再送信 ---
+        case 'admin_login_resend_2fa':
+            $sessionToken = trim($_POST['session_token'] ?? ($_GET['session_token'] ?? ''));
+            if (empty($sessionToken)) {
+                echo json_encode(['success' => false, 'error' => '認証セッションが無効です'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            $resendRes = resendAdmin2FACode($db, $sessionToken);
+            echo json_encode($resendRes, JSON_UNESCAPED_UNICODE);
+            exit;
+
+        // --- 0-18. 管理者ログアウト ---
+        case 'admin_logout':
+            $token = $_COOKIE['admin_auth_token'] ?? ($_POST['auth_token'] ?? ($_GET['auth_token'] ?? ''));
+            if (!empty($token)) {
+                revokeAdminAuthToken($db, $token);
+            }
+            @setcookie('admin_auth_token', '', ['expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax']);
+            @setcookie('admin_pass', '', ['expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax']);
+            echo json_encode(['success' => true, 'message' => 'ログアウトしました'], JSON_UNESCAPED_UNICODE);
             exit;
 
         // --- 1. 車両一覧取得 (検索・フィルター・ページネーション) ---

@@ -209,8 +209,12 @@ define('LIFF_ID', $SYSTEM_LINE_ACCOUNTS['senior']['liff_id'] ?? '');
 define('ENABLE_NEW_CAR_BROADCAST', false); // 新着検知時にLINE公式アカウントの友だち全員へ自動一斉配信するか (true: 送信する, false: 送信しない)
 define('ENABLE_NEW_CAR_DISCORD', true);   // 新着検知時にDiscordへ通知するか
 
-// --- 店舗管理画面設定 ---
+// --- 店舗管理画面設定 & 二段階認証(2FA) ---
 define('ADMIN_PASSWORD', '1020143'); // 店舗用管理画面（/admin/）のログインパスワード
+define('ENABLE_ADMIN_2FA', true); // 管理者ログイン時のメール二段階認証 (true: 有効, false: 無効)
+define('ADMIN_2FA_EMAIL', 'kawai@kureba.co.jp'); // 認証コード送信先メールアドレス
+define('ADMIN_2FA_CODE_LIFETIME_MINUTES', 10); // 認証コード有効期限 (10分間)
+define('ADMIN_2FA_MAX_ATTEMPTS', 5); // 認証コード最大試行回数 (5回超過で無効化)
 
 // --- Discord 通知設定 ---
 define('DISCORD_WEBHOOK_URL', 'https://discord.com/api/webhooks/1543636005582667776/8hnE-kLsB545xgS923mTvgIUaBuTz8TQQLrJXFvqB-A0oh92LmqC8Zn-1jaOIhW20YEZ');
@@ -617,6 +621,35 @@ function getDbConnection(?string $accountKey = null): PDO {
     try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_chat_user_id ON chat_messages(user_id)"); } catch (Exception $e) {}
     try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_chat_created_at ON chat_messages(created_at)"); } catch (Exception $e) {}
     try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_chat_is_read ON chat_messages(is_read)"); } catch (Exception $e) {}
+
+    // 管理者メール二段階認証(2FA) セッション & 永続認証トークンテーブル
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS admin_2fa_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_token TEXT UNIQUE NOT NULL,
+            email TEXT NOT NULL,
+            otp_code TEXT NOT NULL,
+            attempts INTEGER DEFAULT 0,
+            is_verified INTEGER DEFAULT 0,
+            last_sent_at DATETIME DEFAULT (datetime('now', '+9 hours')),
+            expires_at DATETIME NOT NULL,
+            created_at DATETIME DEFAULT (datetime('now', '+9 hours'))
+        )
+    ");
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_2fa_session_token ON admin_2fa_sessions(session_token)"); } catch (Exception $e) {}
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS admin_auth_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            token TEXT UNIQUE NOT NULL,
+            ip_address TEXT,
+            user_agent TEXT,
+            expires_at DATETIME NOT NULL,
+            created_at DATETIME DEFAULT (datetime('now', '+9 hours')),
+            last_used_at DATETIME DEFAULT (datetime('now', '+9 hours'))
+        )
+    ");
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_admin_auth_token ON admin_auth_tokens(token)"); } catch (Exception $e) {}
 
     // 既存 customers テーブルからのデータ移行（初回1回のみ）
     try {
@@ -2286,6 +2319,278 @@ function sendSlackTestNotification(string $webhookUrl): array {
         'http_code' => $httpCode,
         'error' => $curlErr ?: ($res ?: "HTTPステータス: {$httpCode} が返されました。Webhook URLを確認してください")
     ];
+}
+
+/* ==============================================================================
+   管理者 メール二段階認証 (2FA / OTP) 関連関数
+   ============================================================================== */
+
+/**
+ * メールアドレスのマスク表示 (例: kawai@kureba.co.jp -> k****@kureba.co.jp)
+ */
+function maskEmailAddress(string $email): string {
+    $parts = explode('@', $email);
+    if (count($parts) !== 2) return '******';
+    $name = $parts[0];
+    $domain = $parts[1];
+    $len = mb_strlen($name);
+    if ($len <= 2) {
+        $masked = mb_substr($name, 0, 1) . '***';
+    } else {
+        $masked = mb_substr($name, 0, 1) . str_repeat('*', max(3, $len - 1));
+    }
+    return $masked . '@' . $domain;
+}
+
+/**
+ * 2FA 6桁認証コードメールを送信
+ */
+function sendAdmin2FACodeEmail(string $toEmail, string $otpCode, int $expiresMinutes = 10): bool {
+    $subject = "【シニア向けパソコン教室】管理画面 ログイン認証コード: {$otpCode}";
+    $nowJst = date('Y-m-d H:i');
+    $expireTime = date('H:i', strtotime("+{$expiresMinutes} minutes"));
+
+    $body = "シニア向けパソコン教室 LINE受講生・カルテ管理システムへのログイン要求を受け付けました。\n\n";
+    $body .= "以下の6桁の認証コードを入力して、ログインを完了してください。\n\n";
+    $body .= "========================================\n";
+    $body .= "  二段階認証コード: {$otpCode}\n";
+    $body .= "  有効期限: {$expiresMinutes}分間（{$expireTime} まで）\n";
+    $body .= "========================================\n\n";
+    $body .= "※このコードは第三者に絶対に教えないでください。\n";
+    $body .= "※ログイン試行日時: {$nowJst} (JST)\n";
+    $body .= "※ご自身でログインを試みた覚えがない場合は、第三者が不正アクセスを試みた可能性があります。速やかに管理者パスワードをご確認・ご変更ください。\n\n";
+    $body .= "----------------------------------------\n";
+    $body .= "シニア向けパソコン教室 LINE受講生管理システム\n";
+
+    // 送信元ヘッダー設定
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $fromDomain = preg_replace('/^www\./', '', $host);
+    if (!str_contains($fromDomain, '.') || $fromDomain === 'localhost') {
+        $fromDomain = 'kureba.co.jp';
+    }
+    $fromEmail = "noreply@" . $fromDomain;
+
+    mb_language("Japanese");
+    mb_internal_encoding("UTF-8");
+
+    $headers = [
+        "From: =?UTF-8?B?" . base64_encode("受講生管理システム 認証通知") . "?= <{$fromEmail}>",
+        "Reply-To: {$fromEmail}",
+        "X-Mailer: PHP/" . phpversion(),
+        "MIME-Version: 1.0",
+        "Content-Type: text/plain; charset=UTF-8",
+        "Content-Transfer-Encoding: 8bit"
+    ];
+    $headerStr = implode("\r\n", $headers);
+
+    $sent = @mb_send_mail($toEmail, $subject, $body, $headerStr);
+    if (!$sent) {
+        $sent = @mail($toEmail, "=?UTF-8?B?" . base64_encode($subject) . "?=", $body, $headerStr);
+    }
+
+    writeDebugLog("2FA認証コードメール送信結果", [
+        'to' => $toEmail,
+        'sent' => (bool)$sent,
+        'code' => $otpCode
+    ]);
+
+    return (bool)$sent;
+}
+
+/**
+ * 2FAセッションを作成し、メールを送信
+ */
+function createAdmin2FASession(PDO $db, string $email): array {
+    $otpCode = sprintf('%06d', random_int(100000, 999999));
+    $sessionToken = bin2hex(random_bytes(24));
+    $lifetime = defined('ADMIN_2FA_CODE_LIFETIME_MINUTES') ? ADMIN_2FA_CODE_LIFETIME_MINUTES : 10;
+    $nowJst = date('Y-m-d H:i:s');
+    $expiresAt = date('Y-m-d H:i:s', strtotime("+{$lifetime} minutes"));
+
+    // 古い期限切れセッションのクリーンアップ
+    try {
+        $db->exec("DELETE FROM admin_2fa_sessions WHERE expires_at < datetime('now', '+9 hours')");
+    } catch (Exception $e) {}
+
+    $stmt = $db->prepare("
+        INSERT INTO admin_2fa_sessions (
+            session_token, email, otp_code, attempts, is_verified, last_sent_at, expires_at, created_at
+        ) VALUES (
+            :token, :email, :code, 0, 0, :now, :expires, :now
+        )
+    ");
+    $stmt->execute([
+        ':token' => $sessionToken,
+        ':email' => $email,
+        ':code' => $otpCode,
+        ':now' => $nowJst,
+        ':expires' => $expiresAt
+    ]);
+
+    // メール送信
+    $mailSent = sendAdmin2FACodeEmail($email, $otpCode, $lifetime);
+
+    return [
+        'success' => true,
+        'session_token' => $sessionToken,
+        'email_hint' => maskEmailAddress($email),
+        'expires_in' => $lifetime * 60,
+        'mail_sent' => $mailSent
+    ];
+}
+
+/**
+ * 2FA認証コードの再送信
+ */
+function resendAdmin2FACode(PDO $db, string $sessionToken): array {
+    $stmt = $db->prepare("SELECT * FROM admin_2fa_sessions WHERE session_token = :token AND is_verified = 0 LIMIT 1");
+    $stmt->execute([':token' => $sessionToken]);
+    $row = $stmt->fetch();
+
+    if (!$row) {
+        return ['success' => false, 'error' => '認証セッションが見つかりません。最初からログインをお試しください。'];
+    }
+
+    $nowTs = time();
+    $lastSentTs = strtotime($row['last_sent_at']);
+    if (($nowTs - $lastSentTs) < 60) {
+        $waitSec = 60 - ($nowTs - $lastSentTs);
+        return ['success' => false, 'error' => "認証コードの再送信は {$waitSec} 秒後に可能です。"];
+    }
+
+    $newCode = sprintf('%06d', random_int(100000, 999999));
+    $lifetime = defined('ADMIN_2FA_CODE_LIFETIME_MINUTES') ? ADMIN_2FA_CODE_LIFETIME_MINUTES : 10;
+    $nowJst = date('Y-m-d H:i:s');
+    $expiresAt = date('Y-m-d H:i:s', strtotime("+{$lifetime} minutes"));
+
+    $upStmt = $db->prepare("
+        UPDATE admin_2fa_sessions 
+        SET otp_code = :code, attempts = 0, last_sent_at = :now, expires_at = :expires 
+        WHERE id = :id
+    ");
+    $upStmt->execute([
+        ':code' => $newCode,
+        ':now' => $nowJst,
+        ':expires' => $expiresAt,
+        ':id' => $row['id']
+    ]);
+
+    $mailSent = sendAdmin2FACodeEmail($row['email'], $newCode, $lifetime);
+
+    return [
+        'success' => true,
+        'message' => '新しい認証コードをメール送信しました！',
+        'email_hint' => maskEmailAddress($row['email']),
+        'expires_in' => $lifetime * 60,
+        'mail_sent' => $mailSent
+    ];
+}
+
+/**
+ * 2FAコードの照合検証
+ */
+function verifyAdmin2FACode(PDO $db, string $sessionToken, string $inputCode): array {
+    $stmt = $db->prepare("SELECT * FROM admin_2fa_sessions WHERE session_token = :token LIMIT 1");
+    $stmt->execute([':token' => $sessionToken]);
+    $row = $stmt->fetch();
+
+    if (!$row) {
+        return ['success' => false, 'error' => '認証セッションが見つかりません。最初からログインをお試しください。'];
+    }
+
+    if ($row['is_verified'] == 1) {
+        return ['success' => false, 'error' => 'この認証コードはすでに使用済みです。'];
+    }
+
+    $nowJst = date('Y-m-d H:i:s');
+    if ($nowJst > $row['expires_at']) {
+        return ['success' => false, 'error' => '認証コードの有効期限（10分間）が切れています。「再送信」を行ってください。'];
+    }
+
+    $maxAttempts = defined('ADMIN_2FA_MAX_ATTEMPTS') ? ADMIN_2FA_MAX_ATTEMPTS : 5;
+    if ($row['attempts'] >= $maxAttempts) {
+        return ['success' => false, 'error' => '認証試行回数の上限（5回）を超えました。最初からログインをやり直してください。'];
+    }
+
+    $inputClean = trim(preg_replace('/[^0-9]/', '', $inputCode));
+    if ($inputClean !== $row['otp_code']) {
+        $newAttempts = $row['attempts'] + 1;
+        $db->prepare("UPDATE admin_2fa_sessions SET attempts = :att WHERE id = :id")->execute([':att' => $newAttempts, ':id' => $row['id']]);
+        $remaining = $maxAttempts - $newAttempts;
+        return [
+            'success' => false,
+            'error' => "認証コードが正しくありません。（残り {$remaining} 回試行可能）"
+        ];
+    }
+
+    // 認証成功フラグを立てる
+    $db->prepare("UPDATE admin_2fa_sessions SET is_verified = 1 WHERE id = :id")->execute([':id' => $row['id']]);
+
+    // 永続認証トークン（30日間有効）を発行
+    $authToken = createAdminAuthToken($db);
+
+    return [
+        'success' => true,
+        'auth_token' => $authToken,
+        'message' => '二段階認証に成功しました！'
+    ];
+}
+
+/**
+ * 永続認証トークンを発行 (30日間有効)
+ */
+function createAdminAuthToken(PDO $db): string {
+    $token = bin2hex(random_bytes(32));
+    $nowJst = date('Y-m-d H:i:s');
+    $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+    $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+
+    $stmt = $db->prepare("
+        INSERT INTO admin_auth_tokens (token, ip_address, user_agent, expires_at, created_at, last_used_at)
+        VALUES (:token, :ip, :ua, :expires, :now, :now)
+    ");
+    $stmt->execute([
+        ':token' => $token,
+        ':ip' => $ip,
+        ':ua' => $ua,
+        ':expires' => $expiresAt,
+        ':now' => $nowJst
+    ]);
+
+    return $token;
+}
+
+/**
+ * 認証トークンが有効か検証
+ */
+function isValidAdminAuthToken(PDO $db, string $token): bool {
+    if (empty($token)) return false;
+    $stmt = $db->prepare("SELECT id, expires_at FROM admin_auth_tokens WHERE token = :t LIMIT 1");
+    $stmt->execute([':t' => $token]);
+    $row = $stmt->fetch();
+    if (!$row) return false;
+
+    $nowJst = date('Y-m-d H:i:s');
+    if ($nowJst > $row['expires_at']) {
+        return false;
+    }
+
+    // last_used_at を更新
+    try {
+        $db->prepare("UPDATE admin_auth_tokens SET last_used_at = :now WHERE id = :id")->execute([':now' => $nowJst, ':id' => $row['id']]);
+    } catch (Exception $e) {}
+
+    return true;
+}
+
+/**
+ * 認証トークンを破棄 (ログアウト)
+ */
+function revokeAdminAuthToken(PDO $db, string $token): bool {
+    if (empty($token)) return true;
+    $stmt = $db->prepare("DELETE FROM admin_auth_tokens WHERE token = :t");
+    return $stmt->execute([':t' => $token]);
 }
 
 /**

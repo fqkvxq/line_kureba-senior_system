@@ -40,23 +40,51 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260918_slack_v1">
+    <link rel="stylesheet" href="manual.css?v=20260918_2fa_v1">
 </head>
 <body>
-    <!-- ログインモーダル -->
+    <!-- ログインモーダル (二段階認証対応) -->
     <div class="login-overlay" id="loginModal">
         <div class="login-card">
-            <div class="login-icon">
-                <i class="fa-solid fa-book-open"></i>
+            <!-- STEP 1: パスワード入力 -->
+            <div id="loginStep1Wrap">
+                <div class="login-icon">
+                    <i class="fa-solid fa-book-open"></i>
+                </div>
+                <h2>操作マニュアル</h2>
+                <p>管理者パスワードを入力して閲覧してください</p>
+                <div class="form-group">
+                    <label for="adminPasswordInput">パスワード</label>
+                    <input type="password" id="adminPasswordInput" class="form-input" placeholder="••••••••" autofocus autocomplete="current-password">
+                </div>
+                <button type="button" class="btn-login" id="loginBtn">ログインして閲覧</button>
             </div>
-            <h2>操作マニュアル</h2>
-            <p>管理者パスワードを入力して閲覧してください</p>
-            <div class="form-group">
-                <label for="adminPasswordInput">パスワード</label>
-                <input type="password" id="adminPasswordInput" class="form-input" placeholder="••••••••">
+
+            <!-- STEP 2: メール二段階認証コード入力 -->
+            <div id="loginStep2Wrap" style="display: none;">
+                <div class="login-icon" style="background: #e0f2fe; color: #0284c7;">
+                    <i class="fa-solid fa-envelope-circle-check"></i>
+                </div>
+                <h2>二段階認証コードの入力</h2>
+                <p style="font-size: 13px; line-height: 1.5; color: #475569; margin-bottom: 16px;">
+                    <span id="login2FAEmailHint" style="font-weight: 700; color: #0f172a;">kawai@kureba.co.jp</span> 宛てに送信された6桁の認証コードを入力してください。
+                </p>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="admin2FACodeInput">認証コード（6桁数字）</label>
+                    <input type="text" id="admin2FACodeInput" class="form-input" placeholder="6桁の認証コード" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" style="text-align: center; font-size: 22px; font-weight: 800; letter-spacing: 6px;">
+                </div>
+                <button type="button" class="btn-login" id="btnVerify2FA" style="background: #0284c7;">認証して閲覧</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; font-size: 12px;">
+                    <button type="button" id="btnBackToPassword" style="background: none; border: none; color: #64748b; cursor: pointer; text-decoration: underline; padding: 0;">
+                        <i class="fa-solid fa-arrow-left"></i> パスワード再入力
+                    </button>
+                    <button type="button" id="btnResend2FACode" style="background: none; border: none; color: #0284c7; cursor: pointer; font-weight: 600; padding: 0;">
+                        <i class="fa-solid fa-rotate-right"></i> コード再送信 <span id="resendTimerText"></span>
+                    </button>
+                </div>
             </div>
-            <button class="btn-login" id="loginBtn">ログインして閲覧</button>
-            <div class="login-error" id="loginErrorMsg"></div>
+
+            <div class="login-error" id="loginErrorMsg" style="margin-top: 14px;"></div>
         </div>
     </div>
 
@@ -131,7 +159,8 @@
                         <li class="toc-item"><a href="#sec-discord-notify"><i class="fa-brands fa-discord" style="color:#5865F2;"></i> 13. Discord通知設定</a></li>
                         <li class="toc-item"><a href="#sec-slack-notify"><i class="fa-brands fa-slack" style="color:#ECB22E;"></i> 14. Slack通知設定</a></li>
                         <li class="toc-item"><a href="#sec-dx-survey"><i class="fa-solid fa-clipboard-question" style="color:#2563eb;"></i> 15. 会社DX 関心度アンケート配信</a></li>
-                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 16. よくある質問・トラブルシューティング</a></li>
+                        <li class="toc-item"><a href="#sec-2fa"><i class="fa-solid fa-shield-halved" style="color:#0284c7;"></i> 16. メール二段階認証（2FA / セキュリティ）</a></li>
+                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 17. よくある質問・トラブルシューティング</a></li>
                     </ul>
                 </div>
             </aside>
@@ -1143,19 +1172,85 @@
                     </div>
                 </section>
 
-                <!-- 16. よくある質問・トラブルシューティング -->
+                <!-- 16. メール二段階認証（2FA / セキュリティ） -->
+                <section class="manual-section" id="sec-2fa">
+                    <div class="section-header">
+                        <div class="section-header-icon" style="background: #e0f2fe; color: #0284c7;">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <div class="section-header-text">
+                            <h2>16. メール二段階認証（2FA / セキュリティ）</h2>
+                            <p>管理者アカウントの不正ログイン防止・メールワンタイムパスワード</p>
+                        </div>
+                    </div>
+
+                    <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <div class="step-body">
+                                <h4>二段階認証のログイン手順</h4>
+                                <p>管理画面（受講生カルテ、リッチメニュー管理、操作マニュアル）へのログイン時、2段階の認証フローで安全に保護されます：<br>
+                                <strong>Step 1（管理者パスワード入力）</strong>：初期パスワード（<code>1020143</code>）を入力して「ログイン」をクリックします。<br>
+                                <strong>Step 2（メール認証コード入力）</strong>：パスワードが一致すると、自動的に登録メールアドレス（<code>kawai@kureba.co.jp</code>）宛てに<strong>6桁のワンタイム認証コード</strong>が送信されます。<br>
+                                <strong>Step 3（認証完了 & ログイン）</strong>：メールに届いた6桁コードを入力して「認証してログイン」をクリックすると、管理画面に入室できます。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <div class="step-body">
+                                <h4>有効期限・セキュリティ仕様</h4>
+                                <p>・<strong>認証コード有効期限</strong>：発行から<strong>10分間</strong>有効です。期限が切れた場合は「コード再送信」または最初からやり直してください。<br>
+                                ・<strong>再送信タイマー</strong>：連続送信によるサーバー負荷や誤送信を防ぐため、<strong>60秒間のクールダウンタイマー</strong>が動作します。<br>
+                                ・<strong>試行回数制限（ブルートフォース対策）</strong>：コードを<strong>5回連続で誤入力</strong>すると、セキュリティ保護のため認証セッションが自動失効します。<br>
+                                ・<strong>ログイン状態の維持</strong>：認証に成功すると、ブラウザにセキュアな認証トークンが保持され、同一ブラウザで30日間安全に操作を継続できます。右上のログアウトボタンを押すことで即座に認証を取り消せます。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">3</div>
+                            <div class="step-body">
+                                <h4>送信先メールアドレスの変更・設定</h4>
+                                <p>認証コードの送信先メールアドレスや有効期限の設定は、<code>public_html/config.php</code> 内で簡単にカスタマイズできます：<br>
+                                <code>define('ADMIN_2FA_EMAIL', 'kawai@kureba.co.jp'); // 送信先メールアドレス</code><br>
+                                <code>define('ADMIN_2FA_CODE_LIFETIME_MINUTES', 10); // 有効期限（分）</code><br>
+                                <code>define('ENABLE_ADMIN_2FA', true); // 二段階認証の有効/無効トグル</code></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tips-box">
+                        <div class="tips-box-title"><i class="fa-solid fa-lightbulb"></i> ワンポイントTips: 全画面での認証共有</div>
+                        <div class="tips-box-content">
+                            カルテ管理画面（<code>index.html</code>）、リッチメニュー管理（<code>richmenu.html</code>）、操作マニュアル（<code>manual.html</code>）のいずれかで一度二段階認証を完了すると、同一ブラウザ内であれば別画面へ移動した際も自動的に認証が引き継がれます。画面を切り替えるたびに毎回コードを入力する必要はありません。
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 17. よくある質問・トラブルシューティング -->
                 <section class="manual-section" id="sec-faq">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #fef2f2; color: #ef4444;">
                             <i class="fa-solid fa-circle-question"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>16. よくある質問・トラブルシューティング</h2>
+                            <h2>17. よくある質問・トラブルシューティング</h2>
                             <p>困ったときの解決方法</p>
                         </div>
                     </div>
 
                     <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">Q</div>
+                            <div class="step-body">
+                                <h4>二段階認証のメールが届かない場合は？</h4>
+                                <p>以下の点をご確認ください：<br>
+                                1. <strong>迷惑メールフォルダの確認</strong>：お使いのメールソフトの「迷惑メール」「プロモーション」「ゴミ箱」フォルダに振り分けられていないかご確認ください（件名: <code>【シニア向けパソコン教室】管理画面ログイン認証コード</code>）。<br>
+                                2. <strong>コード再送信の利用</strong>：画面上の「コード再送信」ボタン（60秒経過後に有効化）を押して再送信をお試しください。<br>
+                                3. <strong>サーバーのメール送信（sendmail / PHP mail）環境</strong>：サーバー側のメール送信制限やSPF/DKIM設定の影響を受けていないかご確認ください。</p>
+                            </div>
+                        </div>
+
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
@@ -1281,6 +1376,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260918_slack_v1"></script>
+    <script src="manual.js?v=20260918_2fa_v1"></script>
 </body>
 </html>

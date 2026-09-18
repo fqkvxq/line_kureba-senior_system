@@ -91,64 +91,229 @@ function initAuth() {
         if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
         return '';
     };
+    const savedToken = sessionStorage.getItem('admin_auth_token') || getCookie('admin_auth_token');
     const savedPass = sessionStorage.getItem('admin_pass') || getCookie('admin_pass');
+    
     const loginModal = document.getElementById('loginModal');
-    const adminApp = document.getElementById('adminApp');
+    const loginStep1Wrap = document.getElementById('loginStep1Wrap');
+    const loginStep2Wrap = document.getElementById('loginStep2Wrap');
+    const login2FAEmailHint = document.getElementById('login2FAEmailHint');
     const adminPasswordInput = document.getElementById('adminPasswordInput');
+    const admin2FACodeInput = document.getElementById('admin2FACodeInput');
     const loginBtn = document.getElementById('loginBtn');
+    const btnVerify2FA = document.getElementById('btnVerify2FA');
+    const btnBackToPassword = document.getElementById('btnBackToPassword');
+    const btnResend2FACode = document.getElementById('btnResend2FACode');
+    const resendTimerText = document.getElementById('resendTimerText');
     const loginErrorMsg = document.getElementById('loginErrorMsg');
+    const adminApp = document.getElementById('adminApp');
     const logoutBtn = document.getElementById('logoutBtn');
 
-    if (savedPass) {
-        // すでに認証済み
-        sessionStorage.setItem('admin_pass', savedPass);
+    let twoFactorSessionToken = '';
+    let resendTimerInterval = null;
+    let resendCountdown = 0;
+
+    const showLoginError = (msg) => {
+        if (loginErrorMsg) {
+            loginErrorMsg.textContent = msg;
+            loginErrorMsg.style.display = 'block';
+        }
+    };
+
+    const hideLoginError = () => {
+        if (loginErrorMsg) {
+            loginErrorMsg.textContent = '';
+            loginErrorMsg.style.display = 'none';
+        }
+    };
+
+    const finishLoginSuccess = (pass, authToken) => {
+        if (authToken) {
+            sessionStorage.setItem('admin_auth_token', authToken);
+            document.cookie = "admin_auth_token=" + encodeURIComponent(authToken) + "; path=/; max-age=" + (86400 * 30) + "; SameSite=Lax";
+        }
+        if (pass) {
+            sessionStorage.setItem('admin_pass', pass);
+            document.cookie = "admin_pass=" + encodeURIComponent(pass) + "; path=/; max-age=" + (86400 * 30) + "; SameSite=Lax";
+        }
+        hideLoginError();
+        if (loginModal) loginModal.style.display = 'none';
+        if (adminApp) adminApp.style.display = 'flex';
+    };
+
+    const startResendTimer = (seconds = 60) => {
+        if (resendTimerInterval) clearInterval(resendTimerInterval);
+        resendCountdown = seconds;
+
+        const updateUI = () => {
+            if (resendTimerText) {
+                resendTimerText.textContent = resendCountdown > 0 ? `(${resendCountdown}秒)` : '';
+            }
+            if (btnResend2FACode) {
+                btnResend2FACode.disabled = resendCountdown > 0;
+                btnResend2FACode.style.opacity = resendCountdown > 0 ? '0.5' : '1';
+                btnResend2FACode.style.cursor = resendCountdown > 0 ? 'not-allowed' : 'pointer';
+            }
+        };
+
+        updateUI();
+        resendTimerInterval = setInterval(() => {
+            resendCountdown--;
+            if (resendCountdown <= 0) {
+                clearInterval(resendTimerInterval);
+                resendCountdown = 0;
+            }
+            updateUI();
+        }, 1000);
+    };
+
+    const backToPasswordStep = () => {
+        if (resendTimerInterval) clearInterval(resendTimerInterval);
+        twoFactorSessionToken = '';
+        hideLoginError();
+        if (loginStep2Wrap) loginStep2Wrap.style.display = 'none';
+        if (loginStep1Wrap) loginStep1Wrap.style.display = 'block';
+        if (adminPasswordInput) adminPasswordInput.focus();
+    };
+
+    if (savedToken || savedPass) {
+        if (savedToken) sessionStorage.setItem('admin_auth_token', savedToken);
+        if (savedPass) sessionStorage.setItem('admin_pass', savedPass);
         if (loginModal) loginModal.style.display = 'none';
         if (adminApp) adminApp.style.display = 'flex';
     } else {
-        // パスワード入力要求
         if (loginModal) loginModal.style.display = 'flex';
         if (adminApp) adminApp.style.display = 'none';
     }
 
     const attemptLogin = async () => {
-        const pass = adminPasswordInput.value.trim();
-        if (!pass) return;
+        const pass = adminPasswordInput ? adminPasswordInput.value.trim() : '';
+        if (!pass) {
+            showLoginError('パスワードを入力してください');
+            return;
+        }
+
+        if (loginBtn) {
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 確認中...';
+        }
+        hideLoginError();
 
         try {
-            loginBtn.disabled = true;
-            loginBtn.textContent = '認証中...';
+            const payload = new URLSearchParams({
+                action: 'admin_login_step1',
+                password: pass
+            });
+            const res = await fetch('../api.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: payload.toString()
+            });
+            const data = await res.json();
 
-            const res = await fetch(`../api.php?action=admin_list_customers&password=${encodeURIComponent(pass)}`, {
-                headers: { 
-                    'X-Admin-Password': pass,
-                    'Authorization': `Bearer ${pass}`
+            if (!data.success) {
+                showLoginError(data.error || 'パスワードが正しくありません');
+                return;
+            }
+
+            if (data.require_2fa) {
+                twoFactorSessionToken = data.session_token;
+                if (login2FAEmailHint) {
+                    login2FAEmailHint.textContent = data.email_hint || 'kawai@kureba.co.jp';
                 }
+                if (loginStep1Wrap) loginStep1Wrap.style.display = 'none';
+                if (loginStep2Wrap) loginStep2Wrap.style.display = 'block';
+                if (admin2FACodeInput) {
+                    admin2FACodeInput.value = '';
+                    admin2FACodeInput.focus();
+                }
+                startResendTimer(60);
+            } else {
+                finishLoginSuccess(pass, data.auth_token);
+            }
+        } catch (e) {
+            showLoginError('通信エラーが発生しました: ' + e.message);
+        } finally {
+            if (loginBtn) {
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = 'ログインして閲覧';
+            }
+        }
+    };
+
+    const attemptVerify2FA = async () => {
+        const code = admin2FACodeInput ? admin2FACodeInput.value.trim() : '';
+        if (!code || code.length < 6) {
+            showLoginError('6桁の認証コードを入力してください');
+            return;
+        }
+
+        if (btnVerify2FA) {
+            btnVerify2FA.disabled = true;
+            btnVerify2FA.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 認証中...';
+        }
+        hideLoginError();
+
+        try {
+            const payload = new URLSearchParams({
+                action: 'admin_login_verify_2fa',
+                session_token: twoFactorSessionToken,
+                code: code
+            });
+            const res = await fetch('../api.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: payload.toString()
+            });
+            const data = await res.json();
+
+            if (data.success && data.auth_token) {
+                if (resendTimerInterval) clearInterval(resendTimerInterval);
+                finishLoginSuccess(adminPasswordInput ? adminPasswordInput.value.trim() : '', data.auth_token);
+            } else {
+                showLoginError(data.error || '認証コードが正しくありません');
+            }
+        } catch (e) {
+            showLoginError('認証通信エラー: ' + e.message);
+        } finally {
+            if (btnVerify2FA) {
+                btnVerify2FA.disabled = false;
+                btnVerify2FA.innerHTML = '認証してログイン';
+            }
+        }
+    };
+
+    const attemptResend2FA = async () => {
+        if (resendCountdown > 0) return;
+        if (!twoFactorSessionToken) return;
+
+        if (btnResend2FACode) btnResend2FACode.disabled = true;
+        hideLoginError();
+
+        try {
+            const payload = new URLSearchParams({
+                action: 'admin_login_resend_2fa',
+                session_token: twoFactorSessionToken
+            });
+            const res = await fetch('../api.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: payload.toString()
             });
             const data = await res.json();
 
             if (data.success) {
-                sessionStorage.setItem('admin_pass', pass);
-                document.cookie = "admin_pass=" + encodeURIComponent(pass) + "; path=/; max-age=" + (86400 * 30) + "; SameSite=Lax";
-                if (loginModal) loginModal.style.display = 'none';
-                if (adminApp) adminApp.style.display = 'flex';
+                alert('認証コードを再送信しました！メールをご確認ください。');
+                startResendTimer(60);
             } else {
-                sessionStorage.removeItem('admin_pass');
-                document.cookie = "admin_pass=; path=/; max-age=0; SameSite=Lax";
-                if (loginErrorMsg) {
-                    loginErrorMsg.textContent = data.error || 'パスワードが正しくありません';
-                    loginErrorMsg.style.display = 'block';
-                }
+                showLoginError(data.error || 'コードの再送信に失敗しました');
             }
         } catch (e) {
-            sessionStorage.removeItem('admin_pass');
-            document.cookie = "admin_pass=; path=/; max-age=0; SameSite=Lax";
-            if (loginErrorMsg) {
-                loginErrorMsg.textContent = '通信エラーが発生しました';
-                loginErrorMsg.style.display = 'block';
-            }
+            showLoginError('再送信エラー: ' + e.message);
         } finally {
-            loginBtn.disabled = false;
-            loginBtn.textContent = 'ログインして閲覧';
+            if (btnResend2FACode && resendCountdown <= 0) {
+                btnResend2FACode.disabled = false;
+            }
         }
     };
 
@@ -158,14 +323,34 @@ function initAuth() {
             if (e.key === 'Enter') attemptLogin();
         });
     }
+    if (btnVerify2FA) btnVerify2FA.addEventListener('click', attemptVerify2FA);
+    if (admin2FACodeInput) {
+        admin2FACodeInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') attemptVerify2FA();
+        });
+    }
+    if (btnBackToPassword) btnBackToPassword.addEventListener('click', backToPasswordStep);
+    if (btnResend2FACode) btnResend2FACode.addEventListener('click', attemptResend2FA);
 
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await fetch('../api.php?action=admin_logout', { method: 'POST' });
+            } catch (e) {}
+            sessionStorage.removeItem('admin_auth_token');
             sessionStorage.removeItem('admin_pass');
+            document.cookie = "admin_auth_token=; path=/; max-age=0; SameSite=Lax";
             document.cookie = "admin_pass=; path=/; max-age=0; SameSite=Lax";
+            if (resendTimerInterval) clearInterval(resendTimerInterval);
             if (adminApp) adminApp.style.display = 'none';
             if (loginModal) loginModal.style.display = 'flex';
-            if (adminPasswordInput) adminPasswordInput.value = '';
+            if (loginStep1Wrap) loginStep1Wrap.style.display = 'block';
+            if (loginStep2Wrap) loginStep2Wrap.style.display = 'none';
+            if (adminPasswordInput) {
+                adminPasswordInput.value = '';
+                adminPasswordInput.focus();
+            }
+            hideLoginError();
         });
     }
 }
