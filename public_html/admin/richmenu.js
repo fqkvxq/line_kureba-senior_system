@@ -470,7 +470,7 @@ function initAccountManagement() {
             try {
                 const formData = new FormData();
                 formData.append('channel_access_token', token);
-                formData.append('password', state.password || sessionStorage.getItem('admin_pass') || '1020143');
+                formData.append('password', state.password || sessionStorage.getItem('admin_pass') || '');
                 const res = await fetch('../api.php?action=test_line_credentials', {
                     method: 'POST',
                     body: formData
@@ -743,7 +743,7 @@ async function submitAccountForm() {
         formData.append('liff_id', (liffIdInput.value || '').trim());
         formData.append('proline_calendar_url', (calUrlInput.value || '').trim());
         formData.append('proline_webhook_url', (whUrlInput.value || '').trim());
-        formData.append('password', state.password || sessionStorage.getItem('admin_pass') || '1020143');
+        formData.append('password', state.password || sessionStorage.getItem('admin_pass') || '');
 
         const res = await fetch('../api.php?action=save_account', {
             method: 'POST',
@@ -788,7 +788,7 @@ async function handleAccountDelete(accId, accName) {
     try {
         const formData = new FormData();
         formData.append('target_account', accId);
-        formData.append('password', state.password || sessionStorage.getItem('admin_pass') || '1020143');
+        formData.append('password', state.password || sessionStorage.getItem('admin_pass') || '');
 
         const res = await fetch('../api.php?action=delete_account', {
             method: 'POST',
@@ -994,7 +994,7 @@ async function attemptVerify2FA() {
 
         if (data.success && data.auth_token) {
             if (state.resendTimerInterval) clearInterval(state.resendTimerInterval);
-            finishLoginSuccess(state.password || '1020143', data.auth_token);
+            finishLoginSuccess(state.password || '', data.auth_token);
         } else {
             showLoginError(data.error || '認証コードが正しくありません');
         }

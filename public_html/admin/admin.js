@@ -1584,7 +1584,7 @@ async function attemptVerify2FA() {
 
         if (data.success && data.auth_token) {
             if (state.resendTimerInterval) clearInterval(state.resendTimerInterval);
-            finishLoginSuccess(state.password || '1020143', data.auth_token);
+            finishLoginSuccess(state.password || '', data.auth_token);
         } else {
             showLoginError(data.error || '認証コードが正しくありません');
         }
