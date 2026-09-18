@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * システム共通設定ファイル
  * Xserver環境およびLINE公式アカウント、Discord通知、顧客メンテナンス管理の設定を管理します。
@@ -1978,6 +1978,276 @@ function sendDiscordTestNotification(string $webhookUrl): array {
 
     if ($httpCode >= 200 && $httpCode < 300) {
         return ['success' => true, 'message' => 'Discordへのテスト送信に成功しました！チャンネルをご確認ください'];
+    }
+
+    return [
+        'success' => false,
+        'http_code' => $httpCode,
+        'error' => $curlErr ?: ($res ?: "HTTPステータス: {$httpCode} が返されました。Webhook URLを確認してください")
+    ];
+}
+
+/**
+ * Slack通知設定の取得
+ */
+function getSlackSettings(?PDO $db = null, ?string $accountKey = null): array {
+    $activeKey = $accountKey ?: getActiveAccountKey();
+    if (!$db) {
+        try {
+            $db = getDbConnection($activeKey);
+        } catch (Throwable $e) {
+            $db = null;
+        }
+    }
+
+    $default = [
+        'webhook_url' => defined('SLACK_WEBHOOK_URL') ? SLACK_WEBHOOK_URL : '',
+        'enabled' => true,
+        'notify_message' => true,
+        'notify_follow' => true,
+        'notify_inquiry' => true
+    ];
+
+    if ($db) {
+        try {
+            $stmt = $db->prepare("SELECT value FROM system_settings WHERE key = 'slack_settings'");
+            $stmt->execute();
+            $val = $stmt->fetchColumn();
+            if (!empty($val)) {
+                $saved = json_decode($val, true);
+                if (is_array($saved)) {
+                    return array_merge($default, $saved);
+                }
+            }
+        } catch (Throwable $e) {}
+    }
+
+    return $default;
+}
+
+/**
+ * Slack通知設定の保存
+ */
+function saveSlackSettings(array $settings, ?PDO $db = null, ?string $accountKey = null): bool {
+    $activeKey = $accountKey ?: getActiveAccountKey();
+    if (!$db) {
+        try {
+            $db = getDbConnection($activeKey);
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    try {
+        $nowJst = date('Y-m-d H:i:s');
+        $clean = [
+            'webhook_url' => trim((string)($settings['webhook_url'] ?? '')),
+            'enabled' => !empty($settings['enabled']),
+            'notify_message' => !empty($settings['notify_message']),
+            'notify_follow' => !empty($settings['notify_follow']),
+            'notify_inquiry' => !empty($settings['notify_inquiry']),
+            'updated_at' => $nowJst
+        ];
+        $json = json_encode($clean, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $stmt = $db->prepare("INSERT OR REPLACE INTO system_settings (key, value, updated_at) VALUES ('slack_settings', :val, :now)");
+        return $stmt->execute([':val' => $json, ':now' => $nowJst]);
+    } catch (Throwable $e) {
+        writeDebugLog("saveSlackSettings エラー", ['error' => $e->getMessage()]);
+        return false;
+    }
+}
+
+/**
+ * 受講生からのLINE新着メッセージをSlackへ通知
+ */
+function sendSlackChatMessageNotification(array $msgData, ?array $userProfile = null, ?PDO $db = null): bool {
+    $slack = getSlackSettings($db);
+    $webhookUrl = trim($slack['webhook_url'] ?? '');
+
+    if (empty($webhookUrl) || empty($slack['enabled']) || empty($slack['notify_message'])) {
+        return false;
+    }
+
+    $userId = $msgData['user_id'] ?? '';
+    $msgText = $msgData['message_text'] ?? '';
+    $msgType = $msgData['message_type'] ?? 'text';
+    $userName = $msgData['user_name'] ?? '受講生';
+
+    if (!empty($userProfile['displayName'])) {
+        $userName = $userProfile['displayName'];
+    }
+
+    // 表示用テキストの整形
+    $displayText = $msgText;
+    if ($msgType === 'sticker') {
+        $displayText = '🎨 [LINEスタンプを受信しました]';
+    } elseif ($msgType === 'image') {
+        $displayText = '📷 [画像を受信しました]';
+    }
+
+    $nowJst = date('Y-m-d H:i:s');
+    $baseUrl = getBaseUrl();
+    $adminChatUrl = "{$baseUrl}/admin/index.html?chat_uid=" . urlencode($userId);
+
+    $fallbackText = "💬 【LINE新着メッセージ】{$userName} 様から連絡が届きました: {$displayText}";
+
+    $payload = [
+        'text' => $fallbackText,
+        'username' => 'LINE受講生通知 Bot',
+        'icon_emoji' => ':speech_balloon:',
+        'attachments' => [
+            [
+                'color' => '#06C755', // LINE Green
+                'blocks' => [
+                    [
+                        'type' => 'header',
+                        'text' => [
+                            'type' => 'plain_text',
+                            'text' => "💬 【LINE新着メッセージ】{$userName} 様",
+                            'emoji' => true
+                        ]
+                    ],
+                    [
+                        'type' => 'section',
+                        'text' => [
+                            'type' => 'mrkdwn',
+                            'text' => "*メッセージ内容:*\n```\n" . mb_substr($displayText, 0, 1000) . "\n```"
+                        ]
+                    ],
+                    [
+                        'type' => 'section',
+                        'fields' => [
+                            [
+                                'type' => 'mrkdwn',
+                                'text' => "*👤 送信者:*\n*{$userName} 様*\n(`{$userId}`)"
+                            ],
+                            [
+                                'type' => 'mrkdwn',
+                                'text' => "*🕒 受信日時:*\n{$nowJst}"
+                            ]
+                        ]
+                    ],
+                    [
+                        'type' => 'actions',
+                        'elements' => [
+                            [
+                                'type' => 'button',
+                                'text' => [
+                                    'type' => 'plain_text',
+                                    'text' => '💬 カルテを開いて返信する',
+                                    'emoji' => true
+                                ],
+                                'url' => $adminChatUrl,
+                                'style' => 'primary'
+                            ]
+                        ]
+                    ],
+                    [
+                        'type' => 'context',
+                        'elements' => [
+                            [
+                                'type' => 'mrkdwn',
+                                'text' => 'LINE受講生・カルテ管理システム | Slack通知'
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
+    ];
+
+    $ch = curl_init($webhookUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 5,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json; charset=utf-8'],
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE)
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    return ($httpCode >= 200 && $httpCode < 300);
+}
+
+/**
+ * Slack Webhook 疎通テスト送信
+ */
+function sendSlackTestNotification(string $webhookUrl): array {
+    $url = trim($webhookUrl);
+    if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
+        return ['success' => false, 'error' => '有効なWebhook URLを入力してください'];
+    }
+
+    $nowJst = date('Y-m-d H:i:s');
+    $baseUrl = getBaseUrl();
+
+    $payload = [
+        'text' => '🔔 【接続テスト成功】Slack通知連携が完了しました',
+        'username' => 'LINE受講生管理 システム通知',
+        'icon_emoji' => ':bell:',
+        'attachments' => [
+            [
+                'color' => '#4A154B', // Slack Purple
+                'blocks' => [
+                    [
+                        'type' => 'header',
+                        'text' => [
+                            'type' => 'plain_text',
+                            'text' => '🔔 【接続テスト成功】Slack通知連携が完了しました',
+                            'emoji' => true
+                        ]
+                    ],
+                    [
+                        'type' => 'section',
+                        'text' => [
+                            'type' => 'mrkdwn',
+                            'text' => "本システムからのSlack通知が正常に送信されています。\n今後、受講生からの新着メッセージや友だち追加、予約相談がこのチャンネルに届きます。"
+                        ]
+                    ],
+                    [
+                        'type' => 'section',
+                        'fields' => [
+                            [
+                                'type' => 'mrkdwn',
+                                'text' => "*📡 連携状態:*\n✅ 正常に疎通中 (200 OK)"
+                            ],
+                            [
+                                'type' => 'mrkdwn',
+                                'text' => "*🕒 テスト実行時刻:*\n{$nowJst}"
+                            ]
+                        ]
+                    ],
+                    [
+                        'type' => 'context',
+                        'elements' => [
+                            [
+                                'type' => 'mrkdwn',
+                                'text' => 'LINE受講生・カルテ管理システム | Slack通知設定'
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
+    ];
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 5,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json; charset=utf-8'],
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE)
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    if ($httpCode >= 200 && $httpCode < 300) {
+        return ['success' => true, 'message' => 'Slackへのテスト送信に成功しました！チャンネルをご確認ください'];
     }
 
     return [

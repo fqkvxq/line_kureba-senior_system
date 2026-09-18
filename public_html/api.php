@@ -566,6 +566,67 @@ try {
             echo json_encode($res, JSON_UNESCAPED_UNICODE);
             exit;
 
+        // --- 0-12. Slack通知設定の取得 ---
+        case 'get_slack_settings':
+            $authPass = getAdminAuthPassword();
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $settings = getSlackSettings($db, $activeAccountKey);
+            echo json_encode(['success' => true, 'settings' => $settings], JSON_UNESCAPED_UNICODE);
+            exit;
+
+        // --- 0-13. Slack通知設定の保存 ---
+        case 'save_slack_settings':
+            $authPass = getAdminAuthPassword();
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $hasConsultation = !empty($_POST['notify_consultation']) || !empty($_POST['notify_inquiry']);
+            $settings = [
+                'webhook_url' => trim($_POST['webhook_url'] ?? ''),
+                'enabled' => !empty($_POST['webhook_url']),
+                'notify_message' => !empty($_POST['notify_message']),
+                'notify_follow' => !empty($_POST['notify_follow']),
+                'notify_consultation' => $hasConsultation,
+                'notify_inquiry' => $hasConsultation
+            ];
+
+            $res = saveSlackSettings($settings, $db, $activeAccountKey);
+            if ($res) {
+                echo json_encode(['success' => true, 'message' => 'Slack通知設定を保存しました', 'settings' => $settings], JSON_UNESCAPED_UNICODE);
+            } else {
+                echo json_encode(['success' => false, 'error' => '設定の保存に失敗しました']);
+            }
+            exit;
+
+        // --- 0-14. Slack通知の疎通テスト送信 ---
+        case 'test_slack_notification':
+            $authPass = getAdminAuthPassword();
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $webhookUrl = trim($_POST['webhook_url'] ?? '');
+            if (empty($webhookUrl)) {
+                $settings = getSlackSettings($db, $activeAccountKey);
+                $webhookUrl = $settings['webhook_url'] ?? '';
+            }
+
+            if (empty($webhookUrl)) {
+                echo json_encode(['success' => false, 'error' => 'Slack Incoming Webhook URL を入力してください']);
+                exit;
+            }
+
+            $res = sendSlackTestNotification($webhookUrl);
+            echo json_encode($res, JSON_UNESCAPED_UNICODE);
+            exit;
+
         // --- 1. 車両一覧取得 (検索・フィルター・ページネーション) ---
         case 'list':
             $page = max(1, (int)($_GET['page'] ?? 1));

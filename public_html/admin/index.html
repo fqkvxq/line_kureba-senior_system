@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260918_fontsize180_v3">
+    <link rel="stylesheet" href="admin.css?v=20260918_slack_v1">
 </head>
 <body>
     <!-- ログインモーダル (初期表示) -->
@@ -80,6 +80,9 @@
             <div class="admin-header-actions">
                 <!-- 連携・通知設定グループ -->
                 <div class="header-action-group">
+                    <button type="button" class="btn-hdr-action btn-hdr-slack" id="openSlackSettingsBtn" onclick="window.openSlackSettings && window.openSlackSettings()" title="メッセージ受信・友だち追加等のSlack通知設定">
+                        <i class="fa-brands fa-slack" style="color: #ECB22E;"></i> Slack通知
+                    </button>
                     <button type="button" class="btn-hdr-action btn-hdr-discord" id="openDiscordSettingsBtn" onclick="window.openDiscordSettings && window.openDiscordSettings()" title="メッセージ受信・友だち追加等のDiscord通知設定">
                         <i class="fa-brands fa-discord"></i> Discord通知
                     </button>
@@ -1440,6 +1443,66 @@
         </div>
     </div>
 
+    <!-- Slack通知設定モーダル -->
+    <div class="modal-overlay" id="slackSettingsModal" style="z-index: 1100;">
+        <div class="slack-settings-dialog">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 38px; height: 38px; border-radius: 50%; background: #4A154B; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px;">
+                        <i class="fa-brands fa-slack"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 16px; color: #0f172a;">Slack通知設定</h3>
+                        <span style="font-size: 11.5px; color: #64748b;">受講生からの新着LINEメッセージや予約相談をSlackチャンネルへ通知</span>
+                    </div>
+                </div>
+                <button class="modal-close" id="btnCloseSlackModal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="slack-settings-body">
+                <div class="slack-field-group">
+                    <label for="slackWebhookUrlInput">Slack Incoming Webhook URL</label>
+                    <input type="url" id="slackWebhookUrlInput" class="slack-input" placeholder="https://hooks.slack.com/services/..." autocomplete="off">
+                    <span class="slack-hint">
+                        ※ Slackワークスペースの「Incoming WebHooks」アプリ設定画面からWebhook URLを取得して貼り付けてください。
+                    </span>
+                </div>
+
+                <div class="slack-field-group">
+                    <label>通知するイベントの選択</label>
+                    <div class="slack-toggle-list">
+                        <label class="slack-toggle-item">
+                            <span><i class="fa-solid fa-comment-dots" style="color: #06C755; margin-right: 6px;"></i> 受講生からの新着LINEメッセージ</span>
+                            <input type="checkbox" id="slackNotifyMessage" checked>
+                        </label>
+                        <label class="slack-toggle-item">
+                            <span><i class="fa-solid fa-user-plus" style="color: #3b82f6; margin-right: 6px;"></i> 新規友だち追加（フォロー時）</span>
+                            <input type="checkbox" id="slackNotifyFollow" checked>
+                        </label>
+                        <label class="slack-toggle-item">
+                            <span><i class="fa-solid fa-calendar-check" style="color: #f59e0b; margin-right: 6px;"></i> 予約・個別相談リクエスト</span>
+                            <input type="checkbox" id="slackNotifyConsultation" checked>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="slackTestStatusBanner" style="display: none; padding: 8px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 600;"></div>
+
+                <div class="slack-actions-bar">
+                    <button type="button" id="btnTestSlackWebhook" class="btn-slack-test">
+                        <i class="fa-solid fa-paper-plane"></i> テスト通知を送信
+                    </button>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="btn-cancel" id="btnCancelSlackModal">キャンセル</button>
+                        <button type="button" id="btnSaveSlackSettings" class="btn-slack-save">
+                            <i class="fa-solid fa-floppy-disk"></i> 設定を保存
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Discord通知設定モーダル -->
     <div class="modal-overlay" id="discordSettingsModal" style="z-index: 1100;">
         <div class="discord-settings-dialog">
@@ -1503,6 +1566,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260918_fontsize180_v3"></script>
+    <script src="admin.js?v=20260918_slack_v1"></script>
 </body>
 </html>

@@ -319,6 +319,19 @@ const elements = {
     btnSaveDiscordSettings: document.getElementById('btnSaveDiscordSettings'),
     discordTestStatusBanner: document.getElementById('discordTestStatusBanner'),
 
+    // Slack通知設定モーダル
+    openSlackSettingsBtn: document.getElementById('openSlackSettingsBtn'),
+    slackSettingsModal: document.getElementById('slackSettingsModal'),
+    btnCloseSlackModal: document.getElementById('btnCloseSlackModal'),
+    btnCancelSlackModal: document.getElementById('btnCancelSlackModal'),
+    slackWebhookUrlInput: document.getElementById('slackWebhookUrlInput'),
+    slackNotifyMessage: document.getElementById('slackNotifyMessage'),
+    slackNotifyFollow: document.getElementById('slackNotifyFollow'),
+    slackNotifyConsultation: document.getElementById('slackNotifyConsultation'),
+    btnTestSlackWebhook: document.getElementById('btnTestSlackWebhook'),
+    btnSaveSlackSettings: document.getElementById('btnSaveSlackSettings'),
+    slackTestStatusBanner: document.getElementById('slackTestStatusBanner'),
+
     // 会社DX アンケートモーダル
     openDxSurveyModalBtn: document.getElementById('openDxSurveyModalBtn'),
     dxSurveyModal: document.getElementById('dxSurveyModal'),
@@ -353,6 +366,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initAccountManagement();
     initChatModal();
     initDiscordSettings();
+    initSlackSettings();
 });
 
 async function loadAccounts() {
@@ -5022,10 +5036,177 @@ async function testDiscordNotification() {
     }
 }
 
+/* ==========================================================================
+   Slack通知設定機能
+   ========================================================================== */
+
+function initSlackSettings() {
+    if (elements.openSlackSettingsBtn) {
+        elements.openSlackSettingsBtn.addEventListener('click', openSlackSettings);
+    }
+    if (elements.btnCloseSlackModal) {
+        elements.btnCloseSlackModal.addEventListener('click', closeSlackSettings);
+    }
+    if (elements.btnCancelSlackModal) {
+        elements.btnCancelSlackModal.addEventListener('click', closeSlackSettings);
+    }
+    if (elements.btnSaveSlackSettings) {
+        elements.btnSaveSlackSettings.addEventListener('click', saveSlackSettings);
+    }
+    if (elements.btnTestSlackWebhook) {
+        elements.btnTestSlackWebhook.addEventListener('click', testSlackNotification);
+    }
+
+    if (elements.slackSettingsModal) {
+        elements.slackSettingsModal.addEventListener('click', (e) => {
+            if (e.target === elements.slackSettingsModal) {
+                closeSlackSettings();
+            }
+        });
+    }
+}
+
+async function openSlackSettings() {
+    if (elements.slackTestStatusBanner) {
+        elements.slackTestStatusBanner.style.display = 'none';
+    }
+
+    if (elements.slackSettingsModal) {
+        elements.slackSettingsModal.classList.add('active');
+    }
+
+    try {
+        const res = await fetch(`../api.php?action=get_slack_settings&password=${encodeURIComponent(state.password || '')}`);
+        const data = await res.json();
+
+        if (data.success && data.settings) {
+            const s = data.settings;
+            if (elements.slackWebhookUrlInput) elements.slackWebhookUrlInput.value = s.webhook_url || '';
+            if (elements.slackNotifyMessage) elements.slackNotifyMessage.checked = (s.notify_message !== false);
+            if (elements.slackNotifyFollow) elements.slackNotifyFollow.checked = (s.notify_follow !== false);
+            if (elements.slackNotifyConsultation) elements.slackNotifyConsultation.checked = (s.notify_consultation !== false);
+        }
+    } catch (e) {
+        console.error('Failed to load slack settings:', e);
+    }
+}
+
+function closeSlackSettings() {
+    if (elements.slackSettingsModal) {
+        elements.slackSettingsModal.classList.remove('active');
+    }
+}
+
+async function saveSlackSettings() {
+    const webhookUrl = elements.slackWebhookUrlInput ? elements.slackWebhookUrlInput.value.trim() : '';
+    const notifyMessage = elements.slackNotifyMessage ? elements.slackNotifyMessage.checked : true;
+    const notifyFollow = elements.slackNotifyFollow ? elements.slackNotifyFollow.checked : true;
+    const notifyConsultation = elements.slackNotifyConsultation ? elements.slackNotifyConsultation.checked : true;
+
+    const btn = elements.btnSaveSlackSettings;
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 保存中...';
+    }
+
+    try {
+        const payload = new URLSearchParams({
+            action: 'save_slack_settings',
+            password: state.password,
+            webhook_url: webhookUrl,
+            notify_message: notifyMessage ? '1' : '0',
+            notify_follow: notifyFollow ? '1' : '0',
+            notify_consultation: notifyConsultation ? '1' : '0'
+        });
+
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            showToast('Slack通知設定を保存しました！');
+            closeSlackSettings();
+        } else {
+            alert(data.error || '設定の保存に失敗しました');
+        }
+    } catch (e) {
+        console.error('Save slack settings error:', e);
+        alert('保存エラーが発生しました: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
+
+async function testSlackNotification() {
+    const webhookUrl = elements.slackWebhookUrlInput ? elements.slackWebhookUrlInput.value.trim() : '';
+    if (!webhookUrl) {
+        alert('テスト送信を行うには、Slack Incoming Webhook URL を入力してください。');
+        elements.slackWebhookUrlInput?.focus();
+        return;
+    }
+
+    const banner = elements.slackTestStatusBanner;
+    if (banner) {
+        banner.style.display = 'block';
+        banner.style.background = '#e0f2fe';
+        banner.style.color = '#0284c7';
+        banner.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Slackへテスト通知を送信中...';
+    }
+
+    const testBtn = elements.btnTestSlackWebhook;
+    if (testBtn) testBtn.disabled = true;
+
+    try {
+        const payload = new URLSearchParams({
+            action: 'test_slack_notification',
+            password: state.password,
+            webhook_url: webhookUrl
+        });
+
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            if (banner) {
+                banner.style.background = '#dcfce7';
+                banner.style.color = '#166534';
+                banner.innerHTML = '<i class="fa-solid fa-circle-check"></i> Slackへのテスト送信に成功しました！チャンネルをご確認ください。';
+            }
+        } else {
+            if (banner) {
+                banner.style.background = '#fee2e2';
+                banner.style.color = '#991b1b';
+                banner.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> テスト送信失敗: ${escapeHtml(data.error || '不明なエラー')}`;
+            }
+        }
+    } catch (e) {
+        if (banner) {
+            banner.style.background = '#fee2e2';
+            banner.style.color = '#991b1b';
+            banner.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> 通信エラー: ${escapeHtml(e.message)}`;
+        }
+    } finally {
+        if (testBtn) testBtn.disabled = false;
+    }
+}
+
 window.openChatModal = openChatModal;
 window.closeChatModal = closeChatModal;
 window.openDiscordSettings = openDiscordSettings;
 window.closeDiscordSettings = closeDiscordSettings;
+window.openSlackSettings = openSlackSettings;
+window.closeSlackSettings = closeSlackSettings;
 window.openChatModalByUid = function(uid) {
     if (!uid) return;
     let cust = null;
@@ -5042,6 +5223,7 @@ window.openChatModalByUid = function(uid) {
         });
     }
 };
+
 
 
 

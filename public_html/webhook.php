@@ -223,7 +223,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
                 // 2. 顧客カルテの最終やり取り更新
                 recordCustomerInteraction($db, $userId, 'user_message', $preview);
 
-                // 3. Discord Webhook通知送信
+                // 3. Discord & Slack Webhook通知送信
                 try {
                     $cStmt = $db->prepare("SELECT user_name, picture_url FROM customer_cars WHERE user_id = :uid LIMIT 1");
                     $cStmt->execute([':uid' => $userId]);
@@ -231,15 +231,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
                     $userName = !empty($cRow['user_name']) ? $cRow['user_name'] : '受講生';
                     $picUrl = $cRow['picture_url'] ?? '';
 
-                    sendDiscordChatMessageNotification([
+                    $msgDataPayload = [
                         'user_id' => $userId,
                         'user_name' => $userName,
                         'picture_url' => $picUrl,
                         'message_text' => $userText,
                         'message_type' => $msgType
-                    ], null, $db);
+                    ];
+
+                    sendDiscordChatMessageNotification($msgDataPayload, null, $db);
+                    sendSlackChatMessageNotification($msgDataPayload, null, $db);
                 } catch (Throwable $disEx) {
-                    writeDebugLog("Discord新着メッセージ通知エラー", ['error' => $disEx->getMessage()]);
+                    writeDebugLog("チャット通知送信エラー", ['error' => $disEx->getMessage()]);
                 }
 
                 // 4. プロライン非中継時の自動返信（中継時はプロラインへ委譲）

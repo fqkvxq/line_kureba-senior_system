@@ -40,7 +40,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260918_fontsize180_v3">
+    <link rel="stylesheet" href="manual.css?v=20260918_slack_v1">
 </head>
 <body>
     <!-- ログインモーダル -->
@@ -129,8 +129,9 @@
                         <li class="toc-item"><a href="#sec-multi-account"><i class="fa-solid fa-arrows-rotate" style="color:#6366f1;"></i> 11. 複数LINE公式アカウントの切り替え・運用</a></li>
                         <li class="toc-item"><a href="#sec-line-chat"><i class="fa-solid fa-comments" style="color:#06C755;"></i> 12. 個別LINEチャット・メッセージ返信</a></li>
                         <li class="toc-item"><a href="#sec-discord-notify"><i class="fa-brands fa-discord" style="color:#5865F2;"></i> 13. Discord通知設定</a></li>
-                        <li class="toc-item"><a href="#sec-dx-survey"><i class="fa-solid fa-clipboard-question" style="color:#2563eb;"></i> 14. 会社DX 関心度アンケート配信</a></li>
-                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 15. よくある質問・トラブルシューティング</a></li>
+                        <li class="toc-item"><a href="#sec-slack-notify"><i class="fa-brands fa-slack" style="color:#ECB22E;"></i> 14. Slack通知設定</a></li>
+                        <li class="toc-item"><a href="#sec-dx-survey"><i class="fa-solid fa-clipboard-question" style="color:#2563eb;"></i> 15. 会社DX 関心度アンケート配信</a></li>
+                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 16. よくある質問・トラブルシューティング</a></li>
                     </ul>
                 </div>
             </aside>
@@ -213,6 +214,16 @@
                         <div class="summary-card-content">
                             <h3>Discord通知</h3>
                             <p>メッセージ受信や友だち追加、予約相談をDiscordチャンネルへリアルタイム通知＆直リンク返信。</p>
+                        </div>
+                    </a>
+
+                    <a href="#sec-slack-notify" class="summary-card">
+                        <div class="summary-icon-wrap" style="background: #fdf4ff; color: #4A154B;">
+                            <i class="fa-brands fa-slack"></i>
+                        </div>
+                        <div class="summary-card-content">
+                            <h3>Slack通知</h3>
+                            <p>LINEメッセージ受信や友だち追加、予約相談をSlackチャンネルへリアルタイム通知＆カルテ直通リンク。</p>
                         </div>
                     </a>
                 </div>
@@ -1009,14 +1020,69 @@
                     </div>
                 </section>
 
-                <!-- 14. 会社DX 関心度アンケート配信・自動ヒアリング機能 -->
+                <!-- 14. Slack通知設定（Incoming Webhook連携） -->
+                <section class="manual-section" id="sec-slack-notify">
+                    <div class="section-header">
+                        <div class="section-header-icon" style="background: #fdf4ff; color: #4A154B;">
+                            <i class="fa-brands fa-slack"></i>
+                        </div>
+                        <div class="section-header-text">
+                            <h2>14. Slack通知設定（Incoming Webhook連携）</h2>
+                            <p>LINEメッセージ受信や友だち追加、予約リクエストをSlackチャンネルへリアルタイム通知</p>
+                        </div>
+                    </div>
+
+                    <p>受講生からの新着LINEメッセージや新規友だち追加、予約・個別相談リクエストを、教室スタッフが使用しているSlackワークスペースの指定チャンネルへ即座にリッチカード（Block Kit形式）で通知します。<br>
+                    通知カード内には対象受講生の受講生名・送信者ID・受信日時・メッセージ本文引用と合わせて、「<strong>管理画面カルテを開く</strong>」直通ボタンが含まれており、Slackからワンクリックで該当受講生のカルテやチャット画面へジャンプできます。</p>
+
+                    <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <div class="step-body">
+                                <h4>Slack Incoming Webhook URLの取得</h4>
+                                <p>1. SlackのAppディレクトリ（またはSlack API Apps管理画面）で「<strong>Incoming WebHooks</strong>」アプリを開きます。<br>
+                                2. 「Slackに追加」をクリックし、通知を受信したいチャンネル（例: <code>#line-notify</code> 等）を選択します。<br>
+                                3. 発行された「<strong>Webhook URL</strong>（<code>https://hooks.slack.com/services/...</code>）」をコピーします。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <div class="step-body">
+                                <h4>管理画面でのWebhook登録と通知イベント選択</h4>
+                                <p>1. 管理画面上段のツールバーにある「<span style="color: #ECB22E; font-weight: bold;"><i class="fa-brands fa-slack"></i> Slack通知</span>」ボタンをクリックします。<br>
+                                2. コピーしたSlack Incoming Webhook URLを入力欄に貼り付けます。<br>
+                                3. 通知したいイベント（新着LINEメッセージ、新規友だち追加、予約・個別相談）のON/OFFチェックボックスを選択します。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">3</div>
+                            <div class="step-body">
+                                <h4>テスト通知送信と設定保存</h4>
+                                <p>「テスト通知を送信」ボタンをクリックすると、Slackチャンネルへ即座にテストカードメッセージが送信されます。<br>
+                                Slack上にメッセージが届いたことを確認したら、「設定を保存」ボタンをクリックして完了です。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="manual-alert-box tip" style="margin-top: 16px;">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <div>
+                            <strong>Discord通知との併用も可能</strong><br>
+                            本システムでは、Discord通知とSlack通知をそれぞれ独立して設定できます。スタッフによってDiscordを使うチーム・Slackを使うチームに分かれている場合でも、双方に同時にリアルタイム通知を届けることが可能です。
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 15. 会社DX 関心度アンケート配信・自動ヒアリング機能 -->
                 <section class="manual-section" id="sec-dx-survey">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #eff6ff; color: #2563eb;">
                             <i class="fa-solid fa-clipboard-question"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>14. 会社DX 関心度アンケート配信・自動ヒアリング機能</h2>
+                            <h2>15. 会社DX 関心度アンケート配信・自動ヒアリング機能</h2>
                             <p>LINEトーク画面上でワンタップ回答できる対話式アンケートと自動カルテ連携</p>
                         </div>
                     </div>
@@ -1062,7 +1128,7 @@
                                 <ul style="margin: 6px 0 0 16px; line-height: 1.7; font-size: 13px;">
                                     <li><strong>カルテ自動保存</strong>: 回答された内容は、顧客カルテの<strong>メモ欄（staff_memo）</strong>および<strong>最新やり取り（last_interaction）</strong>に「【会社DXアンケート回答】関心度: 大いにある / 関心テーマ: 生成AI社内活用」として自動追記・タイムスタンプ保存されます。</li>
                                     <li><strong>一覧テーブルでの回答済バッジ</strong>: アンケート回答済みの顧客には、一覧のメモ列に青い「📋 DXアンケート回答済」バッジが表示され、ひと目で未回答・回答済を判別できます。</li>
-                                    <li><strong>管理者LINE & Discord速報通知</strong>: 友だちが回答した瞬間に、管理者の個人LINEおよびDiscordへ「🏢 会社DX アンケート回答速報」が即時プッシュ通知されます。熱度の高い見込み客に対して即座に個別チャット等でアプローチできます。</li>
+                                    <li><strong>管理者LINE & Discord & Slack速報通知</strong>: 友だちが回答した瞬間に、管理者の個人LINE、DiscordおよびSlackへ「🏢 会社DX アンケート回答速報」が即時プッシュ通知されます。熱度の高い見込み客に対して即座に個別チャット等でアプローチできます。</li>
                                 </ul>
                             </div>
                         </div>
@@ -1077,14 +1143,14 @@
                     </div>
                 </section>
 
-                <!-- 15. よくある質問・トラブルシューティング -->
+                <!-- 16. よくある質問・トラブルシューティング -->
                 <section class="manual-section" id="sec-faq">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #fef2f2; color: #ef4444;">
                             <i class="fa-solid fa-circle-question"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>15. よくある質問・トラブルシューティング</h2>
+                            <h2>16. よくある質問・トラブルシューティング</h2>
                             <p>困ったときの解決方法</p>
                         </div>
                     </div>
@@ -1161,6 +1227,17 @@
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
+                                <h4>Slack通知が届かない場合は？</h4>
+                                <p>以下の項目をご確認ください：<br>
+                                1. 管理画面上部の「Slack通知」設定モーダルを開き、Incoming Webhook URL（<code>https://hooks.slack.com/services/...</code>）が正しく入力されているか確認してください。<br>
+                                2. 「テスト通知を送信」ボタンを押し、緑色の成功バナーが出るか確認してください（Slack側でWebhookが無効化されていたりアプリがアンインストールされている場合はエラーが表示されます）。<br>
+                                3. 送信したいイベント（メッセージ、友だち追加、予約相談）のチェックボックスがONになっているか確認してください。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">Q</div>
+                            <div class="step-body">
                                 <h4>日時の表示がずれていることはありませんか？</h4>
                                 <p>当システムはWebサーバー設定（`.htaccess`, `.user.ini`）、PHPスクリプト、データベース（SQLite）のすべてで<strong>日本標準時（JST / Asia/Tokyo）</strong>に統一されています。受講生のLINE操作やチャット送受信、リマインド送信など、すべて日本時間で正確に記録・配信されます。</p>
                             </div>
@@ -1204,6 +1281,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260918_fontsize180_v3"></script>
+    <script src="manual.js?v=20260918_slack_v1"></script>
 </body>
 </html>
