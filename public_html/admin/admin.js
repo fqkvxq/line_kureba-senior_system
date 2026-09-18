@@ -1156,7 +1156,7 @@ function initEventListeners() {
     // 帯の高さ設定（スライダー ⇄ 数値入力 ⇄ クイックチップ & 自動伸縮/固定モード）
     if (elements.userMenuBannerHeightInput) {
         elements.userMenuBannerHeightInput.addEventListener('input', (e) => {
-            const val = parseInt(e.target.value, 10) || 220;
+            const val = parseInt(e.target.value, 10) || 300;
             if (elements.userMenuBannerHeightNumber) elements.userMenuBannerHeightNumber.value = val;
             state.userMenuHeightMode = 'fixed';
             document.querySelectorAll('.btn-height-quick-chip').forEach(btn => {
@@ -1167,7 +1167,7 @@ function initEventListeners() {
     }
     if (elements.userMenuBannerHeightNumber) {
         elements.userMenuBannerHeightNumber.addEventListener('input', (e) => {
-            const val = Math.max(50, Math.min(1000, parseInt(e.target.value, 10) || 220));
+            const val = Math.max(50, Math.min(1000, parseInt(e.target.value, 10) || 300));
             if (elements.userMenuBannerHeightInput) elements.userMenuBannerHeightInput.value = val;
             state.userMenuHeightMode = 'fixed';
             document.querySelectorAll('.btn-height-quick-chip').forEach(btn => {
@@ -2706,10 +2706,12 @@ async function openUserRichMenuModal(cust) {
     // タップ案内ガイドはデフォルトOFF
     if (elements.userMenuShowTapHint) elements.userMenuShowTapHint.checked = false;
 
-    // 帯の高さモード初期化（デフォルトは自動伸縮）
-    state.userMenuHeightMode = 'auto';
+    // 帯の高さモード初期化（デフォルトは標準300px固定）
+    state.userMenuHeightMode = 'fixed';
+    if (elements.userMenuBannerHeightInput) elements.userMenuBannerHeightInput.value = 300;
+    if (elements.userMenuBannerHeightNumber) elements.userMenuBannerHeightNumber.value = 300;
     document.querySelectorAll('.btn-height-quick-chip').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.height === 'auto');
+        btn.classList.toggle('active', btn.dataset.height === '300');
     });
 
     // LINEリアルタイム表示ステータスの確認実行
@@ -2923,41 +2925,92 @@ function renderUserMenuPreview() {
     const pos = elements.userMenuPosSelect ? elements.userMenuPosSelect.value : 'top';
 
     // 文字フォントサイズ (20px 〜 250px)
-    let fontSize = 65;
+    let requestedFontSize = 65;
     if (elements.userMenuFontSizeNumber && elements.userMenuFontSizeNumber.value) {
-        fontSize = parseInt(elements.userMenuFontSizeNumber.value, 10) || 65;
+        requestedFontSize = parseInt(elements.userMenuFontSizeNumber.value, 10) || 65;
     } else if (elements.userMenuFontSizeInput && elements.userMenuFontSizeInput.value) {
-        fontSize = parseInt(elements.userMenuFontSizeInput.value, 10) || 65;
+        requestedFontSize = parseInt(elements.userMenuFontSizeInput.value, 10) || 65;
     }
-    fontSize = Math.max(20, Math.min(250, fontSize));
+    requestedFontSize = Math.max(20, Math.min(250, requestedFontSize));
 
-    // 帯の高さ設定（自動伸縮モード vs 高さ固定モード）
+    // 帯の高さ設定（自動伸縮モード vs 高さ固定モード: デフォルト300px）
     let isHeightAuto = (state.userMenuHeightMode !== 'fixed');
-    let specifiedHeight = 220;
+    let specifiedHeight = 300;
     if (elements.userMenuBannerHeightNumber && elements.userMenuBannerHeightNumber.value) {
-        specifiedHeight = parseInt(elements.userMenuBannerHeightNumber.value, 10) || 220;
+        specifiedHeight = parseInt(elements.userMenuBannerHeightNumber.value, 10) || 300;
     } else if (elements.userMenuBannerHeightInput && elements.userMenuBannerHeightInput.value) {
-        specifiedHeight = parseInt(elements.userMenuBannerHeightInput.value, 10) || 220;
+        specifiedHeight = parseInt(elements.userMenuBannerHeightInput.value, 10) || 300;
     }
     specifiedHeight = Math.max(50, Math.min(1000, specifiedHeight));
 
-    // 複数行テキストの分解
-    const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    if (lines.length === 0) return;
+    // 複数行段落の分解
+    const paragraphs = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    if (paragraphs.length === 0) return;
 
     const actionType = elements.userMenuBannerActionType ? elements.userMenuBannerActionType.value : 'mycar_liff';
     const showTapHint = elements.userMenuShowTapHint ? elements.userMenuShowTapHint.checked : false;
     const hasTapAction = actionType !== 'none';
 
-    // 帯の高さ計算（自動伸縮モード時は文字・行数から算出、高さ固定モード時は指定pxを厳格維持）
+    // 最大描画横幅（左右余白各90px）
+    const maxTextWidth = w - 180;
+
+    // --- 自動折り返し（Word Wrap） & 帯枠内フィット（Auto Font Scaling） ---
+    // 横幅を超えたら自然に折り返し、固定高さ内に収まりきらない場合はフォントサイズを縮小して完全に収める
+    let curFontSize = requestedFontSize;
+    const minFontSize = 20;
+    let finalLines = [];
+    let lineSpacing = curFontSize * 1.30;
+    let extraHintH = (hasTapAction && showTapHint) ? Math.round(curFontSize * 0.72) : 0;
+    let hintSpacing = (hasTapAction && showTapHint) ? Math.round(curFontSize * 0.85) : 0;
+    let textBlockH = 0;
+
+    const targetBannerH = isHeightAuto ? 0 : specifiedHeight;
+    // 上下パディング（文字サイズに応じた適度な余白）
+    const availableH = isHeightAuto ? 99999 : Math.max(40, targetBannerH - 36);
+
+    while (curFontSize >= minFontSize) {
+        ctx.font = `bold ${curFontSize}px "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif`;
+        lineSpacing = curFontSize * 1.30;
+        extraHintH = (hasTapAction && showTapHint) ? Math.round(curFontSize * 0.72) : 0;
+        hintSpacing = (hasTapAction && showTapHint) ? Math.round(curFontSize * 0.85) : 0;
+        finalLines = [];
+
+        for (const para of paragraphs) {
+            let currentLine = '';
+            for (let i = 0; i < para.length; i++) {
+                const char = para[i];
+                const testLine = currentLine + char;
+                const metrics = ctx.measureText(testLine);
+                if (metrics.width > maxTextWidth && currentLine.length > 0) {
+                    finalLines.push(currentLine);
+                    currentLine = char;
+                } else {
+                    currentLine = testLine;
+                }
+            }
+            if (currentLine.length > 0) {
+                finalLines.push(currentLine);
+            }
+        }
+
+        const totalLinesH = (finalLines.length - 1) * lineSpacing;
+        textBlockH = totalLinesH + curFontSize + extraHintH + hintSpacing;
+
+        // 高さ固定モード時は利用可能高さに収まっていれば決定、または自動伸縮時
+        if (isHeightAuto || textBlockH <= availableH) {
+            break;
+        }
+
+        // 収まらない場合はフォントサイズを2px下げて再試行
+        curFontSize -= 2;
+    }
+
+    const actualFontSize = curFontSize;
     let bannerH;
-    const extraHintH = (hasTapAction && showTapHint) ? Math.round(fontSize * 0.72) : 0;
-    const lineSpacing = fontSize * 1.32;
-    const textBlockH = ((lines.length - 1) * lineSpacing) + fontSize + extraHintH;
 
     if (isHeightAuto) {
         // auto: 行数とフォントサイズに応じて余白を最適化
-        bannerH = Math.max(120, Math.round(textBlockH + (fontSize * 0.92)));
+        bannerH = Math.max(140, Math.round(textBlockH + (actualFontSize * 0.85)));
         if (elements.userMenuBannerHeightNumber) {
             elements.userMenuBannerHeightNumber.value = bannerH;
         }
@@ -2970,10 +3023,11 @@ function renderUserMenuPreview() {
             elements.userMenuHeightModeBadge.style.color = '#4338ca';
         }
     } else {
-        // 高さ固定モード（px固定指定）: 文字サイズ可変でも高さは厳格固定
+        // 高さ固定モード（px固定指定: デフォルト300px）
         bannerH = specifiedHeight;
         if (elements.userMenuHeightModeBadge) {
-            elements.userMenuHeightModeBadge.textContent = `高さ固定 (${bannerH}px)`;
+            const sizeNotice = (actualFontSize < requestedFontSize) ? ` (自動縮小 ${actualFontSize}px)` : '';
+            elements.userMenuHeightModeBadge.textContent = `高さ固定 (${bannerH}px)${sizeNotice}`;
             elements.userMenuHeightModeBadge.style.background = '#fef3c7';
             elements.userMenuHeightModeBadge.style.color = '#b45309';
         }
@@ -3033,34 +3087,34 @@ function renderUserMenuPreview() {
     const isTextLight = isHexColorLight(textHex);
     if (isTextLight) {
         ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
-        ctx.shadowBlur = Math.min(16, Math.max(6, Math.round(fontSize * 0.16)));
+        ctx.shadowBlur = Math.min(16, Math.max(6, Math.round(actualFontSize * 0.16)));
         ctx.shadowOffsetY = 2;
     } else {
         ctx.shadowColor = 'rgba(255, 255, 255, 0.6)';
-        ctx.shadowBlur = Math.min(10, Math.max(4, Math.round(fontSize * 0.12)));
+        ctx.shadowBlur = Math.min(10, Math.max(4, Math.round(actualFontSize * 0.12)));
         ctx.shadowOffsetY = 1;
     }
 
-    ctx.font = `bold ${fontSize}px "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif`;
+    ctx.font = `bold ${actualFontSize}px "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif`;
 
-    const totalLinesH = (lines.length - 1) * lineSpacing;
+    const totalLinesH = (finalLines.length - 1) * lineSpacing;
     const vAlign = elements.userMenuTextAlignV ? elements.userMenuTextAlignV.value : 'center';
     const shiftY = (hasTapAction && showTapHint) ? -Math.round(extraHintH * 0.38) : 0;
 
     let startY;
     if (vAlign === 'top') {
-        startY = bannerY + Math.max(30, Math.round(fontSize * 0.75)) + (fontSize / 2) + shiftY;
+        startY = bannerY + Math.max(25, Math.round(actualFontSize * 0.70)) + (actualFontSize / 2) + shiftY;
     } else if (vAlign === 'bottom') {
-        const bottomPad = (hasTapAction && showTapHint) ? Math.round(extraHintH * 1.6) : Math.max(30, Math.round(fontSize * 0.75));
-        startY = (bannerY + bannerH) - bottomPad - totalLinesH - (fontSize / 2);
+        const bottomPad = (hasTapAction && showTapHint) ? Math.round(extraHintH * 1.5) : Math.max(25, Math.round(actualFontSize * 0.70));
+        startY = (bannerY + bannerH) - bottomPad - totalLinesH - (actualFontSize / 2);
     } else {
         // 中央揃え (標準)
         startY = ((bannerY + bannerH / 2) - (totalLinesH / 2)) + shiftY;
     }
 
-    lines.forEach((line, idx) => {
+    finalLines.forEach((line, idx) => {
         const lineY = startY + (idx * lineSpacing);
-        ctx.fillText(line, w / 2, lineY, w - 120);
+        ctx.fillText(line, w / 2, lineY); // 第4引数の強制長体縮小を使わずに自然描画
     });
 
     // タップ誘導ガイド（タップアクション有効時）
@@ -3076,9 +3130,9 @@ function renderUserMenuPreview() {
             hintLabel = '👆 タップしてリンクを開く';
         }
 
-        const hintFontSize = Math.max(24, Math.round(fontSize * 0.46));
+        const hintFontSize = Math.max(22, Math.round(actualFontSize * 0.46));
         ctx.font = `bold ${hintFontSize}px "Noto Sans JP", -apple-system, sans-serif`;
-        const hintY = startY + totalLinesH + (fontSize * 0.95);
+        const hintY = startY + totalLinesH + (actualFontSize * 0.90);
 
         // 半透明ピル背景
         const textWidth = ctx.measureText(hintLabel).width;
