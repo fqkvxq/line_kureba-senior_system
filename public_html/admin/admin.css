@@ -1876,8 +1876,9 @@ body {
     border-color: #0284c7;
 }
 
-/* 個別メッセージ帯 HEXカラー & 文字サイズ クイックチップ */
-.btn-size-quick-chip {
+/* 個別メッセージ帯 帯の高さ & 文字サイズ クイックチップ */
+.btn-size-quick-chip,
+.btn-height-quick-chip {
     background: #ffffff;
     border: 1px solid #cbd5e1;
     color: #475569;
@@ -1887,15 +1888,20 @@ body {
     border-radius: var(--radius-xs);
     cursor: pointer;
     transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
-.btn-size-quick-chip:hover {
+.btn-size-quick-chip:hover,
+.btn-height-quick-chip:hover {
     background: #eef2ff;
     border-color: #a5b4fc;
     color: #4338ca;
 }
 
-.btn-size-quick-chip.active {
+.btn-size-quick-chip.active,
+.btn-height-quick-chip.active {
     background: #4f46e5;
     border-color: #4f46e5;
     color: #ffffff;

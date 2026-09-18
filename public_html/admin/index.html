@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260916_col_picker_v1">
+    <link rel="stylesheet" href="admin.css?v=20260918_banner_height_fix">
 </head>
 <body>
     <!-- ログインモーダル (初期表示) -->
@@ -492,18 +492,43 @@
                                 <textarea id="userMenuTextInput" rows="2" placeholder="例: 山田様 次回車検は2026/10/20です！ご予約受付中" style="width: 100%; box-sizing: border-box; padding: 8px; font-size: 12.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);"></textarea>
                             </div>
 
-                            <!-- 文字サイズ & 帯の太さ設定 -->
+                            <!-- 帯の高さ設定（自動 ⇄ 高さ固定モード & px直接指定） -->
                             <div style="background: #f8fafc; padding: 10px 12px; border-radius: var(--radius-md); border: 1px solid #e2e8f0; margin-bottom: 10px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                                     <label style="font-size: 11px; font-weight: 700; color: #334155; margin: 0; display: flex; align-items: center; gap: 5px;">
-                                        <i class="fa-solid fa-text-height" style="color: #4f46e5;"></i> 文字フォントサイズ (20px〜220px)
+                                        <i class="fa-solid fa-arrows-up-down" style="color: #4f46e5;"></i> 帯の高さ (50px〜1000px)
+                                    </label>
+                                    <div style="display: flex; align-items: center; gap: 5px;">
+                                        <span id="userMenuHeightModeBadge" style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: var(--radius-xs); background: #e0e7ff; color: #4338ca;">自動伸縮</span>
+                                        <div style="display: flex; align-items: center; gap: 3px;">
+                                            <input type="number" id="userMenuBannerHeightNumber" min="50" max="1000" step="5" value="220" style="width: 55px; text-align: center; padding: 2px 4px; font-size: 11.5px; font-weight: 800; color: #4f46e5; border: 1px solid #c7d2fe; border-radius: var(--radius-xs); background: #fff;">
+                                            <span style="font-size: 11px; font-weight: 700; color: #64748b;">px</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="range" id="userMenuBannerHeightInput" min="50" max="1000" step="5" value="220" style="width: 100%; accent-color: #4f46e5; cursor: pointer;">
+                                <div class="banner-height-quick-chips" style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;">
+                                    <button type="button" class="btn-height-quick-chip active" data-height="auto" id="chipHeightAuto"><i class="fa-solid fa-wand-magic-sparkles"></i> 自動伸縮</button>
+                                    <button type="button" class="btn-height-quick-chip" data-height="150">細め 150px</button>
+                                    <button type="button" class="btn-height-quick-chip" data-height="220">標準 220px</button>
+                                    <button type="button" class="btn-height-quick-chip" data-height="320">太め 320px</button>
+                                    <button type="button" class="btn-height-quick-chip" data-height="450">特大 450px</button>
+                                    <button type="button" class="btn-height-quick-chip" data-height="600">極太 600px</button>
+                                </div>
+                            </div>
+
+                            <!-- 文字フォントサイズ設定 -->
+                            <div style="background: #f8fafc; padding: 10px 12px; border-radius: var(--radius-md); border: 1px solid #e2e8f0; margin-bottom: 10px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                    <label style="font-size: 11px; font-weight: 700; color: #334155; margin: 0; display: flex; align-items: center; gap: 5px;">
+                                        <i class="fa-solid fa-text-height" style="color: #4f46e5;"></i> 文字フォントサイズ (20px〜250px)
                                     </label>
                                     <div style="display: flex; align-items: center; gap: 4px;">
-                                        <input type="number" id="userMenuFontSizeNumber" min="20" max="220" step="1" value="65" style="width: 55px; text-align: center; padding: 2px 4px; font-size: 11.5px; font-weight: 800; color: #4f46e5; border: 1px solid #c7d2fe; border-radius: var(--radius-xs); background: #fff;">
+                                        <input type="number" id="userMenuFontSizeNumber" min="20" max="250" step="1" value="65" style="width: 55px; text-align: center; padding: 2px 4px; font-size: 11.5px; font-weight: 800; color: #4f46e5; border: 1px solid #c7d2fe; border-radius: var(--radius-xs); background: #fff;">
                                         <span style="font-size: 11px; font-weight: 700; color: #64748b;">px</span>
                                     </div>
                                 </div>
-                                <input type="range" id="userMenuFontSizeInput" min="20" max="220" step="1" value="65" style="width: 100%; accent-color: #4f46e5; cursor: pointer;">
+                                <input type="range" id="userMenuFontSizeInput" min="20" max="250" step="1" value="65" style="width: 100%; accent-color: #4f46e5; cursor: pointer;">
                                 <div class="font-size-quick-chips" style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;">
                                     <button type="button" class="btn-size-quick-chip" data-size="40">極小 40px</button>
                                     <button type="button" class="btn-size-quick-chip active" data-size="65">標準 65px</button>
@@ -566,22 +591,21 @@
                                 </div>
                             </div>
 
-                            <!-- 配置位置 & 帯の太さ -->
+                            <!-- 配置位置 & 文字の上下揃え -->
                             <div class="form-row" style="display: flex; gap: 10px; margin-bottom: 0;">
                                 <div style="flex: 1;">
-                                    <label style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">配置位置</label>
-                                    <select id="userMenuPosSelect" style="width: 100%; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
+                                    <label style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">帯の配置位置</label>
+                                    <select id="userMenuPosSelect" style="width: 100%; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); background: #fff;">
                                         <option value="top">上部テロップ帯</option>
                                         <option value="bottom">下部テロップ帯</option>
                                     </select>
                                 </div>
                                 <div style="flex: 1;">
-                                    <label style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">帯の太さ</label>
-                                    <select id="userMenuBannerHeightSelect" style="width: 100%; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); background: #fff;">
-                                        <option value="auto" selected>自動 (文字に合わせる)</option>
-                                        <option value="compact">細め (約140px)</option>
-                                        <option value="standard">標準 (約185px)</option>
-                                        <option value="wide">太め (約240px)</option>
+                                    <label style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">文字の上下配置</label>
+                                    <select id="userMenuTextAlignV" style="width: 100%; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); background: #fff;">
+                                        <option value="center" selected>中央揃え (標準)</option>
+                                        <option value="top">上揃え (余白付き)</option>
+                                        <option value="bottom">下揃え (余白付き)</option>
                                     </select>
                                 </div>
                             </div>
@@ -1479,6 +1503,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260916_col_picker_v1"></script>
+    <script src="admin.js?v=20260918_banner_height_fix"></script>
 </body>
 </html>

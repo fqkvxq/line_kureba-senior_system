@@ -12,6 +12,7 @@ const state = {
     activeUserMenuCust: null,
     loadedBaseImg: null,
     userMenuBannerBounds: null,
+    userMenuHeightMode: 'auto',
     // マルチアカウント管理
     activeAccount: localStorage.getItem('active_line_account') || 'senior',
     accounts: [],
@@ -224,7 +225,11 @@ const elements = {
     userMenuTextColorPicker: document.getElementById('userMenuTextColorPicker'),
     userMenuTextColorHex: document.getElementById('userMenuTextColorHex'),
     userMenuGradientToggle: document.getElementById('userMenuGradientToggle'),
-    userMenuBannerHeightSelect: document.getElementById('userMenuBannerHeightSelect'),
+    userMenuBannerHeightInput: document.getElementById('userMenuBannerHeightInput'),
+    userMenuBannerHeightNumber: document.getElementById('userMenuBannerHeightNumber'),
+    userMenuHeightModeBadge: document.getElementById('userMenuHeightModeBadge'),
+    chipHeightAuto: document.getElementById('chipHeightAuto'),
+    userMenuTextAlignV: document.getElementById('userMenuTextAlignV'),
     userMenuBannerActionType: document.getElementById('userMenuBannerActionType'),
     userMenuBannerUriRow: document.getElementById('userMenuBannerUriRow'),
     userMenuBannerUriInput: document.getElementById('userMenuBannerUriInput'),
@@ -1148,8 +1153,48 @@ function initEventListeners() {
         });
     });
 
-    if (elements.userMenuBannerHeightSelect) {
-        elements.userMenuBannerHeightSelect.addEventListener('change', renderUserMenuPreview);
+    // 帯の高さ設定（スライダー ⇄ 数値入力 ⇄ クイックチップ & 自動伸縮/固定モード）
+    if (elements.userMenuBannerHeightInput) {
+        elements.userMenuBannerHeightInput.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value, 10) || 220;
+            if (elements.userMenuBannerHeightNumber) elements.userMenuBannerHeightNumber.value = val;
+            state.userMenuHeightMode = 'fixed';
+            document.querySelectorAll('.btn-height-quick-chip').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.height, 10) === val);
+            });
+            renderUserMenuPreview();
+        });
+    }
+    if (elements.userMenuBannerHeightNumber) {
+        elements.userMenuBannerHeightNumber.addEventListener('input', (e) => {
+            const val = Math.max(50, Math.min(1000, parseInt(e.target.value, 10) || 220));
+            if (elements.userMenuBannerHeightInput) elements.userMenuBannerHeightInput.value = val;
+            state.userMenuHeightMode = 'fixed';
+            document.querySelectorAll('.btn-height-quick-chip').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.height, 10) === val);
+            });
+            renderUserMenuPreview();
+        });
+    }
+    // 帯の高さ クイックチップ
+    document.querySelectorAll('.btn-height-quick-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const heightAttr = btn.dataset.height;
+            if (heightAttr === 'auto') {
+                state.userMenuHeightMode = 'auto';
+            } else {
+                state.userMenuHeightMode = 'fixed';
+                const h = parseInt(heightAttr, 10);
+                if (elements.userMenuBannerHeightInput) elements.userMenuBannerHeightInput.value = h;
+                if (elements.userMenuBannerHeightNumber) elements.userMenuBannerHeightNumber.value = h;
+            }
+            document.querySelectorAll('.btn-height-quick-chip').forEach(b => b.classList.toggle('active', b === btn));
+            renderUserMenuPreview();
+        });
+    });
+
+    if (elements.userMenuTextAlignV) {
+        elements.userMenuTextAlignV.addEventListener('change', renderUserMenuPreview);
     }
     if (elements.btnReloadBaseMenus) {
         elements.btnReloadBaseMenus.addEventListener('click', async () => {
@@ -2661,6 +2706,12 @@ async function openUserRichMenuModal(cust) {
     // タップ案内ガイドはデフォルトOFF
     if (elements.userMenuShowTapHint) elements.userMenuShowTapHint.checked = false;
 
+    // 帯の高さモード初期化（デフォルトは自動伸縮）
+    state.userMenuHeightMode = 'auto';
+    document.querySelectorAll('.btn-height-quick-chip').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.height === 'auto');
+    });
+
     // LINEリアルタイム表示ステータスの確認実行
     checkUserRealtimeMenuStatus(cust.user_id);
 
@@ -2871,16 +2922,24 @@ function renderUserMenuPreview() {
     const useGradient = elements.userMenuGradientToggle ? elements.userMenuGradientToggle.checked : true;
     const pos = elements.userMenuPosSelect ? elements.userMenuPosSelect.value : 'top';
 
-    // 文字フォントサイズ (20px 〜 220px)
+    // 文字フォントサイズ (20px 〜 250px)
     let fontSize = 65;
     if (elements.userMenuFontSizeNumber && elements.userMenuFontSizeNumber.value) {
         fontSize = parseInt(elements.userMenuFontSizeNumber.value, 10) || 65;
     } else if (elements.userMenuFontSizeInput && elements.userMenuFontSizeInput.value) {
         fontSize = parseInt(elements.userMenuFontSizeInput.value, 10) || 65;
     }
-    fontSize = Math.max(20, Math.min(220, fontSize));
+    fontSize = Math.max(20, Math.min(250, fontSize));
 
-    const heightSetting = elements.userMenuBannerHeightSelect ? elements.userMenuBannerHeightSelect.value : 'auto';
+    // 帯の高さ設定（自動伸縮モード vs 高さ固定モード）
+    let isHeightAuto = (state.userMenuHeightMode !== 'fixed');
+    let specifiedHeight = 220;
+    if (elements.userMenuBannerHeightNumber && elements.userMenuBannerHeightNumber.value) {
+        specifiedHeight = parseInt(elements.userMenuBannerHeightNumber.value, 10) || 220;
+    } else if (elements.userMenuBannerHeightInput && elements.userMenuBannerHeightInput.value) {
+        specifiedHeight = parseInt(elements.userMenuBannerHeightInput.value, 10) || 220;
+    }
+    specifiedHeight = Math.max(50, Math.min(1000, specifiedHeight));
 
     // 複数行テキストの分解
     const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
@@ -2890,20 +2949,34 @@ function renderUserMenuPreview() {
     const showTapHint = elements.userMenuShowTapHint ? elements.userMenuShowTapHint.checked : false;
     const hasTapAction = actionType !== 'none';
 
-    // 帯の高さ計算（文字サイズ・行数・帯の太さ・タップ案内設定を考慮）
+    // 帯の高さ計算（自動伸縮モード時は文字・行数から算出、高さ固定モード時は指定pxを厳格維持）
     let bannerH;
     const extraHintH = (hasTapAction && showTapHint) ? Math.round(fontSize * 0.72) : 0;
-    if (heightSetting === 'compact') {
-        bannerH = Math.max(Math.round(fontSize * 1.5) + extraHintH, 130);
-    } else if (heightSetting === 'standard') {
-        bannerH = Math.max(Math.round(fontSize * 1.8) + extraHintH, 175);
-    } else if (heightSetting === 'wide') {
-        bannerH = Math.max(Math.round(fontSize * 2.3) + extraHintH, 230);
-    } else {
+    const lineSpacing = fontSize * 1.32;
+    const textBlockH = ((lines.length - 1) * lineSpacing) + fontSize + extraHintH;
+
+    if (isHeightAuto) {
         // auto: 行数とフォントサイズに応じて余白を最適化
-        const lineSpacing = fontSize * 1.32;
-        const textBlockH = (lines.length * lineSpacing) + extraHintH;
-        bannerH = Math.max(140, Math.round(textBlockH + (fontSize * 0.92)));
+        bannerH = Math.max(120, Math.round(textBlockH + (fontSize * 0.92)));
+        if (elements.userMenuBannerHeightNumber) {
+            elements.userMenuBannerHeightNumber.value = bannerH;
+        }
+        if (elements.userMenuBannerHeightInput) {
+            elements.userMenuBannerHeightInput.value = bannerH;
+        }
+        if (elements.userMenuHeightModeBadge) {
+            elements.userMenuHeightModeBadge.textContent = `自動伸縮 (${bannerH}px)`;
+            elements.userMenuHeightModeBadge.style.background = '#e0e7ff';
+            elements.userMenuHeightModeBadge.style.color = '#4338ca';
+        }
+    } else {
+        // 高さ固定モード（px固定指定）: 文字サイズ可変でも高さは厳格固定
+        bannerH = specifiedHeight;
+        if (elements.userMenuHeightModeBadge) {
+            elements.userMenuHeightModeBadge.textContent = `高さ固定 (${bannerH}px)`;
+            elements.userMenuHeightModeBadge.style.background = '#fef3c7';
+            elements.userMenuHeightModeBadge.style.color = '#b45309';
+        }
     }
 
     const bannerY = (pos === 'top') ? 0 : (h - bannerH);
@@ -2970,11 +3043,20 @@ function renderUserMenuPreview() {
 
     ctx.font = `bold ${fontSize}px "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif`;
 
-    const lineSpacing = fontSize * 1.32;
     const totalLinesH = (lines.length - 1) * lineSpacing;
-    // タップガイド表示がある場合は少し上寄りに配置
+    const vAlign = elements.userMenuTextAlignV ? elements.userMenuTextAlignV.value : 'center';
     const shiftY = (hasTapAction && showTapHint) ? -Math.round(extraHintH * 0.38) : 0;
-    const startY = ((bannerY + bannerH / 2) - (totalLinesH / 2)) + shiftY;
+
+    let startY;
+    if (vAlign === 'top') {
+        startY = bannerY + Math.max(30, Math.round(fontSize * 0.75)) + (fontSize / 2) + shiftY;
+    } else if (vAlign === 'bottom') {
+        const bottomPad = (hasTapAction && showTapHint) ? Math.round(extraHintH * 1.6) : Math.max(30, Math.round(fontSize * 0.75));
+        startY = (bannerY + bannerH) - bottomPad - totalLinesH - (fontSize / 2);
+    } else {
+        // 中央揃え (標準)
+        startY = ((bannerY + bannerH / 2) - (totalLinesH / 2)) + shiftY;
+    }
 
     lines.forEach((line, idx) => {
         const lineY = startY + (idx * lineSpacing);

@@ -40,7 +40,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260916_col_picker_v1">
+    <link rel="stylesheet" href="manual.css?v=20260918_banner_height_fix">
 </head>
 <body>
     <!-- ログインモーダル -->
@@ -541,10 +541,13 @@
                         <div class="step-card">
                             <div class="step-number">B</div>
                             <div class="step-body">
-                                <h4>HEXカラー指定（文字色・背景色）& フォントサイズの自由調整</h4>
-                                <p><strong>・帯の背景色 (HEX)</strong>: カラーピッカーでの直感選択に加え、<code>#ff8700</code>（デフォルト：オレンジ）などの<strong>16進数HEXカラーコードを直接手入力</strong>可能。定番プリセット（オレンジ・赤・青・緑・ゴールド・黒・紫・ピンク・白）もワンタップで選択できます。<br>
-                                <strong>・帯の文字色 (HEX)</strong>: 文字色も同様にHEXコード（白 <code>#ffffff</code>、黒 <code>#0f172a</code>、黄 <code>#facc15</code> など）を自由に指定でき、どんな背景色に対しても最適なコントラストを保てます。<br>
-                                <strong>・文字フォントサイズ (20px〜220px)</strong>: スライダー操作に加え、<strong>直接数値入力ボックス</strong>（例: 85px、140pxなど）を完備。ワンクリックのサイズチップ（極小40px、標準65px、大90px、特大130px、超特大180px）も備え、極小注記から超特大テロップまで自在に調整可能です。<br>
+                                <h4>帯の高さ固定モード（px直接指定）& 文字サイズ・HEXカラー・上下配置の自由調整</h4>
+                                <p><strong>・帯の高さ設定（自動伸縮 ⇄ 高さ固定モード & px直接指定）</strong>:<br>
+                                「<strong>✨ 自動伸縮</strong>」モードでは、文字サイズや行数に合わせて最適な高さに自動で伸び縮みします。<br>
+                                「<strong>高さ固定モード</strong>」では、スライダーや数値入力（50px〜1000px）、またはクイックチップ（細め150px、標準220px、太め320px、特大450px、極太600px）で<strong>帯の高さを指定して厳格に固定</strong>できます。帯の高さを固定したまま文字サイズ（20px〜250px）を自由に拡大・縮小したり複数行の文章を入れられるため、既存リッチメニューのボタン領域を邪魔しない好みのレイアウトを完璧に実現できます。<br>
+                                <strong>・文字フォントサイズ (20px〜250px)</strong>: スライダー操作に加え、<strong>直接数値入力ボックス</strong>（例: 85px、140pxなど）を完備。ワンクリックのサイズチップ（極小40px、標準65px、大90px、特大130px、超特大180px）も備え、極小注記から超特大テロップまで自在に調整可能です。<br>
+                                <strong>・文字の上下配置（垂直アライメント）</strong>: 中央揃え（標準）、上揃え、下揃えを選択可能。固定した帯の中で文字を好みの位置に美しく配置できます。<br>
+                                <strong>・帯の背景色 (HEX) & 文字色 (HEX)</strong>: カラーピッカーでの直感選択に加え、<code>#ff8700</code>（デフォルト：オレンジ）などの<strong>16進数HEXカラーコードを直接手入力</strong>可能。定番プリセット（オレンジ・赤・青・緑・ゴールド・黒・紫・ピンク・白）もワンタップで選択できます。<br>
                                 <strong>・立体グラデーション効果</strong>: チェックを付けると自然な陰影と高級感のある立体グラデーションが自動適用され、外すとフラットな単色で焼き込みされます。<br>
                                 <strong>・タップ誘導ガイド表示</strong>: チェックを入れると画像上に「👆 タップして開く」の小さな誘導ガイドが焼き込まれます（メッセージをすっきり見せるため<strong>初期設定はデフォルトでOFF</strong>になっています。必要に応じてONに切り替えてご利用ください）。</p>
                             </div>
@@ -1200,6 +1203,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260916_col_picker_v1"></script>
+    <script src="manual.js?v=20260918_banner_height_fix"></script>
 </body>
 </html>
