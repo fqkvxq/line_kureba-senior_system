@@ -37,6 +37,8 @@ const state = {
     historyList: [],
     currentLineDefaultId: null,
     historyFilter: 'all', // 'all' | 'normal' | 'notice'
+    historyPage: 1,
+    historyPerPage: 9,
     activeNoticeId: null,
 
     // 既存メニュー編集中状態
@@ -286,6 +288,10 @@ const elements = {
     countFilterNormal: document.getElementById('countFilterNormal'),
     countFilterNotice: document.getElementById('countFilterNotice'),
     filterTabs: document.querySelectorAll('.btn-filter-tab'),
+    historyPaginationBar: document.getElementById('historyPaginationBar'),
+    historyPaginationInfoText: document.getElementById('historyPaginationInfoText'),
+    historyPageSizeSelect: document.getElementById('historyPageSizeSelect'),
+    historyPaginationNav: document.getElementById('historyPaginationNav'),
 
     // ローディング & トースト
     loadingOverlay: document.getElementById('loadingOverlay'),
@@ -1113,8 +1119,19 @@ function initEventListeners() {
                 elements.filterTabs.forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
                 state.historyFilter = tab.dataset.filter || 'all';
+                state.historyPage = 1;
                 renderHistoryList();
             });
+        });
+    }
+
+    // 履歴ページネーション 表示件数切り替え
+    if (elements.historyPageSizeSelect) {
+        elements.historyPageSizeSelect.addEventListener('change', (e) => {
+            const val = e.target.value;
+            state.historyPerPage = (val === 'all') ? 'all' : parseInt(val, 10);
+            state.historyPage = 1;
+            renderHistoryList();
         });
     }
 
@@ -3216,12 +3233,33 @@ function renderHistoryList() {
 
     if (filteredList.length === 0) {
         elements.historyEmpty.style.display = 'block';
+        if (elements.historyPaginationBar) elements.historyPaginationBar.style.display = 'none';
         return;
     }
 
     elements.historyEmpty.style.display = 'none';
 
-    filteredList.forEach(item => {
+    // ページネーション計算
+    const totalItems = filteredList.length;
+    const perPage = state.historyPerPage;
+    const isAll = (perPage === 'all' || perPage >= totalItems);
+    const totalPages = isAll ? 1 : Math.max(1, Math.ceil(totalItems / perPage));
+
+    if (state.historyPage > totalPages) {
+        state.historyPage = totalPages;
+    }
+    if (state.historyPage < 1) {
+        state.historyPage = 1;
+    }
+
+    const startIndex = isAll ? 0 : (state.historyPage - 1) * perPage;
+    const endIndex = isAll ? totalItems : Math.min(totalItems, startIndex + perPage);
+    const pageItems = filteredList.slice(startIndex, endIndex);
+
+    // ページネーションUIの描画
+    renderHistoryPagination(totalItems, totalPages, startIndex, endIndex);
+
+    pageItems.forEach(item => {
         const isLive = (item.is_active == 1 || (item.line_menu_id && item.line_menu_id === state.currentLineDefaultId));
         const isNotice = (item.is_notice == 1);
         const isActiveNotice = (isNotice && state.activeNoticeId && item.id == state.activeNoticeId);
@@ -3377,6 +3415,117 @@ function renderHistoryList() {
 
         elements.historyGrid.appendChild(card);
     });
+}
+
+function renderHistoryPagination(totalItems, totalPages, startIndex, endIndex) {
+    if (!elements.historyPaginationBar) return;
+
+    if (totalItems <= 0) {
+        elements.historyPaginationBar.style.display = 'none';
+        return;
+    }
+
+    elements.historyPaginationBar.style.display = 'flex';
+    if (elements.historyPaginationInfoText) {
+        if (totalItems === 0) {
+            elements.historyPaginationInfoText.textContent = '0件';
+        } else {
+            elements.historyPaginationInfoText.textContent = `${startIndex + 1}〜${endIndex}件を表示中 (全${totalItems}件)`;
+        }
+    }
+
+    if (!elements.historyPaginationNav) return;
+    elements.historyPaginationNav.innerHTML = '';
+
+    if (totalPages <= 1) {
+        return;
+    }
+
+    const currentPage = state.historyPage;
+
+    // 前へボタン
+    const prevBtn = document.createElement('button');
+    prevBtn.type = 'button';
+    prevBtn.className = 'page-btn page-btn-prev' + (currentPage === 1 ? ' disabled' : '');
+    prevBtn.disabled = (currentPage === 1);
+    prevBtn.innerHTML = '<i class="fa-solid fa-chevron-left"></i> 前へ';
+    prevBtn.addEventListener('click', () => {
+        if (state.historyPage > 1) {
+            state.historyPage--;
+            renderHistoryList();
+            elements.historyGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+    elements.historyPaginationNav.appendChild(prevBtn);
+
+    // ページ番号ボタン
+    const maxButtons = 7;
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+    if (endPage - startPage < maxButtons - 1) {
+        startPage = Math.max(1, endPage - maxButtons + 1);
+    }
+
+    if (startPage > 1) {
+        const firstBtn = createHistoryPageBtn(1, currentPage);
+        elements.historyPaginationNav.appendChild(firstBtn);
+        if (startPage > 2) {
+            const ellipsis = document.createElement('span');
+            ellipsis.className = 'page-ellipsis';
+            ellipsis.textContent = '…';
+            elements.historyPaginationNav.appendChild(ellipsis);
+        }
+    }
+
+    for (let p = startPage; p <= endPage; p++) {
+        const pageBtn = createHistoryPageBtn(p, currentPage);
+        elements.historyPaginationNav.appendChild(pageBtn);
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            const ellipsis = document.createElement('span');
+            ellipsis.className = 'page-ellipsis';
+            ellipsis.textContent = '…';
+            elements.historyPaginationNav.appendChild(ellipsis);
+        }
+        const lastBtn = createHistoryPageBtn(totalPages, currentPage);
+        elements.historyPaginationNav.appendChild(lastBtn);
+    }
+
+    // 次へボタン
+    const nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className = 'page-btn page-btn-next' + (currentPage === totalPages ? ' disabled' : '');
+    nextBtn.disabled = (currentPage === totalPages);
+    nextBtn.innerHTML = '次へ <i class="fa-solid fa-chevron-right"></i>';
+    nextBtn.addEventListener('click', () => {
+        if (state.historyPage < totalPages) {
+            state.historyPage++;
+            renderHistoryList();
+            elements.historyGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+    elements.historyPaginationNav.appendChild(nextBtn);
+}
+
+function createHistoryPageBtn(page, currentPage) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'page-btn' + (page === currentPage ? ' active' : '');
+    btn.textContent = String(page);
+    if (page === currentPage) {
+        btn.setAttribute('aria-current', 'page');
+    }
+    btn.addEventListener('click', () => {
+        if (state.historyPage !== page) {
+            state.historyPage = page;
+            renderHistoryList();
+            elements.historyGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+    return btn;
 }
 
 function applyMenuToLive(id, title) {

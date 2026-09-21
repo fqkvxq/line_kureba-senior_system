@@ -463,6 +463,25 @@
                     <!-- JSで動的生成 -->
                 </div>
 
+                <!-- ページネーション コントロール -->
+                <div class="pagination-bar" id="historyPaginationBar" style="display: none; margin-top: 24px;">
+                    <div class="pagination-left">
+                        <span class="pagination-info" id="historyPaginationInfoText">1〜9件を表示中 (全0件)</span>
+                        <div class="page-size-wrap">
+                            <label for="historyPageSizeSelect">表示件数:</label>
+                            <select id="historyPageSizeSelect" class="form-select page-size-select">
+                                <option value="6">6件</option>
+                                <option value="9" selected>9件</option>
+                                <option value="18">18件</option>
+                                <option value="all">全件</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="pagination-nav" id="historyPaginationNav">
+                        <!-- JSで動的生成 -->
+                    </div>
+                </div>
+
                 <div class="history-empty" id="historyEmpty" style="display: none;">
                     <i class="fa-solid fa-folder-open"></i>
                     <p>保存されたリッチメニューがまだありません。「メニュー作成・エディタ」から新しく作成してみましょう！</p>
@@ -853,6 +872,6 @@
     <!-- トースト通知 -->
     <div class="toast-notification" id="adminToast"></div>
 
-    <script src="richmenu.js?v=20260921_dbname_v1"></script>
+    <script src="richmenu.js?v=20260921_pagination_v1"></script>
 </body>
 </html>
