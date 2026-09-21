@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
-# アップファーレン サーバー設定 (.htaccess)
-# タイムゾーンを日本時間(JST / Asia/Tokyo)に設定
+# ルートディレクトリルール (.htaccess)
+# URLから /public_html/ を完全除去し、直接 /admin/ や /webhook.php でアクセス可能にする設定
 # ------------------------------------------------------------------------------
 SetEnv TZ Asia/Tokyo
 
@@ -14,11 +14,9 @@ SetEnv TZ Asia/Tokyo
     php_value date.timezone "Asia/Tokyo"
 </IfModule>
 
-# ------------------------------------------------------------------------------
-# FastCGI / Xserver環境向け: HTTP認証ヘッダーおよびカスタムヘッダー転送設定
-# ------------------------------------------------------------------------------
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteBase /
 
     # FastCGI / Xserver環境向け: HTTP認証ヘッダーおよびカスタムヘッダー転送設定
     RewriteCond %{HTTP:Authorization} ^(.*)
@@ -28,13 +26,22 @@ SetEnv TZ Asia/Tokyo
     RewriteCond %{HTTP:X-Line-Account} ^(.*)
     RewriteRule .* - [e=HTTP_X_LINE_ACCOUNT:%1]
 
-    # ブラウザから /public_html/... にアクセスされた場合は URL から /public_html を外して301リダイレクト
+    # 1. ブラウザから /public_html/... に直接アクセスされた場合は URL から /public_html を外して301リダイレクト
     RewriteCond %{THE_REQUEST} \s/+public_html/([^\s?]*) [NC]
-    RewriteRule ^(.*)$ /%1 [R=301,L,NE]
+    RewriteRule ^public_html/(.*)$ /$1 [R=301,L,NE]
+
+    # 2. ドメイン直下（/）へのアクセスは管理画面（/admin/index.html）へ
+    RewriteRule ^$ public_html/admin/index.html [L]
+
+    # 3. リクエストされたURLを内部的に public_html/ 以下のファイル・ディレクトリに転送
+    RewriteCond %{REQUEST_URI} !^/public_html/
+    RewriteCond %{DOCUMENT_ROOT}/public_html/$1 -f [OR]
+    RewriteCond %{DOCUMENT_ROOT}/public_html/$1 -d
+    RewriteRule ^(.*)$ public_html/$1 [L]
 </IfModule>
+
 <IfModule mod_setenvif.c>
     SetEnvIfNoCase Authorization "(.*)" HTTP_AUTHORIZATION=$1
     SetEnvIfNoCase X-Admin-Password "(.*)" HTTP_X_ADMIN_PASSWORD=$1
     SetEnvIfNoCase X-Line-Account "(.*)" HTTP_X_LINE_ACCOUNT=$1
 </IfModule>
-

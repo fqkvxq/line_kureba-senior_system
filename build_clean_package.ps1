@@ -24,6 +24,14 @@ Write-Host "--> Copying source files..." -ForegroundColor Green
 Copy-Item -Path (Join-Path $currentDir "public_html") -Destination $tempStaging -Recurse
 Copy-Item -Path (Join-Path $currentDir "batch") -Destination $tempStaging -Recurse
 
+$rootHtaccess = Join-Path $currentDir ".htaccess"
+if (Test-Path $rootHtaccess) {
+    Copy-Item -Path $rootHtaccess -Destination $tempStaging
+}
+$rootIndex = Join-Path $currentDir "index.php"
+if (Test-Path $rootIndex) {
+    Copy-Item -Path $rootIndex -Destination $tempStaging
+}
 $setupGuide = Join-Path $currentDir "SETUP_GUIDE.md"
 if (Test-Path $setupGuide) {
     Copy-Item -Path $setupGuide -Destination $tempStaging

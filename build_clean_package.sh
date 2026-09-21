@@ -16,6 +16,8 @@ mkdir -p "${TEMP_STAGING}" "${DIST_DIR}"
 echo "--> ソースコードをステージングへコピー中..."
 cp -R "${CURRENT_DIR}/public_html" "${TEMP_STAGING}/"
 cp -R "${CURRENT_DIR}/batch" "${TEMP_STAGING}/"
+[ -f "${CURRENT_DIR}/.htaccess" ] && cp "${CURRENT_DIR}/.htaccess" "${TEMP_STAGING}/"
+[ -f "${CURRENT_DIR}/index.php" ] && cp "${CURRENT_DIR}/index.php" "${TEMP_STAGING}/"
 [ -f "${CURRENT_DIR}/SETUP_GUIDE.md" ] && cp "${CURRENT_DIR}/SETUP_GUIDE.md" "${TEMP_STAGING}/"
 [ -f "${CURRENT_DIR}/README.md" ] && cp "${CURRENT_DIR}/README.md" "${TEMP_STAGING}/"
 

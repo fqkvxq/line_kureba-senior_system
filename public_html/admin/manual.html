@@ -1403,7 +1403,7 @@
                                 <p>以下の3点をご確認ください：<br>
                                 1. 管理画面右上の「プロライン連携」モーダルを開き、「プロライン転送を有効にする」にチェックが入っているか確認してください。<br>
                                 2. 「疎通テスト送信」を実行し、HTTPステータス200が返るか確認してください。<br>
-                                3. ブラウザで <code>https://あなたのドメイン/public_html/webhook.php</code> を開き、プロライン転送ログを確認してください（転送失敗時はエラーコードが表示されます）。</p>
+                                3. ブラウザで <code>https://あなたのドメイン/webhook.php</code> を開き、プロライン転送ログを確認してください（転送失敗時はエラーコードが表示されます）。</p>
                             </div>
                         </div>
 
@@ -1499,6 +1499,14 @@
                                 <strong>検索デバウンス処理</strong>：検索ボックス入力時に過剰な再描画が発生しないよう、キー入力のタイピング完了を自動待機（250ms）してから絞り込みを実行するため、日本語入力中でもスムーズに検索できます。</p>
                             </div>
                         </div>
+                        <div class="step-card">
+                            <div class="step-number">Q</div>
+                            <div class="step-body">
+                                <h4>URLから「/public_html/」を外して運用するには？</h4>
+                                <p><strong>1. レンタルサーバー公開ディレクトリへの配置（推奨）</strong>：エックスサーバーやロリポップ！等の公開フォルダ（<code>public_html/</code> や <code>htdocs/</code>）の「中身」に、パッケージの <code>public_html/</code> フォルダ内の各ファイル・フォルダ（<code>admin/</code>, <code>liff/</code>, <code>webhook.php</code>, <code>setup.php</code> 等）を直接配置します。これにより <code>https://あなたのドメイン/admin/</code> や <code>https://あなたのドメイン/setup.php</code> で直接アクセスできます。<br>
+                                <strong>2. ルート .htaccess による自動消去・内部転送</strong>：プロジェクトフォルダごと丸ごとアップロードした場合でも、同梱のルート <code>.htaccess</code> により、<code>/public_html/</code> 付きのアクセスは自動的に <code>/</code> へ301リダイレクトされ、URLから <code>/public_html/</code> が完全自動消去されます。</p>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -1510,6 +1518,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_multitool_v1"></script>
+    <script src="manual.js?v=20260921_url_clean_v1"></script>
 </body>
 </html>
