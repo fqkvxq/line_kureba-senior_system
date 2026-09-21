@@ -633,7 +633,10 @@ function getDbConnection(?string $accountKey = null): PDO {
     try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN last_interaction_at DATETIME"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN last_interaction_type TEXT DEFAULT ''"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN last_interaction_preview TEXT DEFAULT ''"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN is_blocked INTEGER DEFAULT 0"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN blocked_at DATETIME"); } catch (Exception $e) {}
     try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_last_interaction ON customer_cars(last_interaction_at)"); } catch (Exception $e) {}
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_is_blocked ON customer_cars(is_blocked)"); } catch (Exception $e) {}
 
     // システム設定・マイグレーション管理テーブル
     try {
@@ -1085,28 +1088,51 @@ function recordCustomerInteraction(PDO $db, string $userId, string $type, string
     try {
         $preview = mb_substr(trim($preview), 0, 80);
         $nowJst = date('Y-m-d H:i:s');
+        $isBlocked = ($type === 'unfollow') ? 1 : 0;
+        $blockedAt = ($type === 'unfollow') ? $nowJst : null;
+
         if ($carId) {
             $stmt = $db->prepare("
                 UPDATE customer_cars 
                 SET last_interaction_at = :now_jst1,
                     last_interaction_type = :type,
                     last_interaction_preview = :preview,
+                    is_blocked = :is_blocked,
+                    blocked_at = CASE WHEN :is_blocked = 1 THEN :blocked_at ELSE NULL END,
                     updated_at = :now_jst2
                 WHERE id = :id
             ");
-            $stmt->execute([':now_jst1' => $nowJst, ':type' => $type, ':preview' => $preview, ':now_jst2' => $nowJst, ':id' => $carId]);
+            $stmt->execute([
+                ':now_jst1' => $nowJst,
+                ':type' => $type,
+                ':preview' => $preview,
+                ':is_blocked' => $isBlocked,
+                ':blocked_at' => $blockedAt,
+                ':now_jst2' => $nowJst,
+                ':id' => $carId
+            ]);
         } else {
             $stmt = $db->prepare("
                 UPDATE customer_cars 
                 SET last_interaction_at = :now_jst1,
                     last_interaction_type = :type,
                     last_interaction_preview = :preview,
+                    is_blocked = :is_blocked,
+                    blocked_at = CASE WHEN :is_blocked = 1 THEN :blocked_at ELSE NULL END,
                     updated_at = :now_jst2
                 WHERE user_id = :uid
             ");
-            $stmt->execute([':now_jst1' => $nowJst, ':type' => $type, ':preview' => $preview, ':now_jst2' => $nowJst, ':uid' => $userId]);
+            $stmt->execute([
+                ':now_jst1' => $nowJst,
+                ':type' => $type,
+                ':preview' => $preview,
+                ':is_blocked' => $isBlocked,
+                ':blocked_at' => $blockedAt,
+                ':now_jst2' => $nowJst,
+                ':uid' => $userId
+            ]);
         }
-        writeDebugLog("顧客インタラクション記録", ['uid' => $userId, 'type' => $type, 'preview' => $preview, 'time' => $nowJst]);
+        writeDebugLog("顧客インタラクション記録", ['uid' => $userId, 'type' => $type, 'preview' => $preview, 'is_blocked' => $isBlocked, 'time' => $nowJst]);
     } catch (Throwable $e) {
         writeDebugLog("recordCustomerInteraction 例外", ['error' => $e->getMessage()]);
     }

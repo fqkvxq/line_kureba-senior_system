@@ -199,20 +199,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
             }
 
             if ($type === 'follow') {
-                // 友だち追加時: 受講生登録、管理者通知、リッチメニュー自動適用など
-                recordCustomerInteraction($db, $userId, 'follow', "友だち登録");
+                // 友だち追加・ブロック解除時: 受講生登録、ブロックフラグ解除、管理者通知、リッチメニュー自動適用
+                recordCustomerInteraction($db, $userId, 'follow', "✨ 友だち追加");
                 try {
                     $prof = getLineUserProfile($userId);
                     $uName = $prof['displayName'] ?? '受講生';
                     $pUrl = $prof['pictureUrl'] ?? '';
+
+                    // 名前とアイコンを更新
+                    $db->prepare("UPDATE customer_cars SET user_name = :uname, picture_url = :pic, is_blocked = 0, blocked_at = NULL, updated_at = :now WHERE user_id = :uid")
+                        ->execute([':uname' => $uName, ':pic' => $pUrl, ':now' => date('Y-m-d H:i:s'), ':uid' => $userId]);
+
+                    // 各種通知
                     sendSlackFollowNotification([
                         'user_id' => $userId,
                         'user_name' => $uName,
                         'picture_url' => $pUrl,
-                        'event_text' => '新しいユーザーが追加されました！'
+                        'event_text' => '新しいユーザーが友だち追加（またはブロック解除）しました！'
                     ], $prof, $db);
+
+                    if (function_exists('sendDiscordNotification')) {
+                        sendDiscordNotification($db, "✨【LINE】友だち追加・ブロック解除", "受講生: {$uName} 様\nLINE UID: {$userId}\n日時: " . date('Y-m-d H:i:s'), '#10b981');
+                    }
                 } catch (Throwable $sEx) {
-                    writeDebugLog("Slackフォロー通知エラー", ['error' => $sEx->getMessage()]);
+                    writeDebugLog("フォロー通知エラー", ['error' => $sEx->getMessage()]);
+                }
+            } elseif ($type === 'unfollow') {
+                // ブロック（友だち解除）時: is_blocked = 1、最終やり取り記録、管理者通知
+                recordCustomerInteraction($db, $userId, 'unfollow', "🚫 ブロック");
+                $nowJst = date('Y-m-d H:i:s');
+                writeDebugLog("🚫 友だちブロック検知", ['userId' => $userId, 'time' => $nowJst]);
+
+                // ユーザー名を取得して通知
+                try {
+                    $cStmt = $db->prepare("SELECT user_name FROM customer_cars WHERE user_id = :uid LIMIT 1");
+                    $cStmt->execute([':uid' => $userId]);
+                    $uRow = $cStmt->fetch(PDO::FETCH_ASSOC);
+                    $uName = $uRow['user_name'] ?? 'LINE友だち';
+
+                    if (function_exists('sendDiscordNotification')) {
+                        sendDiscordNotification($db, "🚫【LINE】友だちブロック検知", "受講生: {$uName} 様\nLINE公式アカウントがブロック（友だち解除）されました。\nLINE UID: {$userId}\n日時: {$nowJst}", '#ef4444');
+                    }
+
+                    if (function_exists('sendSlackNotification')) {
+                        sendSlackNotification($db, "🚫【LINE】友だちブロック検知", "受講生: {$uName} 様\nLINE公式アカウントがブロックされました。\n日時: {$nowJst}");
+                    }
+                } catch (Throwable $unEx) {
+                    writeDebugLog("ブロック通知エラー", ['error' => $unEx->getMessage()]);
                 }
             } elseif ($type === 'message') {
                 $msgType = $event['message']['type'] ?? 'text';

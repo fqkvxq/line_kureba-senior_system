@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260921_sync_progress_v1">
+    <link rel="stylesheet" href="admin.css?v=20260921_block_detection_v1">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -148,8 +148,12 @@
                 <div class="stat-card" data-filter="all">
                     <div class="stat-icon icon-users"><i class="fa-solid fa-users"></i></div>
                     <div class="stat-info">
-                        <span class="stat-label" id="lblStatTotalUsers">登録顧客数</span>
-                        <span class="stat-value" id="statTotalUsers">0</span>
+                        <span class="stat-label" id="lblStatTotalUsers">総登録数</span>
+                        <div style="display: flex; align-items: baseline; gap: 8px;">
+                            <span class="stat-value" id="statTotalUsers">0</span>
+                            <span style="font-size: 11px; color: #16a34a; font-weight: 700;">友だち: <span id="statActiveUsers">0</span></span>
+                            <span style="font-size: 11px; color: #ef4444; font-weight: 700;">ブロック: <span id="statBlockedUsers">0</span></span>
+                        </div>
                     </div>
                 </div>
                 <div class="stat-card" data-filter="oil_soon">
@@ -182,7 +186,9 @@
                     <input type="text" id="adminSearchInput" placeholder="顧客名、コース/車種名、管理番号、メモで検索...">
                 </div>
                 <div class="filter-tabs">
-                    <button class="tab-btn active" data-filter="all"><span id="lblTabAll">全顧客</span> (<span id="tabCountAll">0</span>)</button>
+                    <button class="tab-btn active" data-filter="all"><span id="lblTabAll">すべて</span> (<span id="tabCountAll">0</span>)</button>
+                    <button class="tab-btn" data-filter="active"><i class="fa-solid fa-user-check" style="color:#16a34a; font-size:11px;"></i> 友だち中 (<span id="tabCountActive">0</span>)</button>
+                    <button class="tab-btn" data-filter="blocked"><i class="fa-solid fa-user-slash" style="color:#ef4444; font-size:11px;"></i> ブロック中 (<span id="tabCountBlocked">0</span>)</button>
                     <button class="tab-btn" data-filter="oil_soon"><span id="lblTabOil">期日1</span> (<span id="tabCountOil">0</span>)</button>
                     <button class="tab-btn" data-filter="periodic_soon"><span id="lblTabPeriodic">期日2</span> (<span id="tabCountPeriodic">0</span>)</button>
                     <button class="tab-btn" data-filter="inspection_soon"><span id="lblTabInsp">期日3</span> (<span id="tabCountInsp">0</span>)</button>
@@ -1815,6 +1821,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260921_custom_industry_v1"></script>
+    <script src="admin.js?v=20260921_block_detection_v1"></script>
 </body>
 </html>

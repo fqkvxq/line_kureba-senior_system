@@ -2967,5 +2967,36 @@ body {
     }
 }
 
+/* 友だちブロック状態のスタイル */
+.data-table tr.row-blocked {
+    background-color: #fff8f8 !important;
+}
 
+.data-table tr.row-blocked:hover {
+    background-color: #fee2e2 !important;
+}
 
+.badge-unfollow {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+
+.badge-follow {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.chat-blocked-banner {
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    color: #9f1239;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}

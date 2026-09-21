@@ -2078,8 +2078,16 @@ function updateStats() {
     let oilSoonCount = 0;
     let periodicSoonCount = 0;
     let inspSoonCount = 0;
+    let activeCount = 0;
+    let blockedCount = 0;
 
     state.allCustomers.forEach(c => {
+        if (c.is_blocked == 1) {
+            blockedCount++;
+        } else {
+            activeCount++;
+        }
+
         if (c.oil_next_date) {
             const d = new Date(c.oil_next_date);
             if (d <= in30Days) oilSoonCount++;
@@ -2095,11 +2103,21 @@ function updateStats() {
     });
 
     if (elements.statTotalUsers) elements.statTotalUsers.textContent = state.allCustomers.length;
+    const statActiveEl = document.getElementById('statActiveUsers');
+    const statBlockedEl = document.getElementById('statBlockedUsers');
+    if (statActiveEl) statActiveEl.textContent = activeCount;
+    if (statBlockedEl) statBlockedEl.textContent = blockedCount;
+
     if (elements.statOilSoon) elements.statOilSoon.textContent = oilSoonCount;
     if (elements.statPeriodicSoon) elements.statPeriodicSoon.textContent = periodicSoonCount;
     if (elements.statInspSoon) elements.statInspSoon.textContent = inspSoonCount;
 
     if (elements.tabCountAll) elements.tabCountAll.textContent = state.allCustomers.length;
+    const tabActiveEl = document.getElementById('tabCountActive');
+    const tabBlockedEl = document.getElementById('tabCountBlocked');
+    if (tabActiveEl) tabActiveEl.textContent = activeCount;
+    if (tabBlockedEl) tabBlockedEl.textContent = blockedCount;
+
     if (elements.tabCountOil) elements.tabCountOil.textContent = oilSoonCount;
     if (elements.tabCountPeriodic) elements.tabCountPeriodic.textContent = periodicSoonCount;
     if (elements.tabCountInsp) elements.tabCountInsp.textContent = inspSoonCount;
@@ -2123,6 +2141,12 @@ function renderTable() {
         }
 
         // タブフィルター
+        if (state.currentFilter === 'active') {
+            return (c.is_blocked != 1);
+        }
+        if (state.currentFilter === 'blocked') {
+            return (c.is_blocked == 1);
+        }
         if (state.currentFilter === 'oil_soon') {
             if (!c.oil_next_date) return false;
             return new Date(c.oil_next_date) <= in30Days;
@@ -2163,6 +2187,7 @@ function renderTable() {
 
     elements.customerTableBody.innerHTML = pagedList.map((c, pageIdx) => {
         const globalIdx = startIndex + pageIdx;
+        const isBlocked = (c.is_blocked == 1);
         const oilBadge = getBadgeHtml(c.oil_next_date);
         const periodicBadge = getBadgeHtml(c.periodic_insp_next_date);
         const inspBadge = getBadgeHtml(c.inspection_next_date);
@@ -2191,15 +2216,19 @@ function renderTable() {
         }
 
         // 最終やり取り情報
-        const interactionType = c.last_interaction_type || 'follow';
-        const interactionPreview = c.last_interaction_preview || '友だち登録';
+        const interactionType = c.last_interaction_type || (isBlocked ? 'unfollow' : 'follow');
+        const interactionPreview = c.last_interaction_preview || (isBlocked ? '🚫 ブロック' : '友だち登録');
         const interactionDisplay = c.last_interaction_display || (c.last_interaction_at ? c.last_interaction_at.substring(0, 16).replace('-', '/') : '未記録');
         const diffText = c.last_interaction_diff_text || (c.last_interaction_at ? c.last_interaction_at.substring(0, 10) : '未記録');
 
         let badgeClass = 'badge-follow';
         let badgeIcon = '<i class="fa-solid fa-user-plus"></i>';
         let badgeLabel = '友だち登録';
-        if (interactionType === 'user_message') {
+        if (isBlocked || interactionType === 'unfollow') {
+            badgeClass = 'badge-unfollow';
+            badgeIcon = '<i class="fa-solid fa-user-slash"></i>';
+            badgeLabel = 'ブロック';
+        } else if (interactionType === 'user_message') {
             badgeClass = 'badge-user-msg';
             badgeIcon = '<i class="fa-solid fa-comment"></i>';
             badgeLabel = 'メッセージ';
@@ -2221,30 +2250,35 @@ function renderTable() {
             <div class="interaction-cell" title="${escapeHtml(interactionPreview)} (${interactionDisplay})">
                 <div class="interaction-header">
                     <span class="interaction-time-badge">${escapeHtml(diffText)}</span>
-                    <span class="interaction-badge ${badgeClass}">${badgeIcon} ${badgeLabel}</span>
+                    <span class="interaction-badge ${badgeClass}" style="${isBlocked ? 'background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;' : ''}">${badgeIcon} ${badgeLabel}</span>
                 </div>
-                <div class="interaction-preview">${escapeHtml(interactionPreview)}</div>
+                <div class="interaction-preview" style="${isBlocked ? 'color:#dc2626; font-weight:bold;' : ''}">${escapeHtml(interactionPreview)}</div>
                 <div class="interaction-full-date">${escapeHtml(interactionDisplay)}</div>
             </div>
         `;
 
+        const followBadgeHtml = isBlocked 
+            ? `<span style="font-size:10.5px; background:#fee2e2; color:#b91c1c; border:1px solid #fecdd3; padding:1px 6px; border-radius:var(--radius-xs); font-weight:700; white-space:nowrap;"><i class="fa-solid fa-user-slash"></i> ブロック中</span>`
+            : (userId && userId.startsWith('U') ? `<span style="font-size:10.5px; background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; padding:1px 6px; border-radius:var(--radius-xs); font-weight:700; white-space:nowrap;"><i class="fa-solid fa-user-check"></i> 友だち</span>` : '');
+
         return `
-            <tr data-index="${globalIdx}">
+            <tr data-index="${globalIdx}" class="${isBlocked ? 'row-blocked' : ''}" style="${isBlocked ? 'background: #fff8f8;' : ''}">
                 <td data-col="name">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         ${c.picture_url ? `
-                            <img src="${escapeHtml(c.picture_url)}" alt="" loading="lazy" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1.5px solid #e2e8f0; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08);" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                            <img src="${escapeHtml(c.picture_url)}" alt="" loading="lazy" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1.5px solid ${isBlocked ? '#fca5a5' : '#e2e8f0'}; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); ${isBlocked ? 'filter: grayscale(80%); opacity: 0.85;' : ''}" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
                             <div style="display: none; width: 38px; height: 38px; border-radius: 50%; background: #e2e8f0; color: #64748b; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">
                                 <i class="fa-solid fa-user"></i>
                             </div>
                         ` : `
-                            <div style="width: 38px; height: 38px; border-radius: 50%; background: #e2e8f0; color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">
+                            <div style="width: 38px; height: 38px; border-radius: 50%; background: ${isBlocked ? '#fee2e2' : '#e2e8f0'}; color: ${isBlocked ? '#ef4444' : '#64748b'}; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">
                                 <i class="fa-solid fa-user"></i>
                             </div>
                         `}
                         <div style="min-width: 0;">
                             <div class="cust-name" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                <span>${escapeHtml(c.user_name || '名前なし')}</span>
+                                <span style="${isBlocked ? 'color:#991b1b; text-decoration: line-through;' : ''}">${escapeHtml(c.user_name || '名前なし')}</span>
+                                ${followBadgeHtml}
                                 ${state.unreadChatCounts && state.unreadChatCounts[userId] ? `
                                     <span class="badge-chat-unread" title="未読メッセージ ${state.unreadChatCounts[userId]}件">
                                         <i class="fa-solid fa-envelope" style="font-size: 9px; margin-right: 2px;"></i>${state.unreadChatCounts[userId]}
@@ -2257,9 +2291,11 @@ function renderTable() {
                                     <button class="btn-copy-uid" title="UIDをクリップボードにコピー" onclick="event.stopPropagation(); copyCustUid('${escapeHtml(c.user_id)}');" style="background: none; border: none; color: #64748b; cursor: pointer; padding: 2px 4px; font-size: 11px; border-radius: var(--radius-xs);" onmouseover="this.style.color='#1e293b'; this.style.background='#f1f5f9';" onmouseout="this.style.color='#64748b'; this.style.background='none';">
                                         <i class="fa-regular fa-copy"></i>
                                     </button>
-                                    <button class="btn-add-admin-uid" title="このアカウントを管理者LINE通知先に登録" onclick="event.stopPropagation(); addAdminUidDirectly('${escapeHtml(c.user_id)}', '${escapeHtml(c.user_name || '')}');" style="background: none; border: none; color: #0284c7; cursor: pointer; padding: 2px 4px; font-size: 11px; border-radius: var(--radius-xs);" onmouseover="this.style.color='#0369a1'; this.style.background='#e0f2fe';" onmouseout="this.style.color='#0284c7'; this.style.background='none';">
-                                        <i class="fa-solid fa-bell"></i> 通知先に登録
-                                    </button>
+                                    ${!isBlocked ? `
+                                        <button class="btn-add-admin-uid" title="このアカウントを管理者LINE通知先に登録" onclick="event.stopPropagation(); addAdminUidDirectly('${escapeHtml(c.user_id)}', '${escapeHtml(c.user_name || '')}');" style="background: none; border: none; color: #0284c7; cursor: pointer; padding: 2px 4px; font-size: 11px; border-radius: var(--radius-xs);" onmouseover="this.style.color='#0369a1'; this.style.background='#e0f2fe';" onmouseout="this.style.color='#0284c7'; this.style.background='none';">
+                                            <i class="fa-solid fa-bell"></i> 通知先に登録
+                                        </button>
+                                    ` : ''}
                                 ` : ''}
                             </div>
                             <div style="margin-top: 4px;">${menuBadgeHtml}</div>
@@ -5308,14 +5344,22 @@ function openChatModal(cust, targetIdx = null) {
     }
 
     const userNameEl = elements.chatModalUserName || document.getElementById('chatModalUserName');
+    const isBlocked = (cust.is_blocked == 1);
     if (userNameEl) {
         const safeName = (typeof escapeHtml === 'function') ? escapeHtml(name) : name;
         const safeUid = (typeof escapeHtml === 'function') ? escapeHtml(uid || '未連携') : (uid || '未連携');
-        userNameEl.innerHTML = `${safeName} <span id="chatModalUidTag" style="font-size: 11px; font-weight: normal; color: #64748b; font-family: monospace;">(${safeUid})</span>`;
+        const blockBadge = isBlocked 
+            ? `<span style="font-size: 11px; background: #fee2e2; color: #b91c1c; border: 1px solid #fecdd3; padding: 1px 7px; border-radius: var(--radius-xs); font-weight: bold; margin-left: 6px;"><i class="fa-solid fa-user-slash"></i> ブロック中</span>`
+            : `<span style="font-size: 11px; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 1px 7px; border-radius: var(--radius-xs); font-weight: bold; margin-left: 6px;"><i class="fa-solid fa-user-check"></i> 友だち中</span>`;
+        userNameEl.innerHTML = `${safeName} ${blockBadge} <span id="chatModalUidTag" style="font-size: 11px; font-weight: normal; color: #64748b; font-family: monospace;">(${safeUid})</span>`;
     }
 
     const courseInfoEl = elements.chatModalCourseInfo || document.getElementById('chatModalCourseInfo');
-    if (courseInfoEl) courseInfoEl.textContent = course;
+    if (courseInfoEl) {
+        courseInfoEl.innerHTML = isBlocked 
+            ? `<span style="color: #ef4444; font-weight: bold;"><i class="fa-solid fa-triangle-exclamation"></i> この友だちは公式アカウントをブロック中です（送信したメッセージは届きません）</span>`
+            : escapeHtml(course);
+    }
 
     const inputArea = elements.chatInputText || document.getElementById('chatInputText');
     if (inputArea) {

@@ -472,6 +472,17 @@
                                 <p>100%に達すると完了トーストとお祝いメッセージが表示され、最新のアイコン画像・受講生名がカルテ一覧へ自動反映されます。</p>
                             </div>
                         </div>
+
+                        <div class="step-card" style="border: 1.5px solid #fca5a5; background: #fff8f8;">
+                            <div class="step-number" style="background: #ef4444; color: #fff;"><i class="fa-solid fa-user-slash" style="font-size:11px;"></i></div>
+                            <div class="step-body">
+                                <h4>LINE友だちのブロック・ブロック解除の自動認識</h4>
+                                <p><strong>・リアルタイム自動検知</strong>: 受講生がLINE公式アカウントをブロック（友だち解除）した瞬間にWebhook（<code>unfollow</code> イベント）を検知し、カルテ上に「<span style="font-size:11px; background:#fee2e2; color:#b91c1c; padding:1px 6px; border-radius:4px; font-weight:bold;">🚫 ブロック中</span>」バッジを自動付与して最終やり取りに記録します。再度ブロック解除（<code>follow</code>）された際も自動で「<span style="font-size:11px; background:#ecfdf5; color:#065f46; padding:1px 6px; border-radius:4px; font-weight:bold;">✨ 友だち</span>」状態へ復帰します。<br>
+                                <strong>・一括同期でのブロック整合性チェック</strong>: 「LINE友だち一括同期」実行時にも、LINE公式アカウントのフォロワー一覧から外れた受講生を自動でブロック中として整合同期します。<br>
+                                <strong>・絞り込みフィルター</strong>: 管理画面の「友だち中」「🚫 ブロック中」タブでワンクリックで切り替えて一覧表示できます。<br>
+                                <strong>・スタッフ通知</strong>: ブロック発生時やブロック解除時には、DiscordやSlackへ即座に通知が送信されます。</p>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -1557,6 +1568,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_custom_industry_v1"></script>
+    <script src="manual.js?v=20260921_block_detection_v1"></script>
 </body>
 </html>

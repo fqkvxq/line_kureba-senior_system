@@ -1569,6 +1569,10 @@ try {
             } elseif ($filter === 'inspection_soon') {
                 $where[] = "inspection_next_date IS NOT NULL AND inspection_next_date <= :in30";
                 $params[':in30'] = $in30days;
+            } elseif ($filter === 'blocked') {
+                $where[] = "is_blocked = 1";
+            } elseif ($filter === 'active') {
+                $where[] = "(is_blocked = 0 OR is_blocked IS NULL)";
             }
 
             // ソート順の判定
@@ -1673,10 +1677,24 @@ try {
             }
             unset($c);
 
+            // ブロック数・友だち数の全体集計
+            $statStmt = $db->query("
+                SELECT 
+                    COUNT(*) as total_all,
+                    SUM(CASE WHEN is_blocked = 1 THEN 1 ELSE 0 END) as blocked_cnt,
+                    SUM(CASE WHEN is_blocked = 0 OR is_blocked IS NULL THEN 1 ELSE 0 END) as active_cnt
+                FROM customer_cars
+            ");
+            $statRow = $statStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+            $totalActive = (int)($statRow['active_cnt'] ?? 0);
+            $totalBlocked = (int)($statRow['blocked_cnt'] ?? 0);
+
             echo json_encode([
                 'success' => true,
                 'customers' => $customers,
                 'total' => count($customers),
+                'total_active' => $totalActive,
+                'total_blocked' => $totalBlocked,
                 'default_menu_title' => $defaultMenuTitle,
                 'active_account' => $activeAccountKey,
                 'active_account_name' => getAccountShopName($activeAccountKey),
@@ -1957,11 +1975,11 @@ try {
                     $insertStmt = $db->prepare("
                         INSERT INTO customer_cars (
                             user_id, user_name, picture_url, car_model, car_number,
-                            last_interaction_at, last_interaction_type, last_interaction_preview,
+                            is_blocked, last_interaction_at, last_interaction_type, last_interaction_preview,
                             created_at, updated_at
                         ) VALUES (
-                            :uid, :uname, :pic, '【未登録】愛車登録待ち', '',
-                            :now_jst1, 'follow', '友だち登録',
+                            :uid, :uname, :pic, '受講コース未設定', '',
+                            0, :now_jst1, 'follow', '✨ 友だち登録',
                             :now_jst2, :now_jst3
                         )
                     ");
@@ -1975,8 +1993,8 @@ try {
                     ]);
                     $importedCount++;
                 } else {
-                    // 既存顧客: アイコン画像を最新化し、仮名なら名前も最新表示名に同期
-                    $isPlaceholderName = empty($existing['user_name']) || in_array($existing['user_name'], ['新規お客様', 'お客様', 'LINE友だち', '']);
+                    // 既存顧客: アイコン画像を最新化し、仮名なら名前も最新表示名に同期。ブロック状態を解除 (0)
+                    $isPlaceholderName = empty($existing['user_name']) || in_array($existing['user_name'], ['新規お客様', 'お客様', 'LINE友だち', '受講生', '']);
                     $currentName = $isPlaceholderName ? $displayName : $existing['user_name'];
                     $currentPic = !empty($pictureUrl) ? $pictureUrl : ($existing['picture_url'] ?? '');
 
@@ -1984,6 +2002,8 @@ try {
                         UPDATE customer_cars SET
                             user_name = :uname,
                             picture_url = :pic,
+                            is_blocked = 0,
+                            blocked_at = NULL,
                             updated_at = :updated_at
                         WHERE id = :id
                     ")->execute([
@@ -1996,18 +2016,45 @@ try {
                 }
             }
 
+            // フォロワーリストに含まれない既存のLINE友だち（Uから始まるUID）をブロック中 (is_blocked = 1) に同期
+            $blockedDetectedCount = 0;
+            if (!empty($allUserIds)) {
+                $placeholders = implode(',', array_fill(0, count($allUserIds), '?'));
+                $blockStmt = $db->prepare("
+                    UPDATE customer_cars
+                    SET is_blocked = 1,
+                        blocked_at = COALESCE(blocked_at, :now_jst),
+                        last_interaction_preview = CASE WHEN is_blocked = 0 THEN '🚫 ブロック' ELSE last_interaction_preview END,
+                        updated_at = :now_jst2
+                    WHERE user_id LIKE 'U%'
+                      AND user_id NOT IN ({$placeholders})
+                      AND (is_blocked = 0 OR is_blocked IS NULL)
+                ");
+                $params = array_merge([$nowJst, $nowJst], $allUserIds);
+                $blockStmt->execute($params);
+                $blockedDetectedCount = $blockStmt->rowCount();
+            }
+
             writeDebugLog("LINE既存友だち一括同期完了", [
                 'totalFollowers' => count($allUserIds),
                 'newImported' => $importedCount,
-                'updated' => $updatedCount
+                'updated' => $updatedCount,
+                'blockedDetected' => $blockedDetectedCount
             ]);
+
+            $msg = "LINE友だち全" . count($allUserIds) . "名を同期しました！（新規登録: {$importedCount}名、同期更新: {$updatedCount}名";
+            if ($blockedDetectedCount > 0) {
+                $msg .= "、ブロック検知: {$blockedDetectedCount}名";
+            }
+            $msg .= "）";
 
             echo json_encode([
                 'success' => true,
                 'total_followers' => count($allUserIds),
                 'imported_count' => $importedCount,
                 'updated_count' => $updatedCount,
-                'message' => "LINE友だち全" . count($allUserIds) . "名を同期しました！（新規追加: {$importedCount}名、名前・アイコン同期: {$updatedCount}名）"
+                'blocked_count' => $blockedDetectedCount,
+                'message' => $msg
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
