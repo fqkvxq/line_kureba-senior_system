@@ -626,65 +626,79 @@ function getDbConnection(?string $accountKey = null): PDO {
     $pdo = new PDO("sqlite:{$dbFile}", null, null, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_TIMEOUT => 15
+        PDO::ATTR_TIMEOUT => 30
     ]);
 
-    // WALモードで同時読み書きロックを防止
+    // ロックタイムアウトを30秒に延長し、同時実行時のロック衝突を防止
     try {
-        $pdo->exec("PRAGMA journal_mode = WAL");
-        $pdo->exec("PRAGMA busy_timeout = 5000");
-    } catch (Exception $e) {}
+        $pdo->exec("PRAGMA busy_timeout = 30000");
+        $pdo->exec("PRAGMA synchronous = NORMAL");
+        // WALモードがlocking protocolを起こす場合は安全にDELETE/TRUNCATEへ
+        try {
+            $pdo->exec("PRAGMA journal_mode = WAL");
+        } catch (Throwable $walEx) {
+            try { $pdo->exec("PRAGMA journal_mode = DELETE"); } catch (Throwable $e2) {}
+        }
+    } catch (Throwable $e) {}
 
-    // 複数台対応: customer_cars テーブルの初期化
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS customer_cars (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id TEXT NOT NULL,
-            user_name TEXT,
-            car_model TEXT NOT NULL,
-            car_number TEXT,
-            oil_last_date DATE,
-            oil_next_date DATE,
-            periodic_insp_next_date DATE,
-            inspection_next_date DATE,
-            staff_memo TEXT,
-            oil_reminded_at DATETIME,
-            periodic_reminded_at DATETIME,
-            inspection_reminded_at DATETIME,
-            created_at DATETIME DEFAULT (datetime('now', '+9 hours')),
-            updated_at DATETIME DEFAULT (datetime('now', '+9 hours'))
-        )
-    ");
+    // リクエストごとに大量の DDL (CREATE/ALTER) が実行されてロック衝突するのを防ぐ (プロセス内1回のみ実行)
+    static $initializedDbs = [];
+    if (empty($initializedDbs[$key])) {
+        $initializedDbs[$key] = true;
 
-    // インデックス作成
-    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_user_id ON customer_cars(user_id)"); } catch (Exception $e) {}
-    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_oil_next ON customer_cars(oil_next_date)"); } catch (Exception $e) {}
-    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_periodic_next ON customer_cars(periodic_insp_next_date)"); } catch (Exception $e) {}
-    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_inspection_next ON customer_cars(inspection_next_date)"); } catch (Exception $e) {}
-    try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN custom_line_menu_id TEXT DEFAULT ''"); } catch (Exception $e) {}
-    try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN custom_menu_text TEXT DEFAULT ''"); } catch (Exception $e) {}
-    try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN custom_menu_set_at DATETIME"); } catch (Exception $e) {}
-    try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN picture_url TEXT DEFAULT ''"); } catch (Exception $e) {}
-    try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN last_interaction_at DATETIME"); } catch (Exception $e) {}
-    try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN last_interaction_type TEXT DEFAULT ''"); } catch (Exception $e) {}
-    try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN last_interaction_preview TEXT DEFAULT ''"); } catch (Exception $e) {}
-    try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN is_blocked INTEGER DEFAULT 0"); } catch (Exception $e) {}
-    try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN blocked_at DATETIME"); } catch (Exception $e) {}
-    try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN tags TEXT DEFAULT ''"); } catch (Exception $e) {}
-    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_last_interaction ON customer_cars(last_interaction_at)"); } catch (Exception $e) {}
-    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_is_blocked ON customer_cars(is_blocked)"); } catch (Exception $e) {}
-    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_tags ON customer_cars(tags)"); } catch (Exception $e) {}
+        // 複数台対応: customer_cars テーブルの初期化
+        try {
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS customer_cars (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id TEXT NOT NULL,
+                    user_name TEXT,
+                    car_model TEXT NOT NULL,
+                    car_number TEXT,
+                    oil_last_date DATE,
+                    oil_next_date DATE,
+                    periodic_insp_next_date DATE,
+                    inspection_next_date DATE,
+                    staff_memo TEXT,
+                    oil_reminded_at DATETIME,
+                    periodic_reminded_at DATETIME,
+                    inspection_reminded_at DATETIME,
+                    created_at DATETIME DEFAULT (datetime('now', '+9 hours')),
+                    updated_at DATETIME DEFAULT (datetime('now', '+9 hours'))
+                )
+            ");
+        } catch (Throwable $t) {}
 
-    // システム設定・マイグレーション管理テーブル
-    try {
-        $pdo->exec("
-            CREATE TABLE IF NOT EXISTS system_settings (
-                key TEXT PRIMARY KEY,
-                value TEXT,
-                updated_at DATETIME
-            )
-        ");
-    } catch (Exception $e) {}
+        // インデックス作成・カラム追加
+        try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_user_id ON customer_cars(user_id)"); } catch (Throwable $e) {}
+        try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_oil_next ON customer_cars(oil_next_date)"); } catch (Throwable $e) {}
+        try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_periodic_next ON customer_cars(periodic_insp_next_date)"); } catch (Throwable $e) {}
+        try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_inspection_next ON customer_cars(inspection_next_date)"); } catch (Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN custom_line_menu_id TEXT DEFAULT ''"); } catch (Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN custom_menu_text TEXT DEFAULT ''"); } catch (Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN custom_menu_set_at DATETIME"); } catch (Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN picture_url TEXT DEFAULT ''"); } catch (Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN last_interaction_at DATETIME"); } catch (Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN last_interaction_type TEXT DEFAULT ''"); } catch (Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN last_interaction_preview TEXT DEFAULT ''"); } catch (Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN is_blocked INTEGER DEFAULT 0"); } catch (Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN blocked_at DATETIME"); } catch (Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN tags TEXT DEFAULT ''"); } catch (Throwable $e) {}
+        try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_last_interaction ON customer_cars(last_interaction_at)"); } catch (Throwable $e) {}
+        try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_is_blocked ON customer_cars(is_blocked)"); } catch (Throwable $e) {}
+        try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_tags ON customer_cars(tags)"); } catch (Throwable $e) {}
+
+        // システム設定・マイグレーション管理テーブル
+        try {
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS system_settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT,
+                    updated_at DATETIME
+                )
+            ");
+        } catch (Throwable $e) {}
+    }
 
     // 初期化マイグレーション: last_interaction_at が NULL の既存顧客に対して最新日付を補完
     try {
