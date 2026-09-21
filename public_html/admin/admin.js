@@ -2237,16 +2237,38 @@ async function syncLineFollowers() {
             }
         }
 
-        // Step 3: 完了
+        // Step 3: ブロック状態の整合同期 (LINEフォロワー一覧にいない既存友だちをブロック中として更新)
+        appendSyncLog('LINE友だち状態とブロック状況を整合同期中...', 'fa-solid fa-arrows-rotate', '#6366f1');
+        let blockedDetected = 0;
+        try {
+            const reconcileRes = await fetch(`../api.php?action=admin_sync_reconcile_blocked&account=${encodeURIComponent(state.activeAccount)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ activeUserIds: userIds })
+            });
+            const reconcileData = await reconcileRes.json();
+            if (reconcileData.success) {
+                blockedDetected = reconcileData.blocked_detected || 0;
+                if (blockedDetected > 0) {
+                    appendSyncLog(`🚫 ブロック中の友だち ${blockedDetected} 名を自動検知してカルテに反映しました`, 'fa-solid fa-user-slash', '#e11d48');
+                } else {
+                    appendSyncLog('✅ ブロック状態の整合同期が完了しました', 'fa-solid fa-check', '#10b981');
+                }
+            }
+        } catch (rErr) {
+            console.warn('Reconcile blocked error:', rErr);
+        }
+
+        // Step 4: 完了
         if (elements.syncProgressPercent) elements.syncProgressPercent.textContent = '100%';
         if (elements.syncProgressBar) elements.syncProgressBar.style.width = '100%';
         if (elements.syncProgressStatusText) elements.syncProgressStatusText.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #06C755; margin-right: 6px;"></i> すべての同期が完了しました！';
         if (elements.syncProgressSpeed) elements.syncProgressSpeed.textContent = '同期完了';
-        appendSyncLog(`🎉 全${total}名の同期が完了しました！（新規追加: ${totalImported}名、名前・アイコン更新: ${totalUpdated}名）`, 'fa-solid fa-circle-check', '#06C755');
+        appendSyncLog(`🎉 全${total}名の同期が完了しました！（新規追加: ${totalImported}名、名前更新: ${totalUpdated}名、ブロック検知: ${blockedDetected}名）`, 'fa-solid fa-circle-check', '#06C755');
 
         if (elements.syncProgressActions) elements.syncProgressActions.style.display = 'block';
         if (elements.btnCloseSyncProgressModal) elements.btnCloseSyncProgressModal.style.display = 'inline-block';
-        showToast(`✅ LINE友だち全${total}名を同期しました！（新規: ${totalImported}名 / 更新: ${totalUpdated}名）`);
+        showToast(`✅ LINE友だち全${total}名を同期しました！（友だち: ${total - blockedDetected}名 / ブロック: ${blockedDetected}名）`);
 
         // 受講生カルテ一覧の再読込
         await fetchCustomers();

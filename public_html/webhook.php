@@ -193,8 +193,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
         writeDebugLog("イベント処理開始", ['type' => $type, 'userId' => $userId, 'prolineActive' => $isProlineActive]);
 
         try {
-            // 友だち追加・メッセージ送信・ボタン操作時に自動で受講生管理へ登録＆名前同期
-            if (!empty($userId) && str_starts_with($userId, 'U')) {
+            // 友だち追加・メッセージ送信・ボタン操作時に自動で受講生管理へ登録＆名前同期（ブロック時はスキップ）
+            if (!empty($userId) && str_starts_with($userId, 'U') && $type !== 'unfollow') {
                 ensureCustomerExists($db, $userId);
             }
 
@@ -206,7 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
                     $uName = $prof['displayName'] ?? '受講生';
                     $pUrl = $prof['pictureUrl'] ?? '';
 
-                    // 名前とアイコンを更新
+                    // 名前とアイコンを更新し、ブロック解除 (is_blocked = 0)
                     $db->prepare("UPDATE customer_cars SET user_name = :uname, picture_url = :pic, is_blocked = 0, blocked_at = NULL, updated_at = :now WHERE user_id = :uid")
                         ->execute([':uname' => $uName, ':pic' => $pUrl, ':now' => date('Y-m-d H:i:s'), ':uid' => $userId]);
 
@@ -226,9 +226,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
                 }
             } elseif ($type === 'unfollow') {
                 // ブロック（友だち解除）時: is_blocked = 1、最終やり取り記録、管理者通知
-                recordCustomerInteraction($db, $userId, 'unfollow', "🚫 ブロック");
                 $nowJst = date('Y-m-d H:i:s');
-                writeDebugLog("🚫 友だちブロック検知", ['userId' => $userId, 'time' => $nowJst]);
+                try {
+                    // DBの該当レコードを確実にブロック中 (is_blocked = 1) に更新
+                    $db->prepare("
+                        UPDATE customer_cars 
+                        SET is_blocked = 1,
+                            blocked_at = :blocked_at,
+                            last_interaction_at = :last_at,
+                            last_interaction_type = 'unfollow',
+                            last_interaction_preview = '🚫 ブロック',
+                            updated_at = :up_at
+                        WHERE user_id = :uid
+                    ")->execute([
+                        ':blocked_at' => $nowJst,
+                        ':last_at' => $nowJst,
+                        ':up_at' => $nowJst,
+                        ':uid' => $userId
+                    ]);
+                } catch (Throwable $dbEx) {
+                    writeDebugLog("DBブロック更新エラー", ['error' => $dbEx->getMessage()]);
+                }
+
+                recordCustomerInteraction($db, $userId, 'unfollow', "🚫 ブロック");
+                writeDebugLog("🚫 友だちブロック検知・DB更新完了", ['userId' => $userId, 'time' => $nowJst]);
 
                 // ユーザー名を取得して通知
                 try {

@@ -1933,10 +1933,12 @@ try {
                     $insertStmt = $db->prepare("
                         INSERT INTO customer_cars (
                             user_id, user_name, picture_url, car_model, car_number,
+                            is_blocked, blocked_at,
                             last_interaction_at, last_interaction_type, last_interaction_preview,
                             created_at, updated_at
                         ) VALUES (
-                            :uid, :uname, :pic, '【未登録】愛車登録待ち', '',
+                            :uid, :uname, :pic, '【未設定】受講コース未設定', '',
+                            0, NULL,
                             :now_jst1, 'follow', '友だち登録',
                             :now_jst2, :now_jst3
                         )
@@ -1951,7 +1953,7 @@ try {
                     ]);
                     $importedCount++;
                 } else {
-                    $isPlaceholderName = empty($existing['user_name']) || in_array($existing['user_name'], ['新規お客様', 'お客様', 'LINE友だち', '']);
+                    $isPlaceholderName = empty($existing['user_name']) || in_array($existing['user_name'], ['新規お客様', 'お客様', 'LINE友だち', '受講生', '']);
                     $currentName = $isPlaceholderName ? $displayName : $existing['user_name'];
                     $currentPic = !empty($pictureUrl) ? $pictureUrl : ($existing['picture_url'] ?? '');
 
@@ -1959,6 +1961,8 @@ try {
                         UPDATE customer_cars SET
                             user_name = :uname,
                             picture_url = :pic,
+                            is_blocked = 0,
+                            blocked_at = NULL,
                             updated_at = :updated_at
                         WHERE id = :id
                     ")->execute([
@@ -1977,6 +1981,71 @@ try {
                 'imported' => $importedCount,
                 'updated' => $updatedCount,
                 'names' => array_slice($processedNames, 0, 5)
+            ], JSON_UNESCAPED_UNICODE);
+            break;
+
+        // --- 8-2-3. 店舗管理者用: LINEフォロワーリスト外の既存友だちをブロック中として自動整合同期 ---
+        case 'admin_sync_reconcile_blocked':
+            $authPass = getAdminAuthPassword();
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
+                exit;
+            }
+
+            $inputJson = file_get_contents('php://input');
+            $inputData = json_decode($inputJson, true) ?? [];
+            $activeUserIds = $inputData['activeUserIds'] ?? $_POST['activeUserIds'] ?? [];
+
+            if (is_string($activeUserIds)) {
+                $activeUserIds = json_decode($activeUserIds, true) ?: [$activeUserIds];
+            }
+
+            $nowJst = date('Y-m-d H:i:s');
+            $blockedCount = 0;
+
+            if (is_array($activeUserIds) && !empty($activeUserIds)) {
+                // 有効なフォロワー一覧に存在するものは is_blocked = 0
+                $chunks = array_chunk($activeUserIds, 500);
+                foreach ($chunks as $c) {
+                    $inSql = implode(',', array_fill(0, count($c), '?'));
+                    $db->prepare("UPDATE customer_cars SET is_blocked = 0, blocked_at = NULL WHERE user_id IN ($inSql)")->execute($c);
+                }
+
+                // 有効なフォロワー一覧に含まれない既存のLINE友だち（user_id LIKE 'U%'）を is_blocked = 1（ブロック中）に同期
+                $dbUserIds = $db->query("SELECT DISTINCT user_id FROM customer_cars WHERE user_id LIKE 'U%'")->fetchAll(PDO::FETCH_COLUMN);
+                $activeLookup = array_flip($activeUserIds);
+                $toBlock = [];
+
+                foreach ($dbUserIds as $dUid) {
+                    if (!isset($activeLookup[$dUid])) {
+                        $toBlock[] = $dUid;
+                    }
+                }
+
+                if (!empty($toBlock)) {
+                    $blockChunks = array_chunk($toBlock, 500);
+                    foreach ($blockChunks as $bChunk) {
+                        $inSql = implode(',', array_fill(0, count($bChunk), '?'));
+                        $stmt = $db->prepare("
+                            UPDATE customer_cars 
+                            SET is_blocked = 1,
+                                blocked_at = COALESCE(blocked_at, '{$nowJst}'),
+                                last_interaction_type = CASE WHEN is_blocked = 0 THEN 'unfollow' ELSE last_interaction_type END,
+                                last_interaction_preview = CASE WHEN is_blocked = 0 THEN '🚫 ブロック' ELSE last_interaction_preview END,
+                                updated_at = '{$nowJst}'
+                            WHERE user_id IN ($inSql)
+                        ");
+                        $stmt->execute($bChunk);
+                        $blockedCount += count($bChunk);
+                    }
+                }
+            }
+
+            echo json_encode([
+                'success' => true,
+                'blocked_detected' => $blockedCount,
+                'message' => "整合同期完了: ブロック中 {$blockedCount} 名を反映しました"
             ], JSON_UNESCAPED_UNICODE);
             break;
 
