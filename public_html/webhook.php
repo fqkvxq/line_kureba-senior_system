@@ -154,7 +154,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($channelSecret) && $channelSecret !== 'YOUR_CHANNEL_SECRET_HERE' && !empty($lineSignature)) {
         $hash = base64_encode(hash_hmac('sha256', $rawInput, $channelSecret, true));
         if (!hash_equals($hash, trim($lineSignature))) {
-            writeDebugLog("署名検証警告 (Signature mismatch, processing payload)", ['account' => $activeAccount]);
+            writeDebugLog("署名検証警告 (Signature mismatch, processing payload anyway)", ['account' => $activeAccount]);
         }
     }
 
@@ -179,24 +179,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ");
     } catch (Exception $e) {
         writeDebugLog("DB接続例外: " . $e->getMessage(), ['account' => $activeAccount]);
-        http_response_code(500);
-        exit;
     }
 
     $data = json_decode($rawInput, true);
     if (empty($data['events'])) {
-        writeDebugLog("イベントなし (検証Pingなど)");
+        writeDebugLog("イベントなし (検証Pingなど - 200 OK返却)");
         // プロライン中継
-        relayWebhookToProline($rawInput, $lineSignature, $db, $activeAccount);
+        if ($db) {
+            relayWebhookToProline($rawInput, $lineSignature, $db, $activeAccount);
+        }
         http_response_code(200);
         echo 'OK (No events)';
         exit;
     }
 
-    $prolineSettings = getProlineSettings($db, $activeAccount);
-    $isProlineActive = (!empty($prolineSettings['webhook_urls']) && $prolineSettings['relay_enabled']);
+    $prolineSettings = $db ? getProlineSettings($db, $activeAccount) : [];
+    $isProlineActive = (!empty($prolineSettings['webhook_urls']) && !empty($prolineSettings['relay_enabled']));
 
-    // 2. 【最優先】LINEメッセージ・イベントを即座にローカルデータベースに保存・反映
+    // 全登録アカウントのキー一覧を取得（マルチアカウント間でチャットを取りこぼさないため）
+    $allAccountKeys = [$activeAccount];
+    if (function_exists('getAccountList')) {
+        foreach (getAccountList() as $accItem) {
+            if (!empty($accItem['id'])) {
+                $allAccountKeys[] = $accItem['id'];
+            }
+        }
+    }
+    $allAccountKeys = array_values(array_unique($allAccountKeys));
+
+    // 2. 【最優先】LINEメッセージ・イベントを即座に全ローカルデータベースに保存・反映
     foreach ($data['events'] as $event) {
         $replyToken = $event['replyToken'] ?? null;
         $userId = trim($event['source']['userId'] ?? '');
@@ -204,12 +215,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         writeDebugLog("イベント処理開始", ['type' => $type, 'userId' => $userId, 'account' => $activeAccount]);
 
-        try {
-            // 友だち追加・メッセージ送信・ボタン操作時に自動で受講生管理へ登録＆名前同期（ブロック時はスキップ）
-            if (!empty($userId) && str_starts_with($userId, 'U') && $type !== 'unfollow') {
-                ensureCustomerExists($db, $userId, $activeAccount);
-            }
+        if (empty($userId)) continue;
 
+        try {
             if ($type === 'message') {
                 $msgType = $event['message']['type'] ?? 'text';
                 $messageId = $event['message']['id'] ?? '';
@@ -227,27 +235,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } elseif ($msgType === 'image') {
                     $userText = '📷 画像を受信しました';
                     $preview = '📷 画像を受信';
-                    // 画像ダウンロード
-                    if (!empty($messageId) && function_exists('downloadLineMessageContent')) {
-                        $dlRes = downloadLineMessageContent($messageId, $activeAccount);
-                        if (!empty($dlRes['success']) && !empty($dlRes['url'])) {
-                            $imageUrl = $dlRes['url'];
-                            $rawPayload['url'] = $imageUrl;
-                            $rawPayload['file_name'] = $dlRes['file_name'] ?? '';
-                            $rawPayload['file_path'] = $dlRes['file_path'] ?? '';
+                    // 画像ダウンロード (安全にtry-catch)
+                    try {
+                        if (!empty($messageId) && function_exists('downloadLineMessageContent')) {
+                            $dlRes = downloadLineMessageContent($messageId, $activeAccount);
+                            if (!empty($dlRes['success']) && !empty($dlRes['url'])) {
+                                $imageUrl = $dlRes['url'];
+                                $rawPayload['url'] = $imageUrl;
+                                $rawPayload['file_name'] = $dlRes['file_name'] ?? '';
+                                $rawPayload['file_path'] = $dlRes['file_path'] ?? '';
+                            }
                         }
+                    } catch (Throwable $dlEx) {
+                        writeDebugLog("画像保存例外", ['error' => $dlEx->getMessage()]);
                     }
                 } elseif ($msgType === 'video' || $msgType === 'audio' || $msgType === 'file') {
                     $mediaLabel = ($msgType === 'video' ? '🎬 動画' : ($msgType === 'audio' ? '🎵 音声' : '📎 ファイル'));
                     $userText = "{$mediaLabel}を受信しました";
                     $preview = "📎 {$msgType}を受信";
-                    if (!empty($messageId) && function_exists('downloadLineMessageContent')) {
-                        $dlRes = downloadLineMessageContent($messageId, $activeAccount);
-                        if (!empty($dlRes['success']) && !empty($dlRes['url'])) {
-                            $imageUrl = $dlRes['url'];
-                            $rawPayload['url'] = $imageUrl;
+                    try {
+                        if (!empty($messageId) && function_exists('downloadLineMessageContent')) {
+                            $dlRes = downloadLineMessageContent($messageId, $activeAccount);
+                            if (!empty($dlRes['success']) && !empty($dlRes['url'])) {
+                                $imageUrl = $dlRes['url'];
+                                $rawPayload['url'] = $imageUrl;
+                            }
                         }
-                    }
+                    } catch (Throwable $mEx) {}
                 } else {
                     $userText = '📎 メッセージを受信しました';
                     $preview = '📎 メッセージを受信';
@@ -256,30 +270,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $payloadJson = json_encode($rawPayload, JSON_UNESCAPED_UNICODE);
                 $nowJst = date('Y-m-d H:i:s');
 
-                // A. チャットメッセージ履歴テーブルへ即座に確実に保存 & 顧客カルテ更新 (最優先)
-                $targetAccountKeys = [$activeAccount];
-                if (function_exists('getAccountList')) {
-                    foreach (getAccountList() as $accItem) {
-                        $accId = $accItem['id'];
-                        if ($accId !== $activeAccount) {
-                            try {
-                                $accDb = getDbConnection($accId);
-                                $chk = $accDb->prepare("SELECT id FROM customer_cars WHERE TRIM(user_id) = :uid LIMIT 1");
-                                $chk->execute([':uid' => $userId]);
-                                if ($chk->fetch()) {
-                                    $targetAccountKeys[] = $accId;
-                                }
-                            } catch (Throwable $t) {}
-                        }
-                    }
-                }
-                $targetAccountKeys = array_values(array_unique($targetAccountKeys));
-
-                foreach ($targetAccountKeys as $targetAccKey) {
+                // A. チャットメッセージ履歴テーブルへ即座に確実に保存 (最優先・全アカウントDBへ完全同期)
+                foreach ($allAccountKeys as $targetAccKey) {
                     try {
-                        $targetDb = ($targetAccKey === $activeAccount) ? $db : getDbConnection($targetAccKey);
-                        ensureCustomerExists($targetDb, $userId, $targetAccKey);
+                        $targetDb = ($targetAccKey === $activeAccount && $db) ? $db : getDbConnection($targetAccKey);
                         
+                        // chat_messagesテーブルの存在を保証
+                        $targetDb->exec("
+                            CREATE TABLE IF NOT EXISTS chat_messages (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                user_id TEXT NOT NULL,
+                                direction TEXT NOT NULL DEFAULT 'incoming',
+                                message_type TEXT NOT NULL DEFAULT 'text',
+                                message_text TEXT NOT NULL DEFAULT '',
+                                payload_json TEXT DEFAULT '{}',
+                                is_read INTEGER NOT NULL DEFAULT 0,
+                                sent_by TEXT DEFAULT '',
+                                created_at DATETIME NOT NULL
+                            );
+                            CREATE INDEX IF NOT EXISTS idx_chat_uid ON chat_messages (user_id);
+                            CREATE INDEX IF NOT EXISTS idx_chat_read ON chat_messages (direction, is_read);
+                        ");
+
+                        // 1. メッセージ保存
                         $chatStmt = $targetDb->prepare("
                             INSERT INTO chat_messages (
                                 user_id, direction, message_type, message_text, payload_json, is_read, created_at
@@ -295,6 +308,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             ':now' => $nowJst
                         ]);
 
+                        // 2. 顧客カルテの自動登録・更新
+                        ensureCustomerExists($targetDb, $userId, $targetAccKey);
+
                         $targetDb->prepare("
                             UPDATE customer_cars 
                             SET is_blocked = 0, 
@@ -304,7 +320,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 last_interaction_preview = :prev 
                             WHERE TRIM(user_id) = :uid
                         ")->execute([':now' => $nowJst, ':prev' => $preview, ':uid' => $userId]);
-                        
+
                         writeDebugLog("チャットメッセージDB保存完了 ({$targetAccKey})", ['uid' => $userId, 'text' => $userText, 'msgType' => $msgType]);
                     } catch (Throwable $chatEx) {
                         writeDebugLog("chat_messages 保存エラー ({$targetAccKey})", ['error' => $chatEx->getMessage()]);
@@ -313,11 +329,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // C. 管理者マルチ通知送信 (LINE Push / Discord / Slack / WebPush)
                 try {
-                    $cStmt = $db->prepare("SELECT user_name, picture_url FROM customer_cars WHERE TRIM(user_id) = :uid LIMIT 1");
-                    $cStmt->execute([':uid' => $userId]);
-                    $cRow = $cStmt->fetch(PDO::FETCH_ASSOC);
-                    $userName = !empty($cRow['user_name']) ? $cRow['user_name'] : 'LINE受講生';
-                    $picUrl = $cRow['picture_url'] ?? '';
+                    $userName = 'LINE受講生';
+                    $picUrl = '';
+                    if ($db) {
+                        $cStmt = $db->prepare("SELECT user_name, picture_url FROM customer_cars WHERE TRIM(user_id) = :uid LIMIT 1");
+                        $cStmt->execute([':uid' => $userId]);
+                        $cRow = $cStmt->fetch(PDO::FETCH_ASSOC);
+                        if (!empty($cRow['user_name'])) $userName = $cRow['user_name'];
+                        if (!empty($cRow['picture_url'])) $picUrl = $cRow['picture_url'];
+                    }
 
                     $userProfile = null;
                     if (empty($userName) || $userName === '受講生' || $userName === 'LINE受講生') {
@@ -336,16 +356,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ];
 
                     // 管理者LINE Push通知
-                    if (function_exists('sendAdminLineChatMessageNotification')) {
+                    if (function_exists('sendAdminLineChatMessageNotification') && $db) {
                         sendAdminLineChatMessageNotification($msgDataPayload, $userProfile, $db);
                     }
 
                     // Discord & Slack 通知
-                    sendDiscordChatMessageNotification($msgDataPayload, $userProfile, $db);
-                    sendSlackChatMessageNotification($msgDataPayload, $userProfile, $db);
+                    if ($db) {
+                        sendDiscordChatMessageNotification($msgDataPayload, $userProfile, $db);
+                        sendSlackChatMessageNotification($msgDataPayload, $userProfile, $db);
+                    }
 
                     // 🔔 ブラウザ WebPush 通知
-                    if (function_exists('sendWebPushChatMessageNotification')) {
+                    if (function_exists('sendWebPushChatMessageNotification') && $db) {
                         sendWebPushChatMessageNotification($msgDataPayload, $db, $activeAccount);
                     }
                 } catch (Throwable $disEx) {
@@ -353,7 +375,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 // D. プロライン中継が無効な場合の自動テキスト応答
-                if (!$isProlineActive && !empty($replyToken)) {
+                if (!$isProlineActive && !empty($replyToken) && $db) {
                     handleTextMessage($db, $replyToken, $userText, $userId);
                 }
 
