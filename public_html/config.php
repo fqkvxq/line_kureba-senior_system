@@ -4414,10 +4414,12 @@ function relayWebhookToProline(string $rawBody, string $signature = '', ?PDO $pd
             CURLOPT_POSTFIELDS => $rawBody,
             CURLOPT_HTTPHEADER => $headers,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 2,           // LINEのWebhook応答遅延防止のため2秒上限
-            CURLOPT_CONNECTTIMEOUT => 1,
-            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_TIMEOUT => 8,               // タイムアウトを8秒に拡大して外部サーバー遅延に対応
+            CURLOPT_CONNECTTIMEOUT => 4,        // 接続タイムアウト4秒
+            CURLOPT_SSL_VERIFYPEER => false,    // 外部ホストのSSL証明書差分エラーを防止
+            CURLOPT_SSL_VERIFYHOST => false,
             CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 5,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1
         ]);
         curl_multi_add_handle($mh, $ch);

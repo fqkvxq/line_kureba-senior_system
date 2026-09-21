@@ -15,17 +15,12 @@ SetEnv TZ Asia/Tokyo
 </IfModule>
 
 # ------------------------------------------------------------------------------
-# FastCGI / Xserver / WordPress同居環境: リライト干渉防止 & ヘッダー転送
+# FastCGI / Xserver / WordPress同居環境: ヘッダー確実転送 & リライト干渉防止
 # ------------------------------------------------------------------------------
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # 親ディレクトリ(WordPress等)のリライト干渉を防ぎ、実在ファイルを即座に確定処理
-    RewriteCond %{REQUEST_FILENAME} -f [OR]
-    RewriteCond %{REQUEST_FILENAME} -d
-    RewriteRule ^ - [L]
-
-    # FastCGI / Xserver環境向け: HTTP認証ヘッダーおよびカスタムヘッダー転送設定
+    # 1. FastCGI / Xserver環境向け: HTTP認証ヘッダーおよびLINE署名ヘッダー転送設定（最優先実行）
     RewriteCond %{HTTP:Authorization} ^(.*)
     RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
     RewriteCond %{HTTP:X-Admin-Password} ^(.*)
@@ -34,7 +29,13 @@ SetEnv TZ Asia/Tokyo
     RewriteRule .* - [e=HTTP_X_LINE_ACCOUNT:%1]
     RewriteCond %{HTTP:X-Line-Signature} ^(.*)
     RewriteRule .* - [e=HTTP_X_LINE_SIGNATURE:%1]
+
+    # 2. 親ディレクトリ(WordPress等)のリライト干渉を防ぎ、実在ファイルを即座に確定処理
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
 </IfModule>
+
 <IfModule mod_setenvif.c>
     SetEnvIfNoCase Authorization "(.*)" HTTP_AUTHORIZATION=$1
     SetEnvIfNoCase X-Admin-Password "(.*)" HTTP_X_ADMIN_PASSWORD=$1

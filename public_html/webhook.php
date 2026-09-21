@@ -488,10 +488,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // 3. プロライン (ProLine) ＆ 外部ツールへ完全中継（DB保存・通知完了後に安全に並列送信）
-    $prolineRelayResult = relayWebhookToProline($rawInput, $lineSignature, $db, $activeAccount);
-    writeDebugLog("外部ツール中継実行", $prolineRelayResult);
+    try {
+        $prolineRelayResult = relayWebhookToProline($rawInput, $lineSignature, $db, $activeAccount);
+        writeDebugLog("外部ツール中継実行", $prolineRelayResult);
+    } catch (Throwable $prEx) {
+        writeDebugLog("プロライン中継例外", ['error' => $prEx->getMessage()]);
+    }
 
     http_response_code(200);
     echo 'OK';
+    if (function_exists('fastcgi_finish_request')) {
+        @fastcgi_finish_request();
+    }
     exit;
 }
