@@ -13,8 +13,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260921_gear_fix_v1">
-    <link rel="stylesheet" href="richmenu.css?v=20260921_gear_fix_v1">
+    <link rel="stylesheet" href="admin.css?v=20260921_custom_banner_category">
+    <link rel="stylesheet" href="richmenu.css?v=20260921_custom_banner_category">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -450,12 +450,13 @@
                     </button>
                 </div>
 
-                <!-- フィルタータブ (すべて / 通常メニュー / 📢 お知らせ専用メニュー) -->
+                <!-- フィルタータブ (すべて / 通常メニュー / 🔤 専用メッセージ帯付き / 📢 お知らせ専用メニュー) -->
                 <div class="history-filter-bar">
                     <div class="history-filter-tabs">
                         <button type="button" class="btn-filter-tab active" data-filter="all">すべて (<span id="countFilterAll">0</span>)</button>
                         <button type="button" class="btn-filter-tab" data-filter="normal">通常メニュー (<span id="countFilterNormal">0</span>)</button>
-                        <button type="button" class="btn-filter-tab" data-filter="notice"><i class="fa-solid fa-bullhorn"></i> お知らせ専用メニュー (<span id="countFilterNotice">0</span>)</button>
+                        <button type="button" class="btn-filter-tab" data-filter="custom_banner"><i class="fa-solid fa-wand-magic-sparkles"></i> 専用メッセージ帯付き (<span id="countFilterCustomBanner">0</span>)</button>
+                        <button type="button" class="btn-filter-tab" data-filter="notice"><i class="fa-solid fa-bullhorn"></i> お知らせ専用 (<span id="countFilterNotice">0</span>)</button>
                     </div>
                 </div>
 
@@ -956,6 +957,6 @@
     <!-- トースト通知 -->
     <div class="toast-notification" id="adminToast"></div>
 
-    <script src="richmenu.js?v=20260921_custom_labels_v2"></script>
+    <script src="richmenu.js?v=20260921_custom_banner_category"></script>
 </body>
 </html>

@@ -970,6 +970,32 @@
     z-index: 2;
 }
 
+.badge-custom-banner-tag {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.35);
+    z-index: 2;
+}
+
+.history-card.is-custom-banner-card {
+    border-color: #c7d2fe;
+}
+
+.history-card.is-custom-banner-card:hover {
+    border-color: #818cf8;
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.12);
+}
+
 .badge-notice-live {
     position: absolute;
     top: 10px;

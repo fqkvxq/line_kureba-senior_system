@@ -286,6 +286,7 @@ const elements = {
     emptyCreateBtn: document.getElementById('emptyCreateBtn'),
     countFilterAll: document.getElementById('countFilterAll'),
     countFilterNormal: document.getElementById('countFilterNormal'),
+    countFilterCustomBanner: document.getElementById('countFilterCustomBanner'),
     countFilterNotice: document.getElementById('countFilterNotice'),
     filterTabs: document.querySelectorAll('.btn-filter-tab'),
     historyPaginationBar: document.getElementById('historyPaginationBar'),
@@ -3339,20 +3340,38 @@ function updateLiveStatusBadge() {
     elements.historyCount.textContent = state.historyList.length;
 }
 
+// 専用メッセージ帯付きリッチメニュー判定ヘルパー
+function isCustomBannerMenu(item) {
+    if (!item) return false;
+    // 1. text_overlays が設定されている
+    if (Array.isArray(item.text_overlays) && item.text_overlays.length > 0) return true;
+    if (item.text_overlays_json && item.text_overlays_json !== '[]' && item.text_overlays_json.length > 2) return true;
+    // 2. タイトルに「専用メッセージ」「メッセージ帯」「専用帯」「帯付き」「次回」「期日」「カスタム」等のキーワードが含まれている
+    const title = (item.title || '');
+    if (title.includes('専用メッセージ') || title.includes('メッセージ帯') || title.includes('専用帯') || title.includes('帯付き') || title.includes('カスタムメニュー') || title.includes('専用メニュー')) return true;
+    // 3. is_custom フラグ
+    if (item.is_custom == 1 || item.is_custom_message == 1) return true;
+    return false;
+}
+
 function renderHistoryList() {
     elements.historyGrid.innerHTML = '';
 
     const totalCount = state.historyList.length;
-    const normalCount = state.historyList.filter(m => !m.is_notice || m.is_notice == 0).length;
     const noticeCount = state.historyList.filter(m => m.is_notice == 1).length;
+    const customBannerCount = state.historyList.filter(m => isCustomBannerMenu(m) && m.is_notice != 1).length;
+    const normalCount = state.historyList.filter(m => (!m.is_notice || m.is_notice == 0) && !isCustomBannerMenu(m)).length;
 
     if (elements.countFilterAll) elements.countFilterAll.textContent = totalCount;
     if (elements.countFilterNormal) elements.countFilterNormal.textContent = normalCount;
+    if (elements.countFilterCustomBanner) elements.countFilterCustomBanner.textContent = customBannerCount;
     if (elements.countFilterNotice) elements.countFilterNotice.textContent = noticeCount;
 
     let filteredList = state.historyList;
     if (state.historyFilter === 'normal') {
-        filteredList = state.historyList.filter(m => !m.is_notice || m.is_notice == 0);
+        filteredList = state.historyList.filter(m => (!m.is_notice || m.is_notice == 0) && !isCustomBannerMenu(m));
+    } else if (state.historyFilter === 'custom_banner') {
+        filteredList = state.historyList.filter(m => isCustomBannerMenu(m) && m.is_notice != 1);
     } else if (state.historyFilter === 'notice') {
         filteredList = state.historyList.filter(m => m.is_notice == 1);
     }
@@ -3388,19 +3407,22 @@ function renderHistoryList() {
     pageItems.forEach(item => {
         const isLive = (item.is_active == 1 || (item.line_menu_id && item.line_menu_id === state.currentLineDefaultId));
         const isNotice = (item.is_notice == 1);
+        const isCustomBanner = isCustomBannerMenu(item) && !isNotice;
         const isActiveNotice = (isNotice && state.activeNoticeId && item.id == state.activeNoticeId);
 
         const card = document.createElement('div');
-        card.className = 'history-card' + (isLive ? ' active-live' : '');
+        card.className = 'history-card' + (isLive ? ' active-live' : '') + (isCustomBanner ? ' is-custom-banner-card' : '');
 
         const areaCount = item.areas ? item.areas.length : 0;
         const sizeLabel = (item.height == 843) ? '小 (2500×843)' : '大 (2500×1686)';
+        const overlayCount = (Array.isArray(item.text_overlays) ? item.text_overlays.length : 0);
 
         card.innerHTML = `
             <div class="history-thumb-wrap">
                 <img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.title)}" loading="lazy" onerror="if(this.dataset.retry!=='1'){this.dataset.retry='1';this.src='../api.php?action=richmenu_image&id=${item.id}';}">
                 ${isLive ? '<span class="badge-live-now"><i class="fa-solid fa-circle-check"></i> 全体本番中</span>' : ''}
                 ${isNotice ? '<span class="badge-notice-tag"><i class="fa-solid fa-bullhorn"></i> お知らせ専用</span>' : ''}
+                ${isCustomBanner ? '<span class="badge-custom-banner-tag"><i class="fa-solid fa-wand-magic-sparkles"></i> 専用メッセージ帯</span>' : ''}
                 ${isActiveNotice ? '<span class="badge-notice-live"><i class="fa-solid fa-bolt"></i> クイックリプライ連携中</span>' : ''}
                 <span class="badge-size">${sizeLabel}</span>
             </div>
@@ -3420,6 +3442,7 @@ function renderHistoryList() {
                     <span><i class="fa-solid fa-clock"></i> 登録日時: ${escapeHtml(item.created_at || '-')}</span>
                     <span><i class="fa-solid fa-table-cells"></i> 設定エリア数: ${areaCount}枠</span>
                     <span><i class="fa-solid fa-comment-dots"></i> 下部バー表示: 「${escapeHtml(item.chat_bar_text || 'メニュー')}」</span>
+                    ${isCustomBanner ? `<span style="color:#6366f1;font-weight:700;"><i class="fa-solid fa-wand-magic-sparkles"></i> 装飾・帯テキスト: ${overlayCount > 0 ? overlayCount + '件' : 'あり'}</span>` : ''}
                     ${item.alias_id ? `<span><i class="fa-solid fa-tag"></i> エイリアス: <code>${escapeHtml(item.alias_id)}</code></span>` : ''}
                 </div>
                 <div class="history-actions">

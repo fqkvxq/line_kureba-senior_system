@@ -3480,22 +3480,55 @@ function updateDirectAssignSelect(preferredMenuId) {
         return b.id - a.id;
     });
 
-    sortedMenus.forEach(m => {
+    let foundMatch = false;
+
+    // カテゴリーごとに分類
+    const liveMenus = sortedMenus.filter(m => (m.is_active == 1 || m.is_line_default));
+    const customBannerMenus = sortedMenus.filter(m => !m.is_notice && ((Array.isArray(m.text_overlays) && m.text_overlays.length > 0) || (m.title || '').includes('専用メッセージ') || (m.title || '').includes('メッセージ帯') || (m.title || '').includes('専用帯') || (m.title || '').includes('帯付き')));
+    const noticeMenus = sortedMenus.filter(m => m.is_notice == 1);
+    const normalMenus = sortedMenus.filter(m => !m.is_notice && !customBannerMenus.includes(m));
+
+    const addOpt = (m, container) => {
         const isLive = (m.is_active == 1 || m.is_line_default);
         const isSynced = (m.is_line_synced !== false);
         const opt = document.createElement('option');
         opt.value = m.id;
         let prefix = '';
-        if (isLive) prefix = '★ [LINE公開中] ';
-        else if (!isSynced) prefix = '⚠️ [LINE側未同期] ';
+        if (isLive) prefix = '★ ';
+        else if (!isSynced) prefix = '⚠️ ';
 
         opt.textContent = prefix + m.title + ` (ボタン${(m.areas || []).length}個)`;
         if (preferredMenuId && (String(m.id) === String(preferredMenuId) || String(m.line_menu_id) === String(preferredMenuId))) {
             opt.selected = true;
             foundMatch = true;
         }
-        elements.directAssignMenuSelect.appendChild(opt);
-    });
+        container.appendChild(opt);
+    };
+
+    if (liveMenus.length > 0) {
+        const group = document.createElement('optgroup');
+        group.label = '★ LINE全体で現在公開中のメニュー';
+        liveMenus.forEach(m => addOpt(m, group));
+        elements.directAssignMenuSelect.appendChild(group);
+    }
+    if (normalMenus.length > 0) {
+        const group = document.createElement('optgroup');
+        group.label = '📁 通常メニュー';
+        normalMenus.forEach(m => addOpt(m, group));
+        elements.directAssignMenuSelect.appendChild(group);
+    }
+    if (customBannerMenus.length > 0) {
+        const group = document.createElement('optgroup');
+        group.label = '✨ 専用メッセージ帯付きメニュー';
+        customBannerMenus.forEach(m => addOpt(m, group));
+        elements.directAssignMenuSelect.appendChild(group);
+    }
+    if (noticeMenus.length > 0) {
+        const group = document.createElement('optgroup');
+        group.label = '📢 お知らせ専用メニュー';
+        noticeMenus.forEach(m => addOpt(m, group));
+        elements.directAssignMenuSelect.appendChild(group);
+    }
 
     if (!foundMatch && sortedMenus.length > 0) {
         const defaultMenu = sortedMenus.find(m => m.is_active == 1) || sortedMenus[0];
