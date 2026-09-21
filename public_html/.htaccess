@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------------
-# アップファーレン サーバー設定 (.htaccess)
+# アップファーレン サーバー設定 (public_html/.htaccess)
 # タイムゾーンを日本時間(JST / Asia/Tokyo)に設定
 # ------------------------------------------------------------------------------
 SetEnv TZ Asia/Tokyo
@@ -15,10 +15,15 @@ SetEnv TZ Asia/Tokyo
 </IfModule>
 
 # ------------------------------------------------------------------------------
-# FastCGI / Xserver環境向け: HTTP認証ヘッダーおよびカスタムヘッダー転送設定
+# FastCGI / Xserver / WordPress同居環境: リライト干渉防止 & ヘッダー転送
 # ------------------------------------------------------------------------------
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # 親ディレクトリ(WordPress等)のリライト干渉を防ぎ、実在ファイルを即座に確定処理
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
 
     # FastCGI / Xserver環境向け: HTTP認証ヘッダーおよびカスタムヘッダー転送設定
     RewriteCond %{HTTP:Authorization} ^(.*)

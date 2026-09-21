@@ -30,13 +30,19 @@ SetEnv TZ Asia/Tokyo
     RewriteCond %{HTTP:X-Line-Signature} ^(.*)
     RewriteRule .* - [e=HTTP_X_LINE_SIGNATURE:%1]
 
-    # 1. ルート直下へのアクセスは index.php に委譲（PHP側で安全に完全絶対URLへ転送）
+    # すでに public_html 配下へのリライト済みの場合は何もしない (再帰ループ AH00124 防止)
+    RewriteCond %{ENV:REDIRECT_STATUS} 200
+    RewriteRule .* - [L]
+
+    # 1. ルート直下へのアクセスは index.php に委譲
     RewriteRule ^$ index.php [L]
 
     # 2. 内部的にすべてのリクエストを public_html/ 配下のファイル・ディレクトリへ透過転送
-    RewriteCond %{REQUEST_URI} !public_html
+    RewriteCond %{REQUEST_URI} !/public_html/
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{DOCUMENT_ROOT}/public_html/$1 -f [OR]
+    RewriteCond %{DOCUMENT_ROOT}/public_html/$1 -d
     RewriteRule ^(.*)$ public_html/$1 [L]
 </IfModule>
 
@@ -46,4 +52,3 @@ SetEnv TZ Asia/Tokyo
     SetEnvIfNoCase X-Line-Account "(.*)" HTTP_X_LINE_ACCOUNT=$1
     SetEnvIfNoCase X-Line-Signature "(.*)" HTTP_X_LINE_SIGNATURE=$1
 </IfModule>
-
