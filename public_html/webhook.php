@@ -161,22 +161,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 1. データベース接続の確立
     try {
         $db = getDbConnection($activeAccount);
-        // チャットメッセージテーブルの自動作成保証
-        $db->exec("
-            CREATE TABLE IF NOT EXISTS chat_messages (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id TEXT NOT NULL,
-                direction TEXT NOT NULL DEFAULT 'incoming',
-                message_type TEXT NOT NULL DEFAULT 'text',
-                message_text TEXT NOT NULL DEFAULT '',
-                payload_json TEXT DEFAULT '{}',
-                is_read INTEGER NOT NULL DEFAULT 0,
-                sent_by TEXT DEFAULT '',
-                created_at DATETIME NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS idx_chat_uid ON chat_messages (user_id);
-            CREATE INDEX IF NOT EXISTS idx_chat_read ON chat_messages (direction, is_read);
-        ");
+        // チャットメッセージテーブルの自動作成保証 (単一SQLごとに安全に実行)
+        try {
+            $db->exec("
+                CREATE TABLE IF NOT EXISTS chat_messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id TEXT NOT NULL,
+                    direction TEXT NOT NULL DEFAULT 'incoming',
+                    message_type TEXT NOT NULL DEFAULT 'text',
+                    message_text TEXT NOT NULL DEFAULT '',
+                    payload_json TEXT DEFAULT '{}',
+                    is_read INTEGER NOT NULL DEFAULT 0,
+                    sent_by TEXT DEFAULT '',
+                    created_at DATETIME NOT NULL
+                )
+            ");
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_chat_uid ON chat_messages (user_id)");
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_chat_read ON chat_messages (direction, is_read)");
+        } catch (Throwable $tblEx) {}
     } catch (Exception $e) {
         writeDebugLog("DB接続例外: " . $e->getMessage(), ['account' => $activeAccount]);
     }
@@ -275,22 +277,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     try {
                         $targetDb = ($targetAccKey === $activeAccount && $db) ? $db : getDbConnection($targetAccKey);
                         
-                        // chat_messagesテーブルの存在を保証
-                        $targetDb->exec("
-                            CREATE TABLE IF NOT EXISTS chat_messages (
-                                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                user_id TEXT NOT NULL,
-                                direction TEXT NOT NULL DEFAULT 'incoming',
-                                message_type TEXT NOT NULL DEFAULT 'text',
-                                message_text TEXT NOT NULL DEFAULT '',
-                                payload_json TEXT DEFAULT '{}',
-                                is_read INTEGER NOT NULL DEFAULT 0,
-                                sent_by TEXT DEFAULT '',
-                                created_at DATETIME NOT NULL
-                            );
-                            CREATE INDEX IF NOT EXISTS idx_chat_uid ON chat_messages (user_id);
-                            CREATE INDEX IF NOT EXISTS idx_chat_read ON chat_messages (direction, is_read);
-                        ");
+                        // chat_messagesテーブルの存在を保証 (単一SQLごとに安全に実行)
+                        try {
+                            $targetDb->exec("
+                                CREATE TABLE IF NOT EXISTS chat_messages (
+                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    user_id TEXT NOT NULL,
+                                    direction TEXT NOT NULL DEFAULT 'incoming',
+                                    message_type TEXT NOT NULL DEFAULT 'text',
+                                    message_text TEXT NOT NULL DEFAULT '',
+                                    payload_json TEXT DEFAULT '{}',
+                                    is_read INTEGER NOT NULL DEFAULT 0,
+                                    sent_by TEXT DEFAULT '',
+                                    created_at DATETIME NOT NULL
+                                )
+                            ");
+                            $targetDb->exec("CREATE INDEX IF NOT EXISTS idx_chat_uid ON chat_messages (user_id)");
+                            $targetDb->exec("CREATE INDEX IF NOT EXISTS idx_chat_read ON chat_messages (direction, is_read)");
+                        } catch (Throwable $tExx) {}
 
                         // 1. メッセージ保存
                         $chatStmt = $targetDb->prepare("
