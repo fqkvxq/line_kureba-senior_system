@@ -101,17 +101,19 @@ window.fetch = function (resource, init = {}) {
         if (currentPass && !url.includes('password=')) {
             url += (url.includes('?') ? '&' : '?') + 'password=' + encodeURIComponent(currentPass);
         }
-                if (typeof resource === 'string') {
-                    resource = url;
-                } else if (resource && resource.url) {
-                    resource = new Request(url, init);
+        if (currentToken || currentPass) {
+            if (typeof resource === 'string') {
+                resource = url;
+            } else if (resource && resource.url) {
+                resource = new Request(url, init);
+            }
+            if (currentPass) {
+                if (init && init.body && init.body instanceof URLSearchParams && !init.body.has('password')) {
+                    init.body.append('password', currentPass);
                 }
-            }
-            if (init && init.body && init.body instanceof URLSearchParams && !init.body.has('password')) {
-                init.body.append('password', currentPass);
-            }
-            if (init && init.body && typeof FormData !== 'undefined' && init.body instanceof FormData && !init.body.has('password')) {
-                init.body.append('password', currentPass);
+                if (init && init.body && typeof FormData !== 'undefined' && init.body instanceof FormData && !init.body.has('password')) {
+                    init.body.append('password', currentPass);
+                }
             }
         }
 
