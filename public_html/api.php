@@ -757,9 +757,10 @@ try {
                 exit;
             }
 
-            // 2FAが有効な場合
-            if (defined('ENABLE_ADMIN_2FA') && ENABLE_ADMIN_2FA) {
-                $targetEmail = defined('ADMIN_2FA_EMAIL') ? ADMIN_2FA_EMAIL : 'kawai@kureba.co.jp';
+            // 2FA設定を確認
+            $twoFa = getAdmin2FASettings($db);
+            if (!empty($twoFa['enabled'])) {
+                $targetEmail = !empty($twoFa['email']) ? $twoFa['email'] : 'kawai@kureba.co.jp';
                 $sessionRes = createAdmin2FASession($db, $targetEmail);
                 echo json_encode([
                     'success' => true,
@@ -836,7 +837,71 @@ try {
             echo json_encode($resendRes, JSON_UNESCAPED_UNICODE);
             exit;
 
-        // --- 0-18. 管理者ログアウト ---
+        // --- 0-18. 2FA設定取得 ---
+        case 'get_2fa_settings':
+            $authPass = getAdminAuthPassword();
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $settings = getAdmin2FASettings($db);
+            echo json_encode(['success' => true, 'settings' => $settings], JSON_UNESCAPED_UNICODE);
+            exit;
+
+        // --- 0-19. 2FA設定保存 ---
+        case 'save_2fa_settings':
+            $authPass = getAdminAuthPassword();
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $email = trim($_POST['email'] ?? '');
+            if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                echo json_encode(['success' => false, 'error' => '有効なメールアドレスを入力してください']);
+                exit;
+            }
+
+            $settings = [
+                'enabled' => !empty($_POST['enabled']),
+                'email' => $email,
+                'lifetime_minutes' => max(1, min(60, (int)($_POST['lifetime_minutes'] ?? 10))),
+                'max_attempts' => max(1, min(20, (int)($_POST['max_attempts'] ?? 5)))
+            ];
+
+            $res = saveAdmin2FASettings($settings, $db);
+            if ($res) {
+                echo json_encode(['success' => true, 'message' => 'メール二段階認証設定を保存しました', 'settings' => $settings], JSON_UNESCAPED_UNICODE);
+            } else {
+                echo json_encode(['success' => false, 'error' => '設定の保存に失敗しました']);
+            }
+            exit;
+
+        // --- 0-20. 2FAテストメール送信 ---
+        case 'test_2fa_email':
+            $authPass = getAdminAuthPassword();
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $targetEmail = trim($_POST['email'] ?? '');
+            if (empty($targetEmail)) {
+                $currentSettings = getAdmin2FASettings($db);
+                $targetEmail = $currentSettings['email'] ?? '';
+            }
+
+            if (empty($targetEmail) || !filter_var($targetEmail, FILTER_VALIDATE_EMAIL)) {
+                echo json_encode(['success' => false, 'error' => '有効な送信先メールアドレスを指定してください']);
+                exit;
+            }
+
+            $testRes = sendAdmin2FATestEmail($targetEmail);
+            echo json_encode($testRes, JSON_UNESCAPED_UNICODE);
+            exit;
+
+        // --- 0-21. 管理者ログアウト ---
         case 'admin_logout':
             $token = $_COOKIE['admin_auth_token'] ?? ($_POST['auth_token'] ?? ($_GET['auth_token'] ?? ''));
             if (!empty($token)) {

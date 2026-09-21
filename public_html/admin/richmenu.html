@@ -13,8 +13,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260921_fix_syntax_portable_v2">
-    <link rel="stylesheet" href="richmenu.css?v=20260921_fix_syntax_portable_v2">
+    <link rel="stylesheet" href="admin.css?v=20260921_email_2fa_v1">
+    <link rel="stylesheet" href="richmenu.css?v=20260921_email_2fa_v1">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -95,6 +95,10 @@
                             <i class="fa-solid fa-gear"></i>
                         </button>
                     </div>
+
+                    <button type="button" class="btn-account-manage" id="btnOpen2FASettingsModal" title="管理者ログイン時のメール二段階認証(2FA)セキュリティ設定" style="background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd;">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </button>
 
                     <button class="btn-logout" id="logoutBtn" title="ログアウト">
                         <i class="fa-solid fa-arrow-right-from-bracket"></i>
@@ -948,6 +952,92 @@
         </div>
     </div>
 
+    <!-- メール二段階認証 (2FA) セキュリティ設定モーダル -->
+    <div class="modal" id="twoFaSettingsModal" style="display: none;">
+        <div class="modal-dialog" style="max-width: 540px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #fff; padding: 16px 20px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #fff;">メール二段階認証 (2FA) セキュリティ設定</h3>
+                        <span style="font-size: 12px; opacity: 0.9;">管理者ログイン時のワンタイムパスワード送信設定</span>
+                    </div>
+                </div>
+                <button class="modal-close" id="btnClose2FASettingsModal" style="color: #fff; opacity: 0.8;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div style="padding: 20px;">
+                <!-- 有効/無効 スイッチカード -->
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <div style="font-weight: 700; font-size: 14px; color: #166534; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-lock"></i> メール二段階認証を有効化
+                        </div>
+                        <div style="font-size: 12px; color: #15803d; margin-top: 2px;">
+                            ログイン時に登録メールアドレス宛へ6桁の認証コードを送信します
+                        </div>
+                    </div>
+                    <label class="switch-toggle" style="position: relative; display: inline-block; width: 48px; height: 26px; margin: 0;">
+                        <input type="checkbox" id="twoFaEnabledToggle" style="opacity: 0; width: 0; height: 0;">
+                        <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 34px;"></span>
+                    </label>
+                </div>
+
+                <!-- 設定フォーム -->
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label for="twoFaEmailInput" style="font-weight: 700; font-size: 13px; color: #334155; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                        <i class="fa-solid fa-envelope" style="color: #0284c7;"></i> 認証コード送信先メールアドレス <span style="color: #dc2626;">*</span>
+                    </label>
+                    <input type="email" id="twoFaEmailInput" placeholder="例: admin@example.com" style="width: 100%; box-sizing: border-box; padding: 9px 12px; font-size: 13px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
+                    <small style="color: #64748b; font-size: 11.5px; margin-top: 4px; display: block;">
+                        ※ログイン時にこのメールアドレス宛てに「6桁のワンタイムコード」が自動送信されます。
+                    </small>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                    <div class="form-group" style="margin: 0;">
+                        <label for="twoFaLifetimeInput" style="font-weight: 700; font-size: 12.5px; color: #334155; margin-bottom: 4px; display: block;">
+                            <i class="fa-solid fa-clock" style="color: #6366f1;"></i> コード有効期限
+                        </label>
+                        <select id="twoFaLifetimeInput" style="width: 100%; box-sizing: border-box; padding: 8px 10px; font-size: 13px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); background: #fff;">
+                            <option value="5">5分間</option>
+                            <option value="10" selected>10分間（推奨）</option>
+                            <option value="15">15分間</option>
+                            <option value="30">30分間</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin: 0;">
+                        <label for="twoFaMaxAttemptsInput" style="font-weight: 700; font-size: 12.5px; color: #334155; margin-bottom: 4px; display: block;">
+                            <i class="fa-solid fa-shield" style="color: #ea580c;"></i> 最大試行回数
+                        </label>
+                        <select id="twoFaMaxAttemptsInput" style="width: 100%; box-sizing: border-box; padding: 8px 10px; font-size: 13px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); background: #fff;">
+                            <option value="3">3回まで</option>
+                            <option value="5" selected>5回まで（標準）</option>
+                            <option value="10">10回まで</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="twoFaStatusBanner" style="display: none; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 12.5px; font-weight: 600; margin-bottom: 16px;"></div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; pt: 12px; border-top: 1px solid #e2e8f0; padding-top: 14px;">
+                    <button type="button" id="btnTest2FAEmail" class="btn-secondary" style="background: #f8fafc; border: 1px solid #cbd5e1; color: #334155; padding: 8px 14px; font-size: 12.5px; font-weight: 600; border-radius: var(--radius-sm); cursor: pointer;">
+                        <i class="fa-solid fa-paper-plane" style="color: #0284c7;"></i> テスト認証メール送信
+                    </button>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="btn-cancel" id="btnCancel2FAModal">キャンセル</button>
+                        <button type="button" id="btnSave2FASettings" class="btn-primary" style="background: #0284c7; border-color: #0284c7; padding: 8px 18px; font-weight: 700; color: #fff;">
+                            <i class="fa-solid fa-floppy-disk"></i> 設定を保存
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ローディングオーバーレイ -->
     <div class="loading-overlay" id="loadingOverlay" style="display: none;">
         <div class="loading-spinner"></div>
@@ -957,6 +1047,6 @@
     <!-- トースト通知 -->
     <div class="toast-notification" id="adminToast"></div>
 
-    <script src="richmenu.js?v=20260921_fix_syntax_portable_v2"></script>
+    <script src="richmenu.js?v=20260921_email_2fa_v1"></script>
 </body>
 </html>

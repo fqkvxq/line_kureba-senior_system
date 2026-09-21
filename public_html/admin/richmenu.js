@@ -308,7 +308,20 @@ const elements = {
     // ローディング & トースト
     loadingOverlay: document.getElementById('loadingOverlay'),
     loadingMsg: document.getElementById('loadingMsg'),
-    toast: document.getElementById('adminToast')
+    toast: document.getElementById('adminToast'),
+
+    // 2FA設定モーダル
+    btnOpen2FASettingsModal: document.getElementById('btnOpen2FASettingsModal'),
+    twoFaSettingsModal: document.getElementById('twoFaSettingsModal'),
+    btnClose2FASettingsModal: document.getElementById('btnClose2FASettingsModal'),
+    btnCancel2FAModal: document.getElementById('btnCancel2FAModal'),
+    twoFaEnabledToggle: document.getElementById('twoFaEnabledToggle'),
+    twoFaEmailInput: document.getElementById('twoFaEmailInput'),
+    twoFaLifetimeInput: document.getElementById('twoFaLifetimeInput'),
+    twoFaMaxAttemptsInput: document.getElementById('twoFaMaxAttemptsInput'),
+    btnTest2FAEmail: document.getElementById('btnTest2FAEmail'),
+    btnSave2FASettings: document.getElementById('btnSave2FASettings'),
+    twoFaStatusBanner: document.getElementById('twoFaStatusBanner')
 };
 
 // ================= 初期化 =================
@@ -317,6 +330,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initAuth();
     initEventListeners();
     initAccountManagement();
+    init2FASettings();
 });
 
 async function loadAccounts() {
@@ -4647,3 +4661,169 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1500);
     });
 });
+
+/* ==========================================================================
+   メール二段階認証 (2FA) セキュリティ設定機能
+   ========================================================================== */
+
+function init2FASettings() {
+    if (elements.btnOpen2FASettingsModal) {
+        elements.btnOpen2FASettingsModal.addEventListener('click', open2FASettingsModal);
+    }
+    if (elements.btnClose2FASettingsModal) {
+        elements.btnClose2FASettingsModal.addEventListener('click', close2FASettingsModal);
+    }
+    if (elements.btnCancel2FAModal) {
+        elements.btnCancel2FAModal.addEventListener('click', close2FASettingsModal);
+    }
+    if (elements.btnSave2FASettings) {
+        elements.btnSave2FASettings.addEventListener('click', save2FASettings);
+    }
+    if (elements.btnTest2FAEmail) {
+        elements.btnTest2FAEmail.addEventListener('click', test2FAEmail);
+    }
+}
+
+async function open2FASettingsModal() {
+    if (elements.twoFaStatusBanner) {
+        elements.twoFaStatusBanner.style.display = 'none';
+    }
+
+    if (elements.twoFaSettingsModal) {
+        elements.twoFaSettingsModal.classList.add('active');
+        elements.twoFaSettingsModal.style.display = 'flex';
+    }
+
+    try {
+        const res = await fetch(`../api.php?action=get_2fa_settings&password=${encodeURIComponent(state.password || '')}`);
+        const data = await res.json();
+
+        if (data.success && data.settings) {
+            const s = data.settings;
+            if (elements.twoFaEnabledToggle) elements.twoFaEnabledToggle.checked = !!s.enabled;
+            if (elements.twoFaEmailInput) elements.twoFaEmailInput.value = s.email || 'kawai@kureba.co.jp';
+            if (elements.twoFaLifetimeInput) elements.twoFaLifetimeInput.value = String(s.lifetime_minutes || 10);
+            if (elements.twoFaMaxAttemptsInput) elements.twoFaMaxAttemptsInput.value = String(s.max_attempts || 5);
+        }
+    } catch (e) {
+        console.error('Failed to load 2FA settings:', e);
+    }
+}
+
+function close2FASettingsModal() {
+    if (elements.twoFaSettingsModal) {
+        elements.twoFaSettingsModal.classList.remove('active');
+        elements.twoFaSettingsModal.style.display = 'none';
+    }
+}
+
+async function save2FASettings() {
+    const enabled = elements.twoFaEnabledToggle ? elements.twoFaEnabledToggle.checked : false;
+    const email = elements.twoFaEmailInput ? elements.twoFaEmailInput.value.trim() : '';
+    const lifetime = elements.twoFaLifetimeInput ? elements.twoFaLifetimeInput.value : '10';
+    const maxAttempts = elements.twoFaMaxAttemptsInput ? elements.twoFaMaxAttemptsInput.value : '5';
+
+    if (!email) {
+        alert('認証コード送信先のメールアドレスを入力してください。');
+        elements.twoFaEmailInput?.focus();
+        return;
+    }
+
+    const btn = elements.btnSave2FASettings;
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 保存中...';
+    }
+
+    try {
+        const payload = new URLSearchParams({
+            action: 'save_2fa_settings',
+            password: state.password,
+            enabled: enabled ? '1' : '0',
+            email: email,
+            lifetime_minutes: lifetime,
+            max_attempts: maxAttempts
+        });
+
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            showToast('メール二段階認証設定を保存しました！', 'success');
+            close2FASettingsModal();
+        } else {
+            alert(data.error || '設定の保存に失敗しました');
+        }
+    } catch (e) {
+        console.error('Save 2FA settings error:', e);
+        alert('保存エラーが発生しました: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
+
+async function test2FAEmail() {
+    const email = elements.twoFaEmailInput ? elements.twoFaEmailInput.value.trim() : '';
+    if (!email) {
+        alert('テスト送信を行う送信先メールアドレスを入力してください。');
+        elements.twoFaEmailInput?.focus();
+        return;
+    }
+
+    const banner = elements.twoFaStatusBanner;
+    if (banner) {
+        banner.style.display = 'block';
+        banner.style.background = '#e0f2fe';
+        banner.style.color = '#0284c7';
+        banner.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 認証コードテストメールを送信中...';
+    }
+
+    const testBtn = elements.btnTest2FAEmail;
+    if (testBtn) testBtn.disabled = true;
+
+    try {
+        const payload = new URLSearchParams({
+            action: 'test_2fa_email',
+            password: state.password,
+            email: email
+        });
+
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            if (banner) {
+                banner.style.background = '#dcfce7';
+                banner.style.color = '#166534';
+                banner.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${escapeHtml(data.message || 'テストメールを送信しました！受信ボックスをご確認ください。')}`;
+            }
+        } else {
+            if (banner) {
+                banner.style.background = '#fee2e2';
+                banner.style.color = '#991b1b';
+                banner.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> 送信失敗: ${escapeHtml(data.error || data.message || 'メール送信に失敗しました')}`;
+            }
+        }
+    } catch (e) {
+        if (banner) {
+            banner.style.background = '#fee2e2';
+            banner.style.color = '#991b1b';
+            banner.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> 通信エラー: ${escapeHtml(e.message)}`;
+        }
+    } finally {
+        if (testBtn) testBtn.disabled = false;
+    }
+}
+

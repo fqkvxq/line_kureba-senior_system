@@ -2587,6 +2587,79 @@ function maskEmailAddress(string $email): string {
 }
 
 /**
+ * 2FA設定の取得 (DBのsystem_settingsから取得、未設定時はconfig.phpの定数を使用)
+ */
+function getAdmin2FASettings(?PDO $db = null): array {
+    $default = [
+        'enabled' => defined('ENABLE_ADMIN_2FA') ? (bool)ENABLE_ADMIN_2FA : false,
+        'email' => defined('ADMIN_2FA_EMAIL') ? (string)ADMIN_2FA_EMAIL : 'kawai@kureba.co.jp',
+        'lifetime_minutes' => defined('ADMIN_2FA_CODE_LIFETIME_MINUTES') ? (int)ADMIN_2FA_CODE_LIFETIME_MINUTES : 10,
+        'max_attempts' => defined('ADMIN_2FA_MAX_ATTEMPTS') ? (int)ADMIN_2FA_MAX_ATTEMPTS : 5,
+        'updated_at' => null
+    ];
+
+    if (!$db) {
+        try {
+            $db = getDbConnection('senior');
+        } catch (Throwable $e) {
+            return $default;
+        }
+    }
+
+    try {
+        $stmt = $db->prepare("SELECT value FROM system_settings WHERE key = 'admin_2fa_settings' LIMIT 1");
+        $stmt->execute();
+        $val = $stmt->fetchColumn();
+        if ($val) {
+            $decoded = json_decode($val, true);
+            if (is_array($decoded)) {
+                return [
+                    'enabled' => !empty($decoded['enabled']),
+                    'email' => !empty($decoded['email']) ? trim($decoded['email']) : $default['email'],
+                    'lifetime_minutes' => !empty($decoded['lifetime_minutes']) ? max(1, (int)$decoded['lifetime_minutes']) : $default['lifetime_minutes'],
+                    'max_attempts' => !empty($decoded['max_attempts']) ? max(1, (int)$decoded['max_attempts']) : $default['max_attempts'],
+                    'updated_at' => $decoded['updated_at'] ?? null
+                ];
+            }
+        }
+    } catch (Throwable $e) {
+        writeDebugLog("getAdmin2FASettings エラー", ['error' => $e->getMessage()]);
+    }
+
+    return $default;
+}
+
+/**
+ * 2FA設定の保存
+ */
+function saveAdmin2FASettings(array $settings, ?PDO $db = null): bool {
+    if (!$db) {
+        try {
+            $db = getDbConnection('senior');
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    try {
+        $nowJst = date('Y-m-d H:i:s');
+        $clean = [
+            'enabled' => !empty($settings['enabled']),
+            'email' => trim((string)($settings['email'] ?? 'kawai@kureba.co.jp')),
+            'lifetime_minutes' => max(1, min(60, (int)($settings['lifetime_minutes'] ?? 10))),
+            'max_attempts' => max(1, min(20, (int)($settings['max_attempts'] ?? 5))),
+            'updated_at' => $nowJst
+        ];
+        $json = json_encode($clean, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $stmt = $db->prepare("INSERT OR REPLACE INTO system_settings (key, value, updated_at) VALUES ('admin_2fa_settings', :val, :now)");
+        return $stmt->execute([':val' => $json, ':now' => $nowJst]);
+    } catch (Throwable $e) {
+        writeDebugLog("saveAdmin2FASettings エラー", ['error' => $e->getMessage()]);
+        return false;
+    }
+}
+
+/**
  * 2FA 6桁認証コードメールを送信
  */
 function sendAdmin2FACodeEmail(string $toEmail, string $otpCode, int $expiresMinutes = 10): bool {
@@ -2642,12 +2715,65 @@ function sendAdmin2FACodeEmail(string $toEmail, string $otpCode, int $expiresMin
 }
 
 /**
+ * 2FAテストメール送信
+ */
+function sendAdmin2FATestEmail(string $toEmail): array {
+    $testCode = sprintf('%06d', random_int(100000, 999999));
+    $subject = "【テスト通知】シニア向けパソコン教室 2FA二段階認証テスト: {$testCode}";
+    $nowJst = date('Y-m-d H:i:s');
+
+    $body = "シニア向けパソコン教室 LINE受講生・カルテ管理システムの2FAメール疎通テストです。\n\n";
+    $body .= "このメールが届いた場合、メール送信サーバーとメールアドレスの設定は正常です。\n\n";
+    $body .= "========================================\n";
+    $body .= "  テスト認証コード: {$testCode}\n";
+    $body .= "  送信日時: {$nowJst} (JST)\n";
+    $body .= "  送信先: {$toEmail}\n";
+    $body .= "========================================\n\n";
+    $body .= "二段階認証を有効化すると、次回以降のログイン時に上記のような認証コードが届きます。\n\n";
+    $body .= "----------------------------------------\n";
+    $body .= "シニア向けパソコン教室 LINE受講生管理システム\n";
+
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $fromDomain = preg_replace('/^www\./', '', $host);
+    if (!str_contains($fromDomain, '.') || $fromDomain === 'localhost') {
+        $fromDomain = 'kureba.co.jp';
+    }
+    $fromEmail = "noreply@" . $fromDomain;
+
+    mb_language("Japanese");
+    mb_internal_encoding("UTF-8");
+
+    $headers = [
+        "From: =?UTF-8?B?" . base64_encode("受講生管理システム 2FAテスト") . "?= <{$fromEmail}>",
+        "Reply-To: {$fromEmail}",
+        "X-Mailer: PHP/" . phpversion(),
+        "MIME-Version: 1.0",
+        "Content-Type: text/plain; charset=UTF-8",
+        "Content-Transfer-Encoding: 8bit"
+    ];
+    $headerStr = implode("\r\n", $headers);
+
+    $sent = @mb_send_mail($toEmail, $subject, $body, $headerStr);
+    if (!$sent) {
+        $sent = @mail($toEmail, "=?UTF-8?B?" . base64_encode($subject) . "?=", $body, $headerStr);
+    }
+
+    return [
+        'success' => (bool)$sent,
+        'message' => $sent ? "テストメールを {$toEmail} 宛てに正常送信しました！受信ボックスをご確認ください。" : "メール送信に失敗しました。サーバーのmail/sendmail機能またはメールアドレスをご確認ください。"
+    ];
+}
+
+/**
  * 2FAセッションを作成し、メールを送信
  */
-function createAdmin2FASession(PDO $db, string $email): array {
+function createAdmin2FASession(PDO $db, ?string $email = null): array {
+    $twoFa = getAdmin2FASettings($db);
+    $targetEmail = $email ?: ($twoFa['email'] ?? 'kawai@kureba.co.jp');
+    $lifetime = (int)($twoFa['lifetime_minutes'] ?? 10);
+
     $otpCode = sprintf('%06d', random_int(100000, 999999));
     $sessionToken = bin2hex(random_bytes(24));
-    $lifetime = defined('ADMIN_2FA_CODE_LIFETIME_MINUTES') ? ADMIN_2FA_CODE_LIFETIME_MINUTES : 10;
     $nowJst = date('Y-m-d H:i:s');
     $expiresAt = date('Y-m-d H:i:s', strtotime("+{$lifetime} minutes"));
 
@@ -2665,19 +2791,19 @@ function createAdmin2FASession(PDO $db, string $email): array {
     ");
     $stmt->execute([
         ':token' => $sessionToken,
-        ':email' => $email,
+        ':email' => $targetEmail,
         ':code' => $otpCode,
         ':now' => $nowJst,
         ':expires' => $expiresAt
     ]);
 
     // メール送信
-    $mailSent = sendAdmin2FACodeEmail($email, $otpCode, $lifetime);
+    $mailSent = sendAdmin2FACodeEmail($targetEmail, $otpCode, $lifetime);
 
     return [
         'success' => true,
         'session_token' => $sessionToken,
-        'email_hint' => maskEmailAddress($email),
+        'email_hint' => maskEmailAddress($targetEmail),
         'expires_in' => $lifetime * 60,
         'mail_sent' => $mailSent
     ];
@@ -2702,8 +2828,9 @@ function resendAdmin2FACode(PDO $db, string $sessionToken): array {
         return ['success' => false, 'error' => "認証コードの再送信は {$waitSec} 秒後に可能です。"];
     }
 
+    $twoFa = getAdmin2FASettings($db);
+    $lifetime = (int)($twoFa['lifetime_minutes'] ?? 10);
     $newCode = sprintf('%06d', random_int(100000, 999999));
-    $lifetime = defined('ADMIN_2FA_CODE_LIFETIME_MINUTES') ? ADMIN_2FA_CODE_LIFETIME_MINUTES : 10;
     $nowJst = date('Y-m-d H:i:s');
     $expiresAt = date('Y-m-d H:i:s', strtotime("+{$lifetime} minutes"));
 
@@ -2751,7 +2878,8 @@ function verifyAdmin2FACode(PDO $db, string $sessionToken, string $inputCode): a
         return ['success' => false, 'error' => '認証コードの有効期限（10分間）が切れています。「再送信」を行ってください。'];
     }
 
-    $maxAttempts = defined('ADMIN_2FA_MAX_ATTEMPTS') ? ADMIN_2FA_MAX_ATTEMPTS : 5;
+    $twoFa = getAdmin2FASettings($db);
+    $maxAttempts = (int)($twoFa['max_attempts'] ?? 5);
     if ($row['attempts'] >= $maxAttempts) {
         return ['success' => false, 'error' => '認証試行回数の上限（5回）を超えました。最初からログインをやり直してください。'];
     }

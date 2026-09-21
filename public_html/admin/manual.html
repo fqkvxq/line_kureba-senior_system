@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260921_fix_syntax_portable_v2">
+    <link rel="stylesheet" href="manual.css?v=20260921_email_2fa_v1">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -1292,19 +1292,22 @@
                         <div class="step-card">
                             <div class="step-number">3</div>
                             <div class="step-body">
-                                <h4>送信先メールアドレスの変更・設定</h4>
-                                <p>認証コードの送信先メールアドレスや有効期限の設定は、<code>public_html/config.php</code> 内で簡単にカスタマイズできます：<br>
-                                <code>define('ADMIN_2FA_EMAIL', 'kawai@kureba.co.jp'); // 送信先メールアドレス</code><br>
-                                <code>define('ADMIN_2FA_CODE_LIFETIME_MINUTES', 10); // 有効期限（分）</code><br>
-                                <code>define('ENABLE_ADMIN_2FA', true); // 二段階認証の有効/無効トグル</code></p>
+                                <h4>画面上からの設定変更＆テスト送信（新機能）</h4>
+                                <p>管理画面ヘッダーの「<strong><i class="fa-solid fa-shield-halved" style="color: #0284c7;"></i> 2FAセキュリティ</strong>」ボタンをクリックすると、設定モーダルが開きます：<br>
+                                ・<strong>二段階認証の有効化/無効化</strong>：スイッチ一つでいつでもON/OFFを切り替え可能。<br>
+                                ・<strong>送信先メールアドレスの変更</strong>：ご担当者様のメールアドレスを画面上で直接更新可能。<br>
+                                ・<strong>コード有効期限・最大試行回数の設定</strong>：5分〜30分、3回〜10回まで柔軟に設定可能。<br>
+                                ・<strong>🧪 テスト認証メール送信</strong>：現在の設定でテストメールが届くかをワンクリックで事前確認できます。<br>
+                                ※直接ファイルで設定したい場合は <code>public_html/config.php</code> 内の <code>ENABLE_ADMIN_2FA</code> や <code>ADMIN_2FA_EMAIL</code> を編集することも可能です。</p>
                             </div>
                         </div>
                     </div>
 
                     <div class="tips-box">
-                        <div class="tips-box-title"><i class="fa-solid fa-lightbulb"></i> ワンポイントTips: 全画面での認証共有</div>
+                        <div class="tips-box-title"><i class="fa-solid fa-lightbulb"></i> ワンポイントTips: 全画面での認証共有＆安心のテスト機能</div>
                         <div class="tips-box-content">
-                            カルテ管理画面（<code>index.html</code>）、リッチメニュー管理（<code>richmenu.html</code>）、操作マニュアル（<code>manual.html</code>）のいずれかで一度二段階認証を完了すると、同一ブラウザ内であれば別画面へ移動した際も自動的に認証が引き継がれます。画面を切り替えるたびに毎回コードを入力する必要はありません。
+                            ・カルテ管理画面（<code>index.html</code>）、リッチメニュー管理（<code>richmenu.html</code>）、操作マニュアル（<code>manual.html</code>）のいずれかで一度二段階認証を完了すると、同一ブラウザ内であれば別画面へ移動した際も自動的に認証が引き継がれます。<br>
+                            ・二段階認証を有効化する前に、必ず「<strong>テスト認証メール送信</strong>」ボタンでメールが正常に届くことを確認することをおすすめします。
                         </div>
                     </div>
                 </section>
@@ -1537,6 +1540,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_fix_syntax_portable_v2"></script>
+    <script src="manual.js?v=20260921_email_2fa_v1"></script>
 </body>
 </html>
