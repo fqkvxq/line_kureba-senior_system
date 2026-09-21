@@ -8203,7 +8203,16 @@ async function loadLineDiagnosticsData() {
 
     try {
         const targetAcc = (state && state.activeAccount) ? state.activeAccount : 'senior';
-        const res = await fetch(`../api.php?action=get_webhook_diagnostics&account=${encodeURIComponent(targetAcc)}`);
+        const currentToken = state.authToken || sessionStorage.getItem('admin_auth_token') || '';
+        const currentPass = state.password || sessionStorage.getItem('admin_pass') || '';
+
+        const params = new URLSearchParams();
+        params.append('action', 'get_webhook_diagnostics');
+        params.append('account', targetAcc);
+        if (currentToken) params.append('auth_token', currentToken);
+        if (currentPass) params.append('password', currentPass);
+
+        const res = await fetch(`../api.php?${params.toString()}`);
         const data = await res.json();
         if (!data.success) {
             throw new Error(data.error || '診断データの取得に失敗しました');
@@ -8248,28 +8257,32 @@ async function loadLineDiagnosticsData() {
 async function runSimulateChatMessage() {
     const btn = document.getElementById('btnRunSimulateChat');
     const resultBox = document.getElementById('simulateResultBox');
-    if (!btn) return;
-
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> テスト実行中...';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> テスト実行中...';
+    }
     if (resultBox) {
         resultBox.style.display = 'block';
-        resultBox.className = 'alert alert-info';
         resultBox.style.background = '#e0f2fe';
         resultBox.style.border = '1px solid #bae6fd';
         resultBox.style.color = '#0369a1';
-        resultBox.style.padding = '8px 12px';
-        resultBox.style.borderRadius = '6px';
-        resultBox.innerHTML = 'サーバーへ模擬LINEメッセージを送信しています...';
+        resultBox.style.padding = '10px 14px';
+        resultBox.style.borderRadius = '8px';
+        resultBox.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> サーバーへ模擬LINEメッセージを送信しています...';
     }
 
     try {
         const targetAcc = (state && state.activeAccount) ? state.activeAccount : 'senior';
+        const currentToken = state.authToken || sessionStorage.getItem('admin_auth_token') || '';
+        const currentPass = state.password || sessionStorage.getItem('admin_pass') || '';
+
         const formData = new FormData();
         formData.append('action', 'simulate_line_chat_message');
         formData.append('account', targetAcc);
         formData.append('user_name', 'テスト受講生（田中 一郎）');
-        formData.append('message_text', `こんにちは！点検・受講の予約について相談したいです。(テスト送信: ${new Date().toLocaleTimeString()})`);
+        formData.append('message_text', `こんにちは！受講や点検の予約について相談したいです。(テスト送信: ${new Date().toLocaleTimeString()})`);
+        if (currentToken) formData.append('auth_token', currentToken);
+        if (currentPass) formData.append('password', currentPass);
 
         const res = await fetch('../api.php', {
             method: 'POST',
@@ -8282,13 +8295,23 @@ async function runSimulateChatMessage() {
 
         if (resultBox) {
             resultBox.style.background = '#ecfdf5';
-            resultBox.style.border = '1px solid #a7f3d0';
+            resultBox.style.border = '1.5px solid #6ee7b7';
             resultBox.style.color = '#065f46';
             resultBox.innerHTML = `
-                <strong>🎉 模擬受信テスト成功！</strong><br>
-                メッセージID: <code>${data.simulated_data.message_id}</code> / 受信者: <strong>${escapeHtml(data.simulated_data.user_name)}</strong><br>
-                <span style="font-size: 11px;">※管理画面の未読バッジ加算・新着トースト・音声チャイム・一覧更新が実行されます。</span>
+                <div style="font-weight: 800; font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-circle-check" style="color: #10b981; font-size: 16px;"></i> 模擬チャット受信テストに成功しました！
+                </div>
+                <div style="font-size: 12px; line-height: 1.5;">
+                    受信メッセージ: 「${escapeHtml(data.simulated_data.message_text)}」<br>
+                    受講生名: <strong>${escapeHtml(data.simulated_data.user_name)}</strong> (ID: <code>${data.simulated_data.user_id}</code>)<br>
+                    <span style="color: #047857; font-weight: 700;">※まもなく管理画面上部の未読バッジ加算・音声チャイム・一覧更新が実行されます。</span>
+                </div>
             `;
+        }
+
+        // チャイム音を即座に鳴らす（テスト確認）
+        if (typeof playNewChatChime === 'function') {
+            try { playNewChatChime(); } catch (chimeEx) {}
         }
 
         // 管理画面の受講生データと未読数を即座に再取得
@@ -8302,17 +8325,28 @@ async function runSimulateChatMessage() {
         // ログを再取得
         await loadLineDiagnosticsData();
 
+        if (typeof showToast === 'function') {
+            showToast('🎉 模擬チャットを受信しました！未読バッジ・チャット画面をご確認ください', 'success');
+        }
+
     } catch (e) {
         console.error('runSimulateChatMessage error:', e);
         if (resultBox) {
             resultBox.style.background = '#fee2e2';
-            resultBox.style.border = '1px solid #fecaca';
-            resultBox.style.color = '#b91c1c';
-            resultBox.innerHTML = `❌ エラー: ${escapeHtml(e.message)}`;
+            resultBox.style.border = '1.5px solid #fca5a5';
+            resultBox.style.color = '#991b1b';
+            resultBox.innerHTML = `
+                <div style="font-weight: 800; font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-circle-xmark" style="color: #ef4444; font-size: 16px;"></i> テスト実行エラー
+                </div>
+                <div style="font-size: 12px;">${escapeHtml(e.message)}</div>
+            `;
         }
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-play"></i> 模擬チャットを受信テスト';
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-play"></i> 模擬チャットを受信テスト';
+        }
     }
 }
 
@@ -8375,6 +8409,7 @@ window.openLineDiagnosticsModal = openLineDiagnosticsModal;
 window.closeLineDiagnosticsModal = closeLineDiagnosticsModal;
 window.loadLineDiagnosticsData = loadLineDiagnosticsData;
 window.runSimulateChatMessage = runSimulateChatMessage;
+window.copyDiagWebhookUrl = copyDiagWebhookUrl;
 
 
 

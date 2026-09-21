@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260921_chat_fix_v14">
+    <link rel="stylesheet" href="admin.css?v=20260921_chat_fix_v15">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -2411,7 +2411,7 @@
                 <h3 style="color: #fff; display: flex; align-items: center; gap: 8px; font-size: 16px;">
                     <i class="fa-solid fa-stethoscope"></i> LINE公式アカウント接続診断 ＆ メッセージ受信テスト
                 </h3>
-                <button class="modal-close" id="closeLineDiagnosticsModalBtn" style="color: #fff;"><i class="fa-solid fa-xmark"></i></button>
+                <button class="modal-close" id="closeLineDiagnosticsModalBtn" onclick="window.closeLineDiagnosticsModal && window.closeLineDiagnosticsModal()" style="color: #fff;"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="modal-body" style="padding: 20px; overflow-y: auto; flex: 1;">
                 
@@ -2459,7 +2459,7 @@
                                 <div style="font-size: 11.5px; color: #15803d;">管理画面の受信・DB保存・通知・チャイム音が正常に動くかテストします</div>
                             </div>
                         </div>
-                        <button type="button" id="btnRunSimulateChat" class="btn-primary" style="background: #16a34a; border-color: #15803d; font-size: 13px; font-weight: 700; padding: 8px 16px; display: inline-flex; align-items: center; gap: 6px;">
+                        <button type="button" id="btnRunSimulateChat" onclick="window.runSimulateChatMessage && window.runSimulateChatMessage()" class="btn-primary" style="background: #16a34a; border-color: #15803d; font-size: 13px; font-weight: 700; padding: 8px 16px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
                             <i class="fa-solid fa-play"></i> 模擬チャットを受信テスト
                         </button>
                     </div>
@@ -2477,7 +2477,7 @@
                     </div>
                     <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
                         <input type="text" id="diagWebhookUrl" readonly style="flex: 1; padding: 8px 12px; font-size: 12px; font-family: monospace; background: #fff; border: 1.5px solid #cbd5e1; border-radius: 6px;" value="読み込み中...">
-                        <button type="button" id="btnCopyDiagWebhookUrl" class="btn-primary" style="background: #4f46e5; border-color: #4338ca; font-size: 12px; padding: 8px 14px; white-space: nowrap;">
+                        <button type="button" id="btnCopyDiagWebhookUrl" onclick="window.copyDiagWebhookUrl && window.copyDiagWebhookUrl()" class="btn-primary" style="background: #4f46e5; border-color: #4338ca; font-size: 12px; padding: 8px 14px; white-space: nowrap; cursor: pointer;">
                             <i class="fa-solid fa-copy"></i> URLコピー
                         </button>
                     </div>
@@ -2523,7 +2523,7 @@
                         <span style="color: #38bdf8; font-size: 12px; font-weight: 700; font-family: monospace;">
                             <i class="fa-solid fa-terminal"></i> リアルタイム Webhook 受信ログ (最新50件)
                         </span>
-                        <button type="button" id="btnRefreshDiagLogs" style="background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; padding: 3px 8px; font-size: 11px; cursor: pointer;">
+                        <button type="button" id="btnRefreshDiagLogs" onclick="window.loadLineDiagnosticsData && window.loadLineDiagnosticsData()" style="background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; padding: 3px 8px; font-size: 11px; cursor: pointer;">
                             <i class="fa-solid fa-arrows-rotate"></i> ログ再読込
                         </button>
                     </div>
@@ -2535,12 +2535,12 @@
                 <a href="manual.html#faq-webhook" target="_blank" style="font-size: 12px; color: #4f46e5; text-decoration: underline; display: inline-flex; align-items: center; gap: 4px;">
                     <i class="fa-solid fa-book-open"></i> 操作マニュアルのトラブルシューティングを見る
                 </a>
-                <button type="button" class="btn-cancel" id="closeLineDiagnosticsModalFooterBtn">閉じる</button>
+                <button type="button" class="btn-cancel" id="closeLineDiagnosticsModalFooterBtn" onclick="window.closeLineDiagnosticsModal && window.closeLineDiagnosticsModal()">閉じる</button>
             </div>
         </div>
     </div>
 
     <!-- チャットモーダル直接起動フェイルセーフ (キャッシュ影響防止) -->
-    <script src="admin.js?v=20260921_chat_fix_v14"></script>
+    <script src="admin.js?v=20260921_chat_fix_v15"></script>
 </body>
 </html>
