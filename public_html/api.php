@@ -492,7 +492,7 @@ try {
             }
 
             // 受講生情報を取得
-            $cStmt = $db->prepare("SELECT id, user_id, user_name, picture_url, car_model, car_number FROM customer_cars WHERE user_id = :uid LIMIT 1");
+            $cStmt = $db->prepare("SELECT id, user_id, user_name, picture_url, car_model, car_number FROM customer_cars WHERE TRIM(user_id) = :uid LIMIT 1");
             $cStmt->execute([':uid' => $uid]);
             $customer = $cStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -500,7 +500,7 @@ try {
             $msgStmt = $db->prepare("
                 SELECT id, user_id, direction, message_type, message_text, payload_json, is_read, sent_by, created_at 
                 FROM chat_messages 
-                WHERE user_id = :uid 
+                WHERE TRIM(user_id) = :uid 
                 ORDER BY id ASC 
                 LIMIT 200
             ");
@@ -508,7 +508,7 @@ try {
             $messages = $msgStmt->fetchAll(PDO::FETCH_ASSOC);
 
             // 未読メッセージを既読に更新
-            $updateRead = $db->prepare("UPDATE chat_messages SET is_read = 1 WHERE user_id = :uid AND direction = 'incoming' AND is_read = 0");
+            $updateRead = $db->prepare("UPDATE chat_messages SET is_read = 1 WHERE TRIM(user_id) = :uid AND direction = 'incoming' AND is_read = 0");
             $updateRead->execute([':uid' => $uid]);
 
             echo json_encode([
@@ -606,10 +606,10 @@ try {
         case 'get_unread_chat_counts':
             try {
                 $stmt = $db->query("
-                    SELECT user_id, COUNT(*) as unread_count 
+                    SELECT TRIM(user_id) as user_id, COUNT(*) as unread_count 
                     FROM chat_messages 
                     WHERE direction = 'incoming' AND is_read = 0 
-                    GROUP BY user_id
+                    GROUP BY TRIM(user_id)
                 ");
                 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 $counts = [];

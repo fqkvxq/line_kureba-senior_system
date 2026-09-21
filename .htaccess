@@ -26,8 +26,11 @@ SetEnv TZ Asia/Tokyo
     RewriteCond %{HTTP:X-Line-Account} ^(.*)
     RewriteRule .* - [e=HTTP_X_LINE_ACCOUNT:%1]
 
-    # 1. URLに /public_html/ が含まれる場合は、URLから /public_html を外して301リダイレクト
+    # 1. ブラウザから直接 /public_html/... にアクセスされた場合は URL から /public_html を外して301リダイレクト
+    # ※POSTリクエストおよびwebhook/APIエンドポイントはリダイレクトせずに直接実行（LINE Webhookの消失防止）
+    RewriteCond %{REQUEST_METHOD} !=POST
     RewriteCond %{THE_REQUEST} \s+(\S*?)/public_html/([^\s?]*) [NC]
+    RewriteCond %{REQUEST_URI} !/(webhook\.php|api\.php|redirect\.php|setup\.php)
     RewriteRule ^ %1/%2 [R=301,L,NE]
 
     # 2. ディレクトリ直下（/）へのアクセスは管理画面（admin/）へ
