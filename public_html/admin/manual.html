@@ -40,7 +40,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260921_multi_webhook_v1">
+    <link rel="stylesheet" href="manual.css?v=20260921_sync_progress_v1">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -429,16 +429,25 @@
                         <div class="step-card">
                             <div class="step-number">2</div>
                             <div class="step-body">
-                                <h4>最新プロフィールの自動取得</h4>
-                                <p>受講生のLINEアイコン画像、LINE表示名、および直近のチャットやり取り日時が日本時間で自動取得・更新されます。</p>
+                                <h4>リアルタイム進捗率（パーセント・件数）の可視化</h4>
+                                <p>同期中は専用の<strong>進捗プログレスダイアログ</strong>が自動表示されます。<br>
+                                <strong>進捗率（0%〜100%）</strong>、<strong>処理件数（例: 150 / 300名）</strong>、<strong>新規登録数</strong>、<strong>情報更新数</strong>、および<strong>現在同期中の受講生名ストリーム</strong>がリアルタイムに滑らかにアニメーション更新されます。</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">3</div>
                             <div class="step-body">
-                                <h4>最新チャット順・期日順での並び替え</h4>
-                                <p>テーブル右上の並び替えセレクトで「<strong>直近チャットが新しい順</strong>」を選択すると、最近やり取りのあったアクティブな受講生から順に確認・サポートできます。</p>
+                                <h4>高速並列通信（curl_multi）＆分割バッチ処理</h4>
+                                <p>友だちが何百人・何千人いてもサーバーがタイムアウト（フリーズ）しないよう、15件ずつの分割バッチ処理と並列プロフィール取得を自動実行します。数十秒かかる大量のデータ同期も途切れることなく安全に完了します。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">4</div>
+                            <div class="step-body">
+                                <h4>同期完了と自動カルテ更新</h4>
+                                <p>100%に達すると完了トーストとお祝いメッセージが表示され、最新のアイコン画像・受講生名がカルテ一覧へ自動反映されます。</p>
                             </div>
                         </div>
                     </div>
@@ -1385,6 +1394,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_fix_login_v1"></script>
+    <script src="manual.js?v=20260921_sync_progress_v1"></script>
 </body>
 </html>

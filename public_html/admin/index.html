@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260921_fix_chat_v7">
+    <link rel="stylesheet" href="admin.css?v=20260921_sync_progress_v1">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -1614,9 +1614,84 @@
         </div>
     </div>
 
+    <!-- LINE友だち一括同期 プログレスモーダル -->
+    <div class="modal" id="syncProgressModal" style="display: none;">
+        <div class="modal-dialog" style="max-width: 520px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #06C755 0%, #059669 100%); color: #fff; padding: 16px 20px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                        <i class="fa-brands fa-line"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #fff;" id="syncProgressModalTitle">LINE友だち一括同期</h3>
+                        <span style="font-size: 12px; opacity: 0.9;" id="syncProgressModalSubtitle">LINE公式アカウントと受講生カルテを最新化</span>
+                    </div>
+                </div>
+                <button class="modal-close" id="btnCloseSyncProgressModal" style="color: #fff; opacity: 0.8; display: none;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div style="padding: 24px 20px;">
+                <!-- ステータスヘッダー -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px;">
+                    <div style="font-size: 13.5px; font-weight: 700; color: #1e293b;" id="syncProgressStatusText">
+                        <i class="fa-solid fa-spinner fa-spin" style="color: #06C755; margin-right: 6px;"></i> 友だちリストを取得中...
+                    </div>
+                    <div style="font-size: 24px; font-weight: 800; color: #06C755; line-height: 1; font-family: 'Outfit', sans-serif;" id="syncProgressPercent">
+                        0%
+                    </div>
+                </div>
+
+                <!-- プログレスバー -->
+                <div class="sync-progress-track">
+                    <div class="sync-progress-bar" id="syncProgressBar" style="width: 0%;"></div>
+                </div>
+
+                <!-- 件数進捗テキスト -->
+                <div style="display: flex; justify-content: space-between; font-size: 12.5px; color: #64748b; margin-top: 8px; margin-bottom: 18px;">
+                    <span id="syncProgressCount">0 / 0 名</span>
+                    <span id="syncProgressSpeed">高速並列通信で処理中</span>
+                </div>
+
+                <!-- 集計内訳カード -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-sm); padding: 12px; text-align: center;">
+                        <div style="font-size: 11.5px; font-weight: 700; color: #166534; margin-bottom: 4px;">
+                            <i class="fa-solid fa-user-plus"></i> 新規カルテ登録
+                        </div>
+                        <div style="font-size: 20px; font-weight: 800; color: #15803d; font-family: 'Outfit', sans-serif;" id="syncProgressImportedCount">
+                            0 <span style="font-size: 12px; font-weight: 600;">名</span>
+                        </div>
+                    </div>
+                    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-sm); padding: 12px; text-align: center;">
+                        <div style="font-size: 11.5px; font-weight: 700; color: #1e40af; margin-bottom: 4px;">
+                            <i class="fa-solid fa-arrows-rotate"></i> 名前・アイコン同期
+                        </div>
+                        <div style="font-size: 20px; font-weight: 800; color: #2563eb; font-family: 'Outfit', sans-serif;" id="syncProgressUpdatedCount">
+                            0 <span style="font-size: 12px; font-weight: 600;">名</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- リアルタイム同期ログ表示領域 -->
+                <div class="sync-log-box" id="syncLogBox">
+                    <div class="sync-log-item" style="color: #64748b;">
+                        <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 11px;"></i> LINE Messaging APIに接続しています...
+                    </div>
+                </div>
+
+                <!-- 完了アクション -->
+                <div id="syncProgressActions" style="display: none; margin-top: 18px; text-align: right;">
+                    <button type="button" class="btn-primary" id="btnFinishSyncModal" style="background: #06C755; border-color: #06C755; width: 100%; padding: 10px; font-size: 14px; font-weight: 700; border-radius: var(--radius-sm);">
+                        <i class="fa-solid fa-check"></i> 完了して受講生一覧を更新
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260921_dbname_v1"></script>
+    <script src="admin.js?v=20260921_sync_progress_v1"></script>
 </body>
 </html>

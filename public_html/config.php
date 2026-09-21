@@ -754,6 +754,64 @@ function getLineUserProfile(string $userId): ?array {
 }
 
 /**
+ * 複数のLINEユーザープロフィールを並列（curl_multi）で一括超高速取得
+ * @param array $userIds
+ * @return array [ $userId => [ 'displayName' => ..., 'pictureUrl' => ... ] ]
+ */
+function getLineUserProfilesBatch(array $userIds): array {
+    $token = getLineAccessToken();
+    if (empty($userIds) || empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+        return [];
+    }
+
+    $uniqueIds = array_values(array_unique(array_filter($userIds)));
+    if (empty($uniqueIds)) return [];
+
+    $mh = curl_multi_init();
+    $curlHandles = [];
+    $results = [];
+
+    foreach ($uniqueIds as $uid) {
+        $ch = curl_init("https://api.line.me/v2/bot/profile/" . urlencode($uid));
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 4,
+            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $token
+            ]
+        ]);
+        curl_multi_add_handle($mh, $ch);
+        $curlHandles[$uid] = $ch;
+    }
+
+    $running = null;
+    do {
+        $status = curl_multi_exec($mh, $running);
+        if ($running > 0) {
+            curl_multi_select($mh, 0.1);
+        }
+    } while ($running > 0 && $status === CURLM_OK);
+
+    foreach ($curlHandles as $uid => $ch) {
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $res = curl_multi_getcontent($ch);
+        curl_multi_remove_handle($mh, $ch);
+        curl_close($ch);
+
+        if ($httpCode === 200 && !empty($res)) {
+            $data = json_decode($res, true);
+            if ($data && !empty($data['displayName'])) {
+                $results[$uid] = $data;
+            }
+        }
+    }
+    curl_multi_close($mh);
+
+    return $results;
+}
+
+/**
  * LINE Messaging API: 全フォロワー（友だち）の User ID 一覧を取得
  * GET https://api.line.me/v2/bot/followers/ids
  */

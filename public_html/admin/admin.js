@@ -378,6 +378,20 @@ const elements = {
     // 個別LINEチャットモーダル
     chatModal: document.getElementById('chatModal'),
     btnCloseChatModal: document.getElementById('btnCloseChatModal'),
+
+    // LINE友だち一括同期 プログレスモーダル
+    syncProgressModal: document.getElementById('syncProgressModal'),
+    btnCloseSyncProgressModal: document.getElementById('btnCloseSyncProgressModal'),
+    btnFinishSyncModal: document.getElementById('btnFinishSyncModal'),
+    syncProgressStatusText: document.getElementById('syncProgressStatusText'),
+    syncProgressPercent: document.getElementById('syncProgressPercent'),
+    syncProgressBar: document.getElementById('syncProgressBar'),
+    syncProgressCount: document.getElementById('syncProgressCount'),
+    syncProgressSpeed: document.getElementById('syncProgressSpeed'),
+    syncProgressImportedCount: document.getElementById('syncProgressImportedCount'),
+    syncProgressUpdatedCount: document.getElementById('syncProgressUpdatedCount'),
+    syncLogBox: document.getElementById('syncLogBox'),
+    syncProgressActions: document.getElementById('syncProgressActions'),
     btnRefreshChatMessages: document.getElementById('btnRefreshChatMessages'),
     chatModalAvatar: document.getElementById('chatModalAvatar'),
     chatModalUserName: document.getElementById('chatModalUserName'),
@@ -1310,6 +1324,17 @@ function initEventListeners() {
     if (elements.syncLineFollowersBtn) {
         elements.syncLineFollowersBtn.addEventListener('click', syncLineFollowers);
     }
+    if (elements.btnCloseSyncProgressModal) {
+        elements.btnCloseSyncProgressModal.addEventListener('click', () => {
+            if (elements.syncProgressModal) elements.syncProgressModal.style.display = 'none';
+        });
+    }
+    if (elements.btnFinishSyncModal) {
+        elements.btnFinishSyncModal.addEventListener('click', async () => {
+            if (elements.syncProgressModal) elements.syncProgressModal.style.display = 'none';
+            await fetchCustomers();
+        });
+    }
 
     // 表示カラム設定の初期化
     initColumnPicker();
@@ -1681,9 +1706,39 @@ async function fetchCustomers() {
 }
 
 async function syncLineFollowers() {
-    if (!confirm("LINE公式アカウントの全友だち一覧を取得し、まだ顧客一覧にいない友だちを一括登録・最新の名前に同期しますか？\n\n※友だち数が多い場合、数十秒ほどかかる場合があります。")) {
+    if (!confirm("LINE公式アカウントの全友だち一覧を取得し、まだ顧客一覧にいない友だちを一括登録・最新の名前に同期しますか？\n\n※進捗状況はリアルタイムにパーセント表示されます。")) {
         return;
     }
+
+    const modal = elements.syncProgressModal;
+    if (!modal) {
+        alert('同期モーダルが見つかりません');
+        return;
+    }
+
+    // モーダル初期化 & 表示
+    modal.style.display = 'flex';
+    if (elements.btnCloseSyncProgressModal) elements.btnCloseSyncProgressModal.style.display = 'none';
+    if (elements.syncProgressActions) elements.syncProgressActions.style.display = 'none';
+    if (elements.syncProgressStatusText) elements.syncProgressStatusText.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color: #06C755; margin-right: 6px;"></i> LINE友だちリストを取得中...';
+    if (elements.syncProgressPercent) elements.syncProgressPercent.textContent = '0%';
+    if (elements.syncProgressBar) elements.syncProgressBar.style.width = '0%';
+    if (elements.syncProgressCount) elements.syncProgressCount.textContent = '0 / 0 名';
+    if (elements.syncProgressSpeed) elements.syncProgressSpeed.textContent = 'LINE API通信中';
+    if (elements.syncProgressImportedCount) elements.syncProgressImportedCount.innerHTML = '0 <span style="font-size: 12px; font-weight: 600;">名</span>';
+    if (elements.syncProgressUpdatedCount) elements.syncProgressUpdatedCount.innerHTML = '0 <span style="font-size: 12px; font-weight: 600;">名</span>';
+    if (elements.syncLogBox) {
+        elements.syncLogBox.innerHTML = '<div class="sync-log-item" style="color: #64748b;"><i class="fa-solid fa-circle-notch fa-spin" style="font-size: 11px;"></i> LINE Messaging APIに接続しています...</div>';
+    }
+
+    const appendSyncLog = (text, iconClass = 'fa-solid fa-check', color = '#15803d') => {
+        if (!elements.syncLogBox) return;
+        const item = document.createElement('div');
+        item.className = 'sync-log-item';
+        item.innerHTML = `<i class="${iconClass}" style="color: ${color}; font-size: 11px;"></i> <span>${escapeHtml(text)}</span>`;
+        elements.syncLogBox.appendChild(item);
+        elements.syncLogBox.scrollTop = elements.syncLogBox.scrollHeight;
+    };
 
     const btn = elements.syncLineFollowersBtn;
     const originalHtml = btn ? btn.innerHTML : '';
@@ -1693,18 +1748,91 @@ async function syncLineFollowers() {
     }
 
     try {
-        const res = await fetch(`../api.php?action=admin_sync_line_followers&account=${encodeURIComponent(state.activeAccount)}`);
-        const data = await res.json();
+        // Step 1: 全フォロワーUID一覧の取得
+        const idRes = await fetch(`../api.php?action=admin_get_sync_follower_ids&account=${encodeURIComponent(state.activeAccount)}`);
+        const idData = await idRes.json();
 
-        if (data.success) {
-            showToast(`✅ ${data.message}`);
-            await fetchCustomers();
-        } else {
-            alert(data.error || '同期処理に失敗しました');
+        if (!idData.success) {
+            throw new Error(idData.error || 'LINE友だち一覧の取得に失敗しました');
         }
+
+        const userIds = idData.userIds || [];
+        const total = userIds.length;
+
+        if (total === 0) {
+            if (elements.syncProgressStatusText) elements.syncProgressStatusText.innerHTML = '<i class="fa-solid fa-circle-info" style="color: #3b82f6; margin-right: 6px;"></i> 同期対象の友だちがいません';
+            if (elements.syncProgressPercent) elements.syncProgressPercent.textContent = '100%';
+            if (elements.syncProgressBar) elements.syncProgressBar.style.width = '100%';
+            appendSyncLog('LINE公式アカウントの友だちは0名でした。', 'fa-solid fa-info-circle', '#3b82f6');
+            if (elements.syncProgressActions) elements.syncProgressActions.style.display = 'block';
+            if (elements.btnCloseSyncProgressModal) elements.btnCloseSyncProgressModal.style.display = 'inline-block';
+            return;
+        }
+
+        appendSyncLog(`全 ${total} 名の友だちリストを取得しました。プロフィール同期を開始します...`, 'fa-solid fa-users', '#06C755');
+        if (elements.syncProgressStatusText) elements.syncProgressStatusText.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="color: #06C755; margin-right: 6px;"></i> プロフィールを高速同期中...`;
+
+        // Step 2: チャンク分割バッチ処理 (1バッチ15件)
+        const batchSize = 15;
+        let processedCount = 0;
+        let totalImported = 0;
+        let totalUpdated = 0;
+
+        for (let i = 0; i < total; i += batchSize) {
+            const chunk = userIds.slice(i, i + batchSize);
+            const batchIndex = Math.floor(i / batchSize) + 1;
+            const totalBatches = Math.ceil(total / batchSize);
+
+            const batchRes = await fetch(`../api.php?action=admin_sync_follower_batch&account=${encodeURIComponent(state.activeAccount)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userIds: chunk })
+            });
+            const batchData = await batchRes.json();
+
+            if (!batchData.success) {
+                appendSyncLog(`バッチ ${batchIndex}/${totalBatches} で一部スキップが発生しました`, 'fa-solid fa-triangle-exclamation', '#e11d48');
+            } else {
+                totalImported += (batchData.imported || 0);
+                totalUpdated += (batchData.updated || 0);
+                processedCount += chunk.length;
+
+                const percent = Math.min(100, Math.round((processedCount / total) * 100));
+                if (elements.syncProgressPercent) elements.syncProgressPercent.textContent = `${percent}%`;
+                if (elements.syncProgressBar) elements.syncProgressBar.style.width = `${percent}%`;
+                if (elements.syncProgressCount) elements.syncProgressCount.textContent = `${processedCount} / ${total} 名 (${percent}%)`;
+                if (elements.syncProgressImportedCount) elements.syncProgressImportedCount.innerHTML = `${totalImported} <span style="font-size: 12px; font-weight: 600;">名</span>`;
+                if (elements.syncProgressUpdatedCount) elements.syncProgressUpdatedCount.innerHTML = `${totalUpdated} <span style="font-size: 12px; font-weight: 600;">名</span>`;
+
+                if (batchData.names && batchData.names.length > 0) {
+                    const sampleNames = batchData.names.slice(0, 3).join(', ');
+                    const suffix = batchData.names.length > 3 ? ` 他` : '';
+                    appendSyncLog(`${sampleNames}${suffix} を同期しました (${processedCount}/${total})`, 'fa-solid fa-check', '#10b981');
+                }
+            }
+        }
+
+        // Step 3: 完了
+        if (elements.syncProgressPercent) elements.syncProgressPercent.textContent = '100%';
+        if (elements.syncProgressBar) elements.syncProgressBar.style.width = '100%';
+        if (elements.syncProgressStatusText) elements.syncProgressStatusText.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #06C755; margin-right: 6px;"></i> すべての同期が完了しました！';
+        if (elements.syncProgressSpeed) elements.syncProgressSpeed.textContent = '同期完了';
+        appendSyncLog(`🎉 全${total}名の同期が完了しました！（新規追加: ${totalImported}名、名前・アイコン更新: ${totalUpdated}名）`, 'fa-solid fa-circle-check', '#06C755');
+
+        if (elements.syncProgressActions) elements.syncProgressActions.style.display = 'block';
+        if (elements.btnCloseSyncProgressModal) elements.btnCloseSyncProgressModal.style.display = 'inline-block';
+        showToast(`✅ LINE友だち全${total}名を同期しました！（新規: ${totalImported}名 / 更新: ${totalUpdated}名）`);
+
+        // 受講生カルテ一覧の再読込
+        await fetchCustomers();
+
     } catch (e) {
         console.error('Sync followers error:', e);
-        alert('通信エラーが発生しました: ' + e.message);
+        if (elements.syncProgressStatusText) elements.syncProgressStatusText.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color: #e11d48; margin-right: 6px;"></i> 同期中にエラーが発生しました';
+        appendSyncLog(`エラー: ${e.message}`, 'fa-solid fa-xmark', '#e11d48');
+        if (elements.syncProgressActions) elements.syncProgressActions.style.display = 'block';
+        if (elements.btnCloseSyncProgressModal) elements.btnCloseSyncProgressModal.style.display = 'inline-block';
+        alert('同期処理中にエラーが発生しました: ' + e.message);
     } finally {
         if (btn) {
             btn.disabled = false;

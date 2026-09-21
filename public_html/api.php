@@ -1729,7 +1729,147 @@ try {
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
-        // --- 8-2. 店舗管理者用: LINE既存友だちの一括同期・自動取り込み ---
+        // --- 8-2-1. 店舗管理者用: LINE友だち全UIDリスト取得 (リアルタイム進捗同期用) ---
+        case 'admin_get_sync_follower_ids':
+            $authPass = getAdminAuthPassword();
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
+                exit;
+            }
+
+            $allUserIds = [];
+            $next = null;
+            $maxPages = 20; // 最大20,000人まで
+            $page = 0;
+
+            do {
+                $page++;
+                $res = getLineFollowerUserIds($next);
+                if (!$res['success']) {
+                    writeDebugLog("フォロワー一覧取得エラー", ['error' => $res['error'] ?? '']);
+                    if (empty($allUserIds)) {
+                        echo json_encode([
+                            'success' => false,
+                            'error' => 'LINE友だち一覧の取得に失敗しました: ' . ($res['error'] ?? 'LINE APIエラー')
+                        ], JSON_UNESCAPED_UNICODE);
+                        exit;
+                    }
+                    break;
+                }
+                $ids = $res['userIds'] ?? [];
+                $allUserIds = array_merge($allUserIds, $ids);
+                $next = $res['next'] ?? null;
+            } while (!empty($next) && $page < $maxPages);
+
+            $allUserIds = array_values(array_unique($allUserIds));
+
+            echo json_encode([
+                'success' => true,
+                'total' => count($allUserIds),
+                'userIds' => $allUserIds,
+                'account' => $activeAccountKey
+            ], JSON_UNESCAPED_UNICODE);
+            break;
+
+        // --- 8-2-2. 店舗管理者用: LINE友だちバッチ同期 (リアルタイム進捗更新用・高速並列処理) ---
+        case 'admin_sync_follower_batch':
+            $authPass = getAdminAuthPassword();
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
+                exit;
+            }
+
+            $inputJson = file_get_contents('php://input');
+            $inputData = json_decode($inputJson, true) ?? [];
+            $batchIds = $inputData['userIds'] ?? $_POST['userIds'] ?? [];
+
+            if (is_string($batchIds)) {
+                $batchIds = json_decode($batchIds, true) ?: [$batchIds];
+            }
+            if (!is_array($batchIds) || empty($batchIds)) {
+                echo json_encode(['success' => true, 'processed' => 0, 'imported' => 0, 'updated' => 0, 'names' => []]);
+                exit;
+            }
+
+            // curl_multi でバッチ内のプロフィールを並列一括取得
+            $profiles = getLineUserProfilesBatch($batchIds);
+
+            $importedCount = 0;
+            $updatedCount = 0;
+            $processedNames = [];
+            $nowJst = date('Y-m-d H:i:s');
+
+            foreach ($batchIds as $uid) {
+                if (empty($uid) || !str_starts_with($uid, 'U')) continue;
+
+                $checkStmt = $db->prepare("SELECT id, user_name, picture_url FROM customer_cars WHERE user_id = :uid LIMIT 1");
+                $checkStmt->execute([':uid' => $uid]);
+                $existing = $checkStmt->fetch(PDO::FETCH_ASSOC);
+
+                $prof = $profiles[$uid] ?? null;
+                // 万一並列取得で取れなかった場合は単体取得フォールバック
+                if (!$prof) {
+                    $prof = getLineUserProfile($uid);
+                }
+
+                $displayName = !empty($prof['displayName']) ? $prof['displayName'] : 'LINE友だち';
+                $pictureUrl = !empty($prof['pictureUrl']) ? $prof['pictureUrl'] : '';
+                $processedNames[] = $displayName;
+
+                if (!$existing) {
+                    $insertStmt = $db->prepare("
+                        INSERT INTO customer_cars (
+                            user_id, user_name, picture_url, car_model, car_number,
+                            last_interaction_at, last_interaction_type, last_interaction_preview,
+                            created_at, updated_at
+                        ) VALUES (
+                            :uid, :uname, :pic, '【未登録】愛車登録待ち', '',
+                            :now_jst1, 'follow', '友だち登録',
+                            :now_jst2, :now_jst3
+                        )
+                    ");
+                    $insertStmt->execute([
+                        ':uid' => $uid,
+                        ':uname' => $displayName,
+                        ':pic' => $pictureUrl,
+                        ':now_jst1' => $nowJst,
+                        ':now_jst2' => $nowJst,
+                        ':now_jst3' => $nowJst
+                    ]);
+                    $importedCount++;
+                } else {
+                    $isPlaceholderName = empty($existing['user_name']) || in_array($existing['user_name'], ['新規お客様', 'お客様', 'LINE友だち', '']);
+                    $currentName = $isPlaceholderName ? $displayName : $existing['user_name'];
+                    $currentPic = !empty($pictureUrl) ? $pictureUrl : ($existing['picture_url'] ?? '');
+
+                    $db->prepare("
+                        UPDATE customer_cars SET
+                            user_name = :uname,
+                            picture_url = :pic,
+                            updated_at = :updated_at
+                        WHERE id = :id
+                    ")->execute([
+                        ':uname' => $currentName,
+                        ':pic' => $currentPic,
+                        ':updated_at' => $nowJst,
+                        ':id' => $existing['id']
+                    ]);
+                    $updatedCount++;
+                }
+            }
+
+            echo json_encode([
+                'success' => true,
+                'processed' => count($batchIds),
+                'imported' => $importedCount,
+                'updated' => $updatedCount,
+                'names' => array_slice($processedNames, 0, 5)
+            ], JSON_UNESCAPED_UNICODE);
+            break;
+
+        // --- 8-2. 店舗管理者用: LINE既存友だちの一括同期・自動取り込み (レガシー一括実行) ---
         case 'admin_sync_line_followers':
             $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
