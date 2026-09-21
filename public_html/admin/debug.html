@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>システム・Webhook統合デバッグコンソール | LINE顧客管理システム</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-base: #0b0f19;
+            --bg-surface: #111827;
+            --bg-surface-elevated: #1f2937;
+            --bg-surface-hover: #374151;
+            --border-color: #374151;
+            --border-light: #4b5563;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --text-dim: #6b7280;
+            --primary: #38bdf8;
+            --primary-dark: #0284c7;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-purple: #8b5cf6;
+            --accent-indigo: #6366f1;
+            --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, Monaco, monospace;
+            --font-sans: 'Noto Sans JP', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            font-size: 14px;
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* ヘッダー */
+        .debug-header {
+            background: rgba(17, 24, 39, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .debug-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .debug-brand-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #0284c7, #6366f1);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+        }
+
+        .debug-brand h1 {
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .debug-brand-tag {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--primary);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            text-transform: uppercase;
+        }
+
+        .debug-brand p {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .debug-header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .nav-back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            background: var(--bg-surface-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .nav-back-link:hover {
+            color: #fff;
+            background: var(--bg-surface-hover);
+            border-color: var(--border-light);
+        }
+
+        /* ツールバー */
+        .debug-toolbar {
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .tab-group {
+            display: flex;
+            gap: 6px;
+            background: var(--bg-base);
+            padding: 4px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .tab-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            background: var(--primary-dark);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+        }
+
+        .tab-badge {
+            background: rgba(255, 255, 255, 0.2);
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 10px;
+            font-family: var(--font-mono);
+        }
+
+        .action-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            position: relative;
+            min-width: 220px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim);
+            font-size: 12px;
+        }
+
+        .search-input {
+            width: 100%;
+            background: var(--bg-base);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 7px 10px 7px 30px;
+            color: #fff;
+            font-size: 12px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+        }
+
+        .btn-ctrl {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-surface-elevated);
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-ctrl:hover {
+            background: var(--bg-surface-hover);
+            border-color: var(--border-light);
+            color: #fff;
+        }
+
+        .btn-ctrl.btn-danger {
+            color: #f87171;
+            border-color: rgba(239, 68, 68, 0.3);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .btn-ctrl.btn-danger:hover {
+            background: rgba(239, 68, 68, 0.25);
+            color: #fff;
+        }
+
+        .btn-ctrl.btn-primary {
+            background: linear-gradient(135deg, var(--primary-dark), #0369a1);
+            border-color: var(--primary-dark);
+            color: #fff;
+            box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
+        }
+
+        .btn-ctrl.btn-primary:hover {
+            box-shadow: 0 3px 10px rgba(2, 132, 199, 0.5);
+        }
+
+        .auto-refresh-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-base);
+            padding: 4px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            display: inline-block;
+            box-shadow: 0 0 8px var(--accent-green);
+            animation: pulse-dot 2s infinite;
+        }
+
+        .status-dot.paused {
+            background: var(--accent-amber);
+            box-shadow: 0 0 8px var(--accent-amber);
+            animation: none;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.6; }
+        }
+
+        /* メインコンテナ */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px 24px 24px;
+            gap: 16px;
+        }
+
+        /* 統計・状態カードバー */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        .stat-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .stat-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .stat-info h4 {
+            font-size: 11px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-info p {
+            font-size: 15px;
+            font-weight: 800;
+            font-family: var(--font-mono);
+            color: #fff;
+        }
+
+        /* ログターミナルエリア */
+        .log-terminal-wrap {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #070a13;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+            min-height: 480px;
+        }
+
+        .terminal-header {
+            background: #0f172a;
+            border-bottom: 1px solid #1e293b;
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .terminal-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .terminal-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        .dot-red { background: #ef4444; }
+        .dot-yellow { background: #f59e0b; }
+        .dot-green { background: #10b981; }
+
+        .terminal-body {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            max-height: calc(100vh - 280px);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            line-height: 1.6;
+            color: #cbd5e1;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        .log-line {
+            padding: 3px 6px;
+            border-radius: 4px;
+            margin-bottom: 2px;
+            transition: background 0.15s;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+
+        .log-line:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .log-line-num {
+            color: #475569;
+            user-select: none;
+            min-width: 35px;
+            text-align: right;
+            font-size: 11px;
+        }
+
+        .log-line-content {
+            flex: 1;
+        }
+
+        /* ログ行ハイライト種別 */
+        .log-time {
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .log-badge-tag {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 1px 5px;
+            border-radius: 3px;
+            margin-right: 4px;
+            text-transform: uppercase;
+        }
+
+        .tag-webhook { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+        .tag-proline { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+        .tag-db { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .tag-error { background: rgba(239, 68, 68, 0.25); color: #f87171; font-weight: 800; }
+        .tag-warn { background: rgba(245, 158, 11, 0.25); color: #fbbf24; }
+        .tag-success { background: rgba(16, 185, 129, 0.25); color: #34d399; }
+
+        .highlight-match {
+            background: #eab308;
+            color: #000;
+            font-weight: 800;
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        /* チャット履歴テーブル */
+        .chat-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            text-align: left;
+        }
+
+        .chat-table th {
+            background: #1e293b;
+            color: var(--text-muted);
+            padding: 10px 12px;
+            font-weight: 700;
+            border-bottom: 2px solid #334155;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+
+        .chat-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #1e293b;
+            vertical-align: top;
+        }
+
+        .chat-table tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .direction-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
+        .direction-in { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .direction-out { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+
+        /* システム情報テーブル */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            padding: 8px;
+        }
+
+        .info-card {
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .info-card h3 {
+            font-size: 13px;
+            font-weight: 800;
+            color: #38bdf8;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid #1e293b;
+            padding-bottom: 8px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            font-size: 12px;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+        }
+
+        .info-label {
+            color: var(--text-dim);
+        }
+
+        .info-val {
+            font-family: var(--font-mono);
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        /* ログインモーダル */
+        .login-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 400px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+        }
+
+        .login-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #0284c7, #6366f1);
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+
+        .login-card h2 {
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .login-card p {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .login-input {
+            width: 100%;
+            background: var(--bg-base);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 14px;
+            outline: none;
+            text-align: center;
+        }
+
+        .login-input:focus {
+            border-color: var(--primary);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 11px;
+            background: linear-gradient(135deg, var(--primary-dark), #0369a1);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-submit:hover {
+            box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+        }
+
+        /* トースト通知 */
+        .toast-msg {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1e293b;
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: 1px solid var(--primary);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 2000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .toast-msg.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 認証モーダル (未認証時) -->
+    <div class="login-overlay" id="authOverlay" style="display: none;">
+        <div class="login-card">
+            <div class="login-icon"><i class="fa-solid fa-terminal"></i></div>
+            <h2>デバッグコンソール認証</h2>
+            <p>管理者パスワードまたは認証トークンを入力してください</p>
+            <input type="password" id="debugPasswordInput" class="login-input" placeholder="管理者パスワード" autofocus>
+            <button type="button" class="btn-submit" id="btnDebugLogin">ログインしてログを表示</button>
+            <div id="authErrorMsg" style="color: #ef4444; font-size: 12px; margin-top: 10px; display: none;"></div>
+        </div>
+    </div>
+
+    <!-- ヘッダー -->
+    <header class="debug-header">
+        <div class="debug-brand">
+            <div class="debug-brand-icon"><i class="fa-solid fa-terminal"></i></div>
+            <div>
+                <h1>
+                    <span>LINE Webhook & システム全ログ統合デバッグ</span>
+                    <span class="debug-brand-tag">LIVE CONSOLE</span>
+                </h1>
+                <p>リアルタイムWebhook監視・プロライン転送・DBチャット履歴・サーバー状態</p>
+            </div>
+        </div>
+
+        <div class="debug-header-right">
+            <!-- アカウント切り替え -->
+            <div style="display: flex; align-items: center; gap: 6px; background: var(--bg-surface-elevated); padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <i class="fa-solid fa-arrows-rotate" style="color: var(--primary); font-size: 11px;"></i>
+                <select id="accountSwitcher" style="background: transparent; border: none; color: #fff; font-size: 12px; font-weight: 700; outline: none; cursor: pointer;">
+                    <option value="senior">シニア向けパソコン教室</option>
+                </select>
+            </div>
+
+            <!-- 自動更新トグル -->
+            <div class="auto-refresh-toggle" id="btnToggleAutoRefresh" title="ログの自動ポーリングを切り替えます">
+                <span class="status-dot" id="refreshDot"></span>
+                <span id="refreshLabel">自動更新: ON (3秒)</span>
+            </div>
+
+            <a href="index.html" class="nav-back-link" title="管理ダッシュボードに戻る">
+                <i class="fa-solid fa-arrow-left"></i> ダッシュボード
+            </a>
+            <a href="manual.html" class="nav-back-link" title="マニュアルを開く" target="_blank">
+                <i class="fa-solid fa-book-open"></i> マニュアル
+            </a>
+        </div>
+    </header>
+
+    <!-- ツールバー -->
+    <div class="debug-toolbar">
+        <!-- タブ群 -->
+        <div class="tab-group">
+            <button class="tab-btn active" data-tab="combined">
+                <i class="fa-solid fa-layer-group"></i> 統合ログ <span class="tab-badge" id="badgeCombined">0</span>
+            </button>
+            <button class="tab-btn" data-tab="webhook">
+                <i class="fa-brands fa-line" style="color: #06c755;"></i> Webhook受信 <span class="tab-badge" id="badgeWebhook">0</span>
+            </button>
+            <button class="tab-btn" data-tab="proline">
+                <i class="fa-solid fa-network-wired" style="color: #c084fc;"></i> プロライン転送 <span class="tab-badge" id="badgeProline">0</span>
+            </button>
+            <button class="tab-btn" data-tab="db_chat">
+                <i class="fa-solid fa-comments" style="color: #34d399;"></i> DBチャット履歴 <span class="tab-badge" id="badgeDbChat">0</span>
+            </button>
+            <button class="tab-btn" data-tab="sysinfo">
+                <i class="fa-solid fa-server" style="color: #38bdf8;"></i> サーバー環境情報
+            </button>
+        </div>
+
+        <!-- ログコントロール群 -->
+        <div class="action-group">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="logSearchInput" class="search-input" placeholder="ログ内をリアルタイム検索...">
+            </div>
+
+            <button type="button" class="btn-ctrl btn-primary" id="btnManualRefresh" title="今すぐ手動で更新">
+                <i class="fa-solid fa-rotate-right"></i> 更新
+            </button>
+
+            <button type="button" class="btn-ctrl" id="btnCopyLogs" title="現在のログテキストをクリップボードにコピー">
+                <i class="fa-regular fa-copy"></i> コピー
+            </button>
+
+            <button type="button" class="btn-ctrl" id="btnDownloadLogs" title="ログを.txtファイルとしてダウンロード">
+                <i class="fa-solid fa-download"></i> ダウンロード
+            </button>
+
+            <button type="button" class="btn-ctrl btn-danger" id="btnClearLogs" title="サーバー上のログファイルを初期化・消去">
+                <i class="fa-regular fa-trash-can"></i> ログ消去
+            </button>
+        </div>
+    </div>
+
+    <!-- メインコンテンツ -->
+    <main class="main-content">
+        <!-- 統計ステータスバー -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
+                    <i class="fa-brands fa-line"></i>
+                </div>
+                <div class="stat-info">
+                    <h4>Webhook ログサイズ</h4>
+                    <p id="statWhSize">- KB</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(168, 85, 247, 0.15); color: #c084fc;">
+                    <i class="fa-solid fa-network-wired"></i>
+                </div>
+                <div class="stat-info">
+                    <h4>プロライン中継ログ</h4>
+                    <p id="statProlineSize">- KB</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+                    <i class="fa-solid fa-database"></i>
+                </div>
+                <div class="stat-info">
+                    <h4>DB保存メッセージ数</h4>
+                    <p id="statDbCount">- 件</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">
+                    <i class="fa-solid fa-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <h4>サーバー時刻 (JST)</h4>
+                    <p id="statServerTime">--:--:--</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ログターミナルエリア -->
+        <div class="log-terminal-wrap">
+            <div class="terminal-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div class="terminal-dots">
+                        <span class="terminal-dot dot-red"></span>
+                        <span class="terminal-dot dot-yellow"></span>
+                        <span class="terminal-dot dot-green"></span>
+                    </div>
+                    <span id="terminalTitle">combined.log (最新 500 行)</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <label style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
+                        <input type="checkbox" id="chkAutoScroll" checked> 末尾へ自動スクロール
+                    </label>
+                    <span id="logFilterCount" style="color: var(--primary);">表示中: 0 行</span>
+                </div>
+            </div>
+
+            <!-- ログ出力本体 -->
+            <div class="terminal-body" id="terminalBody">
+                <div style="text-align: center; color: var(--text-dim); padding: 40px;">
+                    <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px;"></i><br>
+                    ログデータを取得しています...
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- トースト通知 -->
+    <div class="toast-msg" id="toastMsg">
+        <i class="fa-solid fa-circle-check" style="color: #38bdf8;"></i>
+        <span id="toastText">メッセージ</span>
+    </div>
+
+    <!-- JavaScript ロジック -->
+    <script>
+        (function() {
+            let activeTab = 'combined';
+            let autoRefreshInterval = 3000;
+            let timerId = null;
+            let isPaused = false;
+            let currentData = {
+                webhook_logs: [],
+                proline_logs: [],
+                db_chat_logs: [],
+                system_info: {}
+            };
+            let authToken = localStorage.getItem('admin_auth_token') || getCookie('admin_auth_token') || '';
+            let adminPassword = localStorage.getItem('admin_password') || getCookie('admin_pass') || '1020143';
+            let activeAccount = localStorage.getItem('active_line_account') || getCookie('active_line_account') || 'senior';
+
+            function getCookie(name) {
+                const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+                return match ? decodeURIComponent(match[2]) : '';
+            }
+
+            function showToast(text, duration = 2500) {
+                const toast = document.getElementById('toastMsg');
+                document.getElementById('toastText').textContent = text;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), duration);
+            }
+
+            function formatBytes(bytes, decimals = 1) {
+                if (!bytes || bytes === 0) return '0 B';
+                const k = 1024;
+                const dm = decimals < 0 ? 0 : decimals;
+                const sizes = ['B', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+            }
+
+            function escapeHtml(str) {
+                if (typeof str !== 'string') return '';
+                return str.replace(/&/g, '&amp;')
+                          .replace(/</g, '&lt;')
+                          .replace(/>/g, '&gt;')
+                          .replace(/"/g, '&quot;')
+                          .replace(/'/g, '&#039;');
+            }
+
+            // API通信
+            async function fetchLogs() {
+                try {
+                    const url = `../api.php?action=get_all_debug_logs&account=${encodeURIComponent(activeAccount)}&limit=800&auth_token=${encodeURIComponent(authToken)}&password=${encodeURIComponent(adminPassword)}&_t=${Date.now()}`;
+                    const res = await fetch(url, {
+                        headers: {
+                            'X-Admin-Password': adminPassword,
+                            'X-Admin-Auth-Token': authToken,
+                            'X-Line-Account': activeAccount
+                        }
+                    });
+
+                    if (!res.ok) {
+                        if (res.status === 401 || res.status === 403) {
+                            showAuthOverlay();
+                            return;
+                        }
+                        throw new Error(`HTTP ${res.status}`);
+                    }
+
+                    const json = await res.json();
+                    if (!json.success) {
+                        if (json.error && json.error.includes('パスワード')) {
+                            showAuthOverlay();
+                            return;
+                        }
+                        console.warn('Log fetch returned false:', json.error);
+                        return;
+                    }
+
+                    currentData = json;
+                    renderData();
+                } catch (e) {
+                    console.error('Failed to fetch debug logs:', e);
+                }
+            }
+
+            function showAuthOverlay() {
+                document.getElementById('authOverlay').style.display = 'flex';
+            }
+
+            function hideAuthOverlay() {
+                document.getElementById('authOverlay').style.display = 'none';
+            }
+
+            // データ描画
+            function renderData() {
+                const sys = currentData.system_info || {};
+                
+                // 統計バー更新
+                document.getElementById('statWhSize').textContent = formatBytes(sys.webhook_debug_log_size || 0);
+                document.getElementById('statProlineSize').textContent = formatBytes(sys.proline_relay_log_size || 0);
+                document.getElementById('statDbCount').textContent = (currentData.db_chat_logs || []).length + ' 件';
+                if (sys.now_jst) {
+                    document.getElementById('statServerTime').textContent = sys.now_jst.split(' ')[1] || sys.now_jst;
+                }
+
+                // バッジ更新
+                const whCount = (currentData.webhook_logs || []).length;
+                const prCount = (currentData.proline_logs || []).length;
+                const dbCount = (currentData.db_chat_logs || []).length;
+                document.getElementById('badgeWebhook').textContent = whCount;
+                document.getElementById('badgeProline').textContent = prCount;
+                document.getElementById('badgeDbChat').textContent = dbCount;
+                document.getElementById('badgeCombined').textContent = whCount + prCount;
+
+                // アカウントリストの同期
+                if (Array.isArray(sys.accounts) && sys.accounts.length > 0) {
+                    const sel = document.getElementById('accountSwitcher');
+                    const curVal = sel.value;
+                    sel.innerHTML = '';
+                    sys.accounts.forEach(acc => {
+                        const opt = document.createElement('option');
+                        opt.value = acc.id;
+                        opt.textContent = acc.name || acc.id;
+                        if (acc.id === activeAccount) opt.selected = true;
+                        sel.appendChild(opt);
+                    });
+                }
+
+                renderCurrentTab();
+            }
+
+            // 現在選択中のタブを描画
+            function renderCurrentTab() {
+                const termBody = document.getElementById('terminalBody');
+                const searchQuery = document.getElementById('logSearchInput').value.trim().toLowerCase();
+                const autoScroll = document.getElementById('chkAutoScroll').checked;
+                const termTitle = document.getElementById('terminalTitle');
+
+                if (activeTab === 'sysinfo') {
+                    termTitle.textContent = 'システム & サーバー環境情報';
+                    renderSysInfoTab(termBody);
+                    document.getElementById('logFilterCount').textContent = '環境設定一覧';
+                    return;
+                }
+
+                if (activeTab === 'db_chat') {
+                    termTitle.textContent = `DB チャットメッセージ履歴 (直近 ${currentData.db_chat_logs.length} 件)`;
+                    renderDbChatTab(termBody, searchQuery);
+                    return;
+                }
+
+                // テキストログタブ (combined, webhook, proline)
+                let lines = [];
+                if (activeTab === 'webhook') {
+                    termTitle.textContent = `webhook_debug.log (最新 ${currentData.webhook_logs.length} 行)`;
+                    lines = currentData.webhook_logs.map(l => ({ text: l, tag: 'webhook' }));
+                } else if (activeTab === 'proline') {
+                    termTitle.textContent = `proline_relay.log (最新 ${currentData.proline_logs.length} 行)`;
+                    lines = currentData.proline_logs.map(l => ({ text: l, tag: 'proline' }));
+                } else {
+                    // combined
+                    termTitle.textContent = `統合ログ (Webhook + プロライン中継)`;
+                    const wLines = (currentData.webhook_logs || []).map(l => ({ text: l, tag: 'webhook' }));
+                    const pLines = (currentData.proline_logs || []).map(l => ({ text: l, tag: 'proline' }));
+                    // 時系列でマージ（行頭の [YYYY-MM-DD HH:mm:ss] をキーにソート）
+                    lines = [...wLines, ...pLines].sort((a, b) => {
+                        const tA = extractTime(a.text);
+                        const tB = extractTime(b.text);
+                        return tA.localeCompare(tB);
+                    });
+                }
+
+                // 検索フィルター
+                let filtered = lines;
+                if (searchQuery) {
+                    filtered = lines.filter(item => item.text.toLowerCase().includes(searchQuery));
+                }
+
+                document.getElementById('logFilterCount').textContent = `表示中: ${filtered.length} / ${lines.length} 行`;
+
+                if (filtered.length === 0) {
+                    termBody.innerHTML = `<div style="text-align: center; color: var(--text-dim); padding: 40px;">
+                        <i class="fa-solid fa-inbox" style="font-size: 24px; margin-bottom: 8px;"></i><br>
+                        ${searchQuery ? '検索条件に一致するログが見つかりませんでした' : 'ログデータはまだありません'}
+                    </div>`;
+                    return;
+                }
+
+                let html = '';
+                filtered.forEach((item, idx) => {
+                    const highlighted = highlightLogLine(item.text, item.tag, searchQuery);
+                    html += `<div class="log-line">
+                        <span class="log-line-num">${idx + 1}</span>
+                        <span class="log-line-content">${highlighted}</span>
+                    </div>`;
+                });
+
+                termBody.innerHTML = html;
+
+                if (autoScroll) {
+                    termBody.scrollTop = termBody.scrollHeight;
+                }
+            }
+
+            function extractTime(str) {
+                const m = str.match(/\[(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2})\]/);
+                return m ? m[1] : '';
+            }
+
+            function highlightLogLine(rawText, tag, query) {
+                let text = escapeHtml(rawText);
+
+                // タグバッジ
+                let badge = '';
+                if (tag === 'webhook') badge = '<span class="log-badge-tag tag-webhook">WH</span>';
+                else if (tag === 'proline') badge = '<span class="log-badge-tag tag-proline">PROLINE</span>';
+
+                // 日時ハイライト
+                text = text.replace(/^(\[\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\])/, '<span class="log-time">$1</span>');
+
+                // エラー・警告・成功キーワード
+                if (text.includes('エラー') || text.includes('ERROR') || text.includes('Failed') || text.includes('署名不一致') || text.includes('403') || text.includes('500')) {
+                    badge += '<span class="log-badge-tag tag-error">ERROR</span>';
+                } else if (text.includes('WARN') || text.includes('スキップ') || text.includes('未設定')) {
+                    badge += '<span class="log-badge-tag tag-warn">WARN</span>';
+                } else if (text.includes('正常') || text.includes('成功') || text.includes('200 OK') || text.includes('送信完了')) {
+                    badge += '<span class="log-badge-tag tag-success">OK</span>';
+                }
+
+                // 検索文字列のハイライト
+                if (query) {
+                    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                    text = text.replace(regex, '<span class="highlight-match">$1</span>');
+                }
+
+                return badge + ' ' + text;
+            }
+
+            // DBチャットタブ描画
+            function renderDbChatTab(container, searchQuery) {
+                const logs = currentData.db_chat_logs || [];
+                let filtered = logs;
+                if (searchQuery) {
+                    filtered = logs.filter(m => 
+                        (m.user_name || '').toLowerCase().includes(searchQuery) ||
+                        (m.message_text || '').toLowerCase().includes(searchQuery) ||
+                        (m.user_id || '').toLowerCase().includes(searchQuery)
+                    );
+                }
+
+                document.getElementById('logFilterCount').textContent = `表示中: ${filtered.length} / ${logs.length} 件`;
+
+                if (filtered.length === 0) {
+                    container.innerHTML = `<div style="text-align: center; color: var(--text-dim); padding: 40px;">
+                        <i class="fa-solid fa-comments" style="font-size: 24px; margin-bottom: 8px;"></i><br>
+                        DBメッセージ履歴がありません
+                    </div>`;
+                    return;
+                }
+
+                let html = `
+                <table class="chat-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">ID</th>
+                            <th style="width: 140px;">日時</th>
+                            <th style="width: 90px;">送受信</th>
+                            <th style="width: 160px;">受講生名 / LINE ID</th>
+                            <th>メッセージ内容</th>
+                            <th style="width: 80px;">状態</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                `;
+
+                filtered.forEach(m => {
+                    const isIncoming = (m.direction === 'in');
+                    const dirBadge = isIncoming
+                        ? '<span class="direction-badge direction-in"><i class="fa-solid fa-arrow-down"></i> 受信</span>'
+                        : '<span class="direction-badge direction-out"><i class="fa-solid fa-arrow-up"></i> 送信</span>';
+
+                    let textEsc = escapeHtml(m.message_text || '');
+                    if (searchQuery) {
+                        const regex = new RegExp(`(${searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                        textEsc = textEsc.replace(regex, '<span class="highlight-match">$1</span>');
+                    }
+
+                    html += `
+                    <tr>
+                        <td style="color: #64748b; font-family: var(--font-mono);">${m.id}</td>
+                        <td style="color: #94a3b8; font-family: var(--font-mono);">${escapeHtml(m.created_at || '')}</td>
+                        <td>${dirBadge}</td>
+                        <td>
+                            <strong style="color: #f1f5f9;">${escapeHtml(m.user_name || '未登録')}</strong><br>
+                            <span style="font-size: 10px; color: #64748b; font-family: var(--font-mono);">${escapeHtml(m.user_id || '')}</span>
+                        </td>
+                        <td>${textEsc}</td>
+                        <td>${m.is_read == 1 ? '<span style="color:#10b981;font-size:11px;">既読</span>' : '<span style="color:#f59e0b;font-size:11px;">未読</span>'}</td>
+                    </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            }
+
+            // システム情報タブ描画
+            function renderSysInfoTab(container) {
+                const sys = currentData.system_info || {};
+                let html = `
+                <div class="info-grid">
+                    <div class="info-card">
+                        <h3><i class="fa-solid fa-server"></i> サーバー & PHP環境</h3>
+                        <div class="info-row"><span class="info-label">PHP バージョン</span><span class="info-val">${escapeHtml(sys.php_version || '-')}</span></div>
+                        <div class="info-row"><span class="info-label">OS</span><span class="info-val">${escapeHtml(sys.os || '-')}</span></div>
+                        <div class="info-row"><span class="info-label">Webサーバー</span><span class="info-val">${escapeHtml(sys.server_software || '-')}</span></div>
+                        <div class="info-row"><span class="info-label">サーバー現在時刻 (JST)</span><span class="info-val">${escapeHtml(sys.now_jst || '-')}</span></div>
+                    </div>
+
+                    <div class="info-card">
+                        <h3><i class="fa-solid fa-folder-open"></i> ログファイル状態</h3>
+                        <div class="info-row"><span class="info-label">Webhook ログ (webhook_debug.log)</span><span class="info-val">${formatBytes(sys.webhook_debug_log_size)}</span></div>
+                        <div class="info-row"><span class="info-label">プロライン転送 (proline_relay.log)</span><span class="info-val">${formatBytes(sys.proline_relay_log_size)}</span></div>
+                        <div class="info-row"><span class="info-label">DB チャットメッセージ数</span><span class="info-val">${(currentData.db_chat_logs || []).length} 件 (直近)</span></div>
+                    </div>
+
+                    <div class="info-card">
+                        <h3><i class="fa-solid fa-user-gear"></i> アクティブアカウント</h3>
+                        <div class="info-row"><span class="info-label">アカウント ID</span><span class="info-val">${escapeHtml(sys.active_account || '-')}</span></div>
+                        <div class="info-row"><span class="info-label">アカウント名</span><span class="info-val">${escapeHtml(sys.active_account_name || '-')}</span></div>
+                    </div>
+                </div>
+                `;
+                container.innerHTML = html;
+            }
+
+            // タブ切り替えイベント
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    activeTab = btn.dataset.tab;
+                    renderCurrentTab();
+                });
+            });
+
+            // 検索入力イベント
+            document.getElementById('logSearchInput').addEventListener('input', () => {
+                renderCurrentTab();
+            });
+
+            // 手動更新ボタン
+            document.getElementById('btnManualRefresh').addEventListener('click', () => {
+                fetchLogs();
+                showToast('ログを最新状態に更新しました');
+            });
+
+            // アカウント切り替え
+            document.getElementById('accountSwitcher').addEventListener('change', (e) => {
+                activeAccount = e.target.value;
+                localStorage.setItem('active_line_account', activeAccount);
+                fetchLogs();
+                showToast(`アカウントを「${activeAccount}」に切り替えました`);
+            });
+
+            // ログコピー
+            document.getElementById('btnCopyLogs').addEventListener('click', () => {
+                let textToCopy = '';
+                if (activeTab === 'webhook') textToCopy = (currentData.webhook_logs || []).join('\n');
+                else if (activeTab === 'proline') textToCopy = (currentData.proline_logs || []).join('\n');
+                else if (activeTab === 'combined') {
+                    textToCopy = [...(currentData.webhook_logs || []), ...(currentData.proline_logs || [])].join('\n');
+                } else if (activeTab === 'db_chat') {
+                    textToCopy = JSON.stringify(currentData.db_chat_logs || [], null, 2);
+                } else {
+                    textToCopy = JSON.stringify(currentData.system_info || {}, null, 2);
+                }
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        showToast('ログをクリップボードにコピーしました！');
+                    });
+                } else {
+                    const ta = document.createElement('textarea');
+                    ta.value = textToCopy;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    showToast('ログをクリップボードにコピーしました！');
+                }
+            });
+
+            // ログダウンロード
+            document.getElementById('btnDownloadLogs').addEventListener('click', () => {
+                let content = '';
+                let filename = `line_debug_${activeTab}_${Date.now()}.log`;
+
+                if (activeTab === 'webhook') content = (currentData.webhook_logs || []).join('\n');
+                else if (activeTab === 'proline') content = (currentData.proline_logs || []).join('\n');
+                else if (activeTab === 'combined') content = [...(currentData.webhook_logs || []), ...(currentData.proline_logs || [])].join('\n');
+                else if (activeTab === 'db_chat') {
+                    content = JSON.stringify(currentData.db_chat_logs || [], null, 2);
+                    filename = `db_chat_${Date.now()}.json`;
+                } else {
+                    content = JSON.stringify(currentData.system_info || {}, null, 2);
+                    filename = `sysinfo_${Date.now()}.json`;
+                }
+
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(a.href);
+                showToast(`「${filename}」をダウンロードしました`);
+            });
+
+            // ログクリア
+            document.getElementById('btnClearLogs').addEventListener('click', async () => {
+                if (!confirm(`本当にログファイルを消去・初期化しますか？\n（対象: ${activeTab === 'proline' ? 'プロライン転送ログ' : activeTab === 'webhook' ? 'Webhookデバッグログ' : 'すべてのログ'}）`)) {
+                    return;
+                }
+
+                const target = (activeTab === 'proline') ? 'proline' : (activeTab === 'webhook' ? 'webhook' : 'all');
+                try {
+                    const res = await fetch(`../api.php?action=clear_debug_logs&target=${target}&auth_token=${encodeURIComponent(authToken)}&password=${encodeURIComponent(adminPassword)}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Admin-Password': adminPassword,
+                            'X-Admin-Auth-Token': authToken
+                        },
+                        body: `target=${encodeURIComponent(target)}&password=${encodeURIComponent(adminPassword)}`
+                    });
+                    const json = await res.json();
+                    if (json.success) {
+                        showToast('ログファイルをクリアしました');
+                        fetchLogs();
+                    } else {
+                        alert('クリア失敗: ' + (json.error || '不明なエラー'));
+                    }
+                } catch (e) {
+                    alert('クリア要求に失敗しました: ' + e.message);
+                }
+            });
+
+            // 自動更新トグル
+            const btnToggle = document.getElementById('btnToggleAutoRefresh');
+            const dot = document.getElementById('refreshDot');
+            const label = document.getElementById('refreshLabel');
+
+            function startPolling() {
+                if (timerId) clearInterval(timerId);
+                timerId = setInterval(() => {
+                    if (!isPaused) fetchLogs();
+                }, autoRefreshInterval);
+            }
+
+            btnToggle.addEventListener('click', () => {
+                isPaused = !isPaused;
+                if (isPaused) {
+                    dot.classList.add('paused');
+                    label.textContent = '自動更新: OFF (一時停止)';
+                    showToast('自動更新を停止しました');
+                } else {
+                    dot.classList.remove('paused');
+                    label.textContent = '自動更新: ON (3秒)';
+                    showToast('自動更新を再開しました');
+                    fetchLogs();
+                }
+            });
+
+            // 認証モーダルログインボタン
+            document.getElementById('btnDebugLogin').addEventListener('click', () => {
+                const pass = document.getElementById('debugPasswordInput').value.trim();
+                if (!pass) return;
+                adminPassword = pass;
+                localStorage.setItem('admin_password', pass);
+                document.cookie = `admin_pass=${encodeURIComponent(pass)}; path=/; max-age=2592000`;
+                hideAuthOverlay();
+                fetchLogs();
+            });
+
+            document.getElementById('debugPasswordInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') document.getElementById('btnDebugLogin').click();
+            });
+
+            // 初回実行
+            fetchLogs();
+            startPolling();
+        })();
+    </script>
+</body>
+</html>

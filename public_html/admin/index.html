@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260921_chat_fix_v15">
+    <link rel="stylesheet" href="admin.css?v=20260922_debug_v21">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -75,6 +75,7 @@
                         <a href="index.html" class="nav-link active"><i class="fa-solid fa-users"></i> 受講生・カルテ管理</a>
                         <a href="richmenu.html" class="nav-link"><i class="fa-solid fa-table-cells-large"></i> リッチメニュー管理</a>
                         <a href="manual.html" class="nav-link"><i class="fa-solid fa-book-open"></i> 操作マニュアル</a>
+                        <a href="debug.html" class="nav-link" target="_blank" style="background: rgba(15, 23, 42, 0.6); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);"><i class="fa-solid fa-terminal"></i> デバッグログ</a>
                     </nav>
                 </div>
 
@@ -114,6 +115,9 @@
                 <div class="header-action-group">
                     <button type="button" class="btn-hdr-action btn-hdr-updater" id="btnToolbarSystemUpdate" title="システムの最新アップデートを確認・実行します" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd; font-weight: 700;">
                         <i class="fa-solid fa-cloud-arrow-down" style="color: #0284c7;"></i> システム更新 <span class="badge-new-update" id="toolbarUpdateBadge" style="display: none; background: #ef4444; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 10px; margin-left: 2px;">NEW</span>
+                    </button>
+                    <button type="button" class="btn-hdr-action btn-hdr-debug" onclick="window.open('debug.html', '_blank')" title="Webhook受信ログ、プロライン中継ログ、DB送受信チャットログをリアルタイムで閲覧・検索・クリアします" style="background: #0f172a; color: #38bdf8; border-color: #334155; font-weight: 700;">
+                        <i class="fa-solid fa-terminal" style="color: #38bdf8;"></i> 🔍 全ログデバッグ
                     </button>
                     <button type="button" class="btn-hdr-action" id="openLineDiagnosticsBtn" onclick="window.openLineDiagnosticsModal && window.openLineDiagnosticsModal()" title="LINE Webhook接続状態・応答モード確認・模擬受信テスト・リアルタイムログ" style="background: #eef2ff; color: #4338ca; border-color: #c7d2fe; font-weight: 700;">
                         <i class="fa-solid fa-stethoscope" style="color: #4f46e5;"></i> LINE接続診断＆テスト
@@ -2541,6 +2545,6 @@
     </div>
 
     <!-- チャットモーダル直接起動フェイルセーフ (キャッシュ影響防止) -->
-    <script src="admin.js?v=20260922_refactor_v20"></script>
+    <script src="admin.js?v=20260922_debug_v21"></script>
 </body>
 </html>

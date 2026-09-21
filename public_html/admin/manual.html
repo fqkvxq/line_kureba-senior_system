@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260921_chat_fix_v15">
+    <link rel="stylesheet" href="manual.css?v=20260922_debug_v21">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -77,6 +77,7 @@
                         <a href="index.html" class="nav-link"><i class="fa-solid fa-users"></i> 受講生・カルテ管理</a>
                         <a href="richmenu.html" class="nav-link"><i class="fa-solid fa-table-cells-large"></i> リッチメニュー管理</a>
                         <a href="manual.html" class="nav-link active"><i class="fa-solid fa-book-open"></i> 操作マニュアル</a>
+                        <a href="debug.html" class="nav-link" target="_blank" style="background: rgba(15, 23, 42, 0.6); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);"><i class="fa-solid fa-terminal"></i> デバッグログ</a>
                     </nav>
                 </div>
 
@@ -134,7 +135,8 @@
                         <li class="toc-item"><a href="#sec-system-updater"><i class="fa-solid fa-cloud-arrow-down" style="color:#0284c7;"></i> 19. システムオンライン更新（ワンクリックOTAアップデート）</a></li>
                         <li class="toc-item"><a href="#sec-browser-push"><i class="fa-solid fa-bell-ring" style="color:#0ea5e9;"></i> 20. チャットのブラウザプッシュ通知（Web Push）</a></li>
                         <li class="toc-item"><a href="#sec-line-diagnostics"><i class="fa-solid fa-stethoscope" style="color:#4f46e5;"></i> 21. LINE公式アカウント接続診断＆テスト受信</a></li>
-                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 22. よくある質問・トラブルシューティング</a></li>
+                        <li class="toc-item"><a href="#sec-debug-console"><i class="fa-solid fa-terminal" style="color:#38bdf8;"></i> 22. 全ログ統合リアルタイムデバッグコンソール（debug.html）</a></li>
+                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 23. よくある質問・トラブルシューティング</a></li>
                     </ul>
                 </div>
             </aside>
@@ -1725,14 +1727,69 @@
                     </div>
                 </section>
 
-                <!-- 22. よくある質問・トラブルシューティング -->
+                <!-- 22. 全ログ統合リアルタイムデバッグコンソール（debug.html） -->
+                <section class="manual-section" id="sec-debug-console">
+                    <div class="section-header">
+                        <div class="section-header-icon" style="background: #0f172a; color: #38bdf8;">
+                            <i class="fa-solid fa-terminal"></i>
+                        </div>
+                        <div class="section-header-text">
+                            <h2>22. 全ログ統合リアルタイムデバッグコンソール（debug.html）</h2>
+                            <p>LINE受信・プロライン転送・DBチャット送受信の全ログを1画面でライブ監視・リアルタイム検索</p>
+                        </div>
+                    </div>
+
+                    <div class="section-intro">
+                        LINE公式アカウントからのメッセージ受信や友だち追加イベント、プロライン等の外部ツールへのWebhook中継ログ、およびデータベース内に保存された最新のチャット送受信履歴を、専用のデバッグコンソール（<code>admin/debug.html</code>）でリアルタイムに一元監視できます。
+                    </div>
+
+                    <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <div class="step-body">
+                                <h4>デバッグコンソールへのアクセス方法</h4>
+                                <p>管理画面ヘッダー右上のナビゲーションリンク<strong>「🔍 デバッグログ」</strong>またはアクションツールバーの<strong>「🔍 全ログデバッグ」</strong>ボタンをクリックすると、別タブでダークモード基調の専用デバッグコンソールが起動します。<br>
+                                URL: <code>https://あなたのドメイン/admin/debug.html</code></p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <div class="step-body">
+                                <h4>5つのログビュータブで詳細を分析</h4>
+                                <p>
+                                    <strong>① 統合ログ (Combined)</strong>: LINE Webhook受信とプロライン転送のログをタイムスタンプ順に時系列統合してハイライト表示。<br>
+                                    <strong>② Webhook受信 (webhook_debug.log)</strong>: LINEプラットフォームから受信したRawペイロード、署名検証（HMAC-SHA256）、イベント種別、処理結果、通知結果。<br>
+                                    <strong>③ プロライン転送 (proline_relay.log)</strong>: プロライン連携で外部サーバーへ転送した際のリクエスト日時、転送先URL、HTTPレスポンスコード（200 OK等）。<br>
+                                    <strong>④ DBチャット履歴 (chat_messages)</strong>: データベースに保存された実際の受講生メッセージ送受信履歴（送受信方向、受講生名、LINE UID、メッセージ内容、既読状態）。<br>
+                                    <strong>⑤ サーバー環境情報</strong>: PHPバージョン、OS、Webサーバーソフトウェア、各ログファイルのサイズ、サーバー現在時刻（JST）。
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">3</div>
+                            <div class="step-body">
+                                <h4>自動更新 & リアルタイム全文検索</h4>
+                                <p>
+                                    <strong>・自動更新トグル</strong>: 3秒間隔でサーバーから自動ポーリング取得（一時停止・再開可能）。新着ログが届くと自動的に画面末尾へ追従スクロールします。<br>
+                                    <strong>・リアルタイム全文検索</strong>: 検索ボックスに「エラー」「follow」「U1234...」「POST」などのキーワードを入力すると、瞬時に一致行のみを絞り込み、一致箇所を黄色でハイライト表示します。<br>
+                                    <strong>・ワンクリックコピー & ダウンロード</strong>: 表示中のログを一発でクリップボードにコピーしたり、ローカルPCへ <code>.log</code> テキストファイルとして一括保存できます。<br>
+                                    <strong>・安全なログ消去</strong>: 肥大化したログファイルを管理者操作でワンクリック初期化・クリアできます。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 23. よくある質問・トラブルシューティング -->
                 <section class="manual-section" id="sec-faq">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #fef2f2; color: #ef4444;">
                             <i class="fa-solid fa-circle-question"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>22. よくある質問・トラブルシューティング</h2>
+                            <h2>23. よくある質問・トラブルシューティング</h2>
                             <p>困ったときの解決方法</p>
                         </div>
                     </div>
@@ -1938,6 +1995,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260922_refactor_v20"></script>
+    <script src="manual.js?v=20260922_debug_v21"></script>
 </body>
 </html>

@@ -1155,6 +1155,104 @@ try {
             ], JSON_UNESCAPED_UNICODE);
             exit;
 
+        // --- 0-8D. 全ログ統合ビューア API (デバッグページ用) ---
+        case 'get_all_debug_logs':
+            $authPass = getAdminAuthPassword($db);
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $maxLines = max(10, min(2000, (int)($_GET['limit'] ?? 500)));
+
+            // 1. Webhookデバッグログ
+            $whLogFile = __DIR__ . '/webhook_debug.log';
+            $whLogs = [];
+            $whSize = 0;
+            if (file_exists($whLogFile)) {
+                $whSize = filesize($whLogFile);
+                $lines = file($whLogFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+                $whLogs = array_slice($lines, -$maxLines);
+            }
+
+            // 2. プロライン転送ログ
+            $prolineLogFile = __DIR__ . '/proline_relay.log';
+            $prolineLogs = [];
+            $prolineSize = 0;
+            if (file_exists($prolineLogFile)) {
+                $prolineSize = filesize($prolineLogFile);
+                $lines = file($prolineLogFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+                $prolineLogs = array_slice($lines, -$maxLines);
+            }
+
+            // 3. DB内 チャット送受信ログ (直近100件)
+            $dbChatLogs = [];
+            try {
+                $stmt = $db->query("
+                    SELECT m.id, m.user_id, m.direction, m.message_type, m.message_text, m.is_read, m.sent_by, m.created_at,
+                           COALESCE(c.user_name, '未登録受講生') as user_name
+                    FROM chat_messages m
+                    LEFT JOIN customer_cars c ON TRIM(c.user_id) = TRIM(m.user_id)
+                    ORDER BY m.id DESC LIMIT 100
+                ");
+                if ($stmt) {
+                    $dbChatLogs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                }
+            } catch (Throwable $e) {}
+
+            // 4. システム環境情報
+            $sysInfo = [
+                'php_version' => PHP_VERSION,
+                'os' => PHP_OS,
+                'server_software' => $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown',
+                'active_account' => $activeAccountKey,
+                'active_account_name' => getAccountConfig($activeAccountKey)['name'] ?? $activeAccountKey,
+                'webhook_debug_log_size' => $whSize,
+                'proline_relay_log_size' => $prolineSize,
+                'now_jst' => date('Y-m-d H:i:s'),
+                'accounts' => getAccountList()
+            ];
+
+            echo json_encode([
+                'success' => true,
+                'system_info' => $sysInfo,
+                'webhook_logs' => $whLogs,
+                'proline_logs' => $prolineLogs,
+                'db_chat_logs' => $dbChatLogs
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+
+        // --- 0-8E. ログ初期化・消去 API ---
+        case 'clear_debug_logs':
+            $authPass = getAdminAuthPassword($db);
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $target = $_POST['target'] ?? ($_GET['target'] ?? 'webhook');
+            $nowJst = date('Y-m-d H:i:s');
+            $cleared = [];
+
+            if ($target === 'all' || $target === 'webhook') {
+                $whLogFile = __DIR__ . '/webhook_debug.log';
+                @file_put_contents($whLogFile, "[{$nowJst}] ログをクリアしました (管理者手動操作)\n");
+                $cleared[] = 'webhook_debug.log';
+            }
+            if ($target === 'all' || $target === 'proline') {
+                $prolineLogFile = __DIR__ . '/proline_relay.log';
+                @file_put_contents($prolineLogFile, "[{$nowJst}] プロライン転送ログをクリアしました (管理者手動操作)\n");
+                $cleared[] = 'proline_relay.log';
+            }
+
+            echo json_encode([
+                'success' => true,
+                'message' => '指定されたログファイルをクリアしました',
+                'cleared' => $cleared,
+                'cleared_at' => $nowJst
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+
         // --- 0-9. Discord通知設定の取得 ---
         case 'get_discord_settings':
             $authPass = getAdminAuthPassword();
