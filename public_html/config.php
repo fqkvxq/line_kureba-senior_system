@@ -18,6 +18,102 @@ $CURRENT_ACTIVE_LINE_ACCOUNT_KEY = null;
 define('LINE_ACCOUNTS_DATA_DIR', __DIR__ . '/data');
 define('LINE_ACCOUNTS_DATA_FILE', LINE_ACCOUNTS_DATA_DIR . '/line_accounts.json');
 
+// 業種別プリセット定義（各種ビジネス向け項目名・期日名マッピング）
+global $INDUSTRY_PRESETS;
+$INDUSTRY_PRESETS = [
+    'senior' => [
+        'id' => 'senior',
+        'name' => 'シニア向けパソコン教室・スクール',
+        'icon' => 'fa-graduation-cap',
+        'label_item1' => '受講コース',
+        'label_item2' => '使用機器・PC環境',
+        'label_date1' => '次回レッスン',
+        'label_date2' => 'PC健康診断',
+        'label_date3' => '会員・月謝更新',
+        'placeholder_item1' => '例: パソコン入門, スマホ活用, Word/Excel',
+        'placeholder_item2' => '例: Windows11, iPad, Android',
+        'customer_term' => '受講生',
+    ],
+    'auto' => [
+        'id' => 'auto',
+        'name' => '自動車販売・整備・鈑金・車検',
+        'icon' => 'fa-car',
+        'label_item1' => '車種名',
+        'label_item2' => '車両ナンバー',
+        'label_date1' => '次回オイル交換',
+        'label_date2' => '12ヶ月定期点検',
+        'label_date3' => '車検満了日',
+        'placeholder_item1' => '例: プリウス, N-BOX, クラウン',
+        'placeholder_item2' => '例: 品川 500 あ 12-34',
+        'customer_term' => '顧客・オーナー',
+    ],
+    'salon' => [
+        'id' => 'salon',
+        'name' => '整体・サロン・エステ・クリニック',
+        'icon' => 'fa-spa',
+        'label_item1' => '施術メニュー/コース',
+        'label_item2' => 'カルテ番号/担当者',
+        'label_date1' => '次回施術予約',
+        'label_date2' => '定期メンテナンス',
+        'label_date3' => '回数券・会員期限',
+        'placeholder_item1' => '例: 全身整体60分, 美容鍼コース',
+        'placeholder_item2' => '例: K-1024 / 担当: 山田',
+        'customer_term' => 'お客様・患者様',
+    ],
+    'school' => [
+        'id' => 'school',
+        'name' => '各種スクール・習い事・教室・塾',
+        'icon' => 'fa-book-open-reader',
+        'label_item1' => '受講クラス/講座名',
+        'label_item2' => '生徒番号/所属クラス',
+        'label_date1' => '次回授業・レッスン',
+        'label_date2' => '定期面談・検定日',
+        'label_date3' => '月謝・年会費更新',
+        'placeholder_item1' => '例: 英会話中級, プログラミングA',
+        'placeholder_item2' => '例: ST-0089 / 月曜クラス',
+        'customer_term' => '生徒・会員',
+    ],
+    'fitness' => [
+        'id' => 'fitness',
+        'name' => 'フィットネス・パーソナルジム',
+        'icon' => 'fa-dumbbell',
+        'label_item1' => '会員プラン/種別',
+        'label_item2' => '会員番号/ロッカーNo',
+        'label_date1' => '次回トレーニング予約',
+        'label_date2' => '定期測定・カウンセリング',
+        'label_date3' => '会費・契約更新日',
+        'placeholder_item1' => '例: プレミアム月4回, デイタイム会員',
+        'placeholder_item2' => '例: M-2055 / ロッカー12',
+        'customer_term' => '会員・メンバー',
+    ],
+    'b2b' => [
+        'id' => 'b2b',
+        'name' => '士業・コンサル・法人顧客管理',
+        'icon' => 'fa-briefcase',
+        'label_item1' => '契約プラン/サービス名',
+        'label_item2' => '企業ID/担当者名',
+        'label_date1' => '次回定期面談日',
+        'label_date2' => '中間レビュー・進捗確認',
+        'label_date3' => '年間契約更新日',
+        'placeholder_item1' => '例: 顧問契約A, DX伴走支援',
+        'placeholder_item2' => '例: CORP-99 / 佐藤部長',
+        'customer_term' => 'クライアント企業',
+    ],
+    'custom' => [
+        'id' => 'custom',
+        'name' => '自由設定（カスタム業種）',
+        'icon' => 'fa-sliders',
+        'label_item1' => '項目1（プラン/種別等）',
+        'label_item2' => '項目2（管理番号等）',
+        'label_date1' => '期日1（次回予定日）',
+        'label_date2' => '期日2（定期予定日）',
+        'label_date3' => '期日3（更新期日）',
+        'placeholder_item1' => '項目1の内容',
+        'placeholder_item2' => '項目2の内容',
+        'customer_term' => '顧客',
+    ]
+];
+
 // デフォルトの基本アカウント定義
 $DEFAULT_SYSTEM_LINE_ACCOUNTS = [
     'senior' => [
@@ -25,6 +121,12 @@ $DEFAULT_SYSTEM_LINE_ACCOUNTS = [
         'name' => 'スマホ・パソコン教室KUREBA',
         'short_name' => 'パソコン教室',
         'theme_color' => '#ff8700', // 教室ブランドカラー (オレンジ)
+        'industry_type' => 'senior',
+        'label_item1' => '受講コース',
+        'label_item2' => '使用機器・PC環境',
+        'label_date1' => '次回レッスン',
+        'label_date2' => 'PC健康診断',
+        'label_date3' => '会員・月謝更新',
         'channel_access_token' => 'n1ItOIEh+8mNJiEpXK+hG0T4/b1Z9taR2FkYQrAwA6J/3XMdUUfHnkP3DX+7u+nGgirA4helNntS1qT2m2kOtV7yiYM2MwxrEB7qj09J/yXhItpCqKGS7l4lcaffcvukX/jHGFOLDSloz0vBLIQAdQdB04t89/1O/w1cDnyilFU=',
         'channel_secret' => 'a5dbfb92fa7be994b6e8f38f870b97b8',
         'liff_id' => '2000276344-YL1wXh0h',
@@ -38,6 +140,12 @@ $DEFAULT_SYSTEM_LINE_ACCOUNTS = [
         'name' => '会社DXのKUREBA',
         'short_name' => '会社DXのKUREBA',
         'theme_color' => '#2563eb', // ブルー
+        'industry_type' => 'b2b',
+        'label_item1' => '契約プラン',
+        'label_item2' => '企業ID/担当者',
+        'label_date1' => '次回定期面談日',
+        'label_date2' => '進捗レビュー日',
+        'label_date3' => '契約更新期日',
         'channel_access_token' => '5rGB+M9chkEMdXpO7S5+jAtrqX+7FUNDF9IsZ2/i3zi02/QlGQQTolaYjeLMDo92ckuD2MORgkaCID1MxpbDPD3INS8jHs+wxyyNfKzj9xT1eZ5jPqWy4S0DM2l7IJo7MDIeOzqcr5JtMQaq38OQNQdB04t89/1O/w1cDnyilFU=', // チャネルアクセストークン
         'channel_secret' => '70b7887d48cbb85870eb8ee6f43dc6aa',       // チャネルシークレット
         'liff_id' => '',              // LIFF ID
@@ -47,6 +155,30 @@ $DEFAULT_SYSTEM_LINE_ACCOUNTS = [
         'is_default' => false,
     ],
 ];
+
+/**
+ * 指定アカウントのカスタム項目名・期日名を取得
+ */
+function getAccountCustomLabels(string $accountKey = null): array {
+    global $INDUSTRY_PRESETS;
+    $config = getAccountConfig($accountKey);
+    $indType = $config['industry_type'] ?? 'senior';
+    $preset = $INDUSTRY_PRESETS[$indType] ?? $INDUSTRY_PRESETS['senior'];
+
+    return [
+        'industry_type' => $indType,
+        'industry_name' => $preset['name'] ?? 'シニア向けパソコン教室',
+        'industry_icon' => $preset['icon'] ?? 'fa-graduation-cap',
+        'customer_term' => $preset['customer_term'] ?? '顧客・受講生',
+        'label_item1' => !empty($config['label_item1']) ? $config['label_item1'] : $preset['label_item1'],
+        'label_item2' => !empty($config['label_item2']) ? $config['label_item2'] : $preset['label_item2'],
+        'label_date1' => !empty($config['label_date1']) ? $config['label_date1'] : $preset['label_date1'],
+        'label_date2' => !empty($config['label_date2']) ? $config['label_date2'] : $preset['label_date2'],
+        'label_date3' => !empty($config['label_date3']) ? $config['label_date3'] : $preset['label_date3'],
+        'placeholder_item1' => $preset['placeholder_item1'] ?? '',
+        'placeholder_item2' => $preset['placeholder_item2'] ?? '',
+    ];
+}
 
 /**
  * 登録されているLINE公式アカウント設定をロード（ファイル永続化 + デフォルトマージ）
@@ -122,6 +254,12 @@ function saveSystemLineAccounts(array $accounts): bool {
             'name' => trim((string)($acc['name'] ?? 'LINE公式アカウント')),
             'short_name' => trim((string)($acc['short_name'] ?? $acc['name'] ?? '店舗')),
             'theme_color' => preg_match('/^#[0-9a-fA-F]{6}$/', $acc['theme_color'] ?? '') ? $acc['theme_color'] : '#6366f1',
+            'industry_type' => trim((string)($acc['industry_type'] ?? 'senior')),
+            'label_item1' => trim((string)($acc['label_item1'] ?? '')),
+            'label_item2' => trim((string)($acc['label_item2'] ?? '')),
+            'label_date1' => trim((string)($acc['label_date1'] ?? '')),
+            'label_date2' => trim((string)($acc['label_date2'] ?? '')),
+            'label_date3' => trim((string)($acc['label_date3'] ?? '')),
             'channel_access_token' => trim((string)($acc['channel_access_token'] ?? '')),
             'channel_secret' => trim((string)($acc['channel_secret'] ?? '')),
             'liff_id' => trim((string)($acc['liff_id'] ?? '')),

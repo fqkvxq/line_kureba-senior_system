@@ -170,8 +170,11 @@ try {
                     'short_name' => $accConfig['short_name'] ?? $accConfig['name'],
                     'theme_color' => $accConfig['theme_color'] ?? '#ff8700',
                     'liff_id' => $accConfig['liff_id'] ?? '',
-                    'is_configured' => ($hasToken && $hasSecret)
-                ]
+                    'is_configured' => ($hasToken && $hasSecret),
+                    'custom_labels' => getAccountCustomLabels($activeAccountKey)
+                ],
+                'industry_presets' => $GLOBALS['INDUSTRY_PRESETS'] ?? [],
+                'accounts' => getAccountList()
             ], JSON_UNESCAPED_UNICODE);
             exit;
 
@@ -197,8 +200,10 @@ try {
                     'short_name' => $accConfig['short_name'] ?? $accConfig['name'],
                     'theme_color' => $accConfig['theme_color'] ?? '#ff8700',
                     'liff_id' => $accConfig['liff_id'] ?? '',
-                    'is_configured' => ($hasToken && $hasSecret)
+                    'is_configured' => ($hasToken && $hasSecret),
+                    'custom_labels' => getAccountCustomLabels($newKey)
                 ],
+                'industry_presets' => $GLOBALS['INDUSTRY_PRESETS'] ?? [],
                 'accounts' => getAccountList()
             ], JSON_UNESCAPED_UNICODE);
             exit;
@@ -230,6 +235,13 @@ try {
                     'name' => $accConfig['name'],
                     'short_name' => $accConfig['short_name'] ?? $accConfig['name'],
                     'theme_color' => $accConfig['theme_color'] ?? '#6366f1',
+                    'industry_type' => $accConfig['industry_type'] ?? 'senior',
+                    'label_item1' => $accConfig['label_item1'] ?? '',
+                    'label_item2' => $accConfig['label_item2'] ?? '',
+                    'label_date1' => $accConfig['label_date1'] ?? '',
+                    'label_date2' => $accConfig['label_date2'] ?? '',
+                    'label_date3' => $accConfig['label_date3'] ?? '',
+                    'custom_labels' => getAccountCustomLabels($targetAcc),
                     'channel_access_token' => $accConfig['channel_access_token'] ?? '',
                     'channel_secret' => $accConfig['channel_secret'] ?? '',
                     'liff_id' => $accConfig['liff_id'] ?? '',
@@ -238,7 +250,8 @@ try {
                     'db_file' => $accConfig['db_file'] ?? "cars_{$accConfig['id']}.db",
                     'is_default' => !empty($accConfig['is_default']),
                     'webhook_url' => $webhookUrl
-                ]
+                ],
+                'industry_presets' => $GLOBALS['INDUSTRY_PRESETS'] ?? []
             ], JSON_UNESCAPED_UNICODE);
             exit;
 
@@ -269,6 +282,13 @@ try {
                 $themeColor = '#6366f1';
             }
 
+            $industryType = trim($_POST['industry_type'] ?? 'senior');
+            $labelItem1 = trim($_POST['label_item1'] ?? '');
+            $labelItem2 = trim($_POST['label_item2'] ?? '');
+            $labelDate1 = trim($_POST['label_date1'] ?? '');
+            $labelDate2 = trim($_POST['label_date2'] ?? '');
+            $labelDate3 = trim($_POST['label_date3'] ?? '');
+
             $accessToken = trim($_POST['channel_access_token'] ?? '');
             $channelSecret = trim($_POST['channel_secret'] ?? '');
             $liffId = trim($_POST['liff_id'] ?? '');
@@ -296,6 +316,12 @@ try {
                 'name' => $name,
                 'short_name' => $shortName,
                 'theme_color' => $themeColor,
+                'industry_type' => $industryType,
+                'label_item1' => $labelItem1,
+                'label_item2' => $labelItem2,
+                'label_date1' => $labelDate1,
+                'label_date2' => $labelDate2,
+                'label_date3' => $labelDate3,
                 'channel_access_token' => $accessToken,
                 'channel_secret' => $channelSecret,
                 'liff_id' => $liffId,
@@ -1653,7 +1679,8 @@ try {
                 'total' => count($customers),
                 'default_menu_title' => $defaultMenuTitle,
                 'active_account' => $activeAccountKey,
-                'active_account_name' => getAccountShopName($activeAccountKey)
+                'active_account_name' => getAccountShopName($activeAccountKey),
+                'custom_labels' => getAccountCustomLabels($activeAccountKey)
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 

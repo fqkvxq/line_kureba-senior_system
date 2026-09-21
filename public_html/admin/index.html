@@ -148,28 +148,28 @@
                 <div class="stat-card" data-filter="all">
                     <div class="stat-icon icon-users"><i class="fa-solid fa-users"></i></div>
                     <div class="stat-info">
-                        <span class="stat-label">登録受講生数</span>
+                        <span class="stat-label" id="lblStatTotalUsers">登録顧客数</span>
                         <span class="stat-value" id="statTotalUsers">0</span>
                     </div>
                 </div>
                 <div class="stat-card" data-filter="oil_soon">
-                    <div class="stat-icon icon-oil" style="background:#e0f2fe; color:#0284c7;"><i class="fa-solid fa-laptop"></i></div>
+                    <div class="stat-icon icon-oil" style="background:#e0f2fe; color:#0284c7;"><i class="fa-solid fa-clock"></i></div>
                     <div class="stat-info">
-                        <span class="stat-label">レッスン期日近し (30日以内)</span>
+                        <span class="stat-label" id="lblStatOilSoon">期日1近し (30日以内)</span>
                         <span class="stat-value" id="statOilSoon">0</span>
                     </div>
                 </div>
                 <div class="stat-card" data-filter="periodic_soon">
-                    <div class="stat-icon icon-periodic" style="background:#ecfdf5; color:#059669;"><i class="fa-solid fa-shield-virus"></i></div>
+                    <div class="stat-icon icon-periodic" style="background:#ecfdf5; color:#059669;"><i class="fa-solid fa-calendar-check"></i></div>
                     <div class="stat-info">
-                        <span class="stat-label">定期PC診断近し (30日以内)</span>
+                        <span class="stat-label" id="lblStatPeriodicSoon">期日2近し (30日以内)</span>
                         <span class="stat-value" id="statPeriodicSoon">0</span>
                     </div>
                 </div>
                 <div class="stat-card" data-filter="inspection_soon">
-                    <div class="stat-icon icon-insp" style="background:#fffbeb; color:#d97706;"><i class="fa-solid fa-calendar-check"></i></div>
+                    <div class="stat-icon icon-insp" style="background:#fffbeb; color:#d97706;"><i class="fa-solid fa-calendar-days"></i></div>
                     <div class="stat-info">
-                        <span class="stat-label">会員更新・月謝近し (30日以内)</span>
+                        <span class="stat-label" id="lblStatInspSoon">期日3近し (30日以内)</span>
                         <span class="stat-value" id="statInspSoon">0</span>
                     </div>
                 </div>
@@ -179,13 +179,13 @@
             <div class="toolbar-card">
                 <div class="search-box">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="adminSearchInput" placeholder="受講生名、コース名、使用機器、メモで検索...">
+                    <input type="text" id="adminSearchInput" placeholder="顧客名、コース/車種名、管理番号、メモで検索...">
                 </div>
                 <div class="filter-tabs">
-                    <button class="tab-btn active" data-filter="all">全受講生 (<span id="tabCountAll">0</span>)</button>
-                    <button class="tab-btn" data-filter="oil_soon">💻 次回レッスン (<span id="tabCountOil">0</span>)</button>
-                    <button class="tab-btn" data-filter="periodic_soon">🔍 定期PC診断 (<span id="tabCountPeriodic">0</span>)</button>
-                    <button class="tab-btn" data-filter="inspection_soon">🗓️ 会員更新・月謝 (<span id="tabCountInsp">0</span>)</button>
+                    <button class="tab-btn active" data-filter="all"><span id="lblTabAll">全顧客</span> (<span id="tabCountAll">0</span>)</button>
+                    <button class="tab-btn" data-filter="oil_soon"><span id="lblTabOil">期日1</span> (<span id="tabCountOil">0</span>)</button>
+                    <button class="tab-btn" data-filter="periodic_soon"><span id="lblTabPeriodic">期日2</span> (<span id="tabCountPeriodic">0</span>)</button>
+                    <button class="tab-btn" data-filter="inspection_soon"><span id="lblTabInsp">期日3</span> (<span id="tabCountInsp">0</span>)</button>
                 </div>
                 <div class="sort-box">
                     <label for="adminSortSelect">
@@ -193,9 +193,9 @@
                     </label>
                     <select id="adminSortSelect" class="form-select sort-select">
                         <option value="last_interaction" selected>💬 最終チャット・やり取り順</option>
-                        <option value="oil_soon">💻 次回レッスンが近い順</option>
-                        <option value="periodic_soon">🔍 定期PC診断が近い順</option>
-                        <option value="insp_soon">🗓️ 会員更新が近い順</option>
+                        <option value="oil_soon" id="optSortOil">期日1が近い順</option>
+                        <option value="periodic_soon" id="optSortPeriodic">期日2が近い順</option>
+                        <option value="insp_soon" id="optSortInsp">期日3が近い順</option>
                         <option value="name_asc">👤 お名前順 (五十音)</option>
                         <option value="created_desc">🆕 友だち登録が新しい順</option>
                     </select>
@@ -219,19 +219,19 @@
                             </label>
                             <label class="col-picker-item">
                                 <input type="checkbox" class="col-toggle-cb" data-col="course" checked>
-                                <span><i class="fa-solid fa-laptop"></i> 受講コース・使用機器</span>
+                                <span id="colPickerLabelCourse"><i class="fa-solid fa-tag"></i> コース・使用機器</span>
                             </label>
                             <label class="col-picker-item">
                                 <input type="checkbox" class="col-toggle-cb" data-col="oil" checked>
-                                <span><i class="fa-solid fa-laptop-code"></i> 次回レッスン</span>
+                                <span id="colPickerLabelOil"><i class="fa-solid fa-calendar-day"></i> 期日1</span>
                             </label>
                             <label class="col-picker-item">
                                 <input type="checkbox" class="col-toggle-cb" data-col="periodic" checked>
-                                <span><i class="fa-solid fa-shield-virus"></i> 定期PC診断</span>
+                                <span id="colPickerLabelPeriodic"><i class="fa-solid fa-calendar-check"></i> 期日2</span>
                             </label>
                             <label class="col-picker-item">
                                 <input type="checkbox" class="col-toggle-cb" data-col="insp" checked>
-                                <span><i class="fa-solid fa-calendar-check"></i> 会員更新・月謝</span>
+                                <span id="colPickerLabelInsp"><i class="fa-solid fa-calendar-days"></i> 期日3</span>
                             </label>
                             <label class="col-picker-item">
                                 <input type="checkbox" class="col-toggle-cb" data-col="interaction" checked>
@@ -239,7 +239,7 @@
                             </label>
                             <label class="col-picker-item">
                                 <input type="checkbox" class="col-toggle-cb" data-col="memo" checked>
-                                <span><i class="fa-solid fa-clipboard-list"></i> 指導カルテ・特記事項</span>
+                                <span><i class="fa-solid fa-clipboard-list"></i> カルテ・特記事項</span>
                             </label>
                             <label class="col-picker-item is-fixed" title="操作ボタン列は固定表示です">
                                 <input type="checkbox" checked disabled>
@@ -259,12 +259,12 @@
                     <thead>
                         <tr>
                             <th data-col="name">お名前</th>
-                            <th data-col="course">受講コース・使用機器</th>
-                            <th data-col="oil">次回レッスン</th>
-                            <th data-col="periodic">定期PC診断</th>
-                            <th data-col="insp">会員更新・月謝</th>
+                            <th data-col="course" id="thCourse">コース・使用機器</th>
+                            <th data-col="oil" id="thOil">期日1</th>
+                            <th data-col="periodic" id="thPeriodic">期日2</th>
+                            <th data-col="insp" id="thInsp">期日3</th>
                             <th data-col="interaction" style="min-width: 155px;"><i class="fa-regular fa-comment-dots"></i> 最終やり取り</th>
-                            <th data-col="memo">指導カルテ・特記事項</th>
+                            <th data-col="memo">カルテ・指導メモ</th>
                             <th data-col="actions">操作</th>
                         </tr>
                     </thead>
@@ -274,14 +274,14 @@
                 </table>
                 <div class="empty-placeholder" id="emptyTablePlaceholder" style="display: none;">
                     <i class="fa-solid fa-inbox"></i>
-                    <p>該当する受講生データが見つかりませんでした。</p>
+                    <p>該当する顧客データが見つかりませんでした。</p>
                 </div>
             </div>
 
             <!-- ページネーション コントロール -->
             <div class="pagination-bar" id="paginationBar" style="display: none;">
                 <div class="pagination-left">
-                    <span class="pagination-info" id="paginationInfoText">1〜50件を表示中 (全991件)</span>
+                    <span class="pagination-info" id="paginationInfoText">1〜50件を表示中</span>
                     <div class="page-size-wrap">
                         <label for="pageSizeSelect">表示件数:</label>
                         <select id="pageSizeSelect" class="form-select page-size-select">
@@ -299,11 +299,11 @@
         </main>
     </div>
 
-    <!-- 受講生登録・編集モーダル -->
+    <!-- 顧客登録・編集モーダル -->
     <div class="modal-overlay" id="customerEditModal">
         <div class="modal-card">
             <div class="modal-header">
-                <h3 id="modalTitle">受講生カルテ情報の編集</h3>
+                <h3 id="modalTitle"><i class="fa-solid fa-id-card"></i> 顧客カルテ情報の編集</h3>
                 <button class="modal-close" id="closeEditModalBtn"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="modal-body">
@@ -311,7 +311,7 @@
 
                 <div class="form-row">
                     <div class="form-col">
-                        <label>受講生のお名前 (LINE表示名)</label>
+                        <label id="lblEditUserName">顧客名 (LINE表示名)</label>
                         <input type="text" id="editUserName" placeholder="例: 山田 太郎" required>
                     </div>
                     <div class="form-col">
@@ -327,22 +327,22 @@
 
                 <div class="form-row">
                     <div class="form-col">
-                        <label>受講コース名</label>
-                        <input type="text" id="editCarModel" placeholder="例: はじめてのパソコン・スマホ安心コース" required>
+                        <label id="lblEditCarModel">コース / 車種 / プラン名</label>
+                        <input type="text" id="editCarModel" placeholder="コース名またはプラン名" required>
                     </div>
                     <div class="form-col">
-                        <label>使用機器 / 会員番号</label>
-                        <input type="text" id="editCarNumber" placeholder="例: No.0102 / Windows 11 ノートPC">
+                        <label id="lblEditCarNumber">機器 / 車両No / 会員番号</label>
+                        <input type="text" id="editCarNumber" placeholder="機器名や管理番号">
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-col">
-                        <label>前回 受講日</label>
+                        <label id="lblEditOilLastDate">前回 利用・実施日</label>
                         <input type="date" id="editOilLastDate">
                     </div>
                     <div class="form-col">
-                        <label>次回 レッスン予定日</label>
+                        <label id="lblEditOilNextDate">次回 予定日 (期日1)</label>
                         <input type="date" id="editOilNextDate">
                         <span style="font-size: 11px; color: #64748b; margin-top: 3px; display: block;">
                             ※ 予定日の7日前・前日・当日に自動でLINEリマインド配信されます
@@ -352,17 +352,17 @@
 
                 <div class="form-row">
                     <div class="form-col">
-                        <label>定期 パソコン健康診断日</label>
+                        <label id="lblEditPeriodicNextDate">定期点検・メンテ日 (期日2)</label>
                         <input type="date" id="editPeriodicNextDate">
                         <span style="font-size: 11px; color: #64748b; margin-top: 3px; display: block;">
-                            ※ 端末のセキュリティ・動作診断時期（14日前・7日前に自動配信）
+                            ※ 定期診断・メンテナンス時期（14日前・7日前に自動配信）
                         </span>
                     </div>
                     <div class="form-col">
-                        <label>会員更新・月謝期日</label>
+                        <label id="lblEditInspectionNextDate">更新・満了期日 (期日3)</label>
                         <input type="date" id="editInspectionNextDate">
                         <span style="font-size: 11px; color: #64748b; margin-top: 3px; display: block;">
-                            ※ 月謝・受講パックの更新期日（30日前・14日前に自動配信）
+                            ※ 会員更新・満期期日（30日前・14日前に自動配信）
                         </span>
                     </div>
                 </div>
@@ -1335,6 +1335,61 @@
                             </div>
                         </div>
 
+                        <!-- 業種プリセット & 項目名・期日名カスタマイズ -->
+                        <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <div style="font-size: 12px; font-weight: 800; color: #166534;">
+                                    <i class="fa-solid fa-briefcase" style="color: #16a34a;"></i> 業種プリセット & カルテ項目名・期日名のカスタマイズ
+                                </div>
+                                <span style="font-size: 10.5px; background: #dcfce7; color: #166534; padding: 2px 6px; border-radius: var(--radius-xs); font-weight: 700;">全業種対応</span>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 8px;">
+                                <label style="font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">
+                                    業種テンプレート（選択すると項目名が自動セットされます）
+                                </label>
+                                <select id="accFormIndustryType" onchange="onAccFormIndustryChange(this.value)" style="width: 100%; box-sizing: border-box; padding: 7px 10px; font-size: 12px; font-weight: 600; border: 1px solid #86efac; border-radius: var(--radius-sm); background: #ffffff;">
+                                    <option value="senior">🎓 シニア向けパソコン教室・スクール</option>
+                                    <option value="auto">🚗 自動車販売・整備・鈑金・車検</option>
+                                    <option value="salon">💆 整体・サロン・エステ・クリニック</option>
+                                    <option value="school">📚 各種スクール・習い事・教室・塾</option>
+                                    <option value="fitness">🏋️ フィットネス・パーソナルジム</option>
+                                    <option value="b2b">💼 士業・コンサル・法人顧客管理</option>
+                                    <option value="custom">⚙️ 自由設定（カスタム業種）</option>
+                                </select>
+                            </div>
+
+                            <div style="background: #ffffff; border: 1px solid #dcfce7; border-radius: var(--radius-sm); padding: 10px; margin-top: 8px;">
+                                <div style="font-size: 11px; font-weight: 700; color: #166534; margin-bottom: 6px;">
+                                    <i class="fa-solid fa-pen-to-square"></i> このアカウントで使う表示ラベル（自由に変更可能）:
+                                </div>
+                                <div class="form-row-2col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px;">
+                                    <div>
+                                        <label style="font-size: 10.5px; color: #475569; display: block; margin-bottom: 2px;">項目1 (コース/車種/メニュー):</label>
+                                        <input type="text" id="accFormLabelItem1" placeholder="例: 受講コース" style="width: 100%; box-sizing: border-box; padding: 5px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 10.5px; color: #475569; display: block; margin-bottom: 2px;">項目2 (機器/車両No/カルテ番号):</label>
+                                        <input type="text" id="accFormLabelItem2" placeholder="例: 使用機器・PC環境" style="width: 100%; box-sizing: border-box; padding: 5px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
+                                    </div>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+                                    <div>
+                                        <label style="font-size: 10.5px; color: #475569; display: block; margin-bottom: 2px;">期日1 (レッスン/予約/オイル):</label>
+                                        <input type="text" id="accFormLabelDate1" placeholder="例: 次回レッスン" style="width: 100%; box-sizing: border-box; padding: 5px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 10.5px; color: #475569; display: block; margin-bottom: 2px;">期日2 (点検/PC診断/メンテ):</label>
+                                        <input type="text" id="accFormLabelDate2" placeholder="例: PC健康診断" style="width: 100%; box-sizing: border-box; padding: 5px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 10.5px; color: #475569; display: block; margin-bottom: 2px;">期日3 (月謝更新/車検/期限):</label>
+                                        <input type="text" id="accFormLabelDate3" placeholder="例: 会員・月謝更新" style="width: 100%; box-sizing: border-box; padding: 5px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- LINE Messaging API 認証設定 -->
                         <div style="background: #ffffff; border: 1.5px solid #c7d2fe; border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 12px;">
                             <div style="font-size: 12px; font-weight: 800; color: #1e1b4b; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
@@ -1760,6 +1815,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260921_server_setup_v1"></script>
+    <script src="admin.js?v=20260921_custom_industry_v1"></script>
 </body>
 </html>

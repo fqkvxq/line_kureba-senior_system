@@ -605,6 +605,81 @@ function renderAccountCardsList() {
     }).join('');
 }
 
+window.INDUSTRY_PRESETS = {
+    senior: {
+        name: 'パソコン教室・シニア向け',
+        item1: '受講コース',
+        item2: '使用機器・PC環境',
+        date1: '次回レッスン',
+        date2: 'PC健康診断',
+        date3: '会員・月謝更新'
+    },
+    auto: {
+        name: '自動車販売・整備工場',
+        item1: '車種名',
+        item2: '車両ナンバー',
+        date1: '次回オイル交換',
+        date2: '12ヶ月定期点検',
+        date3: '車検満了日'
+    },
+    salon: {
+        name: 'サロン・エステ・整体院',
+        item1: '施術メニュー・コース',
+        item2: 'カルテ番号・担当者',
+        date1: '次回施術・来店予約',
+        date2: '定期メンテナンス',
+        date3: '回数券・会員期限'
+    },
+    school: {
+        name: 'スクール・学習塾・習い事',
+        item1: '受講クラス・学年',
+        item2: '生徒番号・所属',
+        date1: '次回授業・レッスン',
+        date2: '定期面談・検定日',
+        date3: '月謝・年会費更新'
+    },
+    fitness: {
+        name: 'ジム・フィットネス',
+        item1: '会員プラン・コース',
+        item2: '会員番号・ロッカー',
+        date1: '次回トレーニング予約',
+        date2: '定期測定・カウンセリング',
+        date3: '会費更新日'
+    },
+    b2b: {
+        name: '士業・コンサル・B2Bサポート',
+        item1: '契約プラン・種別',
+        item2: '企業ID・担当者名',
+        date1: '次回定期面談',
+        date2: '進捗レビュー日',
+        date3: '年間契約更新日'
+    },
+    custom: {
+        name: '自由設定（カスタム）',
+        item1: '項目1',
+        item2: '項目2',
+        date1: '期日1',
+        date2: '期日2',
+        date3: '期日3'
+    }
+};
+
+window.onAccFormIndustryChange = function(typeKey) {
+    const preset = window.INDUSTRY_PRESETS[typeKey];
+    if (!preset) return;
+    if (typeKey === 'custom') return;
+    const item1 = document.getElementById('accFormLabelItem1');
+    const item2 = document.getElementById('accFormLabelItem2');
+    const date1 = document.getElementById('accFormLabelDate1');
+    const date2 = document.getElementById('accFormLabelDate2');
+    const date3 = document.getElementById('accFormLabelDate3');
+    if (item1) item1.value = preset.item1;
+    if (item2) item2.value = preset.item2;
+    if (date1) date1.value = preset.date1;
+    if (date2) date2.value = preset.date2;
+    if (date3) date3.value = preset.date3;
+};
+
 async function openAccountEditForm(accountId) {
     const accListView = document.getElementById('accListView');
     const accEditView = document.getElementById('accEditView');
@@ -618,6 +693,12 @@ async function openAccountEditForm(accountId) {
     const colorPicker = document.getElementById('accFormColorPicker');
     const colorHex = document.getElementById('accFormColorHex');
     const isDefaultCheck = document.getElementById('accFormIsDefault');
+    const industrySelect = document.getElementById('accFormIndustryType');
+    const item1Input = document.getElementById('accFormLabelItem1');
+    const item2Input = document.getElementById('accFormLabelItem2');
+    const date1Input = document.getElementById('accFormLabelDate1');
+    const date2Input = document.getElementById('accFormLabelDate2');
+    const date3Input = document.getElementById('accFormLabelDate3');
     const tokenInput = document.getElementById('accFormAccessToken');
     const secretInput = document.getElementById('accFormSecret');
     const liffIdInput = document.getElementById('accFormLiffId');
@@ -647,6 +728,12 @@ async function openAccountEditForm(accountId) {
         if (colorPicker) colorPicker.value = '#6366f1';
         if (colorHex) colorHex.value = '#6366F1';
         if (isDefaultCheck) isDefaultCheck.checked = false;
+        if (industrySelect) industrySelect.value = 'senior';
+        if (item1Input) item1Input.value = '受講コース';
+        if (item2Input) item2Input.value = '使用機器・PC環境';
+        if (date1Input) date1Input.value = '次回レッスン';
+        if (date2Input) date2Input.value = 'PC健康診断';
+        if (date3Input) date3Input.value = '会員・月謝更新';
         if (tokenInput) tokenInput.value = '';
         if (secretInput) secretInput.value = '';
         if (liffIdInput) liffIdInput.value = '';
@@ -676,6 +763,13 @@ async function openAccountEditForm(accountId) {
                 if (colorPicker) colorPicker.value = c;
                 if (colorHex) colorHex.value = c.toUpperCase();
                 if (isDefaultCheck) isDefaultCheck.checked = !!acc.is_default;
+                if (industrySelect) industrySelect.value = acc.industry_type || 'senior';
+                const customLabels = acc.custom_labels || {};
+                if (item1Input) item1Input.value = acc.label_item1 || customLabels.item1 || '';
+                if (item2Input) item2Input.value = acc.label_item2 || customLabels.item2 || '';
+                if (date1Input) date1Input.value = acc.label_date1 || customLabels.date1 || '';
+                if (date2Input) date2Input.value = acc.label_date2 || customLabels.date2 || '';
+                if (date3Input) date3Input.value = acc.label_date3 || customLabels.date3 || '';
                 if (tokenInput) tokenInput.value = acc.channel_access_token || '';
                 if (secretInput) secretInput.value = acc.channel_secret || '';
                 if (liffIdInput) liffIdInput.value = acc.liff_id || '';
@@ -728,6 +822,12 @@ async function submitAccountForm() {
     const shortNameInput = document.getElementById('accFormShortName');
     const colorHex = document.getElementById('accFormColorHex');
     const isDefaultCheck = document.getElementById('accFormIsDefault');
+    const industrySelect = document.getElementById('accFormIndustryType');
+    const item1Input = document.getElementById('accFormLabelItem1');
+    const item2Input = document.getElementById('accFormLabelItem2');
+    const date1Input = document.getElementById('accFormLabelDate1');
+    const date2Input = document.getElementById('accFormLabelDate2');
+    const date3Input = document.getElementById('accFormLabelDate3');
     const tokenInput = document.getElementById('accFormAccessToken');
     const secretInput = document.getElementById('accFormSecret');
     const liffIdInput = document.getElementById('accFormLiffId');
@@ -764,6 +864,12 @@ async function submitAccountForm() {
         formData.append('short_name', (shortNameInput.value || '').trim());
         formData.append('theme_color', (colorHex.value || '').trim());
         formData.append('is_default', isDefaultCheck.checked ? '1' : '0');
+        formData.append('industry_type', industrySelect ? industrySelect.value : 'senior');
+        formData.append('label_item1', item1Input ? item1Input.value.trim() : '');
+        formData.append('label_item2', item2Input ? item2Input.value.trim() : '');
+        formData.append('label_date1', date1Input ? date1Input.value.trim() : '');
+        formData.append('label_date2', date2Input ? date2Input.value.trim() : '');
+        formData.append('label_date3', date3Input ? date3Input.value.trim() : '');
         formData.append('channel_access_token', (tokenInput.value || '').trim());
         formData.append('channel_secret', (secretInput.value || '').trim());
         formData.append('liff_id', (liffIdInput.value || '').trim());

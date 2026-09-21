@@ -960,27 +960,66 @@
                             </div>
                         </div>
 
-                        <!-- ステップ4: 新規LINE公式アカウントの追加手順 -->
+                        <!-- ステップ4: 管理画面からのアカウント追加 & 業種別項目カスタマイズ -->
                         <div class="step-card">
                             <div class="step-number">4</div>
                             <div class="step-body">
-                                <h4>新しいLINE公式アカウントを追加したい場合の手順</h4>
-                                <p>今後さらに新しいLINE公式アカウントを増やしたい場合は、サーバー上の設定ファイル <code>config.php</code> 内にある <code>$SYSTEM_LINE_ACCOUNTS</code> 配列にアカウント設定を追記するだけで完了します：</p>
-                                <pre style="background:#1e293b;color:#f8fafc;padding:12px;border-radius: var(--radius-md);font-size:12px;overflow-x:auto;margin:8px 0;"><code>'new_account_key' =&gt; [
-    'name' =&gt; '新しい店舗・教室名',
-    'subtitle' =&gt; '店舗サブタイトル',
-    'badge_icon' =&gt; 'fa-store', // FontAwesomeアイコン
-    'badge_color' =&gt; '#10b981', // ブランドカラー
-    'channel_access_token' =&gt; 'LINE_ACCESS_TOKEN...',
-    'channel_secret' =&gt; 'LINE_CHANNEL_SECRET...',
-    'liff_id' =&gt; 'XXXX-YYYY',
-    'db_file' =&gt; 'cars_new_account.db', // 専用DBファイル名
-    'proline_calendar_url' =&gt; 'https://...',
-],</code></pre>
-                                <p>追記すると、管理画面の切替ドロップダウンに自動的に反映され、初回アクセス時に専用データベースとテーブルが自動生成されます。</p>
+                                <h4>管理画面からのアカウント追加 & 業種別項目カスタマイズ（全業種対応）</h4>
+                                <p>管理画面右上の「<i class="fa-solid fa-gear"></i> アカウント管理」ボタンを押すことで、<strong>プログラムの編集不要で画面上から直感的に新しいLINE公式アカウントを追加・編集</strong>できます。</p>
+                                <div style="margin: 10px 0; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); padding: 12px;">
+                                    <strong style="color: #0f172a; font-size: 13.5px;"><i class="fa-solid fa-shapes" style="color: #10b981;"></i> 業種別プリセットと項目マッピング:</strong>
+                                    <p style="font-size: 12.5px; color: #475569; margin: 4px 0 10px;">あらゆる業種に合わせて、カルテ項目名（項目1・項目2）や期日名（期日1・期日2・期日3）を自由に設定・変更できます：</p>
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 12px; background: #ffffff;">
+                                        <thead>
+                                            <tr style="background: #f1f5f9; color: #334155; border-bottom: 2px solid #cbd5e1;">
+                                                <th style="padding: 6px 8px; text-align: left;">業種プリセット</th>
+                                                <th style="padding: 6px 8px; text-align: left;">カルテ項目1 / 項目2</th>
+                                                <th style="padding: 6px 8px; text-align: left;">期日1 / 期日2 / 期日3</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                                <td style="padding: 6px 8px; font-weight: bold; color: #0284c7;">パソコン教室・シニア向け</td>
+                                                <td style="padding: 6px 8px;">受講コース / 使用機器・PC環境</td>
+                                                <td style="padding: 6px 8px;">次回レッスン / PC健康診断 / 会員・月謝更新</td>
+                                            </tr>
+                                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                                <td style="padding: 6px 8px; font-weight: bold; color: #ea580c;">自動車販売・整備工場</td>
+                                                <td style="padding: 6px 8px;">車種名 / 車両ナンバー</td>
+                                                <td style="padding: 6px 8px;">次回オイル交換 / 12ヶ月定期点検 / 車検満了日</td>
+                                            </tr>
+                                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                                <td style="padding: 6px 8px; font-weight: bold; color: #db2777;">サロン・エステ・整体院</td>
+                                                <td style="padding: 6px 8px;">施術メニュー / カルテ番号・担当者</td>
+                                                <td style="padding: 6px 8px;">次回施術予約 / 定期メンテナンス / 回数券・会員期限</td>
+                                            </tr>
+                                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                                <td style="padding: 6px 8px; font-weight: bold; color: #16a34a;">スクール・学習塾・習い事</td>
+                                                <td style="padding: 6px 8px;">受講クラス・学年 / 生徒番号・所属</td>
+                                                <td style="padding: 6px 8px;">次回授業・レッスン / 定期面談・検定日 / 月謝・年会費更新</td>
+                                            </tr>
+                                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                                <td style="padding: 6px 8px; font-weight: bold; color: #4f46e5;">ジム・フィットネス</td>
+                                                <td style="padding: 6px 8px;">会員プラン / 会員番号・ロッカー</td>
+                                                <td style="padding: 6px 8px;">次回トレーニング予約 / 定期測定 / 会費更新日</td>
+                                            </tr>
+                                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                                <td style="padding: 6px 8px; font-weight: bold; color: #475569;">士業・コンサル・B2B</td>
+                                                <td style="padding: 6px 8px;">契約プラン / 企業ID・担当者名</td>
+                                                <td style="padding: 6px 8px;">次回定期面談 / 進捗レビュー日 / 年間契約更新日</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 6px 8px; font-weight: bold; color: #9333ea;">自由設定（カスタム）</td>
+                                                <td style="padding: 6px 8px;">自由入力（例: 注文番号 / 配送先等）</td>
+                                                <td style="padding: 6px 8px;">自由入力（例: 発送予定日 / 支払期日等）</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p>業種プリセットを選択すると、管理画面のテーブルヘッダー、検索フィルター、統計カード、顧客カルテ編集モーダル、リッチメニュー帯の文言がすべて自動的にその業種の表記に切り替わります。</p>
                                 <div class="tip-box" style="margin-top:8px;background:#f0fdf4;border-left:4px solid #16a34a;padding:10px 14px;border-radius: var(--radius-xs);">
                                     <strong style="color:#166534;"><i class="fa-solid fa-shield-halved"></i> セキュア認証通信（パスワード漏洩防止仕様）:</strong><br>
-                                    管理画面とAPI間の認証通信は、URLパラメータではなくHTTPリクエストヘッダー（<code>X-Admin-Password</code>）で保護されて送信されます。ブラウザの開発者ツール（コンソール）やWebサーバーのアクセスログにパスワードが露出しない安全設計となっています。
+                                    管理画面とAPI間の認証通信は、URLパラメータではなくHTTPリクエストヘッダー（<code>X-Admin-Password</code> / <code>Authorization Bearer</code>）で保護されて送信されます。ブラウザの開発者ツールやWebサーバーのアクセスログにパスワードが露出しない安全設計となっています。
                                 </div>
                             </div>
                         </div>
@@ -1518,6 +1557,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_url_clean_v1"></script>
+    <script src="manual.js?v=20260921_custom_industry_v1"></script>
 </body>
 </html>

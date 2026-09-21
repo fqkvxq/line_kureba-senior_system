@@ -135,6 +135,13 @@ if (isset($_REQUEST['action'])) {
             exit;
         }
 
+        $industryType = trim($_POST['industry_type'] ?? 'senior');
+        $labelItem1 = trim($_POST['label_item1'] ?? '');
+        $labelItem2 = trim($_POST['label_item2'] ?? '');
+        $labelDate1 = trim($_POST['label_date1'] ?? '');
+        $labelDate2 = trim($_POST['label_date2'] ?? '');
+        $labelDate3 = trim($_POST['label_date3'] ?? '');
+
         // line_accounts.json の保存
         $accountConfig = [
             'accounts' => [
@@ -143,6 +150,12 @@ if (isset($_REQUEST['action'])) {
                     'name' => $shopName,
                     'short_name' => $shopName,
                     'theme_color' => '#2563eb',
+                    'industry_type' => $industryType,
+                    'label_item1' => $labelItem1,
+                    'label_item2' => $labelItem2,
+                    'label_date1' => $labelDate1,
+                    'label_date2' => $labelDate2,
+                    'label_date3' => $labelDate3,
                     'channel_access_token' => $token,
                     'channel_secret' => $secret,
                     'liff_id' => $liffId,
@@ -436,7 +449,77 @@ if (isset($_REQUEST['action'])) {
         <form id="setupForm">
             <div class="form-group">
                 <label class="form-label" for="shopName">店舗・企業・教室名 <span class="req">必須</span></label>
-                <input type="text" id="shopName" name="shop_name" class="form-input" placeholder="例: パソコン教室〇〇 / 株式会社〇〇" required>
+                <input type="text" id="shopName" name="shop_name" class="form-input" placeholder="例: パソコン教室〇〇 / 株式会社〇〇 / サロン〇〇" required>
+            </div>
+
+            <!-- 業種プリセット & 項目名カスタマイズ設定 -->
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md); padding: 16px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label class="form-label" style="margin-bottom: 0; color: #166534; font-weight: 700;">
+                        <i class="fa-solid fa-briefcase"></i> ご利用の業種プリセット（項目名・期日名を自動最適化）
+                    </label>
+                    <span style="font-size: 11px; color: #15803d; font-weight: 600;">※後からいつでも変更可能</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 12px;">
+                    <label style="border: 1.5px solid #86efac; background: #ffffff; border-radius: 8px; padding: 8px 10px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #1e293b;">
+                        <input type="radio" name="industry_type" value="senior" checked onchange="applyIndustryPreset('senior')">
+                        <i class="fa-solid fa-graduation-cap" style="color: #f59e0b;"></i> パソコン教室
+                    </label>
+                    <label style="border: 1.5px solid #cbd5e1; background: #ffffff; border-radius: 8px; padding: 8px 10px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #1e293b;">
+                        <input type="radio" name="industry_type" value="auto" onchange="applyIndustryPreset('auto')">
+                        <i class="fa-solid fa-car" style="color: #3b82f6;"></i> 自動車整備・販売
+                    </label>
+                    <label style="border: 1.5px solid #cbd5e1; background: #ffffff; border-radius: 8px; padding: 8px 10px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #1e293b;">
+                        <input type="radio" name="industry_type" value="salon" onchange="applyIndustryPreset('salon')">
+                        <i class="fa-solid fa-spa" style="color: #ec4899;"></i> サロン・整体院
+                    </label>
+                    <label style="border: 1.5px solid #cbd5e1; background: #ffffff; border-radius: 8px; padding: 8px 10px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #1e293b;">
+                        <input type="radio" name="industry_type" value="school" onchange="applyIndustryPreset('school')">
+                        <i class="fa-solid fa-book-open-reader" style="color: #8b5cf6;"></i> 各種スクール・塾
+                    </label>
+                    <label style="border: 1.5px solid #cbd5e1; background: #ffffff; border-radius: 8px; padding: 8px 10px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #1e293b;">
+                        <input type="radio" name="industry_type" value="fitness" onchange="applyIndustryPreset('fitness')">
+                        <i class="fa-solid fa-dumbbell" style="color: #10b981;"></i> ジム・フィットネス
+                    </label>
+                    <label style="border: 1.5px solid #cbd5e1; background: #ffffff; border-radius: 8px; padding: 8px 10px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #1e293b;">
+                        <input type="radio" name="industry_type" value="b2b" onchange="applyIndustryPreset('b2b')">
+                        <i class="fa-solid fa-briefcase" style="color: #0284c7;"></i> 士業・B2Bコンサル
+                    </label>
+                    <label style="border: 1.5px solid #cbd5e1; background: #ffffff; border-radius: 8px; padding: 8px 10px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #1e293b;">
+                        <input type="radio" name="industry_type" value="custom" onchange="applyIndustryPreset('custom')">
+                        <i class="fa-solid fa-sliders" style="color: #64748b;"></i> 自由カスタム
+                    </label>
+                </div>
+
+                <div style="background: #ffffff; border: 1px solid #dcfce7; border-radius: var(--radius-sm); padding: 12px;">
+                    <div style="font-size: 11.5px; font-weight: bold; color: #166534; margin-bottom: 8px;">
+                        <i class="fa-solid fa-pen-to-square"></i> カルテ・管理画面の表示項目名（自由に編集できます）:
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                        <div>
+                            <label style="font-size: 11px; color: #475569; display: block; margin-bottom: 2px;">項目1 (コース/車種/メニュー名):</label>
+                            <input type="text" id="labelItem1" name="label_item1" class="form-input" style="padding: 6px 8px; font-size: 12px;" value="受講コース">
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; color: #475569; display: block; margin-bottom: 2px;">項目2 (機器/車両No/カルテ番号):</label>
+                            <input type="text" id="labelItem2" name="label_item2" class="form-input" style="padding: 6px 8px; font-size: 12px;" value="使用機器・PC環境">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                        <div>
+                            <label style="font-size: 11px; color: #475569; display: block; margin-bottom: 2px;">期日1 (次回レッスン/予約/オイル):</label>
+                            <input type="text" id="labelDate1" name="label_date1" class="form-input" style="padding: 6px 8px; font-size: 12px;" value="次回レッスン">
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; color: #475569; display: block; margin-bottom: 2px;">期日2 (点検/PC診断/メンテ):</label>
+                            <input type="text" id="labelDate2" name="label_date2" class="form-input" style="padding: 6px 8px; font-size: 12px;" value="PC健康診断">
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; color: #475569; display: block; margin-bottom: 2px;">期日3 (月謝更新/車検/有効期限):</label>
+                            <input type="text" id="labelDate3" name="label_date3" class="form-input" style="padding: 6px 8px; font-size: 12px;" value="会員・月謝更新">
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="form-group">
@@ -565,6 +648,88 @@ async function runEnvCheck() {
     } catch (e) {
         document.getElementById('envCheckLoading').innerHTML = `<p style="color:red;">環境診断の取得に失敗しました: ${e.message}</p>`;
     }
+}
+
+// 業種プリセット変更時の項目名自動反映
+const INDUSTRY_PRESETS = {
+    senior: {
+        item1: '受講コース',
+        item2: '使用機器・PC環境',
+        date1: '次回レッスン',
+        date2: 'PC健康診断',
+        date3: '会員・月謝更新'
+    },
+    auto: {
+        item1: '車種名',
+        item2: '車両ナンバー',
+        date1: '次回オイル交換',
+        date2: '12ヶ月定期点検',
+        date3: '車検満了日'
+    },
+    salon: {
+        item1: '施術メニュー/コース',
+        item2: 'カルテ番号/担当者',
+        date1: '次回施術予約',
+        date2: '定期メンテナンス',
+        date3: '回数券・会員期限'
+    },
+    school: {
+        item1: '受講クラス/講座名',
+        item2: '生徒番号/所属クラス',
+        date1: '次回授業・レッスン',
+        date2: '定期面談・検定日',
+        date3: '月謝・年会費更新'
+    },
+    fitness: {
+        item1: '会員プラン/種別',
+        item2: '会員番号/ロッカーNo',
+        date1: '次回トレーニング予約',
+        date2: '定期測定・カウンセリング',
+        date3: '会費・契約更新日'
+    },
+    b2b: {
+        item1: '契約プラン/サービス名',
+        item2: '企業ID/担当者名',
+        date1: '次回定期面談日',
+        date2: '中間レビュー・進捗確認',
+        date3: '年間契約更新日'
+    },
+    custom: {
+        item1: '項目1（プラン/種別等）',
+        item2: '項目2（管理番号等）',
+        date1: '期日1（次回予定日）',
+        date2: '期日2（定期予定日）',
+        date3: '期日3（更新期日）'
+    }
+};
+
+function applyIndustryPreset(presetKey) {
+    const p = INDUSTRY_PRESETS[presetKey];
+    if (!p) return;
+    const item1 = document.getElementById('labelItem1');
+    const item2 = document.getElementById('labelItem2');
+    const date1 = document.getElementById('labelDate1');
+    const date2 = document.getElementById('labelDate2');
+    const date3 = document.getElementById('labelDate3');
+    if (item1) item1.value = p.item1;
+    if (item2) item2.value = p.item2;
+    if (date1) date1.value = p.date1;
+    if (date2) date2.value = p.date2;
+    if (date3) date3.value = p.date3;
+
+    // ラジオボタン枠のスタイル更新
+    document.querySelectorAll('input[name="industry_type"]').forEach(r => {
+        const parent = r.closest('label');
+        if (parent) {
+            if (r.checked) {
+                parent.style.borderColor = '#86efac';
+                parent.style.background = '#f0fdf4';
+            } else {
+                parent.style.borderColor = '#cbd5e1';
+                parent.style.background = '#ffffff';
+            }
+        }
+    });
 }
 
 // 2. LINE API テスト
