@@ -1,6 +1,7 @@
 # ------------------------------------------------------------------------------
-# ルートディレクトリルール (.htaccess)
-# URLから /public_html/ を完全除去し、直接 /admin/ や /webhook.php でアクセス可能にする設定
+# アップファーレン / シニア向けLINE管理システム ルート設定 (.htaccess)
+# サブディレクトリ配置（/line_kureba-senior_system/等）およびドメイン直下の両方で
+# URLから /public_html/ を完全除去し、直接アクセス可能にする設定
 # ------------------------------------------------------------------------------
 SetEnv TZ Asia/Tokyo
 
@@ -16,7 +17,6 @@ SetEnv TZ Asia/Tokyo
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /
 
     # FastCGI / Xserver環境向け: HTTP認証ヘッダーおよびカスタムヘッダー転送設定
     RewriteCond %{HTTP:Authorization} ^(.*)
@@ -26,17 +26,17 @@ SetEnv TZ Asia/Tokyo
     RewriteCond %{HTTP:X-Line-Account} ^(.*)
     RewriteRule .* - [e=HTTP_X_LINE_ACCOUNT:%1]
 
-    # 1. ブラウザから /public_html/... に直接アクセスされた場合は URL から /public_html を外して301リダイレクト
-    RewriteCond %{THE_REQUEST} \s/+public_html/([^\s?]*) [NC]
-    RewriteRule ^public_html/(.*)$ /$1 [R=301,L,NE]
+    # 1. URLに /public_html/ が含まれる場合は、URLから /public_html を外して301リダイレクト
+    RewriteCond %{THE_REQUEST} \s+(\S*?)/public_html/([^\s?]*) [NC]
+    RewriteRule ^ %1/%2 [R=301,L,NE]
 
-    # 2. ドメイン直下（/）へのアクセスは管理画面（/admin/index.html）へ
+    # 2. ディレクトリ直下（/）へのアクセスは管理画面（admin/）へ
     RewriteRule ^$ public_html/admin/index.html [L]
 
-    # 3. リクエストされたURLを内部的に public_html/ 以下のファイル・ディレクトリに転送
-    RewriteCond %{REQUEST_URI} !^/public_html/
-    RewriteCond %{DOCUMENT_ROOT}/public_html/$1 -f [OR]
-    RewriteCond %{DOCUMENT_ROOT}/public_html/$1 -d
+    # 3. 内部的にすべてのリクエストを public_html/ 配下のファイル・ディレクトリへ転送
+    RewriteCond %{REQUEST_URI} !public_html
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^(.*)$ public_html/$1 [L]
 </IfModule>
 
