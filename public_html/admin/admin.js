@@ -8188,7 +8188,10 @@ window.executeSystemUpdate = executeSystemUpdate;
 
 async function openLineDiagnosticsModal() {
     const modal = document.getElementById('lineDiagnosticsModal');
-    if (!modal) return;
+    if (!modal) {
+        alert('診断モーダル要素が見つかりませんでした。ページを再読み込みしてください。');
+        return;
+    }
     modal.style.display = 'flex';
     await loadLineDiagnosticsData();
 }
@@ -8211,9 +8214,8 @@ async function loadLineDiagnosticsData() {
     if (logBox) logBox.textContent = 'リアルタイムログを取得中...';
 
     try {
-        const res = await fetch(`api.php?action=get_webhook_diagnostics&account=${encodeURIComponent(currentActiveAccount || '')}`, {
-            headers: getAuthHeaders()
-        });
+        const targetAcc = (state && state.activeAccount) ? state.activeAccount : 'senior';
+        const res = await fetch(`api.php?action=get_webhook_diagnostics&account=${encodeURIComponent(targetAcc)}`);
         const data = await res.json();
         if (!data.success) {
             throw new Error(data.error || '診断データの取得に失敗しました');
@@ -8236,7 +8238,7 @@ async function loadLineDiagnosticsData() {
             studentCount.innerHTML = `<strong>${data.account.student_count}名</strong> (未読メッセージ: <strong style="color: #ea580c;">${data.account.unread_count}件</strong>)`;
         }
         if (prolineStatus) {
-            prolineStatus.innerHTML = data.proline.enabled
+            prolineStatus.innerHTML = (data.proline && data.proline.enabled)
                 ? `<span style="color: #16a34a; font-weight: 700;">✅ 稼働中 (${(data.proline.urls || []).length}件へ同時転送)</span>`
                 : `<span style="color: #64748b;">未設定 (中継OFF)</span>`;
         }
@@ -8274,15 +8276,15 @@ async function runSimulateChatMessage() {
     }
 
     try {
+        const targetAcc = (state && state.activeAccount) ? state.activeAccount : 'senior';
         const formData = new FormData();
         formData.append('action', 'simulate_line_chat_message');
-        formData.append('account', currentActiveAccount || '');
+        formData.append('account', targetAcc);
         formData.append('user_name', 'テスト受講生（田中 一郎）');
         formData.append('message_text', `こんにちは！点検・受講の予約について相談したいです。(テスト送信: ${new Date().toLocaleTimeString()})`);
 
         const res = await fetch('api.php', {
             method: 'POST',
-            headers: getAuthHeaders(),
             body: formData
         });
         const data = await res.json();
@@ -8329,40 +8331,63 @@ async function runSimulateChatMessage() {
 function copyDiagWebhookUrl() {
     const input = document.getElementById('diagWebhookUrl');
     if (!input || !input.value) return;
+    const toast = (msg) => {
+        if (typeof showToast === 'function') showToast(msg, 'success');
+        else alert(msg);
+    };
     navigator.clipboard.writeText(input.value).then(() => {
-        showToast('📋 Webhook URLをクリップボードにコピーしました！', 'success');
+        toast('📋 Webhook URLをクリップボードにコピーしました！');
     }).catch(() => {
         input.select();
         document.execCommand('copy');
-        showToast('📋 Webhook URLをコピーしました', 'success');
+        toast('📋 Webhook URLをコピーしました');
     });
 }
 
 // 診断モーダルのイベントリスナー登録
-document.addEventListener('DOMContentLoaded', () => {
+function initLineDiagnosticsEvents() {
     const btnOpen = document.getElementById('openLineDiagnosticsBtn');
-    if (btnOpen) btnOpen.addEventListener('click', openLineDiagnosticsModal);
+    if (btnOpen) {
+        btnOpen.onclick = openLineDiagnosticsModal;
+    }
 
     const btnClose = document.getElementById('closeLineDiagnosticsModalBtn');
-    if (btnClose) btnClose.addEventListener('click', closeLineDiagnosticsModal);
+    if (btnClose) {
+        btnClose.onclick = closeLineDiagnosticsModal;
+    }
 
     const btnCloseFooter = document.getElementById('closeLineDiagnosticsModalFooterBtn');
-    if (btnCloseFooter) btnCloseFooter.addEventListener('click', closeLineDiagnosticsModal);
+    if (btnCloseFooter) {
+        btnCloseFooter.onclick = closeLineDiagnosticsModal;
+    }
 
     const btnSimulate = document.getElementById('btnRunSimulateChat');
-    if (btnSimulate) btnSimulate.addEventListener('click', runSimulateChatMessage);
+    if (btnSimulate) {
+        btnSimulate.onclick = runSimulateChatMessage;
+    }
 
     const btnCopy = document.getElementById('btnCopyDiagWebhookUrl');
-    if (btnCopy) btnCopy.addEventListener('click', copyDiagWebhookUrl);
+    if (btnCopy) {
+        btnCopy.onclick = copyDiagWebhookUrl;
+    }
 
     const btnRefreshLogs = document.getElementById('btnRefreshDiagLogs');
-    if (btnRefreshLogs) btnRefreshLogs.addEventListener('click', loadLineDiagnosticsData);
-});
+    if (btnRefreshLogs) {
+        btnRefreshLogs.onclick = loadLineDiagnosticsData;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', initLineDiagnosticsEvents);
+// すでにDOM読み込み完了している場合にも即実行
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    initLineDiagnosticsEvents();
+}
 
 window.openLineDiagnosticsModal = openLineDiagnosticsModal;
 window.closeLineDiagnosticsModal = closeLineDiagnosticsModal;
 window.loadLineDiagnosticsData = loadLineDiagnosticsData;
 window.runSimulateChatMessage = runSimulateChatMessage;
+
 
 
 
