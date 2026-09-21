@@ -452,7 +452,6 @@ try {
             $uid = trim($_POST['uid'] ?? ($_POST['user_id'] ?? ''));
             $message = trim($_POST['message'] ?? ($_POST['text'] ?? ''));
             $sentBy = trim($_POST['sent_by'] ?? ($_POST['sender_name'] ?? ''));
-            $senderStyle = trim($_POST['sender_style'] ?? 'none');
             $senderIcon = trim($_POST['sender_icon_url'] ?? '');
 
             if (empty($uid) || !str_starts_with($uid, 'U')) {
@@ -468,26 +467,13 @@ try {
             require_once __DIR__ . '/webhook.php';
             $nowJst = date('Y-m-d H:i:s');
 
-            $finalText = $message;
-
-            // スタイル1: 本文署名モード (【担当：〇〇】を本文先頭に付加 / LINE側の「from」は出ない)
-            if ($senderStyle === 'body_prefix' && !empty($sentBy)) {
-                $prefix = (str_starts_with($sentBy, '【') && str_ends_with($sentBy, '】'))
-                    ? "{$sentBy}\n"
-                    : "【{$sentBy}】\n";
-                // 二重付与を防止
-                if (!str_starts_with($finalText, "【{$sentBy}】") && !str_starts_with($finalText, $prefix)) {
-                    $finalText = $prefix . $finalText;
-                }
-            }
-
             $msgPayload = [
                 'type' => 'text',
-                'text' => $finalText
+                'text' => $message
             ];
 
-            // スタイル2: LINE Sender モード (LINEアプリの吹き出し上に from 〇〇 と表示)
-            if ($senderStyle === 'line_sender' && !empty($sentBy)) {
+            // 送信者名が指定されている場合のみ LINE Sender（from 名前）を付与（空欄ならfrom非表示・公式名そのまま）
+            if (!empty($sentBy)) {
                 $senderObj = [
                     'name' => mb_substr($sentBy, 0, 20, 'UTF-8')
                 ];

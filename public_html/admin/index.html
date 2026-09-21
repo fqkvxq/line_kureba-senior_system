@@ -1471,23 +1471,16 @@
                         <span style="font-weight: 700; color: #475569; white-space: nowrap;">
                             <i class="fa-solid fa-user-tag" style="color: #4f46e5;"></i> 送信者名:
                         </span>
-                        <input type="text" id="chatSenderNameInput" class="form-input" placeholder="空欄で公式アカウント名そのまま" maxlength="20" style="padding: 4px 8px; font-size: 11.5px; height: 28px; width: 150px; border-radius: var(--radius-sm); border: 1px solid #cbd5e1;" title="空欄にすると『from ~~~』を出さずに公式アカウント名で送信できます">
+                        <input type="text" id="chatSenderNameInput" class="form-input" placeholder="空欄で公式アカウント名そのまま" maxlength="20" style="padding: 4px 8px; font-size: 11.5px; height: 28px; width: 170px; border-radius: var(--radius-sm); border: 1px solid #cbd5e1;" title="入力すると『from 名前』として届きます。空欄にすると『from』を出さずに公式アカウント名で送信されます">
                         
-                        <!-- 表示スタイル選択 -->
-                        <select id="chatSenderStyleSelect" style="padding: 3px 6px; font-size: 11px; height: 28px; border-radius: var(--radius-sm); border: 1px solid #cbd5e1; background: #fff; color: #334155;" title="受講生LINE画面での送信者名の表示スタイル">
-                            <option value="none">🚫 なし（from非表示・公式名）</option>
-                            <option value="body_prefix">💬 本文先頭に署名 (【名前】)</option>
-                            <option value="line_sender">🏷️ LINE Sender (from 名前)</option>
-                        </select>
-
                         <div class="chat-sender-chips" style="display: flex; gap: 4px; align-items: center;">
-                            <button type="button" class="sender-chip" data-name="" data-style="none" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 9999px; font-size: 10.5px; padding: 2px 8px; cursor: pointer; color: #64748b; font-weight: 500;">🚫 なし (from非表示)</button>
-                            <button type="button" class="sender-chip" data-name="川合" data-style="body_prefix" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 9999px; font-size: 10.5px; padding: 2px 8px; cursor: pointer; color: #334155; font-weight: 500;">川合</button>
-                            <button type="button" class="sender-chip" data-name="教室スタッフ" data-style="body_prefix" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 9999px; font-size: 10.5px; padding: 2px 8px; cursor: pointer; color: #334155; font-weight: 500;">教室スタッフ</button>
-                            <button type="button" class="sender-chip" data-name="サポート担当" data-style="body_prefix" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 9999px; font-size: 10.5px; padding: 2px 8px; cursor: pointer; color: #334155; font-weight: 500;">サポート担当</button>
+                            <button type="button" class="sender-chip" data-name="" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 9999px; font-size: 10.5px; padding: 2px 8px; cursor: pointer; color: #64748b; font-weight: 500;">🚫 なし (from非表示)</button>
+                            <button type="button" class="sender-chip" data-name="川合" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 9999px; font-size: 10.5px; padding: 2px 8px; cursor: pointer; color: #334155; font-weight: 500;">川合</button>
+                            <button type="button" class="sender-chip" data-name="教室スタッフ" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 9999px; font-size: 10.5px; padding: 2px 8px; cursor: pointer; color: #334155; font-weight: 500;">教室スタッフ</button>
+                            <button type="button" class="sender-chip" data-name="サポート担当" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 9999px; font-size: 10.5px; padding: 2px 8px; cursor: pointer; color: #334155; font-weight: 500;">サポート担当</button>
                         </div>
                     </div>
-                    <span id="chatSenderPreviewHint" style="color: #64748b; font-size: 10.5px; white-space: nowrap;">
+                    <span id="chatSenderPreviewHint" style="color: #15803d; font-size: 10.5px; white-space: nowrap;">
                         <i class="fa-brands fa-line" style="color: #06C755;"></i> 公式アカウント名で送信（fromなし）
                     </span>
                 </div>
@@ -1754,6 +1747,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260921_chat_avatar_fix_v1"></script>
+    <script src="admin.js?v=20260921_simple_sender_v1"></script>
 </body>
 </html>

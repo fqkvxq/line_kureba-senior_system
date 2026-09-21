@@ -4961,36 +4961,17 @@ function initChatModal() {
         });
     }
 
-    // 送信者名（担当者名）と表示スタイルの初期化
+    // 送信者名（担当者名）の初期化
     const senderInput = document.getElementById('chatSenderNameInput');
-    const styleSelect = document.getElementById('chatSenderStyleSelect');
     const savedSender = localStorage.getItem('kureba_chat_sender_name') ?? '';
-    const savedStyle = localStorage.getItem('kureba_chat_sender_style') || (savedSender ? 'body_prefix' : 'none');
 
     if (senderInput) {
         senderInput.value = savedSender;
         senderInput.addEventListener('input', (e) => {
             const val = e.target.value.trim();
             localStorage.setItem('kureba_chat_sender_name', val);
-            if (val && styleSelect && styleSelect.value === 'none') {
-                styleSelect.value = 'body_prefix';
-                localStorage.setItem('kureba_chat_sender_style', 'body_prefix');
-            } else if (!val && styleSelect) {
-                styleSelect.value = 'none';
-                localStorage.setItem('kureba_chat_sender_style', 'none');
-            }
             updateSenderPreviewHint();
-            updateSenderChipActive(val, styleSelect ? styleSelect.value : 'none');
-        });
-    }
-
-    if (styleSelect) {
-        styleSelect.value = savedStyle;
-        styleSelect.addEventListener('change', (e) => {
-            const val = e.target.value;
-            localStorage.setItem('kureba_chat_sender_style', val);
-            updateSenderPreviewHint();
-            updateSenderChipActive(senderInput ? senderInput.value.trim() : '', val);
+            updateSenderChipActive(val);
         });
     }
 
@@ -4998,19 +4979,16 @@ function initChatModal() {
     document.querySelectorAll('.chat-sender-chips .sender-chip').forEach(chip => {
         chip.addEventListener('click', () => {
             const name = chip.getAttribute('data-name') || '';
-            const chipStyle = chip.getAttribute('data-style') || (name ? 'body_prefix' : 'none');
             if (senderInput) senderInput.value = name;
-            if (styleSelect) styleSelect.value = chipStyle;
             localStorage.setItem('kureba_chat_sender_name', name);
-            localStorage.setItem('kureba_chat_sender_style', chipStyle);
             updateSenderPreviewHint();
-            updateSenderChipActive(name, chipStyle);
+            updateSenderChipActive(name);
             showToast(name ? `送信者を「${name}」に設定しました` : '送信者を「なし（公式名・from非表示）」に設定しました', 'info');
         });
     });
 
     updateSenderPreviewHint();
-    updateSenderChipActive(savedSender, savedStyle);
+    updateSenderChipActive(savedSender);
 
     // 定型文クイックチップ
     document.querySelectorAll('.chat-quick-templates .quick-tpl-chip').forEach(chip => {
@@ -5040,29 +5018,23 @@ function initChatModal() {
 function updateSenderPreviewHint() {
     const hintEl = document.getElementById('chatSenderPreviewHint');
     const senderInput = document.getElementById('chatSenderNameInput');
-    const styleSelect = document.getElementById('chatSenderStyleSelect');
     if (!hintEl) return;
 
     const name = (senderInput ? senderInput.value.trim() : '');
-    const style = styleSelect ? styleSelect.value : 'none';
 
-    if (style === 'none' || !name) {
+    if (!name) {
         hintEl.innerHTML = `<i class="fa-brands fa-line" style="color: #06C755;"></i> 公式アカウント名で送信（fromなし）`;
         hintEl.style.color = '#15803d';
-    } else if (style === 'body_prefix') {
-        hintEl.innerHTML = `<i class="fa-solid fa-signature" style="color: #4f46e5;"></i> 本文先頭に「【${escapeHtml(name)}】」を付加（fromなし）`;
+    } else {
+        hintEl.innerHTML = `<i class="fa-solid fa-tag" style="color: #4f46e5;"></i> 吹き出し上に「from ${escapeHtml(name)}」を表示`;
         hintEl.style.color = '#4338ca';
-    } else if (style === 'line_sender') {
-        hintEl.innerHTML = `<i class="fa-solid fa-tag" style="color: #d97706;"></i> 吹き出し上に「from ${escapeHtml(name)}」を表示`;
-        hintEl.style.color = '#b45309';
     }
 }
 
-function updateSenderChipActive(currentName, currentStyle = 'none') {
+function updateSenderChipActive(currentName = '') {
     document.querySelectorAll('.chat-sender-chips .sender-chip').forEach(chip => {
         const chipName = chip.getAttribute('data-name') || '';
-        const chipStyle = chip.getAttribute('data-style') || (chipName ? 'body_prefix' : 'none');
-        const isMatch = (chipName === currentName && (!chipName || chipStyle === currentStyle));
+        const isMatch = (chipName === currentName);
         if (isMatch) {
             chip.style.background = '#eef2ff';
             chip.style.borderColor = '#6366f1';
@@ -5145,16 +5117,13 @@ function openChatModal(cust, targetIdx = null) {
         inputArea.value = '';
     }
 
-    // 保存済み送信者名とスタイルのセット
+    // 保存済み送信者名のセット
     const senderInput = document.getElementById('chatSenderNameInput');
-    const styleSelect = document.getElementById('chatSenderStyleSelect');
-    if (senderInput || styleSelect) {
+    if (senderInput) {
         const savedSender = localStorage.getItem('kureba_chat_sender_name') ?? '';
-        const savedStyle = localStorage.getItem('kureba_chat_sender_style') || (savedSender ? 'body_prefix' : 'none');
-        if (senderInput) senderInput.value = savedSender;
-        if (styleSelect) styleSelect.value = savedStyle;
+        senderInput.value = savedSender;
         updateSenderPreviewHint();
-        updateSenderChipActive(savedSender, savedStyle);
+        updateSenderChipActive(savedSender);
     }
 
     // 未読数をローカルでクリア（テーブル再描画は行わずバッジのみ非表示）
@@ -5422,10 +5391,7 @@ async function sendChatMessage() {
         sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
     }
 
-    const senderInput = document.getElementById('chatSenderNameInput');
-    const styleSelect = document.getElementById('chatSenderStyleSelect');
     const senderName = (senderInput?.value || '').trim();
-    const senderStyle = styleSelect ? styleSelect.value : (senderName ? 'body_prefix' : 'none');
 
     try {
         const payload = new URLSearchParams({
@@ -5434,8 +5400,7 @@ async function sendChatMessage() {
             user_id: state.activeChatUser.user_id,
             text: text,
             sender_name: senderName,
-            sent_by: senderName || 'スタッフ',
-            sender_style: senderStyle,
+            sent_by: senderName,
             account: state.activeAccount
         });
 
