@@ -458,8 +458,24 @@ if (isset($_REQUEST['action'])) {
 
             <div class="form-group">
                 <label class="form-label" for="liffId">LIFF ID <span style="font-size: 11px; color: var(--text-muted);">(任意・マイカルテ用)</span></label>
-                <input type="text" id="liffId" name="liff_id" class="form-input" placeholder="例: 1234567890-AbcdEfgh" style="font-family: monospace;">
+                <input type="text" id="liffId" name="liff_id" class="form-input" placeholder="例: 2000276344-YL1wXh0h" style="font-family: monospace;">
                 <div class="form-hint">受講生・顧客向けマイカルテ画面（liff.html）を利用する場合はLIFF IDを入力します。</div>
+            </div>
+
+            <!-- 外部ツール並列中継設定 -->
+            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: var(--radius-md); padding: 14px; margin-bottom: 18px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label class="form-label" for="prolineWebhookUrl" style="margin-bottom: 0;">
+                        <i class="fa-solid fa-network-wired" style="color: #2563eb;"></i> 外部ツール転送先 Webhook URL（プロライン / エルメ / LINE Harness等・任意）
+                    </label>
+                    <div style="display: flex; gap: 4px;">
+                        <button type="button" class="btn btn-secondary" onclick="appendSetupWebhook('proline')" style="padding: 2px 6px; font-size: 10.5px; height: auto;">＋ プロライン</button>
+                        <button type="button" class="btn btn-secondary" onclick="appendSetupWebhook('lmessh')" style="padding: 2px 6px; font-size: 10.5px; height: auto;">＋ エルメ</button>
+                        <button type="button" class="btn btn-secondary" onclick="appendSetupWebhook('harness')" style="padding: 2px 6px; font-size: 10.5px; height: auto;">＋ LINE Harness</button>
+                    </div>
+                </div>
+                <textarea id="prolineWebhookUrl" name="proline_webhook_url" class="form-input" rows="2" placeholder="例:&#10;https://autosns.pro/api/webhook/... (プロライン)&#10;https://l-messh.com/api/webhook/... (エルメ)&#10;https://line-harness.com/api/webhook/... (LINE Harness)" style="font-family: monospace; font-size: 11.5px;"></textarea>
+                <div class="form-hint">LINEから届いたWebhookを各外部ツールへ並列中継します。各ツールの自動返信・ステップ配信・シナリオと干渉せずに完全共存できます（1行に1件・複数登録可）。</div>
             </div>
 
             <div class="form-group">
@@ -614,6 +630,21 @@ function copyText(elemId) {
         document.execCommand('copy');
         alert('コピーしました！');
     });
+}
+
+function appendSetupWebhook(toolType) {
+    const input = document.getElementById('prolineWebhookUrl');
+    if (!input) return;
+    let sample = '';
+    if (toolType === 'proline') sample = 'https://autosns.pro/api/webhook/YOUR_KEY';
+    else if (toolType === 'lmessh') sample = 'https://l-messh.com/api/webhook/YOUR_KEY';
+    else if (toolType === 'harness') sample = 'https://line-harness.com/api/webhook/YOUR_KEY';
+    
+    if (sample) {
+        const cur = input.value.trim();
+        input.value = cur ? (cur + "\n" + sample) : sample;
+        input.focus();
+    }
 }
 
 // 起動

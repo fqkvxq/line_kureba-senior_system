@@ -694,13 +694,33 @@ async function openAccountEditForm(accountId) {
 
 function updateDisplayWebhookUrl(accId, isDefault = false) {
     const displayField = document.getElementById('accFormDisplayWebhookUrl');
-    if (!displayField) return;
+    const displayProlineField = document.getElementById('accFormDisplayProlineEventUrl');
     const host = window.location.host;
     const path = window.location.pathname.replace(/\/admin\/.*$/, '');
     const cleanId = (accId || '').toLowerCase().replace(/[^a-z0-9_\-]/g, '');
     const query = (isDefault || cleanId === 'senior') ? '' : `?account=${cleanId || 'your_id'}`;
-    displayField.value = `${window.location.protocol}//${host}${path}/webhook.php${query}`;
+    if (displayField) {
+        displayField.value = `${window.location.protocol}//${host}${path}/webhook.php${query}`;
+    }
+    if (displayProlineField) {
+        displayProlineField.value = `${window.location.protocol}//${host}${path}/proline_webhook.php${query}`;
+    }
 }
+
+window.appendToolWebhookUrl = function(toolType) {
+    const input = document.getElementById('accFormWebhookUrl');
+    if (!input) return;
+    let sample = '';
+    if (toolType === 'proline') sample = 'https://autosns.pro/api/webhook/YOUR_KEY';
+    else if (toolType === 'lmessh') sample = 'https://l-messh.com/api/webhook/YOUR_KEY';
+    else if (toolType === 'harness') sample = 'https://line-harness.com/api/webhook/YOUR_KEY';
+    
+    if (sample) {
+        const cur = input.value.trim();
+        input.value = cur ? (cur + "\n" + sample) : sample;
+        input.focus();
+    }
+};
 
 async function submitAccountForm() {
     const idInput = document.getElementById('accFormId');

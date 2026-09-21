@@ -263,7 +263,7 @@
                         </div>
                         <div class="summary-card-content">
                             <h3>他社サーバー移行 & 初期設定</h3>
-                            <p>個人情報ゼロのクリーン導入、setup.phpによる環境診断、LINE Webhook登録手順。</p>
+                            <p>個人情報ゼロのクリーン導入、setup.phpによる環境診断、LINE API自動疎通テストと簡単初期化。</p>
                         </div>
                     </a>
                 </div>
@@ -281,7 +281,7 @@
                     </div>
 
                     <p>当システムは、シニア向けパソコン教室において、受講生とのコミュニケーション向上、レッスンの無断欠席防止、定期的なパソコン・スマホのメンテナンス受診促進を実現するための専用管理システムです。<br>
-                    <strong>既存の「プロラインフリー（ProLine Free）」で構築されたLINE公式アカウント環境を壊すことなく共存できる</strong>設計となっています。</p>
+                    <strong>既存の「プロラインフリー（ProLine Free）」「エルメ（L-messh）」「LINE Harness（ラインハーネス）」等の外部マーケティングツールで構築された環境を壊すことなく、100%干渉ゼロで共存できる</strong>設計となっています。</p>
                     
                     <div class="step-flow">
                         <div class="step-card">
@@ -295,8 +295,8 @@
                         <div class="step-card">
                             <div class="step-number">B</div>
                             <div class="step-body">
-                                <h4>プロラインWebhook中継プロキシ (webhook.php)</h4>
-                                <p>LINE公式アカウントから届くWebhookイベントを本システムで瞬時に受講生カルテに同期した上で、署名ヘッダー付きでプロラインへ完全転送します。プロライン側のステップ配信・シナリオ機能に一切支障を与えません。</p>
+                                <h4>マルチWebhook中継ハブ (webhook.php)</h4>
+                                <p>LINE公式アカウントから届くWebhookイベントを本システムで瞬時に受講生カルテへ同期した上で、署名ヘッダー付きでプロライン、エルメ、LINE Harness等へ並列同時転送します。各ツールの自動応答・ステップ配信・シナリオ・分析機能に一切支障を与えません。</p>
                             </div>
                         </div>
 
@@ -310,43 +310,47 @@
                     </div>
                 </section>
 
-                <!-- 2. プロライン＆外部ツール連携（マルチWebhook中継・共存運用） -->
+                <!-- 2. 外部マーケティングツール連携（プロライン / エルメ / LINE Harness等 Webhook並列中継） -->
                 <section class="manual-section" id="sec-proline">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #eff6ff; color: #2563eb;">
                             <i class="fa-solid fa-network-wired"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>2. プロライン＆外部ツール連携（マルチWebhook中継・共存運用）</h2>
-                            <p>プロラインのチャット通知・ステップ配信と本システムのカルテ・予約を完全に共存させる設定手順</p>
+                            <h2>2. 外部マーケティングツール連携（プロライン / エルメ / LINE Harness等 並列中継・完全共存）</h2>
+                            <p>プロライン・エルメ・LINE Harness等の自動応答・ステップ配信・シナリオと本システムを100%干渉させずに共存させる設定手順</p>
                         </div>
                     </div>
 
                     <p>LINE公式アカウントの仕様上、LINE Developersコンソールに登録できるWebhook URLは1アカウントにつき1箇所しかありません。<br>
-                    そのため、LINE Developersで本システムのWebhook URLを登録するとプロライン側にWebhookが届かなくなり、<strong>「プロラインでチャット通知が来なくなる」「ステップ配信が動かなくなる」</strong>という問題が発生します。<br>
-                    当システムでは、受信したLINEの全メッセージ・友だち追加イベントを<strong>【プロライン】や【その他外部ツール】へリアルタイムに並列同時転送（マルチWebhookプロキシ中継）</strong>することで、プロラインのチャット通知やステップ配信を生かしたまま完全共存を実現します。</p>
+                    そのため、直接プロラインやエルメ、LINE Harnessのいずれか1つのURLを登録すると他のツールや本システムにWebhookが届かなくなります。<br>
+                    当システムを<strong>「LINE中継ハブ」</strong>として位置づけ、受信したLINEの全メッセージ・友だち追加イベントを<strong>【プロライン】【エルメ (L-messh)】【LINE Harness】等の複数ツールへミリ秒単位で並列同時転送（マルチWebhookプロキシ中継）</strong>することで、すべてのツールの自動応答・ステップ配信・チャット通知を生かしたまま完全共存を実現します。</p>
 
                     <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: var(--radius-md); padding: 16px; margin: 16px 0; font-family: monospace; font-size: 13px; line-height: 1.6; color: #1e293b;">
                         【メッセージ・イベントのリアルタイム並列中継フロー】<br>
                         受講生のLINE ➡ <strong>[LINE公式アカウント]</strong><br>
                         &nbsp;&nbsp;⬇ (LINE Messaging API Webhook)<br>
-                        <strong>[本システム: webhook.php]</strong> ➡ 受講生情報・最終やり取り日時をカルテに自動同期＆Slack/Discord通知<br>
-                        &nbsp;&nbsp;⬇ (並列非同期curl_multi転送 / 署名X-Line-Signature完全再現)<br>
+                        <strong>[本システム: webhook.php]</strong> ➡ 受講生カルテ・チャット履歴に自動同期＆未読管理・Slack/Discord通知<br>
+                        &nbsp;&nbsp;⬇ (並列非同期curl_multi転送 / 生署名X-Line-Signature完全付与)<br>
                         ├➡ <strong>[プロライン: autosns.pro/...]</strong> ➡ <strong>チャット受信通知・ステップ配信・個別返信がそのまま稼働！</strong><br>
-                        └➡ <strong>[その他外部ツール: Zapier / Make / Lステップ / エルメ等]</strong> ➡ 複数URLへも同時にリアルタイム配信！
+                        ├➡ <strong>[エルメ (L-messh): l-messh.com/...]</strong> ➡ <strong>シナリオ配信・フォーム・リッチメニューアクションが連動！</strong><br>
+                        ├➡ <strong>[LINE Harness: line-harness.com/...]</strong> ➡ <strong>高度な顧客分析・自動トリガー配信が稼働！</strong><br>
+                        └➡ <strong>[その他外部ツール: Zapier / Make / 自社Webhook等]</strong> ➡ 複数URLへも同時にリアルタイム配信！
                     </div>
 
                     <div class="step-flow">
                         <div class="step-card">
                             <div class="step-number">1</div>
                             <div class="step-body">
-                                <h4>管理画面でプロライン（および外部ツール）のWebhook URLを登録</h4>
-                                <p>管理画面ヘッダー上部の「<strong><i class="fa-solid fa-network-wired"></i> プロライン連携</strong>」ボタンをクリックして設定モーダルを開きます。</p>
+                                <h4>管理画面で各外部ツール（プロライン / エルメ / LINE Harness等）のWebhook URLを登録</h4>
+                                <p>管理画面ヘッダーのアカウント名「<strong>⚙️ アカウント設定</strong>」をクリックして設定モーダルを開きます。</p>
                                 <ul>
-                                    <li><strong>外部ツールへのWebhook自動中継（同時転送）を有効にする</strong>: チェックを入れる（ON）。</li>
-                                    <li><strong>転送先 Webhook URL</strong>: プロライン管理画面で案内されるWebhook URL（例: <code>https://autosns.pro/api/webhook/...</code>）を入力します。<br>
-                                    ※ <strong>複数ツールの登録に対応</strong>：Zapier、Make、Lステップ、エルメ、自社サーバー等のURLも<strong>1行に1つずつ改行</strong>して入力することで、すべてのツールへ同時に中継転送されます。</li>
-                                    <li>「<strong><i class="fa-solid fa-floppy-disk"></i> 設定を保存する</strong>」ボタンを押します。</li>
+                                    <li><strong>転送先 Webhook URL一覧（1行に1件・複数登録可能）</strong>: 各ツールで案内されるWebhook URLを改行で入力します。<br>
+                                    ・プロライン: <code>https://autosns.pro/api/webhook/...</code><br>
+                                    ・エルメ: <code>https://l-messh.com/api/webhook/...</code><br>
+                                    ・LINE Harness: <code>https://line-harness.com/api/webhook/...</code><br>
+                                    ※ 画面上の「＋ プロライン」「＋ エルメ」「＋ LINE Harness」チップを押すだけで簡単に入力・追加できます。</li>
+                                    <li>「<strong><i class="fa-solid fa-floppy-disk"></i> この設定で保存する</strong>」ボタンを押します。</li>
                                 </ul>
                             </div>
                         </div>
@@ -367,22 +371,19 @@
                         <div class="step-card">
                             <div class="step-number">3</div>
                             <div class="step-body">
-                                <h4>疎通テストの実行</h4>
-                                <p>本システムの設定モーダル内にある「<strong><i class="fa-solid fa-rotate"></i> 疎通テスト実行</strong>」ボタンを押します。<br>
-                                本システムから登録されたすべてのWebhook URLへダミーの署名付きWebhookリクエストが並列送信され、各URLの応答ステータス（<code>OK (200)</code> や所要時間ms）が一覧表示されます。</p>
+                                <h4>疎通テストの実行と中継診断</h4>
+                                <p>ブラウザで <code>https://あなたのドメイン/webhook.php</code> を直接開くと、登録されているすべての転送先Webhook URLへの直近の転送ログやHTTP応答ステータス（<code>OK (200)</code> 等）をリアルタイムに確認できます。</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">4</div>
                             <div class="step-body">
-                                <h4>プロラインでチャット通知が来ない場合の確認チェックリスト</h4>
+                                <h4>外部ツールの通知やステップ配信が動かない場合のチェックリスト</h4>
                                 <ul>
-                                    <li><strong>1. プロライン Webhook URLの登録確認</strong>：本システムの管理画面「プロライン連携」を開き、プロライン管理画面（「初期設定」や「LINE公式アカウント連携」）で案内されるWebhook URL（例: <code>https://autosns.pro/api/webhook/...</code>）が正しく貼り付けられ、「設定を保存する」が完了しているか確認してください。</li>
-                                    <li><strong>2. 「疎通テスト実行」でOKが出るか</strong>：設定モーダルの「疎通テスト実行」ボタンを押し、<code>OK (200)</code> が返るか確認してください。もしエラーが出る場合はURLに余分な空白や改行が含まれていないかご確認ください。</li>
-                                    <li><strong>3. LINE DevelopersのWebhook利用設定</strong>：<a href="https://developers.line.biz/console/" target="_blank" style="color: #2563eb; text-decoration: underline;">LINE Developers</a> の「Messaging API設定」で、Webhook URLに本システムのURL（<code>https://あなたのドメイン/webhook.php</code>）が登録され、「Webhookの利用」が <strong>ON</strong> になっているか確認してください。</li>
-                                    <li><strong>4. プロライン側の通知設定</strong>：プロライン管理画面の「チャット設定」または「通知設定」にて、通知用LINEアカウントまたはメールアドレスへの「チャット受信時の通知」がONになっているかご確認ください。</li>
-                                    <li><strong>5. LINE公式アカウントの応答設定</strong>：LINE Official Account Manager（LINEヤフー公式管理画面）の「設定」＞「応答設定」にて、応答モードが「チャット」または「Bot」、かつWebhookが「ON」になっているかご確認ください。</li>
+                                    <li><strong>1. 転送先URLの登録確認</strong>：管理画面「アカウント設定」を開き、各ツールのWebhook URLに余分な空白や誤字がないかご確認ください。</li>
+                                    <li><strong>2. LINE DevelopersのWebhook利用設定</strong>：LINE Developersで本システムのWebhook URLが登録され、「Webhookの利用」が <strong>ON</strong> になっているか確認してください。</li>
+                                    <li><strong>3. LINE公式アカウントの応答設定</strong>：LINE Official Account Managerの「設定」＞「応答設定」にて、応答モードが「チャット」または「Bot」、かつWebhookが「ON」になっているかご確認ください。</li>
                                 </ul>
                             </div>
                         </div>
@@ -391,15 +392,10 @@
                             <div class="step-number">5</div>
                             <div class="step-body">
                                 <h4>レッスン予約・日程変更カレンダー連携（公式予約URLとリッチメニュー設定）</h4>
-                                <p>レッスンの予約・日程変更URL（<code>https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1</code>）と連携し、受講生がLINE内から1タップで受講生個別の予約や日程変更を行えるようにします。</p>
+                                <p>プロラインやエルメの予約・日程変更カレンダーURLと連携し、受講生がLINE内から1タップで予約を行えるようにします。</p>
                                 <ul>
-                                    <li><strong>リッチメニューでの予約設定</strong>:<br>
-                                        リッチメニュー管理エディタ（<code>richmenu.html</code>）のチップ「<strong>📅 レッスン予約・日程変更</strong>」をクリックすると、受講生個別自動ログイン対応の公式予約URLがセットされます。<br>
-                                        受講生がタップすると、LINE UID（<code>[[uid]]</code>）が自動認識され、名前の再入力不要でカレンダー予約・日程変更画面が立ち上がります。</li>
-                                    <li><strong>個別メニューのメッセージ帯タップ連動</strong>:<br>
-                                        受講生カルテ画面の「個別リッチメニュー設定」で「📅 レッスン予約・日程変更を開く」を指定すると、次回レッスン日のメッセージ帯をタップした際にもこの予約カレンダーが自動起動します。</li>
-                                    <li><strong>受講生マイカルテ（<code>mycar.html</code>）からの連動予約</strong>:<br>
-                                        受講生マイカルテ画面内の「📅 レッスン予約カレンダーで日時を選ぶ」ボタンを押した場合も、この公式予約URLへ自動直結されます。</li>
+                                    <li><strong>リッチメニューでの予約設定</strong>: リッチメニュー管理エディタ（<code>richmenu.html</code>）のチップ「<strong>📅 レッスン予約・日程変更</strong>」をクリックすると、受講生個別自動ログイン対応の公式予約URLがセットされます。</li>
+                                    <li><strong>受講生マイカルテ（<code>mycar.html</code>）からの連動予約</strong>: 受講生マイカルテ画面内の「📅 レッスン予約カレンダーで日時を選ぶ」ボタンを押した場合も、この公式予約URLへ自動直結されます。</li>
                                 </ul>
                             </div>
                         </div>
@@ -407,32 +403,15 @@
                         <div class="step-card" style="border: 2px solid #3b82f6; background: #eff6ff;">
                             <div class="step-number" style="background: #2563eb; color: #fff;">6</div>
                             <div class="step-body">
-                                <h4><span class="badge" style="background: #2563eb; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-right: 6px;">NEW</span>プロライン「登録発生時に外部システムにデータを送信する」連携（フォーム回答・レッスン予約の自動カルテ反映＆スタッフ通知）</h4>
-                                <p>プロライン側で受講生が<strong>アンケートフォームを送信</strong>したり、<strong>カレンダーからレッスン予約・日程変更</strong>を行った際に、本システムへリアルタイムにWebhookデータを自動送信させ、カルテへの記録とスタッフ通知を即座に連動させる設定です。</p>
+                                <h4>プロライン・外部ツールの「登録発生時送信」連携（フォーム回答・予約の自動カルテ反映＆スタッフ通知）</h4>
+                                <p>プロラインや外部ツール側で受講生が<strong>アンケートフォームを送信</strong>したり、<strong>カレンダーからレッスン予約・日程変更</strong>を行った際に、本システムへリアルタイムにデータを送信させ、カルテへの記録とスタッフ通知を即座に連動させる設定です。</p>
                                 
                                 <div style="background: #ffffff; border: 1px solid #bfdbfe; border-radius: var(--radius-sm); padding: 12px; margin: 10px 0;">
                                     <strong style="color: #1e40af;"><i class="fa-solid fa-link"></i> 設定するWebhook URLの確認方法:</strong><br>
-                                    受講生カルテ画面（<code>index.html</code>）またはリッチメニュー画面（<code>richmenu.html</code>）のヘッダーにあるアカウント名「⚙️ アカウント設定」をクリックし、<br>
-                                    青色枠の「<strong>プロライン『登録発生時送信』Webhook URL</strong>」を「コピー」ボタンで取得します。<br>
+                                    受講生カルテ画面（<code>index.html</code>）またはリッチメニュー画面（<code>richmenu.html</code>）のアカウント設定を開き、<br>
+                                    青色枠の「<strong>外部システム『登録発生時送信』Webhook URL</strong>」をコピーして外部ツールのWebhook送信先へ登録します。<br>
                                     <code style="font-size: 12px; color: #1e40af; background: #f0fdf4; padding: 2px 6px; border-radius: 4px;">https://あなたのドメイン/proline_webhook.php?account=senior</code>
                                 </div>
-
-                                <strong style="color: #0f172a;">【プロライン管理画面での設定手順】</strong>
-                                <ol style="padding-left: 20px; margin: 8px 0; line-height: 1.7; font-size: 13.5px;">
-                                    <li>プロラインフリー管理画面（PCブラウザ）にログインします。</li>
-                                    <li>左メニューの「<strong>外部連携・API</strong>」または「<strong>フォーム作成</strong>」「<strong>イベント予約</strong>」の設定を開きます。</li>
-                                    <li>「<strong>登録発生時に外部システムにデータを送信する</strong>」または「<strong>外部システム連携 (Webhook POST送信)</strong>」の入力欄に、上記でコピーしたURL（<code>https://あなたのドメイン/proline_webhook.php?account=senior</code>）を貼り付けます。</li>
-                                    <li>「保存」または「更新」をクリックして設定を完了します。</li>
-                                </ol>
-
-                                <strong style="color: #0f172a;">【自動反映される機能】</strong>
-                                <ul style="padding-left: 20px; margin: 8px 0; line-height: 1.7; font-size: 13.5px;">
-                                    <li><strong>カルテの指導メモ（memo）へ自動追記</strong>: フォーム名、回答日時、各設問に対する回答内容が受講生カルテの「特記事項・指導メモ」へ自動的に整形されて追記保存されます。</li>
-                                    <li><strong>レッスン予約日の自動反映</strong>: 予約イベントを受信した場合、次回レッスン日（<code>oil_next_date</code>）へ予約日時が自動セットされます。</li>
-                                    <li><strong>最終やり取り日時・プレビューの更新</strong>: 受講生一覧テーブルの「最終やり取り」列に最新のフォーム送信・予約イベントが即時反映されます。</li>
-                                    <li><strong>スタッフ宛てリアルタイム通知</strong>: 管理者個人LINE、Discord、Slackへ「【フォーム回答】〇〇様がアンケートを送信しました」「【レッスン予約】〇〇様が予約を登録しました」と回答内容付きで即座にプッシュ通知されます。</li>
-                                    <li><strong>受講生カルテの自動新規作成</strong>: まだカルテに未登録の受講生であっても、プロラインの登録情報（LINE表示名、UID、お電話番号など）を元に自動で新規カルテが作成されるため、対応の抜け漏れが一切起きません。</li>
-                                </ul>
                             </div>
                         </div>
                     </div>
@@ -440,8 +419,8 @@
                     <div class="callout callout-info">
                         <i class="fa-solid fa-circle-info"></i>
                         <div>
-                            <strong>プロライン共存時の安全・高速設計:</strong><br>
-                            プロライン側がメッセージの自動返信（ReplyToken）を行うため、本システム側では受講生からの通常メッセージに対して自動返信を行わず、カルテの記録・最終やり取り日時の同期・リッチメニューの自動適用に専念します。これにより、LINEのReplyToken二重消費エラーを防止し、両システムが完全に共存します。また、複数ツールへの転送は並列非同期通信（<code>curl_multi</code>）で処理されるため、LINEサーバーへのレスポンスが一切遅延しません。
+                            <strong>プロライン / エルメ / LINE Harness 完全共存の仕組み（干渉防止設計）:</strong><br>
+                            プロラインやエルメ、LINE Harness側がメッセージの自動返信（ReplyToken）を行うため、本システム側では受講生からの通常メッセージに対して自動返信を行わず、カルテの記録・最終やり取り日時の同期・個別リッチメニューの適用に専念します。これにより、LINEのReplyToken二重消費エラーを防止し、すべてのシステムが100%干渉せずに共存します。また、複数ツールへの転送は並列非同期通信（<code>curl_multi</code>）でミリ秒処理されるため、通信遅延が一切生じません。
                         </div>
                     </div>
                 </section>
@@ -1531,6 +1510,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_server_setup_v1"></script>
+    <script src="manual.js?v=20260921_multitool_v1"></script>
 </body>
 </html>
