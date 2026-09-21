@@ -1014,22 +1014,25 @@ function getLineFollowerUserIds(?string $start = null): array {
 /**
  * LINEユーザー（友だち）を customer_cars に自動登録・名前同期する共通関数
  */
-function ensureCustomerExists(PDO $db, string $userId): ?array {
+function ensureCustomerExists(PDO $db, string $userId, ?string $accountKey = null): ?array {
+    $userId = trim($userId);
     if (empty($userId) || !str_starts_with($userId, 'U')) {
         return null;
     }
 
+    $accountKey = $accountKey ?: getActiveAccountKey();
+
     try {
-        $stmt = $db->prepare("SELECT * FROM customer_cars WHERE user_id = :uid ORDER BY id ASC LIMIT 1");
+        $stmt = $db->prepare("SELECT * FROM customer_cars WHERE TRIM(user_id) = :uid ORDER BY id ASC LIMIT 1");
         $stmt->execute([':uid' => $userId]);
         $existing = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($existing) {
             // 名前が仮名またはアイコンが未登録ならプロフィール取得して更新
-            $needUpdateName = empty($existing['user_name']) || in_array($existing['user_name'], ['新規お客様', 'お客様', 'LINE友だち', '']);
+            $needUpdateName = empty($existing['user_name']) || in_array($existing['user_name'], ['新規お客様', 'お客様', 'LINE友だち', '受講生', 'LINE受講生', '']);
             $needUpdatePic = empty($existing['picture_url']);
             if ($needUpdateName || $needUpdatePic) {
-                $prof = getLineUserProfile($userId);
+                $prof = getLineUserProfile($userId, $accountKey);
                 if ($prof) {
                     $nowJst = date('Y-m-d H:i:s');
                     $upName = (!empty($prof['displayName']) && $needUpdateName) ? $prof['displayName'] : $existing['user_name'];
@@ -1044,8 +1047,8 @@ function ensureCustomerExists(PDO $db, string $userId): ?array {
         }
 
         // 新規登録
-        $prof = getLineUserProfile($userId);
-        $displayName = !empty($prof['displayName']) ? $prof['displayName'] : 'お客様';
+        $prof = getLineUserProfile($userId, $accountKey);
+        $displayName = !empty($prof['displayName']) ? $prof['displayName'] : 'LINE受講生';
         $pictureUrl = !empty($prof['pictureUrl']) ? $prof['pictureUrl'] : '';
         $nowJst = date('Y-m-d H:i:s');
 
@@ -1056,7 +1059,7 @@ function ensureCustomerExists(PDO $db, string $userId): ?array {
                 created_at, updated_at
             ) VALUES (
                 :uid, :uname, :pic, '【未設定】受講コース未設定', '',
-                :now_jst1, 'follow', 'LINE受講生登録',
+                :now_jst1, 'follow', '✨ 友だち登録',
                 :now_jst2, :now_jst3
             )
         ");
@@ -1076,10 +1079,10 @@ function ensureCustomerExists(PDO $db, string $userId): ?array {
             'user_id' => $userId,
             'user_name' => $displayName,
             'picture_url' => $pictureUrl,
-            'car_model' => '【未登録】愛車登録待ち',
+            'car_model' => '【未設定】受講コース未設定',
             'last_interaction_at' => $nowJst,
             'last_interaction_type' => 'follow',
-            'last_interaction_preview' => '友だち登録'
+            'last_interaction_preview' => '✨ 友だち登録'
         ];
     } catch (Throwable $e) {
         writeDebugLog("ensureCustomerExists 例外", ['error' => $e->getMessage()]);

@@ -497,10 +497,14 @@ try {
                 exit;
             }
 
-            // 受講生情報を取得
-            $cStmt = $db->prepare("SELECT id, user_id, user_name, picture_url, car_model, car_number FROM customer_cars WHERE TRIM(user_id) = :uid LIMIT 1");
+            // 受講生情報を取得 (未登録なら自動生成・同期)
+            $cStmt = $db->prepare("SELECT id, user_id, user_name, picture_url, car_model, car_number, is_blocked FROM customer_cars WHERE TRIM(user_id) = :uid LIMIT 1");
             $cStmt->execute([':uid' => $uid]);
             $customer = $cStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$customer && str_starts_with($uid, 'U')) {
+                $customer = ensureCustomerExists($db, $uid, $activeAccountKey);
+            }
 
             // チャット履歴一覧を取得 (古い順)
             $msgStmt = $db->prepare("
@@ -613,9 +617,10 @@ try {
             }
             exit;
 
-        // --- 0-8. 全受講生の未読メッセージ件数一覧取得 ---
+        // --- 0-8. 全受講生の未読メッセージ件数一覧取得 (ブラウザ通知データ含む) ---
         case 'get_unread_chat_counts':
             try {
+                // 1. 各ユーザーの未読数
                 $stmt = $db->query("
                     SELECT TRIM(user_id) as user_id, COUNT(*) as unread_count 
                     FROM chat_messages 
@@ -631,13 +636,39 @@ try {
                     $totalUnread += $cnt;
                 }
 
+                // 2. 直近の未読メッセージ詳細リスト (ブラウザ通知・ポップアップ用)
+                $recentUnreadStmt = $db->query("
+                    SELECT m.id, TRIM(m.user_id) as user_id, m.message_type, m.message_text, m.created_at,
+                           COALESCE(c.user_name, 'LINE受講生') as user_name,
+                           COALESCE(c.picture_url, '') as picture_url
+                    FROM chat_messages m
+                    LEFT JOIN customer_cars c ON TRIM(c.user_id) = TRIM(m.user_id)
+                    WHERE m.direction = 'incoming' AND m.is_read = 0
+                    ORDER BY m.id DESC
+                    LIMIT 20
+                ");
+                $recentUnread = $recentUnreadStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                // もしcustomer_carsに未登録のUIDがあれば自動登録修復
+                foreach ($recentUnread as &$unMsg) {
+                    if ($unMsg['user_name'] === 'LINE受講生' && str_starts_with($unMsg['user_id'], 'U')) {
+                        $synced = ensureCustomerExists($db, $unMsg['user_id'], $activeAccountKey);
+                        if ($synced) {
+                            $unMsg['user_name'] = $synced['user_name'] ?: 'LINE受講生';
+                            $unMsg['picture_url'] = $synced['picture_url'] ?: '';
+                        }
+                    }
+                }
+                unset($unMsg);
+
                 echo json_encode([
                     'success' => true,
                     'unread_counts' => $counts,
-                    'total_unread' => $totalUnread
+                    'total_unread' => $totalUnread,
+                    'recent_unread' => $recentUnread
                 ], JSON_UNESCAPED_UNICODE);
             } catch (Throwable $e) {
-                echo json_encode(['success' => true, 'unread_counts' => [], 'total_unread' => 0]);
+                echo json_encode(['success' => true, 'unread_counts' => [], 'total_unread' => 0, 'recent_unread' => []]);
             }
             exit;
 

@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260921_chat_image_v2">
+    <link rel="stylesheet" href="manual.css?v=20260921_browser_notif_v3">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -1139,6 +1139,20 @@
                                 </ul>
                             </div>
                         </div>
+
+                        <div class="step-card" style="border: 2px solid #0f766e; background: #f0fdfa;">
+                            <div class="step-number" style="background: #0f766e; color: #fff;">6</div>
+                            <div class="step-body">
+                                <h4><span class="badge" style="background: #0f766e; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-right: 6px;">NEW</span>PCブラウザ通知（デスクトップポップアップ＆チャイム音通知）</h4>
+                                <p>管理画面を開いていれば、別タブで作業中やウィンドウを最小化している場合でも、受講生からのLINE新着メッセージを瞬時に見逃さずキャッチできます。</p>
+                                <ul style="padding-left: 20px; margin: 8px 0; line-height: 1.7; font-size: 13.5px;">
+                                    <li><strong>1. ブラウザ通知の有効化</strong>: ヘッダーツールバーの「<i class="fa-solid fa-bell"></i> ブラウザ通知: OFF」ボタンをクリックし、ブラウザのポップアップで「許可」を選択すると有効（ON）になります。</li>
+                                    <li><strong>2. デスクトップポップアップ通知</strong>: 受講生からメッセージが届くと、PC画面の右下（Macは右上）に受講生名・写真・メッセージ本文のプレビューがデスクトップ通知として即座にポップアップします。</li>
+                                    <li><strong>3. 心地よいチャイム音再生</strong>: 新着検知時にクリアで優しいベル音（ポロン♪）が自動再生され、画面を見ていない時でも受信に気づけます。</li>
+                                    <li><strong>4. 通知クリックでチャット直通起動</strong>: 届いたデスクトップ通知をクリックすると、ブラウザが前面に表示され、該当受講生とのチャット画面が自動的に開いて即座に返信できます。</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="manual-alert-box info" style="margin-top: 16px;">
@@ -1620,6 +1634,16 @@
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
+                                <h4>PCブラウザ通知が届かない、または音が鳴らない場合は？</h4>
+                                <p><strong>1. ブラウザの通知許可確認</strong>：管理画面上部の「ブラウザ通知」ボタンが「ON」になっているかご確認ください。もしブラウザ側で通知がブロックされている場合は、アドレスバー左側の鍵アイコン（サイトの設定）をクリックし、通知を「許可」に変更してください。<br>
+                                <strong>2. 音声再生のブラウザ自動再生制限</strong>：ChromeやEdge等のブラウザ仕様により、ページを開いてから一度も画面をクリックしていない状態では自動音声再生が制限される場合があります。管理画面の任意の場所を一度クリックして操作を開始してください。<br>
+                                <strong>3. OS側の通知設定（Windows / Mac）</strong>：Windowsの「集中モード / 応答不可」やMacの「おやすみモード」が有効になっていると、デスクトップ通知が非表示になることがあります。OSの通知設定をご確認ください。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">Q</div>
+                            <div class="step-body">
                                 <h4>手動登録した受講生にチャットで返信できません</h4>
                                 <p>受講生一覧で「新規受講生登録」から手動作成された受講生は、LINEのユーザーID（<code>U...</code>）が未連携の状態です。受講生に教室のLINE公式アカウントを友だち追加していただき、マイカルテを開いてもらうか、メッセージを送信してもらうと自動的にLINE連携が完了し、チャット送受信が可能になります。</p>
                             </div>
@@ -1701,6 +1725,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_chat_image_v2"></script>
+    <script src="manual.js?v=20260921_browser_notif_v3"></script>
 </body>
 </html>

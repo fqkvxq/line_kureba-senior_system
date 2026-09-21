@@ -470,6 +470,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     initSlackSettings();
     init2FASettings();
     initQuickReplySettings();
+    updateBrowserNotifUi();
+    if (!globalChatUnreadTimer) {
+        globalChatUnreadTimer = setInterval(loadUnreadChatCounts, 10000);
+    }
 });
 
 async function loadAccounts() {
@@ -6244,7 +6248,125 @@ async function sendChatMessage() {
     }
 }
 
-let lastTotalUnreadCount = 0;
+// ==========================================================================
+// ブラウザ通知 & チャイム音 & チャット未読監視機能
+// ==========================================================================
+
+let lastTotalUnreadCount = -1;
+const notifiedMsgIds = new Set();
+let globalChatUnreadTimer = null;
+
+// Web Audio APIによる優しいチャイム音再生 (880Hz -> 1320Hz サイン波)
+function playNotificationSound() {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(880, now); // A5
+        gain1.gain.setValueAtTime(0.12, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.3);
+
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(1318.5, now + 0.12); // E6
+        gain2.gain.setValueAtTime(0.15, now + 0.12);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now + 0.12);
+        osc2.stop(now + 0.55);
+    } catch (e) {
+        console.warn('Audio play skipped:', e);
+    }
+}
+
+// ブラウザ通知ボタンのUI更新
+function updateBrowserNotifUi() {
+    const btn = document.getElementById('btnToggleBrowserNotif');
+    const icon = document.getElementById('iconBrowserNotif');
+    const label = document.getElementById('labelBrowserNotif');
+    if (!btn) return;
+
+    const isSupported = ("Notification" in window);
+    const isGranted = isSupported && Notification.permission === "granted";
+    const isEnabled = (localStorage.getItem('kureba_browser_notif_enabled') === 'true') && isGranted;
+
+    if (!isSupported) {
+        btn.style.display = 'none';
+        return;
+    }
+
+    if (isEnabled) {
+        btn.classList.add('active');
+        if (icon) {
+            icon.className = 'fa-solid fa-bell-ring';
+            icon.style.color = '#5eead4';
+        }
+        if (label) label.textContent = 'ブラウザ通知: ON';
+        btn.title = 'ブラウザ通知が有効です（新着LINEメッセージ時にポップアップと音でお知らせします。クリックでOFF）';
+    } else {
+        btn.classList.remove('active');
+        if (icon) {
+            icon.className = 'fa-solid fa-bell';
+            icon.style.color = '#64748b';
+        }
+        if (label) label.textContent = 'ブラウザ通知: OFF';
+        btn.title = 'クリックしてブラウザ通知を有効化（新着LINEメッセージ時にポップアップとチャイム音でお知らせ）';
+    }
+}
+
+// ブラウザ通知ON/OFF切り替え
+async function toggleBrowserNotification() {
+    if (!("Notification" in window)) {
+        alert("お使いのブラウザはデスクトップ通知に対応していません。Google Chrome / Edge / Firefox等の最新版をご利用ください。");
+        return;
+    }
+
+    if (Notification.permission === "granted") {
+        const cur = (localStorage.getItem('kureba_browser_notif_enabled') === 'true');
+        const next = !cur;
+        localStorage.setItem('kureba_browser_notif_enabled', next ? 'true' : 'false');
+        updateBrowserNotifUi();
+        if (next) {
+            playNotificationSound();
+            showToast("🔔 ブラウザ通知を有効にしました！新着メッセージ受信時に通知します。");
+        } else {
+            showToast("🔕 ブラウザ通知をOFFにしました。");
+        }
+    } else if (Notification.permission !== "denied") {
+        const perm = await Notification.requestPermission();
+        if (perm === "granted") {
+            localStorage.setItem('kureba_browser_notif_enabled', 'true');
+            updateBrowserNotifUi();
+            playNotificationSound();
+            try {
+                new Notification("🔔 LINE受講生管理システム", {
+                    body: "ブラウザ通知が有効化されました！新着メッセージが届くとここにお知らせします。",
+                    icon: "https://scdn.line-apps.com/n/channel_devcenter/img/fx/linecorp_code_withborder.png"
+                });
+            } catch (e) {}
+            showToast("🔔 ブラウザ通知を有効にしました！");
+        } else {
+            showToast("ブラウザ通知の許可が得られませんでした。");
+            updateBrowserNotifUi();
+        }
+    } else {
+        alert("ブラウザ通知がブロックされています。ブラウザのアドレスバー左側にある鍵アイコン（またはサイト設定）から通知を「許可」に変更してください。");
+    }
+}
+
+window.toggleBrowserNotification = toggleBrowserNotification;
+window.updateBrowserNotifUi = updateBrowserNotifUi;
 
 async function loadUnreadChatCounts() {
     try {
@@ -6252,14 +6374,66 @@ async function loadUnreadChatCounts() {
         const data = await res.json();
         if (data.success && data.unread_counts) {
             const newCounts = data.unread_counts || {};
+            const recentUnread = data.recent_unread || [];
             let totalUnread = 0;
             Object.values(newCounts).forEach(cnt => { totalUnread += parseInt(cnt, 10) || 0; });
 
-            // 新着メッセージ検知時のトースト通知
-            if (totalUnread > lastTotalUnreadCount && lastTotalUnreadCount >= 0) {
+            const isNotifEnabled = ("Notification" in window) && (Notification.permission === "granted") && (localStorage.getItem('kureba_browser_notif_enabled') === 'true');
+
+            // 新着メッセージ検知時の通知処理
+            if (Array.isArray(recentUnread) && recentUnread.length > 0) {
+                recentUnread.forEach(msg => {
+                    const msgId = msg.id;
+                    if (!msgId || notifiedMsgIds.has(msgId)) return;
+                    notifiedMsgIds.add(msgId);
+
+                    // 初期ロード時でなければ通知を発行
+                    if (lastTotalUnreadCount >= 0) {
+                        playNotificationSound();
+
+                        const sName = msg.user_name || '受講生';
+                        let previewText = msg.message_text || '';
+                        if (msg.message_type === 'image') {
+                            previewText = '📷 [画像を受信しました]';
+                        } else if (msg.message_type === 'sticker') {
+                            previewText = '🎨 [スタンプを受信しました]';
+                        } else if (msg.message_type === 'video') {
+                            previewText = '🎬 [動画を受信しました]';
+                        } else if (msg.message_type === 'audio') {
+                            previewText = '🎵 [音声を受信しました]';
+                        }
+
+                        // デスクトップ通知
+                        if (isNotifEnabled) {
+                            try {
+                                const notif = new Notification(`💬【新着LINE】${sName} 様`, {
+                                    body: previewText,
+                                    icon: msg.picture_url || 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/linecorp_code_withborder.png',
+                                    tag: `line_msg_${msgId}`,
+                                    requireInteraction: false
+                                });
+                                notif.onclick = function () {
+                                    window.focus();
+                                    if (msg.user_id) {
+                                        openChatModalByUid(msg.user_id);
+                                    }
+                                    notif.close();
+                                };
+                            } catch (nErr) {
+                                console.warn('Desktop Notification error:', nErr);
+                            }
+                        }
+
+                        // 画面内トースト通知
+                        showToast(`💬 ${escapeHtml(sName)} 様から新着メッセージ: ${escapeHtml(previewText)}`);
+                    }
+                });
+            } else if (totalUnread > lastTotalUnreadCount && lastTotalUnreadCount >= 0) {
                 const diff = totalUnread - lastTotalUnreadCount;
+                playNotificationSound();
                 showToast(`💬 新着LINEメッセージが ${diff}件 届きました！`);
             }
+
             lastTotalUnreadCount = totalUnread;
 
             // ドキュメントタイトルに未読件数を反映

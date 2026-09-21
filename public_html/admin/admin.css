@@ -379,6 +379,26 @@ body {
 }
 
 /* 各ヘッダーボタン固有スタイル */
+.btn-hdr-browser-notif {
+    background: #f8fafc;
+    color: #475569;
+    border-color: #cbd5e1;
+}
+.btn-hdr-browser-notif:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+.btn-hdr-browser-notif.active {
+    background: #0f766e;
+    color: #ffffff;
+    border-color: #14b8a6;
+    box-shadow: 0 2px 6px rgba(20, 184, 166, 0.3);
+}
+.btn-hdr-browser-notif.active i {
+    color: #5eead4 !important;
+}
+
 .btn-hdr-slack {
     background: #4A154B;
     color: #ffffff;

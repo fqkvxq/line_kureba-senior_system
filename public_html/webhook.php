@@ -191,15 +191,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             // 友だち追加・メッセージ送信・ボタン操作時に自動で受講生管理へ登録＆名前同期（ブロック時はスキップ）
             if (!empty($userId) && str_starts_with($userId, 'U') && $type !== 'unfollow') {
-                ensureCustomerExists($db, $userId);
+                ensureCustomerExists($db, $userId, $activeAccount);
             }
 
             if ($type === 'follow') {
                 // 友だち追加・ブロック解除時: 受講生登録、ブロックフラグ解除、管理者通知、リッチメニュー自動適用
                 recordCustomerInteraction($db, $userId, 'follow', "✨ 友だち追加");
                 try {
-                    $prof = getLineUserProfile($userId);
-                    $uName = $prof['displayName'] ?? '受講生';
+                    $prof = getLineUserProfile($userId, $activeAccount);
+                    $uName = $prof['displayName'] ?? 'LINE受講生';
                     $pUrl = $prof['pictureUrl'] ?? '';
 
                     // 名前とアイコンを更新し、確実にブロック解除 (is_blocked = 0)
@@ -349,8 +349,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     writeDebugLog("chat_messages 保存エラー", ['error' => $chatEx->getMessage()]);
                 }
 
-                // 2. 顧客カルテの最終やり取り更新 & ブロック解除 (メッセージ送信＝有効な友だち)
+                // 2. 顧客カルテの自動登録確認・最終やり取り更新 & ブロック解除 (メッセージ送信＝有効な友だち)
                 try {
+                    ensureCustomerExists($db, $userId, $activeAccount);
                     $db->prepare("UPDATE customer_cars SET is_blocked = 0, blocked_at = NULL WHERE TRIM(user_id) = :uid")
                         ->execute([':uid' => $userId]);
                 } catch (Throwable $e) {}
