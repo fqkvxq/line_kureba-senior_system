@@ -4970,6 +4970,7 @@ async function openQuickReplySettingsModal(targetAcc) {
 
     modal.classList.add('active');
     modal.style.display = 'flex';
+    modal.style.zIndex = '9999';
 
     const accSelect = document.getElementById('qrAccountSelect');
     if (accSelect) {
@@ -4998,6 +4999,10 @@ function closeQuickReplySettingsModal() {
         modal.style.display = 'none';
     }
 }
+
+window.openQuickReplySettings = openQuickReplySettingsModal;
+window.openQuickReplySettingsModal = openQuickReplySettingsModal;
+window.closeQuickReplySettings = closeQuickReplySettingsModal;
 
 async function loadQuickReplySettings(accountKey) {
     qrState.account = accountKey || state.activeAccount || 'senior';

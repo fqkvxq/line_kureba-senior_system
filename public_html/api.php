@@ -918,8 +918,9 @@ try {
                 exit;
             }
 
-            $targetAcc = $_GET['account'] ?? ($_POST['account'] ?? getActiveAccountKey());
-            $settings = getQuickReplySettings($targetAcc, $db);
+            $targetAcc = trim($_GET['account'] ?? ($_POST['account'] ?? getActiveAccountKey()));
+            $targetDb = getDbConnection($targetAcc);
+            $settings = getQuickReplySettings($targetAcc, $targetDb);
             $accConfig = getAccountConfig($targetAcc);
 
             echo json_encode([
@@ -939,7 +940,8 @@ try {
                 exit;
             }
 
-            $targetAcc = $_POST['account'] ?? ($_GET['account'] ?? getActiveAccountKey());
+            $targetAcc = trim($_POST['account'] ?? ($_GET['account'] ?? getActiveAccountKey()));
+            $targetDb = getDbConnection($targetAcc);
             $enabled = filter_var($_POST['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
             $mode = trim((string)($_POST['mode'] ?? 'none'));
 
@@ -961,7 +963,7 @@ try {
                 'custom_items' => $customItems
             ];
 
-            $res = saveQuickReplySettings($targetAcc, $settings, $db);
+            $res = saveQuickReplySettings($targetAcc, $settings, $targetDb);
             if ($res) {
                 echo json_encode([
                     'success' => true,
