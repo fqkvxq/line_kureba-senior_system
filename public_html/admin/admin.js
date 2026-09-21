@@ -2073,7 +2073,7 @@ function renderTable() {
                 <td data-col="actions">
                     <div class="action-btns">
                         <!-- 行1: メイン操作・個別対応 -->
-                        <button class="btn-table-chat" data-action="chat" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" onclick="event.stopPropagation(); openChatModalByUid('${escapeHtml(userId || c.id || '')}');" title="この受講生との1対1トーク確認・返信">
+                        <button class="btn-table-chat" data-action="chat" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" onclick="event.stopPropagation(); openChatModalByIndex(${globalIdx});" title="この受講生との1対1トーク確認・返信">
                             <i class="fa-solid fa-comments"></i> チャット
                             ${state.unreadChatCounts && state.unreadChatCounts[userId] ? `
                                 <span class="badge-chat-unread">${state.unreadChatCounts[userId]}</span>
@@ -5079,22 +5079,39 @@ function updateSenderChipActive(currentName, currentStyle = 'none') {
 
 const DEFAULT_AVATAR_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
 
-function openChatModal(cust) {
-    if (!cust) return;
+function openChatModal(cust, targetIdx = null) {
+    if (!cust && typeof targetIdx !== 'number') return;
 
-    // 文字列（UIDまたはID）が渡された場合のフォールバック解決
+    // 1. 数値インデックスからの解決
+    if (typeof cust === 'number') {
+        targetIdx = cust;
+        cust = null;
+    }
+    if (!cust && typeof targetIdx === 'number') {
+        cust = (state.currentFilteredList && state.currentFilteredList[targetIdx]) ||
+               (state.allCustomers && state.allCustomers[targetIdx]);
+    }
+
+    // 2. 文字列（UIDまたはID）が渡された場合の解決
     if (typeof cust === 'string') {
-        const targetId = cust;
+        const targetId = cust.trim();
         const found = state.allCustomers && state.allCustomers.length > 0
-            ? state.allCustomers.find(c => (c.user_id && c.user_id === targetId) || String(c.id) === String(targetId))
+            ? state.allCustomers.find(c => 
+                (c.user_id && c.user_id === targetId) || 
+                String(c.id) === String(targetId) ||
+                (c.user_name && c.user_name === targetId)
+            )
             : null;
         cust = found || {
             user_id: targetId.startsWith('U') ? targetId : '',
             id: targetId,
             user_name: 'LINE受講生',
+            picture_url: '',
             car_model: 'コース未設定'
         };
     }
+
+    if (!cust) return;
 
     state.activeChatUser = cust;
 
@@ -5105,6 +5122,7 @@ function openChatModal(cust) {
 
     const avatarEl = elements.chatModalAvatar || document.getElementById('chatModalAvatar');
     if (avatarEl) {
+        avatarEl.referrerPolicy = 'no-referrer';
         avatarEl.src = pic;
         avatarEl.onerror = function() {
             this.onerror = null;
@@ -5157,6 +5175,29 @@ function openChatModal(cust) {
 
     loadChatMessages(uid);
 
+    // 名前やアイコンが仮データの場合、受講生詳細APIから非同期で最新カルテ情報を補完
+    if (uid && (cust.user_name === 'LINE受講生' || !cust.picture_url)) {
+        fetch(`../api.php?action=get_customer_detail&user_id=${encodeURIComponent(uid)}&account=${encodeURIComponent(state.activeAccount)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.customer) {
+                    const fresh = data.customer;
+                    state.activeChatUser = { ...cust, ...fresh };
+                    if (userNameEl) {
+                        const sName = escapeHtml(fresh.user_name || fresh.name || name);
+                        userNameEl.innerHTML = `${sName} <span id="chatModalUidTag" style="font-size: 11px; font-weight: normal; color: #64748b; font-family: monospace;">(${escapeHtml(uid)})</span>`;
+                    }
+                    if (avatarEl && fresh.picture_url) {
+                        avatarEl.src = fresh.picture_url;
+                    }
+                    if (courseInfoEl && (fresh.car_model || fresh.car_number)) {
+                        courseInfoEl.textContent = `${fresh.car_model || 'コース未設定'}${fresh.car_number ? ' / ' + fresh.car_number : ''}`;
+                    }
+                }
+            })
+            .catch(() => {});
+    }
+
     // ポーリングタイマー開始（10秒ごとに新着自動確認）
     if (state.chatPollTimer) clearInterval(state.chatPollTimer);
     state.chatPollTimer = setInterval(() => {
@@ -5184,11 +5225,28 @@ function closeChatModal() {
     loadUnreadChatCounts();
 }
 
-window.openChatModal = openChatModal;
-window.closeChatModal = closeChatModal;
-window.openChatModalByUid = function(uid) {
+function openChatModalByIndex(idx) {
+    const cust = (state.currentFilteredList && state.currentFilteredList[idx]) ||
+                 (state.allCustomers && state.allCustomers[idx]);
+    if (cust) {
+        openChatModal(cust, idx);
+    } else {
+        openChatModal(idx);
+    }
+}
+
+function openChatModalByUid(uid, idx = null) {
+    if (typeof idx === 'number') {
+        openChatModalByIndex(idx);
+        return;
+    }
     openChatModal(uid);
-};
+}
+
+window.openChatModal = openChatModal;
+window.openChatModalByIndex = openChatModalByIndex;
+window.openChatModalByUid = openChatModalByUid;
+window.closeChatModal = closeChatModal;
 
 async function loadChatMessages(userId, isSilent = false) {
     if (!userId) {
@@ -5309,7 +5367,7 @@ function renderChatMessages(messages) {
         htmlParts.push(`
             <div class="chat-message-row ${rowClass}">
                 ${isIncoming ? `
-                    <img class="chat-msg-avatar" src="${escapeHtml(defaultUserPic)}" alt="User" onerror="this.onerror=null; this.src=DEFAULT_AVATAR_URL;">
+                    <img class="chat-msg-avatar" src="${escapeHtml(defaultUserPic)}" alt="User" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src=DEFAULT_AVATAR_URL;">
                 ` : ''}
                 <div class="chat-bubble-wrapper">
                     <div class="chat-bubble">${bubbleContent}</div>
