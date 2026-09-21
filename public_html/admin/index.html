@@ -115,6 +115,9 @@
                     <button type="button" class="btn-hdr-action btn-hdr-updater" id="btnToolbarSystemUpdate" title="システムの最新アップデートを確認・実行します" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd; font-weight: 700;">
                         <i class="fa-solid fa-cloud-arrow-down" style="color: #0284c7;"></i> システム更新 <span class="badge-new-update" id="toolbarUpdateBadge" style="display: none; background: #ef4444; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 10px; margin-left: 2px;">NEW</span>
                     </button>
+                    <button type="button" class="btn-hdr-action" id="openLineDiagnosticsBtn" onclick="window.openLineDiagnosticsModal && window.openLineDiagnosticsModal()" title="LINE Webhook接続状態・応答モード確認・模擬受信テスト・リアルタイムログ" style="background: #eef2ff; color: #4338ca; border-color: #c7d2fe; font-weight: 700;">
+                        <i class="fa-solid fa-stethoscope" style="color: #4f46e5;"></i> LINE接続診断＆テスト
+                    </button>
                     <button type="button" class="btn-hdr-action btn-hdr-browser-notif" id="btnToggleBrowserNotif" onclick="window.toggleBrowserNotification && window.toggleBrowserNotification()" title="新着LINEメッセージ受信時のPCブラウザ通知（デスクトップポップアップ＆チャイム音）">
                         <i class="fa-solid fa-bell" id="iconBrowserNotif" style="color: #64748b;"></i> <span id="labelBrowserNotif">ブラウザ通知: OFF</span>
                     </button>
@@ -2401,7 +2404,143 @@
         </div>
     </div>
 
+    <!-- LINE Webhook 接続診断 & テスト受信モーダル -->
+    <div class="modal-overlay" id="lineDiagnosticsModal" style="display: none; z-index: 1350;">
+        <div class="modal-card" style="max-width: 780px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); color: #fff;">
+                <h3 style="color: #fff; display: flex; align-items: center; gap: 8px; font-size: 16px;">
+                    <i class="fa-solid fa-stethoscope"></i> LINE公式アカウント接続診断 ＆ メッセージ受信テスト
+                </h3>
+                <button class="modal-close" id="closeLineDiagnosticsModalBtn" style="color: #fff;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 20px; overflow-y: auto; flex: 1;">
+                
+                <!-- 最重要チェックポイント警告バナー -->
+                <div style="background: #fffbeb; border: 1.5px solid #fcd34d; border-radius: 10px; padding: 14px 16px; margin-bottom: 18px;">
+                    <div style="display: flex; align-items: flex-start; gap: 10px;">
+                        <i class="fa-solid fa-triangle-exclamation" style="color: #d97706; font-size: 20px; margin-top: 2px;"></i>
+                        <div>
+                            <div style="font-size: 14px; font-weight: 800; color: #92400e; margin-bottom: 4px;">
+                                【最重要】LINEからチャットが届かない場合のチェックリスト
+                            </div>
+                            <div style="font-size: 12.5px; color: #78350f; line-height: 1.6;">
+                                友だち（受講生）がLINEからメッセージを送ってもシステムに届かない場合、<strong>LINE公式アカウント側の設定でWebhookが遮断されていることが99%の原因</strong>です。以下をご確認ください：
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px; padding-left: 30px; display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: #78350f;">
+                        <div style="display: flex; align-items: flex-start; gap: 6px;">
+                            <span style="background: #d97706; color: #fff; font-weight: 800; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0;">1</span>
+                            <div>
+                                <strong>LINE Official Account Manager (<a href="https://manager.line.biz/" target="_blank" style="color: #2563eb; text-decoration: underline;">manager.line.biz</a>) の「応答設定」</strong><br>
+                                「応答モード」を必ず<strong>【Bot】</strong>に設定し、「Webhook」を<strong>【オン】</strong>にしてください。<br>
+                                <span style="color: #b91c1c; font-weight: 700;">※応答モードが「チャット」になっていると、LINE社側でWebhook送信が完全に遮断されます！</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: flex-start; gap: 6px;">
+                            <span style="background: #d97706; color: #fff; font-weight: 800; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0;">2</span>
+                            <div>
+                                <strong>LINE Developers (<a href="https://developers.line.biz/" target="_blank" style="color: #2563eb; text-decoration: underline;">developers.line.biz</a>) の「Webhook設定」</strong><br>
+                                Messaging API設定の「Webhook URL」に下記URLを貼り付け、<strong>「Webhookの利用 (Use Webhook)」を【ON】</strong>にしてください。「検証」ボタンを押して「成功」が表示されれば通信成功です。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 模擬メッセージ受信テスト（シミュレーション） -->
+                <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; padding: 16px; margin-bottom: 18px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 32px; height: 32px; border-radius: 50%; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+                                <i class="fa-solid fa-flask"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 14px; font-weight: 800; color: #166534;">システム内部 動作検証テスト（擬似Webhook受信）</div>
+                                <div style="font-size: 11.5px; color: #15803d;">管理画面の受信・DB保存・通知・チャイム音が正常に動くかテストします</div>
+                            </div>
+                        </div>
+                        <button type="button" id="btnRunSimulateChat" class="btn-primary" style="background: #16a34a; border-color: #15803d; font-size: 13px; font-weight: 700; padding: 8px 16px; display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-play"></i> 模擬チャットを受信テスト
+                        </button>
+                    </div>
+                    <p style="font-size: 12px; color: #14532d; margin: 0; line-height: 1.5;">
+                        ボタンを押すと、ダミーの受講生からLINEメッセージが送信された状況をサーバー内部で再現します。<br>
+                        <strong>4秒以内に管理画面の未読バッジが点灯し、チャイム音が鳴り、画面右下にトーストが表示されれば、システム内部の仕組みは100%正常稼働</strong>しています！
+                    </p>
+                    <div id="simulateResultBox" style="margin-top: 10px; font-size: 12px; display: none;"></div>
+                </div>
+
+                <!-- Webhook URLコピーエリア -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 18px;">
+                    <div style="font-size: 13px; font-weight: 800; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-link" style="color: #4f46e5;"></i> LINE Developers に登録する Webhook URL
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
+                        <input type="text" id="diagWebhookUrl" readonly style="flex: 1; padding: 8px 12px; font-size: 12px; font-family: monospace; background: #fff; border: 1.5px solid #cbd5e1; border-radius: 6px;" value="読み込み中...">
+                        <button type="button" id="btnCopyDiagWebhookUrl" class="btn-primary" style="background: #4f46e5; border-color: #4338ca; font-size: 12px; padding: 8px 14px; white-space: nowrap;">
+                            <i class="fa-solid fa-copy"></i> URLコピー
+                        </button>
+                    </div>
+                    <div style="font-size: 11px; color: #64748b;">
+                        ※サブディレクトリ運用等の場合は、代替URL: <code id="diagWebhookUrlAlt" style="font-size: 11px; color: #475569;"></code> もご利用いただけます。
+                    </div>
+                </div>
+
+                <!-- アカウント設定ステータスサマリー -->
+                <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 18px;">
+                    <div style="font-size: 13px; font-weight: 800; color: #1e293b; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-circle-info" style="color: #0284c7;"></i> 現在のアカウント設定ステータス
+                    </div>
+                    <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="padding: 8px; font-weight: 700; color: #64748b; width: 180px;">対象アカウント</td>
+                                <td style="padding: 8px; color: #0f172a;" id="diagAccountName">-</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="padding: 8px; font-weight: 700; color: #64748b;">アクセストークン</td>
+                                <td style="padding: 8px;" id="diagTokenStatus">-</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="padding: 8px; font-weight: 700; color: #64748b;">チャネルシークレット</td>
+                                <td style="padding: 8px;" id="diagSecretStatus">-</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="padding: 8px; font-weight: 700; color: #64748b;">受講生登録数 / 未読</td>
+                                <td style="padding: 8px; color: #0f172a;" id="diagStudentCount">-</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; font-weight: 700; color: #64748b;">外部中継 (プロライン等)</td>
+                                <td style="padding: 8px;" id="diagProlineStatus">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- リアルタイム Webhook デバッグログ -->
+                <div style="background: #0f172a; border-radius: 10px; padding: 14px; margin-bottom: 10px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="color: #38bdf8; font-size: 12px; font-weight: 700; font-family: monospace;">
+                            <i class="fa-solid fa-terminal"></i> リアルタイム Webhook 受信ログ (最新50件)
+                        </span>
+                        <button type="button" id="btnRefreshDiagLogs" style="background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; padding: 3px 8px; font-size: 11px; cursor: pointer;">
+                            <i class="fa-solid fa-arrows-rotate"></i> ログ再読込
+                        </button>
+                    </div>
+                    <div id="diagDebugLogBox" style="background: #020617; color: #a5f3fc; font-family: monospace; font-size: 11px; line-height: 1.45; padding: 10px; border-radius: 6px; height: 180px; overflow-y: auto; white-space: pre-wrap;">ログを読み込み中...</div>
+                </div>
+
+            </div>
+            <div class="modal-footer" style="padding: 12px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                <a href="manual.html#faq-webhook" target="_blank" style="font-size: 12px; color: #4f46e5; text-decoration: underline; display: inline-flex; align-items: center; gap: 4px;">
+                    <i class="fa-solid fa-book-open"></i> 操作マニュアルのトラブルシューティングを見る
+                </a>
+                <button type="button" class="btn-cancel" id="closeLineDiagnosticsModalFooterBtn">閉じる</button>
+            </div>
+        </div>
+    </div>
+
     <!-- チャットモーダル直接起動フェイルセーフ (キャッシュ影響防止) -->
-    <script src="admin.js?v=20260921_chat_fix_v9"></script>
+    <script src="admin.js?v=20260921_chat_fix_v10"></script>
 </body>
 </html>

@@ -8182,6 +8182,189 @@ window.initSystemUpdater = initSystemUpdater;
 window.checkSystemUpdate = checkSystemUpdate;
 window.executeSystemUpdate = executeSystemUpdate;
 
+// ==========================================
+// LINE公式アカウント Webhook 接続診断 & テスト受信
+// ==========================================
+
+async function openLineDiagnosticsModal() {
+    const modal = document.getElementById('lineDiagnosticsModal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    await loadLineDiagnosticsData();
+}
+
+function closeLineDiagnosticsModal() {
+    const modal = document.getElementById('lineDiagnosticsModal');
+    if (modal) modal.style.display = 'none';
+}
+
+async function loadLineDiagnosticsData() {
+    const urlInput = document.getElementById('diagWebhookUrl');
+    const urlAlt = document.getElementById('diagWebhookUrlAlt');
+    const accName = document.getElementById('diagAccountName');
+    const tokenStatus = document.getElementById('diagTokenStatus');
+    const secretStatus = document.getElementById('diagSecretStatus');
+    const studentCount = document.getElementById('diagStudentCount');
+    const prolineStatus = document.getElementById('diagProlineStatus');
+    const logBox = document.getElementById('diagDebugLogBox');
+
+    if (logBox) logBox.textContent = 'リアルタイムログを取得中...';
+
+    try {
+        const res = await fetch(`api.php?action=get_webhook_diagnostics&account=${encodeURIComponent(currentActiveAccount || '')}`, {
+            headers: getAuthHeaders()
+        });
+        const data = await res.json();
+        if (!data.success) {
+            throw new Error(data.error || '診断データの取得に失敗しました');
+        }
+
+        if (urlInput) urlInput.value = data.account.webhook_url_recommended || '';
+        if (urlAlt) urlAlt.textContent = data.account.webhook_url_alt || '';
+        if (accName) accName.textContent = `${data.account.name} (ID: ${data.account.id})`;
+        if (tokenStatus) {
+            tokenStatus.innerHTML = data.account.has_token
+                ? `<span style="color: #16a34a; font-weight: 700;">✅ ${escapeHtml(data.account.token_status)}</span>`
+                : `<span style="color: #dc2626; font-weight: 700;">❌ 未設定</span>`;
+        }
+        if (secretStatus) {
+            secretStatus.innerHTML = data.account.has_secret
+                ? `<span style="color: #16a34a; font-weight: 700;">✅ ${escapeHtml(data.account.secret_status)}</span>`
+                : `<span style="color: #dc2626; font-weight: 700;">❌ 未設定</span>`;
+        }
+        if (studentCount) {
+            studentCount.innerHTML = `<strong>${data.account.student_count}名</strong> (未読メッセージ: <strong style="color: #ea580c;">${data.account.unread_count}件</strong>)`;
+        }
+        if (prolineStatus) {
+            prolineStatus.innerHTML = data.proline.enabled
+                ? `<span style="color: #16a34a; font-weight: 700;">✅ 稼働中 (${(data.proline.urls || []).length}件へ同時転送)</span>`
+                : `<span style="color: #64748b;">未設定 (中継OFF)</span>`;
+        }
+
+        if (logBox) {
+            if (data.debug_logs && data.debug_logs.length > 0) {
+                logBox.textContent = data.debug_logs.join('\n');
+                logBox.scrollTop = logBox.scrollHeight;
+            } else {
+                logBox.textContent = 'ログはまだありません。LINEでメッセージを受信するとここに表示されます。';
+            }
+        }
+    } catch (e) {
+        console.error('loadLineDiagnosticsData error:', e);
+        if (logBox) logBox.textContent = `診断データ取得エラー: ${e.message}`;
+    }
+}
+
+async function runSimulateChatMessage() {
+    const btn = document.getElementById('btnRunSimulateChat');
+    const resultBox = document.getElementById('simulateResultBox');
+    if (!btn) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> テスト実行中...';
+    if (resultBox) {
+        resultBox.style.display = 'block';
+        resultBox.className = 'alert alert-info';
+        resultBox.style.background = '#e0f2fe';
+        resultBox.style.border = '1px solid #bae6fd';
+        resultBox.style.color = '#0369a1';
+        resultBox.style.padding = '8px 12px';
+        resultBox.style.borderRadius = '6px';
+        resultBox.innerHTML = 'サーバーへ模擬LINEメッセージを送信しています...';
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('action', 'simulate_line_chat_message');
+        formData.append('account', currentActiveAccount || '');
+        formData.append('user_name', 'テスト受講生（田中 一郎）');
+        formData.append('message_text', `こんにちは！点検・受講の予約について相談したいです。(テスト送信: ${new Date().toLocaleTimeString()})`);
+
+        const res = await fetch('api.php', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: formData
+        });
+        const data = await res.json();
+        if (!data.success) {
+            throw new Error(data.error || 'シミュレーションに失敗しました');
+        }
+
+        if (resultBox) {
+            resultBox.style.background = '#ecfdf5';
+            resultBox.style.border = '1px solid #a7f3d0';
+            resultBox.style.color = '#065f46';
+            resultBox.innerHTML = `
+                <strong>🎉 模擬受信テスト成功！</strong><br>
+                メッセージID: <code>${data.simulated_data.message_id}</code> / 受信者: <strong>${escapeHtml(data.simulated_data.user_name)}</strong><br>
+                <span style="font-size: 11px;">※管理画面の未読バッジ加算・新着トースト・音声チャイム・一覧更新が実行されます。</span>
+            `;
+        }
+
+        // 管理画面の受講生データと未読数を即座に再取得
+        if (typeof pollUnreadChatCount === 'function') {
+            await pollUnreadChatCount();
+        }
+        if (typeof loadCustomers === 'function') {
+            await loadCustomers();
+        }
+
+        // ログを再取得
+        await loadLineDiagnosticsData();
+
+    } catch (e) {
+        console.error('runSimulateChatMessage error:', e);
+        if (resultBox) {
+            resultBox.style.background = '#fee2e2';
+            resultBox.style.border = '1px solid #fecaca';
+            resultBox.style.color = '#b91c1c';
+            resultBox.innerHTML = `❌ エラー: ${escapeHtml(e.message)}`;
+        }
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-play"></i> 模擬チャットを受信テスト';
+    }
+}
+
+function copyDiagWebhookUrl() {
+    const input = document.getElementById('diagWebhookUrl');
+    if (!input || !input.value) return;
+    navigator.clipboard.writeText(input.value).then(() => {
+        showToast('📋 Webhook URLをクリップボードにコピーしました！', 'success');
+    }).catch(() => {
+        input.select();
+        document.execCommand('copy');
+        showToast('📋 Webhook URLをコピーしました', 'success');
+    });
+}
+
+// 診断モーダルのイベントリスナー登録
+document.addEventListener('DOMContentLoaded', () => {
+    const btnOpen = document.getElementById('openLineDiagnosticsBtn');
+    if (btnOpen) btnOpen.addEventListener('click', openLineDiagnosticsModal);
+
+    const btnClose = document.getElementById('closeLineDiagnosticsModalBtn');
+    if (btnClose) btnClose.addEventListener('click', closeLineDiagnosticsModal);
+
+    const btnCloseFooter = document.getElementById('closeLineDiagnosticsModalFooterBtn');
+    if (btnCloseFooter) btnCloseFooter.addEventListener('click', closeLineDiagnosticsModal);
+
+    const btnSimulate = document.getElementById('btnRunSimulateChat');
+    if (btnSimulate) btnSimulate.addEventListener('click', runSimulateChatMessage);
+
+    const btnCopy = document.getElementById('btnCopyDiagWebhookUrl');
+    if (btnCopy) btnCopy.addEventListener('click', copyDiagWebhookUrl);
+
+    const btnRefreshLogs = document.getElementById('btnRefreshDiagLogs');
+    if (btnRefreshLogs) btnRefreshLogs.addEventListener('click', loadLineDiagnosticsData);
+});
+
+window.openLineDiagnosticsModal = openLineDiagnosticsModal;
+window.closeLineDiagnosticsModal = closeLineDiagnosticsModal;
+window.loadLineDiagnosticsData = loadLineDiagnosticsData;
+window.runSimulateChatMessage = runSimulateChatMessage;
+
+
 
 
 

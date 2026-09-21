@@ -875,6 +875,264 @@ try {
             }
             exit;
 
+        // --- 0-8B. Webhook受信シミュレーション (LINEチャット擬似受信テスト・デバッグ用) ---
+        case 'simulate_line_chat_message':
+            $authPass = getAdminAuthPassword($db);
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $testUid = trim($_POST['uid'] ?? ($_GET['uid'] ?? 'U_test_demo_' . substr(md5(uniqid('', true)), 0, 8)));
+            if (!str_starts_with($testUid, 'U')) {
+                $testUid = 'U' . $testUid;
+            }
+            $testUserName = trim($_POST['user_name'] ?? ($_GET['user_name'] ?? 'テスト受講生（田中 一郎）'));
+            $testMsgText = trim($_POST['message_text'] ?? ($_GET['message_text'] ?? 'こんにちは！点検・受講の予約について相談したいです。(テスト送信)'));
+            $testMsgType = trim($_POST['message_type'] ?? ($_GET['message_type'] ?? 'text'));
+            $nowJst = date('Y-m-d H:i:s');
+
+            try {
+                // 1. customer_cars テーブルに受講生レコードが存在することを保証
+                $chkC = $db->prepare("SELECT id, user_name, picture_url FROM customer_cars WHERE TRIM(user_id) = :uid LIMIT 1");
+                $chkC->execute([':uid' => $testUid]);
+                $cRow = $chkC->fetch(PDO::FETCH_ASSOC);
+
+                if (!$cRow) {
+                    $insC = $db->prepare("
+                        INSERT INTO customer_cars (
+                            user_id, user_name, picture_url, car_model, car_number,
+                            last_interaction_at, last_interaction_type, last_interaction_preview,
+                            created_at, updated_at
+                        ) VALUES (
+                            :uid, :uname, 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png', '【テスト】受講コース未設定', '',
+                            :now1, 'user_message', :prev, :now2, :now3
+                        )
+                    ");
+                    $prevText = "💬 " . mb_substr($testMsgText, 0, 45);
+                    $insC->execute([
+                        ':uid' => $testUid,
+                        ':uname' => $testUserName,
+                        ':now1' => $nowJst,
+                        ':prev' => $prevText,
+                        ':now2' => $nowJst,
+                        ':now3' => $nowJst
+                    ]);
+                    $carId = (int)$db->lastInsertId();
+                    $picUrl = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+                } else {
+                    $carId = (int)$cRow['id'];
+                    $testUserName = !empty($cRow['user_name']) ? $cRow['user_name'] : $testUserName;
+                    $picUrl = $cRow['picture_url'] ?? '';
+                    $prevText = "💬 " . mb_substr($testMsgText, 0, 45);
+                    $db->prepare("
+                        UPDATE customer_cars 
+                        SET is_blocked = 0, 
+                            blocked_at = NULL, 
+                            last_interaction_at = :now, 
+                            last_interaction_type = 'user_message', 
+                            last_interaction_preview = :prev 
+                        WHERE id = :id
+                    ")->execute([':now' => $nowJst, ':prev' => $prevText, ':id' => $carId]);
+                }
+
+                // 2. chat_messages テーブルへ未読(is_read=0)で保存
+                $insMsg = $db->prepare("
+                    INSERT INTO chat_messages (
+                        user_id, direction, message_type, message_text, payload_json, is_read, sent_by, created_at
+                    ) VALUES (
+                        :uid, 'incoming', :mtype, :mtext, :payload, 0, '', :now
+                    )
+                ");
+                $payloadJson = json_encode(['text' => $testMsgText, 'simulated' => true], JSON_UNESCAPED_UNICODE);
+                $insMsg->execute([
+                    ':uid' => $testUid,
+                    ':mtype' => $testMsgType,
+                    ':mtext' => $testMsgText,
+                    ':payload' => $payloadJson,
+                    ':now' => $nowJst
+                ]);
+                $msgId = (int)$db->lastInsertId();
+
+                writeDebugLog("Webhookシミュレーション受信実行", [
+                    'account' => $activeAccountKey,
+                    'uid' => $testUid,
+                    'user_name' => $testUserName,
+                    'msg_id' => $msgId,
+                    'text' => $testMsgText
+                ]);
+
+                // 3. 通知送信シミュレーション (LINE Push / Discord / Slack / WebPush)
+                $msgDataPayload = [
+                    'user_id' => $testUid,
+                    'user_name' => $testUserName,
+                    'picture_url' => $picUrl,
+                    'message_text' => $testMsgText,
+                    'message_type' => $testMsgType,
+                    'image_url' => ''
+                ];
+
+                $notifResults = [];
+                // 管理者LINE Push通知
+                if (function_exists('sendAdminLineChatMessageNotification')) {
+                    try {
+                        sendAdminLineChatMessageNotification($msgDataPayload, null, $db);
+                        $notifResults['line_admin_push'] = 'sent';
+                    } catch (Throwable $e) {
+                        $notifResults['line_admin_push'] = 'error: ' . $e->getMessage();
+                    }
+                }
+
+                // Discord通知
+                try {
+                    sendDiscordChatMessageNotification($msgDataPayload, null, $db);
+                    $notifResults['discord'] = 'executed';
+                } catch (Throwable $e) {
+                    $notifResults['discord'] = 'error: ' . $e->getMessage();
+                }
+
+                // Slack通知
+                try {
+                    sendSlackChatMessageNotification($msgDataPayload, null, $db);
+                    $notifResults['slack'] = 'executed';
+                } catch (Throwable $e) {
+                    $notifResults['slack'] = 'error: ' . $e->getMessage();
+                }
+
+                // WebPushブラウザ通知
+                if (function_exists('sendWebPushChatMessageNotification')) {
+                    try {
+                        $webPushRes = sendWebPushChatMessageNotification($msgDataPayload, $db, $activeAccountKey);
+                        $notifResults['web_push'] = $webPushRes;
+                    } catch (Throwable $e) {
+                        $notifResults['web_push'] = 'error: ' . $e->getMessage();
+                    }
+                }
+
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'LINEチャット模擬受信テストが完了しました！管理画面の未読バッジ・新着トースト・音声チャイムをご確認ください。',
+                    'simulated_data' => [
+                        'user_id' => $testUid,
+                        'user_name' => $testUserName,
+                        'message_id' => $msgId,
+                        'message_text' => $testMsgText,
+                        'created_at' => $nowJst,
+                        'notifications' => $notifResults
+                    ]
+                ], JSON_UNESCAPED_UNICODE);
+            } catch (Throwable $e) {
+                writeDebugLog("Webhookシミュレーション例外", ['error' => $e->getMessage()]);
+                echo json_encode(['success' => false, 'error' => 'シミュレーション実行エラー: ' . $e->getMessage()]);
+            }
+            exit;
+
+        // --- 0-8C. Webhook接続診断 & ログ取得 API ---
+        case 'get_webhook_diagnostics':
+            $authPass = getAdminAuthPassword($db);
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $accConfig = getAccountConfig($activeAccountKey);
+            $hasToken = !empty($accConfig['channel_access_token']) && $accConfig['channel_access_token'] !== 'YOUR_CHANNEL_ACCESS_TOKEN_HERE';
+            $hasSecret = !empty($accConfig['channel_secret']) && $accConfig['channel_secret'] !== 'YOUR_CHANNEL_SECRET_HERE';
+
+            $tokenMasked = $hasToken 
+                ? (substr($accConfig['channel_access_token'], 0, 8) . '...' . substr($accConfig['channel_access_token'], -6) . ' (設定済み・' . strlen($accConfig['channel_access_token']) . '文字)')
+                : '未設定 (config.php または管理画面で登録してください)';
+            
+            $secretMasked = $hasSecret
+                ? (substr($accConfig['channel_secret'], 0, 4) . '...' . substr($accConfig['channel_secret'], -4) . ' (設定済み・' . strlen($accConfig['channel_secret']) . '文字)')
+                : '未設定';
+
+            $baseUrl = getBaseUrl();
+            $webhookUrlPublic = $baseUrl . "/webhook.php" . (!empty($accConfig['is_default']) ? '' : "?account={$activeAccountKey}");
+            $webhookUrlDirect = $baseUrl . "/public_html/webhook.php" . (!empty($accConfig['is_default']) ? '' : "?account={$activeAccountKey}");
+
+            // 受講生数 & 最新メッセージ数
+            $studentCount = 0;
+            $unreadCount = 0;
+            $recentMessages = [];
+            try {
+                $stStmt = $db->query("SELECT COUNT(*) as cnt FROM customer_cars");
+                $studentCount = (int)$stStmt->fetch()['cnt'];
+
+                $unStmt = $db->query("SELECT COUNT(*) as cnt FROM chat_messages WHERE direction = 'incoming' AND is_read = 0");
+                $unreadCount = (int)$unStmt->fetch()['cnt'];
+
+                $msgStmt = $db->query("
+                    SELECT m.id, m.user_id, m.direction, m.message_type, m.message_text, m.is_read, m.created_at,
+                           COALESCE(c.user_name, '未登録') as user_name
+                    FROM chat_messages m
+                    LEFT JOIN customer_cars c ON TRIM(c.user_id) = TRIM(m.user_id)
+                    ORDER BY m.id DESC LIMIT 10
+                ");
+                $recentMessages = $msgStmt->fetchAll(PDO::FETCH_ASSOC);
+            } catch (Throwable $t) {}
+
+            // デバッグログ読み込み (最新50行)
+            $debugLogFile = __DIR__ . '/webhook_debug.log';
+            $debugLogs = [];
+            if (file_exists($debugLogFile)) {
+                $lines = file($debugLogFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+                $debugLogs = array_slice($lines, -50);
+            }
+
+            // プロラインログ読み込み (最新30行)
+            $prolineLogFile = __DIR__ . '/proline_relay.log';
+            $prolineLogs = [];
+            if (file_exists($prolineLogFile)) {
+                $lines = file($prolineLogFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+                $prolineLogs = array_slice($lines, -30);
+            }
+
+            $prolineSettings = getProlineSettings($db, $activeAccountKey);
+
+            echo json_encode([
+                'success' => true,
+                'account' => [
+                    'id' => $activeAccountKey,
+                    'name' => $accConfig['name'],
+                    'has_token' => $hasToken,
+                    'token_status' => $tokenMasked,
+                    'has_secret' => $hasSecret,
+                    'secret_status' => $secretMasked,
+                    'student_count' => $studentCount,
+                    'unread_count' => $unreadCount,
+                    'webhook_url_recommended' => $webhookUrlPublic,
+                    'webhook_url_alt' => $webhookUrlDirect,
+                ],
+                'proline' => [
+                    'enabled' => !empty($prolineSettings['relay_enabled']),
+                    'urls' => $prolineSettings['webhook_urls'] ?? [],
+                    'last_relay_at' => $prolineSettings['last_relay_at'] ?? '',
+                    'last_relay_status' => $prolineSettings['last_relay_status'] ?? ''
+                ],
+                'checklist' => [
+                    [
+                        'title' => '1. LINE Official Account Manager の応答設定',
+                        'desc' => 'LINE公式アカウント管理画面 (manager.line.biz) の「設定」>「応答設定」で、応答モードが【Bot】、Webhookが【オン】になっていることを確認してください。（※「チャット」モードになっているとLINE社側でWebhookが遮断されます）',
+                        'status' => 'critical'
+                    ],
+                    [
+                        'title' => '2. LINE Developers の Webhook URL & Webhook利用トグル',
+                        'desc' => 'LINE Developers コンソールの「Messaging API」設定で、Webhook URLに上記のURLを設定し、「Webhookの利用 (Use Webhook)」を【ON (有効)】にしてください。「検証 (Verify)」ボタンを押して「成功 (Success)」と表示されれば疎通完了です。',
+                        'status' => 'critical'
+                    ],
+                    [
+                        'title' => '3. チャネルアクセストークン & チャネルシークレット',
+                        'desc' => 'LINE Developersから取得した最新の「長期アクセストークン」および「Channel Secret」が設定されていることを確認してください。',
+                        'status' => ($hasToken && $hasSecret) ? 'ok' : 'warning'
+                    ]
+                ],
+                'debug_logs' => $debugLogs,
+                'proline_logs' => $prolineLogs,
+                'recent_messages' => $recentMessages
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+
         // --- 0-9. Discord通知設定の取得 ---
         case 'get_discord_settings':
             $authPass = getAdminAuthPassword();

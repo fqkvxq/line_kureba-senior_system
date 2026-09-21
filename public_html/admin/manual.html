@@ -133,7 +133,8 @@
                         <li class="toc-item"><a href="#sec-server-setup"><i class="fa-solid fa-server" style="color:#10b981;"></i> 18. 他社・別サーバー移行＆初期セットアップ</a></li>
                         <li class="toc-item"><a href="#sec-system-updater"><i class="fa-solid fa-cloud-arrow-down" style="color:#0284c7;"></i> 19. システムオンライン更新（ワンクリックOTAアップデート）</a></li>
                         <li class="toc-item"><a href="#sec-browser-push"><i class="fa-solid fa-bell-ring" style="color:#0ea5e9;"></i> 20. チャットのブラウザプッシュ通知（Web Push）</a></li>
-                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 21. よくある質問・トラブルシューティング</a></li>
+                        <li class="toc-item"><a href="#sec-line-diagnostics"><i class="fa-solid fa-stethoscope" style="color:#4f46e5;"></i> 21. LINE公式アカウント接続診断＆テスト受信</a></li>
+                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 22. よくある質問・トラブルシューティング</a></li>
                     </ul>
                 </div>
             </aside>
@@ -1665,14 +1666,73 @@
                     </div>
                 </section>
 
-                <!-- 21. よくある質問・トラブルシューティング -->
+                <!-- 21. LINE公式アカウント接続診断＆テスト受信 -->
+                <section class="manual-section" id="sec-line-diagnostics">
+                    <div class="section-header">
+                        <div class="section-header-icon" style="background: #eef2ff; color: #4f46e5;">
+                            <i class="fa-solid fa-stethoscope"></i>
+                        </div>
+                        <div class="section-header-text">
+                            <h2>21. LINE公式アカウント接続診断 ＆ メッセージ受信テスト</h2>
+                            <p>LINEチャットが届かない原因を1クリックで診断・特定・解決する機能です</p>
+                        </div>
+                    </div>
+
+                    <div class="flow-notice-card" style="background: #fffbeb; border: 1.5px solid #fcd34d; padding: 16px; border-radius: 10px; margin-bottom: 20px;">
+                        <div style="font-weight: 800; color: #92400e; margin-bottom: 6px; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-triangle-exclamation" style="color: #d97706;"></i>
+                            友だちからのLINEチャットが管理画面に届かない場合の最重要確認
+                        </div>
+                        <div style="font-size: 13px; color: #78350f; line-height: 1.6;">
+                            友だち（受講生）がLINEからメッセージを送っても管理画面に届かない場合、<strong>LINE Official Account Manager（公式管理画面）の応答設定でWebhook送信が遮断されていることが99%の原因</strong>です。<br>
+                            「LINE Official Account Manager (manager.line.biz)」の「設定」＞「応答設定」で、<strong>応答モードを必ず「Bot」</strong>にし、<strong>Webhookを「オン」</strong>にしてください。（※「チャット」モードのままだとLINE社側でWebhook送信がブロックされます）
+                        </div>
+                    </div>
+
+                    <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <div class="step-body">
+                                <h4>管理画面ヘッダーの「LINE接続診断＆テスト」ボタンをクリック</h4>
+                                <p>管理画面上部にある「<i class="fa-solid fa-stethoscope"></i> LINE接続診断＆テスト」ボタンをクリックすると、専用の診断モーダルが開きます。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <div class="step-body">
+                                <h4>「模擬チャットを受信テスト」ボタンでシステム内部の動作を検証</h4>
+                                <p>「模擬チャットを受信テスト」ボタンを押すと、サーバー内部でテスト受講生からのLINEメッセージ受信が再現されます。<br>
+                                <strong>4秒以内に管理画面の未読バッジが点灯し、チャイム音（ポーン♪）が鳴り、画面右下にトーストが表示されれば、本システム（サーバー・DB・通知機能）は100%正常に稼働</strong>しています。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">3</div>
+                            <div class="step-body">
+                                <h4>Webhook URLの確認とコピー</h4>
+                                <p>LINE Developers（developers.line.biz）の Messaging API 設定に登録すべき正しい Webhook URL（例: <code>https://あなたのドメイン/webhook.php</code>）が表示されます。「URLコピー」ボタンでコピーして貼り付けてください。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">4</div>
+                            <div class="step-body">
+                                <h4>リアルタイム Webhook 受信ログの確認</h4>
+                                <p>LINE社や外部ツールから届いた直近50件の通信ログ（受信日時、バイト数、署名検証、イベント種別）がリアルタイム表示されます。「ログ再読込」ボタンで最新の送受信記録を確認できます。</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 22. よくある質問・トラブルシューティング -->
                 <section class="manual-section" id="sec-faq">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #fef2f2; color: #ef4444;">
                             <i class="fa-solid fa-circle-question"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>21. よくある質問・トラブルシューティング</h2>
+                            <h2>22. よくある質問・トラブルシューティング</h2>
                             <p>困ったときの解決方法</p>
                         </div>
                     </div>
@@ -1878,6 +1938,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_chat_fix_v9"></script>
+    <script src="manual.js?v=20260921_chat_fix_v10"></script>
 </body>
 </html>
