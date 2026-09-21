@@ -6260,40 +6260,14 @@ let lastTotalUnreadCount = -1;
 const notifiedMsgIds = new Set();
 let globalChatUnreadTimer = null;
 
-// AudioContext をユーザー操作時に安全に初期化
-let sharedAudioCtx = null;
-let userGestureOccurred = false;
-
-function initAudioContextOnGesture() {
-    if (userGestureOccurred) return;
-    userGestureOccurred = true;
-    try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (AudioCtx && !sharedAudioCtx) {
-            sharedAudioCtx = new AudioCtx();
-        }
-        if (sharedAudioCtx && sharedAudioCtx.state === 'suspended') {
-            sharedAudioCtx.resume().catch(() => {});
-        }
-    } catch(e) {}
-}
-
-document.addEventListener('click', initAudioContextOnGesture, { once: true, passive: true });
-document.addEventListener('keydown', initAudioContextOnGesture, { once: true, passive: true });
-document.addEventListener('touchstart', initAudioContextOnGesture, { once: true, passive: true });
-
-function getSharedAudioContext() {
-    if (!sharedAudioCtx && userGestureOccurred) {
-        initAudioContextOnGesture();
-    }
-    return sharedAudioCtx;
-}
+// Web Audio APIによる優しいチャイム音再生 (必要なタイミングでオンデマンド生成)
 
 // Web Audio APIによる優しいチャイム音再生 (880Hz -> 1320Hz サイン波)
 function playNotificationSound() {
     try {
-        const ctx = getSharedAudioContext();
-        if (!ctx) return;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
         const now = ctx.currentTime;
 
         const osc1 = ctx.createOscillator();
@@ -6317,9 +6291,11 @@ function playNotificationSound() {
         gain2.connect(ctx.destination);
         osc2.start(now + 0.12);
         osc2.stop(now + 0.55);
-    } catch (e) {
-        console.warn('Audio play skipped:', e);
-    }
+
+        setTimeout(() => {
+            try { ctx.close(); } catch(e) {}
+        }, 800);
+    } catch (e) {}
 }
 
 async function loadUnreadChatCounts() {
