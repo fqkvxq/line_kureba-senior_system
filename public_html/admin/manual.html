@@ -40,7 +40,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260921_simple_sender_v1">
+    <link rel="stylesheet" href="manual.css?v=20260921_server_setup_v1">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -160,7 +160,8 @@
                         <li class="toc-item"><a href="#sec-slack-notify"><i class="fa-brands fa-slack" style="color:#ECB22E;"></i> 14. Slack通知設定</a></li>
                         <li class="toc-item"><a href="#sec-dx-survey"><i class="fa-solid fa-clipboard-question" style="color:#2563eb;"></i> 15. 会社DX 関心度アンケート配信</a></li>
                         <li class="toc-item"><a href="#sec-2fa"><i class="fa-solid fa-shield-halved" style="color:#0284c7;"></i> 16. メール二段階認証（2FA / セキュリティ）</a></li>
-                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 17. よくある質問・トラブルシューティング</a></li>
+                        <li class="toc-item"><a href="#sec-server-setup"><i class="fa-solid fa-server" style="color:#10b981;"></i> 17. 他社・別サーバー移行＆初期セットアップ</a></li>
+                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 18. よくある質問・トラブルシューティング</a></li>
                     </ul>
                 </div>
             </aside>
@@ -253,6 +254,16 @@
                         <div class="summary-card-content">
                             <h3>Slack通知</h3>
                             <p>LINEメッセージ受信や友だち追加、予約相談をSlackチャンネルへリアルタイム通知＆カルテ直通リンク。</p>
+                        </div>
+                    </a>
+
+                    <a href="#sec-server-setup" class="summary-card">
+                        <div class="summary-icon-wrap" style="background: #ecfdf5; color: #10b981;">
+                            <i class="fa-solid fa-server"></i>
+                        </div>
+                        <div class="summary-card-content">
+                            <h3>他社サーバー移行 & 初期設定</h3>
+                            <p>個人情報ゼロのクリーン導入、setup.phpによる環境診断、LINE Webhook登録手順。</p>
                         </div>
                     </a>
                 </div>
@@ -1300,14 +1311,85 @@
                     </div>
                 </section>
 
-                <!-- 17. よくある質問・トラブルシューティング -->
+                <!-- 17. 他社・別レンタルサーバー移行＆初期セットアップ -->
+                <section class="manual-section" id="sec-server-setup">
+                    <div class="section-header">
+                        <div class="section-header-icon" style="background: #ecfdf5; color: #10b981;">
+                            <i class="fa-solid fa-server"></i>
+                        </div>
+                        <div class="section-header-text">
+                            <h2>17. 他社・別レンタルサーバー移行＆初期セットアップ</h2>
+                            <p>自社レンタルサーバーへの導入手順・環境診断ウィザード・個人情報ゼロのクリーンセットアップ</p>
+                        </div>
+                    </div>
+
+                    <p>本システムを他社やクライアントのレンタルサーバー（エックスサーバー、ロリポップ！、さくらインターネット、ConoHa WING等）へ新規導入・移行する際の手順です。<br>
+                    <strong>配布用パッケージには過去の顧客データやチャット履歴が一切含まれておらず</strong>、ブラウザから <code>setup.php</code> を開くだけでサーバー要件の自動診断と初期設定が完了します。</p>
+
+                    <div class="step-flow">
+                        <!-- ステップ1: ファイルアップロード -->
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <div class="step-body">
+                                <h4>レンタルサーバーへファイルをアップロード</h4>
+                                <p>FTPソフト（FileZilla等）またはサーバー管理画面のファイルマネージャーを使い、公開フォルダ（<code>public_html</code> 等）にZIPを解凍してアップロードします。<br>
+                                以下のフォルダに書き込み権限（パーミッション <code>755</code> または <code>777</code>）が付与されていることを確認します：<br>
+                                ・<code>public_html/data/</code>（アカウント情報保存）<br>
+                                ・<code>public_html/uploads/</code>（リッチメニュー画像保存）<br>
+                                ・<code>batch/</code>（定期リマインドバッチおよびSQLiteデータベース保存）</p>
+                            </div>
+                        </div>
+
+                        <!-- ステップ2: 初期セットアップウィザード -->
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <div class="step-body">
+                                <h4>ブラウザで環境診断＆セットアップウィザードを実行</h4>
+                                <p>ブラウザで <code>https://あなたのドメイン/setup.php</code> にアクセスします：<br>
+                                <strong>1. サーバー環境診断</strong>: PHP 8.0以上、PDO SQLite、cURL、GD、mbstring、フォルダ権限が自動検証され、すべて緑色の「正常 (OK)」が表示されます。<br>
+                                <strong>2. アカウント情報入力</strong>: 店舗名・教室名、LINE Messaging API チャネルアクセストークン（長期）、チャネルシークレット、LIFF ID、管理者ログインパスワードを入力します。<br>
+                                <strong>3. LINE API 疎通テスト</strong>: 「LINE API 疎通テスト」ボタンを押し、公式アカウント名が正しく取得できることを確認します。<br>
+                                <strong>4. 初期化実行</strong>: 「設定を保存してシステムを初期化する」を押すと、SQLiteデータベースと全テーブルがクリーンな状態で自動生成されます。</p>
+                            </div>
+                        </div>
+
+                        <!-- ステップ3: Webhook設定 -->
+                        <div class="step-card">
+                            <div class="step-number">3</div>
+                            <div class="step-body">
+                                <h4>LINE Developers での Webhook URL 設定</h4>
+                                <p><a href="https://developers.line.biz/console/" target="_blank" style="color: #2563eb; text-decoration: underline;">LINE Developers コンソール</a> を開き、Messaging API設定の「Webhook URL」に以下を登録します：<br>
+                                <code>https://あなたのドメイン/webhook.php</code><br>
+                                「検証」ボタンを押して「成功」を確認後、「Webhookの利用」を <strong>オン（有効）</strong> に設定します。</p>
+                            </div>
+                        </div>
+
+                        <!-- ステップ4: Cron設定 -->
+                        <div class="step-card">
+                            <div class="step-number">4</div>
+                            <div class="step-body">
+                                <h4>毎朝の定期リマインドCron設定</h4>
+                                <p>サーバーのCRON管理画面に、毎日朝8:00実行（<code>0 8 * * *</code>）としてバッチスクリプトを登録します：<br>
+                                <code>/usr/bin/php /home/あなたのサーバーID/ドメイン名/batch/reminder.php</code><br>
+                                これにより、次回レッスン・PC健康診断・会員更新のリマインドLINEが毎朝自動プッシュ配信されます。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tip-box" style="margin-top:12px;background:#f0fdf4;border-left:4px solid #10b981;padding:10px 14px;border-radius: var(--radius-xs);">
+                        <strong style="color:#065f46;"><i class="fa-solid fa-shield-halved"></i> 既存データの完全非含有仕様:</strong><br>
+                        当システムはSQLite3（ファイル型DB）を採用しているため、MySQLの作成やSQLのインポートは一切不要です。初期配布パッケージには過去のお友達データやチャット履歴は一切含まれず、他社へ安心してシステムを提供できます。
+                    </div>
+                </section>
+
+                <!-- 18. よくある質問・トラブルシューティング -->
                 <section class="manual-section" id="sec-faq">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #fef2f2; color: #ef4444;">
                             <i class="fa-solid fa-circle-question"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>17. よくある質問・トラブルシューティング</h2>
+                            <h2>18. よくある質問・トラブルシューティング</h2>
                             <p>困ったときの解決方法</p>
                         </div>
                     </div>
@@ -1449,6 +1531,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_simple_sender_v1"></script>
+    <script src="manual.js?v=20260921_server_setup_v1"></script>
 </body>
 </html>

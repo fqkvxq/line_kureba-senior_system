@@ -1,0 +1,17 @@
+{
+    "accounts": {
+        "senior": {
+            "id": "senior",
+            "name": "新規LINE公式アカウント",
+            "short_name": "公式アカウント",
+            "theme_color": "#2563eb",
+            "channel_access_token": "YOUR_CHANNEL_ACCESS_TOKEN_HERE",
+            "channel_secret": "YOUR_CHANNEL_SECRET_HERE",
+            "liff_id": "YOUR_LIFF_ID_HERE",
+            "proline_calendar_url": "",
+            "proline_webhook_url": "",
+            "db_file": "system_main.db",
+            "is_default": true
+        }
+    }
+}
