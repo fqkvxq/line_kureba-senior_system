@@ -4961,6 +4961,32 @@ function initChatModal() {
         });
     }
 
+    // 送信者名（担当者名）の初期化と変更リスナー
+    const senderInput = document.getElementById('chatSenderNameInput');
+    const savedSender = localStorage.getItem('kureba_chat_sender_name') || '教室スタッフ';
+    if (senderInput) {
+        senderInput.value = savedSender;
+        senderInput.addEventListener('input', (e) => {
+            const val = e.target.value.trim() || '教室スタッフ';
+            localStorage.setItem('kureba_chat_sender_name', val);
+            updateSenderChipActive(val);
+        });
+    }
+
+    // 送信者名クイックチップ
+    document.querySelectorAll('.chat-sender-chips .sender-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const name = chip.getAttribute('data-name');
+            if (name && senderInput) {
+                senderInput.value = name;
+                localStorage.setItem('kureba_chat_sender_name', name);
+                updateSenderChipActive(name);
+                showToast(`送信者名を「${name}」に設定しました`, 'info');
+            }
+        });
+    });
+    updateSenderChipActive(savedSender);
+
     // 定型文クイックチップ
     document.querySelectorAll('.chat-quick-templates .quick-tpl-chip').forEach(chip => {
         chip.addEventListener('click', () => {
@@ -4984,6 +5010,23 @@ function initChatModal() {
             }
         });
     }
+}
+
+function updateSenderChipActive(currentName) {
+    document.querySelectorAll('.chat-sender-chips .sender-chip').forEach(chip => {
+        const isMatch = (chip.getAttribute('data-name') === currentName);
+        if (isMatch) {
+            chip.style.background = '#eef2ff';
+            chip.style.borderColor = '#6366f1';
+            chip.style.color = '#4338ca';
+            chip.style.fontWeight = '700';
+        } else {
+            chip.style.background = '#f1f5f9';
+            chip.style.borderColor = '#cbd5e1';
+            chip.style.color = '#334155';
+            chip.style.fontWeight = '500';
+        }
+    });
 }
 
 const DEFAULT_AVATAR_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
@@ -5034,6 +5077,14 @@ function openChatModal(cust) {
     const inputArea = elements.chatInputText || document.getElementById('chatInputText');
     if (inputArea) {
         inputArea.value = '';
+    }
+
+    // 保存済み送信者名のセット
+    const senderInput = document.getElementById('chatSenderNameInput');
+    if (senderInput) {
+        const savedSender = localStorage.getItem('kureba_chat_sender_name') || '教室スタッフ';
+        senderInput.value = savedSender;
+        updateSenderChipActive(savedSender);
     }
 
     // 未読数をローカルでクリア（テーブル再描画は行わずバッジのみ非表示）
@@ -5261,13 +5312,17 @@ async function sendChatMessage() {
         sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
     }
 
+    const senderInput = document.getElementById('chatSenderNameInput');
+    const senderName = (senderInput?.value || '').trim() || localStorage.getItem('kureba_chat_sender_name') || '教室スタッフ';
+
     try {
         const payload = new URLSearchParams({
             action: 'send_chat_message',
             password: state.password,
             user_id: state.activeChatUser.user_id,
             text: text,
-            sender_name: 'スタッフ',
+            sender_name: senderName,
+            sent_by: senderName,
             account: state.activeAccount
         });
 

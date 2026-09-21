@@ -452,6 +452,7 @@ try {
             $uid = trim($_POST['uid'] ?? ($_POST['user_id'] ?? ''));
             $message = trim($_POST['message'] ?? ($_POST['text'] ?? ''));
             $sentBy = trim($_POST['sent_by'] ?? ($_POST['sender_name'] ?? '教室スタッフ'));
+            $senderIcon = trim($_POST['sender_icon_url'] ?? '');
 
             if (empty($uid) || !str_starts_with($uid, 'U')) {
                 echo json_encode(['success' => false, 'error' => '有効なLINE UserID(uid)が必要です']);
@@ -462,20 +463,32 @@ try {
                 exit;
             }
 
-            // LINE Messaging API で Push Message 送信
+            // LINE Messaging API で Push Message 送信 (送信者名 sender 付与)
             require_once __DIR__ . '/webhook.php';
             $nowJst = date('Y-m-d H:i:s');
 
-            try {
-                $lineResult = sendLinePushMessage($uid, [
-                    [
-                        'type' => 'text',
-                        'text' => $message
-                    ]
-                ]);
+            $msgPayload = [
+                'type' => 'text',
+                'text' => $message
+            ];
 
-                if (!$lineResult) {
-                    echo json_encode(['success' => false, 'error' => 'LINEメッセージの送信に失敗しました。アクセストークン等をご確認ください']);
+            // 送信者名（最大20文字）が指定されている場合は LINE Sender オブジェクトを付与
+            if (!empty($sentBy)) {
+                $senderObj = [
+                    'name' => mb_substr($sentBy, 0, 20, 'UTF-8')
+                ];
+                if (!empty($senderIcon) && (str_starts_with($senderIcon, 'https://'))) {
+                    $senderObj['iconUrl'] = mb_substr($senderIcon, 0, 1000, 'UTF-8');
+                }
+                $msgPayload['sender'] = $senderObj;
+            }
+
+            try {
+                $lineResult = sendLinePushMessage($uid, [$msgPayload]);
+
+                if (!$lineResult || (isset($lineResult['success']) && !$lineResult['success'])) {
+                    $errMsg = $lineResult['error'] ?? 'LINEメッセージの送信に失敗しました。アクセストークン等をご確認ください';
+                    echo json_encode(['success' => false, 'error' => $errMsg]);
                     exit;
                 }
 

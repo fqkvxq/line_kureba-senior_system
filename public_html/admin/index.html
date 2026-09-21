@@ -1465,6 +1465,25 @@
 
             <!-- チャット入力フッター -->
             <div class="chat-footer">
+                <!-- 送信者名（担当者名）設定行 -->
+                <div class="chat-sender-settings-row" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px dashed #e2e8f0; font-size: 11.5px;">
+                    <div style="display: flex; align-items: center; gap: 6px; flex: 1; flex-wrap: wrap;">
+                        <span style="font-weight: 700; color: #475569; white-space: nowrap;">
+                            <i class="fa-solid fa-user-tag" style="color: #4f46e5;"></i> 送信者名:
+                        </span>
+                        <input type="text" id="chatSenderNameInput" class="form-input" placeholder="例: 教室スタッフ, 川合" maxlength="20" style="padding: 4px 8px; font-size: 11.5px; height: 28px; width: 140px; border-radius: var(--radius-sm); border: 1px solid #cbd5e1;" title="LINEトーク画面に表示される送信者名（最大20文字）">
+                        <div class="chat-sender-chips" style="display: flex; gap: 4px; align-items: center;">
+                            <button type="button" class="sender-chip" data-name="教室スタッフ" style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 9999px; font-size: 10.5px; padding: 2px 8px; cursor: pointer; color: #4338ca; font-weight: 500;">教室スタッフ</button>
+                            <button type="button" class="sender-chip" data-name="川合" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 9999px; font-size: 10.5px; padding: 2px 8px; cursor: pointer; color: #334155; font-weight: 500;">川合</button>
+                            <button type="button" class="sender-chip" data-name="サポート担当" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 9999px; font-size: 10.5px; padding: 2px 8px; cursor: pointer; color: #334155; font-weight: 500;">サポート担当</button>
+                            <button type="button" class="sender-chip" data-name="講師" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 9999px; font-size: 10.5px; padding: 2px 8px; cursor: pointer; color: #334155; font-weight: 500;">講師</button>
+                        </div>
+                    </div>
+                    <span style="color: #64748b; font-size: 10.5px; white-space: nowrap;">
+                        <i class="fa-brands fa-line" style="color: #06C755;"></i> 受講生のLINE画面に表示
+                    </span>
+                </div>
+
                 <div class="chat-quick-templates">
                     <span style="font-size: 11px; color: #64748b; font-weight: bold; margin-right: 4px;">
                         <i class="fa-solid fa-wand-magic-sparkles"></i> 定型文:
@@ -1708,6 +1727,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260921_proline_webhook_v1"></script>
+    <script src="admin.js?v=20260921_chat_sender_v1"></script>
 </body>
 </html>

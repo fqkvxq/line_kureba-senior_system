@@ -40,7 +40,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260921_proline_webhook_v1">
+    <link rel="stylesheet" href="manual.css?v=20260921_chat_sender_v1">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -1042,6 +1042,20 @@
                                 <strong>便利な定型文チップ</strong>（「挨拶」「確認中」「予約確認」「フォロー」）をクリックすると、ワンタップでよく使う返信文面を入力欄に自動挿入できます。</p>
                             </div>
                         </div>
+
+                        <div class="step-card" style="border: 2px solid #6366f1; background: #eef2ff;">
+                            <div class="step-number" style="background: #4f46e5; color: #fff;">4</div>
+                            <div class="step-body">
+                                <h4><span class="badge" style="background: #4f46e5; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-right: 6px;">NEW</span>送信者名（担当者名）の自由変更とLINE画面への反映</h4>
+                                <p>チャット入力欄の上部にある「<strong><i class="fa-solid fa-user-tag"></i> 送信者名</strong>」欄にて、メッセージ送信時の担当者名・表示名を自由に変更できます。</p>
+                                <ul style="padding-left: 20px; margin: 8px 0; line-height: 1.7; font-size: 13.5px;">
+                                    <li><strong>受講生のLINEトーク画面に即時反映</strong>: LINE Messaging APIのSender機能に対応しており、受講生側のLINEトーク画面に送信者名（例: 「川合」「サポート担当」「教室スタッフ」など、最大20文字）が明記されて届きます。</li>
+                                    <li><strong>ワンタップ切替チップ</strong>: 「教室スタッフ」「川合」「サポート担当」「講師」などのクイックチップをクリックするだけで瞬時に送信者名を切り替えられます。もちろん直接タイピングしてお好みの名前を入力することも可能です。</li>
+                                    <li><strong>前回の送信者名を自動記憶（localStorage）</strong>: 一度変更した送信者名はブラウザに自動保存されるため、次回チャットを開いた際も前回の担当者名が自動的にセットされます。</li>
+                                    <li><strong>管理画面チャット履歴への記録</strong>: 各吹き出しの下部にも送信担当者名が記録・表示され、誰が返信したかが一目で分かります。</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="manual-alert-box info" style="margin-top: 16px;">
@@ -1435,6 +1449,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_proline_webhook_v1"></script>
+    <script src="manual.js?v=20260921_chat_sender_v1"></script>
 </body>
 </html>
