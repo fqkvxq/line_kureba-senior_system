@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260918_2fa_v1">
+    <link rel="stylesheet" href="admin.css?v=20260921_multi_webhook_v1">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -797,30 +797,40 @@
                         <i class="fa-solid fa-network-wired"></i>
                     </div>
                     <div>
-                        <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #fff;">プロライン (ProLine) Webhook中継設定</h3>
-                        <p style="margin: 2px 0 0; font-size: 11.5px; color: #c7d2fe;">LINE公式アカウントとプロラインの間に本システムを挟み込んで共存</p>
+    <!-- プロライン＆外部拡張ツール Webhook中継・共存設定モーダル -->
+    <div class="modal-overlay" id="prolineSettingsModal" style="z-index: 1200;">
+        <div class="modal-card" style="max-width: 680px; width: 95%; max-height: 92vh; overflow-y: auto;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%); color: #fff;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-network-wired" style="font-size: 20px; color: #a5b4fc;"></i>
+                    <div>
+                        <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #fff;">プロライン (ProLine) ＆ 外部ツール Webhook中継・共存設定</h3>
+                        <p style="margin: 2px 0 0; font-size: 11.5px; color: #c7d2fe;">LINE公式アカウントとプロライン等の拡張ツールを同時に共存させ、チャット通知やステップ配信を完全に維持</p>
                     </div>
                 </div>
                 <button class="modal-close" id="closeProlineSettingsModalBtn" style="color: #c7d2fe;">&times;</button>
             </div>
             <div class="modal-body" style="padding: 20px;">
                 <!-- 仕組み解説ボックス -->
-                <div style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 18px; font-size: 12px; color: #3730a3; line-height: 1.6;">
-                    <div style="font-weight: bold; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                        <i class="fa-solid fa-circle-info"></i> プロライン共存・中継（Webhook Proxy）の仕組み
+                <div style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: var(--radius-md); padding: 14px; margin-bottom: 18px; font-size: 12px; color: #3730a3; line-height: 1.6;">
+                    <div style="font-weight: bold; display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 13px;">
+                        <i class="fa-solid fa-circle-info"></i> 複数ツール共存・マルチWebhook中継の仕組み
                     </div>
-                    LINE公式アカウントから届くメッセージや友だち登録イベントを本システムで受け取り、<strong>プロラインのWebhook URLへ即座に完全転送（中継）</strong>します。<br>
-                    プロライン側のステップ配信・チャット・自動応答はそのまま動作し、同時に本システムで<strong>受講生カルテの自動蓄積・次回レッスンリマインダー・専用リッチメニュー</strong>を活用できます。
+                    LINE公式アカウントの仕様上、LINE DevelopersのWebhook URLは1つしか設定できません。<br>
+                    本システムをメインのWebhook窓口として設定し、受信したメッセージや友だち追加イベントを<strong>【プロライン】や【その他外部ツール】へリアルタイムに並列同時転送</strong>します。<br>
+                    これにより、<strong>プロラインのチャット通知・ステップ配信・個別返信</strong>を生かしたまま、本システムの<strong>受講生カルテ・予約管理・リッチメニュー</strong>を完全共存させることができます。
                 </div>
 
-                <!-- Webhook URL 設定 -->
+                <!-- Webhook URL 設定 (複数行対応) -->
                 <div class="form-group" style="margin-bottom: 16px;">
-                    <label style="font-weight: bold; font-size: 13px; color: #1e293b; display: block; margin-bottom: 6px;">
-                        <span><i class="fa-solid fa-link" style="color: #4f46e5; margin-right: 4px;"></i> 転送先 プロライン Webhook URL</span>
+                    <label style="font-weight: bold; font-size: 13px; color: #1e293b; display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span><i class="fa-solid fa-link" style="color: #4f46e5; margin-right: 4px;"></i> 転送先 Webhook URL（プロライン / 外部ツール）</span>
+                        <span style="font-size: 11px; font-weight: normal; color: #6366f1;">複数登録可（1行に1URL）</span>
                     </label>
-                    <input type="url" id="prolineWebhookUrlInput" placeholder="例: https://autosns.pro/api/webhook/..." style="width: 100%; box-sizing: border-box; padding: 10px 12px; font-family: monospace; font-size: 12.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
-                    <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
-                        ※ プロライン管理画面（「初期設定」や「LINE公式アカウント連携」）で案内されるWebhook URLを貼り付けてください。
+                    <textarea id="prolineWebhookUrlInput" rows="3" placeholder="https://autosns.pro/api/webhook/...&#10;https://hooks.zapier.com/hooks/catch/...&#10;（複数ツールのWebhook URLを改行して登録できます）" style="width: 100%; box-sizing: border-box; padding: 10px 12px; font-family: monospace; font-size: 12px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); line-height: 1.5; resize: vertical;"></textarea>
+                    <div style="font-size: 11px; color: #64748b; margin-top: 4px; line-height: 1.5;">
+                        ※ プロライン管理画面（「初期設定」や「LINE公式アカウント連携」）で案内されるWebhook URLを貼り付けてください。<br>
+                        ※ Zapier、Make、Lステップ、エルメ、自社サーバー等のURLも追加可能です。
                     </div>
                 </div>
 
@@ -840,9 +850,9 @@
                     <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;">
                         <input type="checkbox" id="prolineRelayEnabledCheck" checked style="accent-color: #4338ca; width: 18px; height: 18px;">
                         <div>
-                            <div style="font-weight: bold; font-size: 13px; color: #1e293b;">プロラインへのWebhook自動中継を有効にする</div>
+                            <div style="font-weight: bold; font-size: 13px; color: #1e293b;">外部ツールへのWebhook自動中継（同時転送）を有効にする</div>
                             <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
-                                チェックを入れると、LINEから受信した全イベントをプロラインへリアルタイム転送します。
+                                チェックを入れると、LINEから受信した全イベントを登録先へリアルタイムに並列転送します。
                             </div>
                         </div>
                     </label>
@@ -853,30 +863,31 @@
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px;">
                         <div>
                             <div style="font-weight: bold; font-size: 12.5px; color: #6b21a8;">
-                                <i class="fa-solid fa-paper-plane" style="margin-right: 4px;"></i> プロライン疎通テスト
+                                <i class="fa-solid fa-paper-plane" style="margin-right: 4px;"></i> Webhook疎通テスト
                             </div>
                             <div style="font-size: 11px; color: #7e22ce;">
-                                入力されたプロラインWebhook URLへテスト通信を行い、正常に応答が返るか検証します。
+                                入力されたすべてのWebhook URLへテスト通信を行い、正常に応答が返るか検証します。
                             </div>
                         </div>
                         <button type="button" class="btn-secondary" id="testProlineRelayBtn" style="background: #7c3aed; color: #fff; border: none; font-size: 12px; font-weight: bold; padding: 8px 14px; white-space: nowrap; cursor: pointer; border-radius: var(--radius-sm);">
-                            <i class="fa-solid fa-rotate"></i> 疎通テスト
+                            <i class="fa-solid fa-rotate"></i> 疎通テスト実行
                         </button>
                     </div>
-                    <div id="prolineTestResultBanner" style="display: none; padding: 8px 12px; border-radius: var(--radius-sm); font-size: 11.5px; line-height: 1.5; margin-top: 8px;"></div>
+                    <div id="prolineTestResultBanner" style="display: none; padding: 10px 12px; border-radius: var(--radius-sm); font-size: 12px; line-height: 1.5; margin-top: 8px;"></div>
                 </div>
 
                 <!-- LINE Developers 設定手順リンク/ガイダンス -->
                 <div style="margin-bottom: 16px; padding: 12px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); font-size: 11.5px; color: #475569;">
-                    <div style="font-weight: bold; color: #0f172a; margin-bottom: 4px;">
-                        <i class="fa-brands fa-line" style="color: #06C755;"></i> LINE Developers での設定
+                    <div style="font-weight: bold; color: #0f172a; margin-bottom: 6px; font-size: 12px;">
+                        <i class="fa-brands fa-line" style="color: #06C755;"></i> LINE Developers（LINE公式）での設定手順
                     </div>
-                    <ol style="margin: 0; padding-left: 18px; line-height: 1.6;">
-                        <li><a href="https://developers.line.biz/" target="_blank" style="color: #4f46e5; text-decoration: underline;">LINE Developers コンソール</a> にログイン。</li>
-                        <li>「Messaging API設定」タブの <strong>Webhook URL</strong> に以下を登録します：<br>
-                            <code id="displayOurWebhookUrl" style="background: #e2e8f0; padding: 2px 6px; border-radius: var(--radius-xs); font-size: 11px; user-select: all;">https://あなたのドメイン/webhook.php</code>
+                    <ol style="margin: 0; padding-left: 18px; line-height: 1.7;">
+                        <li><a href="https://developers.line.biz/" target="_blank" style="color: #4f46e5; text-decoration: underline; font-weight: bold;">LINE Developers コンソール</a> にログイン。</li>
+                        <li>対象チャンネルの「Messaging API設定」タブを開き、<strong>Webhook URL</strong> に以下を登録します：<br>
+                            <code id="displayOurWebhookUrl" style="background: #e2e8f0; padding: 3px 8px; border-radius: var(--radius-xs); font-size: 11.5px; user-select: all; display: inline-block; margin-top: 3px; font-weight: bold; color: #1e1b4b;">https://あなたのドメイン/webhook.php</code>
                         </li>
-                        <li>「Webhookの利用」を <strong>ON</strong> にします。</li>
+                        <li>「Webhookの利用」を <strong>ON（有効）</strong> にします。</li>
+                        <li>上の「転送先 Webhook URL」にプロラインのWebhook URLを登録して保存すれば、共存設定完了です！</li>
                     </ol>
                 </div>
 
@@ -1591,6 +1602,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260918_2fa_v1"></script>
+    <script src="admin.js?v=20260921_multi_webhook_v1"></script>
 </body>
 </html>

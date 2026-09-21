@@ -3334,17 +3334,38 @@ function sendAdminLineTestNotification(string $targetUid, ?PDO $pdo = null): arr
 }
 
 /**
- * プロライン連携設定を取得 (DB優先、未設定時は定数デフォルト)
+ * Webhook転送先URL文字列（改行またはカンマ区切り）を有効なURLの配列に分解
+ */
+function parseWebhookUrls(string $input): array {
+    $lines = preg_split('/[\r\n,]+/', $input);
+    $urls = [];
+    foreach ($lines as $line) {
+        $trimmed = trim($line);
+        if (!empty($trimmed) && filter_var($trimmed, FILTER_VALIDATE_URL)) {
+            $urls[] = $trimmed;
+        }
+    }
+    return array_values(array_unique($urls));
+}
+
+/**
+ * プロライン & 外部ツール連携設定を取得 (DB優先、未設定時は定数デフォルト)
  */
 function getProlineSettings(?PDO $pdo = null): array {
+    $defaultCalUrl = defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1';
+    $defaultWebhookUrl = defined('PROLINE_WEBHOOK_URL') ? PROLINE_WEBHOOK_URL : '';
+    $defaultEnabled = defined('PROLINE_RELAY_ENABLED') ? PROLINE_RELAY_ENABLED : true;
+
     if (!$pdo) {
         try {
             $pdo = getDbConnection();
         } catch (Exception $e) {
+            $urls = parseWebhookUrls($defaultWebhookUrl);
             return [
-                'webhook_url' => defined('PROLINE_WEBHOOK_URL') ? PROLINE_WEBHOOK_URL : '',
-                'relay_enabled' => defined('PROLINE_RELAY_ENABLED') ? PROLINE_RELAY_ENABLED : true,
-                'calendar_url' => defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://fsmk.co/t/yQ7ocg-grscdt?openExternalBrowser=1',
+                'webhook_url' => $defaultWebhookUrl,
+                'webhook_urls' => $urls,
+                'relay_enabled' => $defaultEnabled,
+                'calendar_url' => $defaultCalUrl,
                 'last_relay_at' => '',
                 'last_relay_status' => '',
                 'last_relay_http_code' => 0
@@ -3357,9 +3378,8 @@ function getProlineSettings(?PDO $pdo = null): array {
         $stmt->execute();
         $rows = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
 
-        $url = isset($rows['proline_webhook_url']) ? $rows['proline_webhook_url'] : (defined('PROLINE_WEBHOOK_URL') ? PROLINE_WEBHOOK_URL : '');
-        $enabled = isset($rows['proline_relay_enabled']) ? (bool)(int)$rows['proline_relay_enabled'] : (defined('PROLINE_RELAY_ENABLED') ? PROLINE_RELAY_ENABLED : true);
-        $defaultCalUrl = defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1';
+        $urlStr = isset($rows['proline_webhook_url']) ? $rows['proline_webhook_url'] : $defaultWebhookUrl;
+        $enabled = isset($rows['proline_relay_enabled']) ? (bool)(int)$rows['proline_relay_enabled'] : $defaultEnabled;
         $calUrl = isset($rows['proline_calendar_url']) ? $rows['proline_calendar_url'] : $defaultCalUrl;
 
         // 旧URL（fsmk.co や裸のautosns.app）がDBに残っている場合は自動でLIFF個別予約URLへ更新
@@ -3371,8 +3391,11 @@ function getProlineSettings(?PDO $pdo = null): array {
             } catch (Exception $ign) {}
         }
 
+        $urls = parseWebhookUrls($urlStr);
+
         return [
-            'webhook_url' => trim($url),
+            'webhook_url' => trim($urlStr),
+            'webhook_urls' => $urls,
             'relay_enabled' => $enabled,
             'calendar_url' => trim($calUrl),
             'last_relay_at' => $rows['proline_last_relay_at'] ?? '',
@@ -3380,10 +3403,12 @@ function getProlineSettings(?PDO $pdo = null): array {
             'last_relay_http_code' => (int)($rows['proline_last_relay_http_code'] ?? 0)
         ];
     } catch (Exception $e) {
+        $urls = parseWebhookUrls($defaultWebhookUrl);
         return [
-            'webhook_url' => defined('PROLINE_WEBHOOK_URL') ? PROLINE_WEBHOOK_URL : '',
-            'relay_enabled' => defined('PROLINE_RELAY_ENABLED') ? PROLINE_RELAY_ENABLED : true,
-            'calendar_url' => defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1',
+            'webhook_url' => $defaultWebhookUrl,
+            'webhook_urls' => $urls,
+            'relay_enabled' => $defaultEnabled,
+            'calendar_url' => $defaultCalUrl,
             'last_relay_at' => '',
             'last_relay_status' => '',
             'last_relay_http_code' => 0
@@ -3392,17 +3417,35 @@ function getProlineSettings(?PDO $pdo = null): array {
 }
 
 /**
- * プロライン連携設定を保存
+ * プロライン & 外部ツール連携設定を保存
  */
 function saveProlineSettings(string $url, bool $enabled, string $calendarUrl = '', ?PDO $pdo = null): array {
     if (!$pdo) {
         $pdo = getDbConnection();
     }
 
-    $url = trim($url);
-    if (!empty($url) && !filter_var($url, FILTER_VALIDATE_URL)) {
-        return ['success' => false, 'error' => '有効なWebhook URL形式（https://...）を入力してください'];
+    $rawLines = preg_split('/[\r\n,]+/', trim($url));
+    $validUrls = [];
+    $invalidLines = [];
+
+    foreach ($rawLines as $line) {
+        $trimmed = trim($line);
+        if (empty($trimmed)) continue;
+        if (filter_var($trimmed, FILTER_VALIDATE_URL)) {
+            $validUrls[] = $trimmed;
+        } else {
+            $invalidLines[] = $trimmed;
+        }
     }
+
+    if (!empty($invalidLines)) {
+        return [
+            'success' => false,
+            'error' => '無効なURL形式が含まれています: ' . implode(', ', array_slice($invalidLines, 0, 3))
+        ];
+    }
+
+    $cleanUrlStr = implode("\n", array_unique($validUrls));
 
     $calendarUrl = trim($calendarUrl);
     if (!empty($calendarUrl) && !filter_var($calendarUrl, FILTER_VALIDATE_URL)) {
@@ -3412,7 +3455,7 @@ function saveProlineSettings(string $url, bool $enabled, string $calendarUrl = '
     $nowJst = date('Y-m-d H:i:s');
     $stmt = $pdo->prepare("INSERT OR REPLACE INTO system_settings (key, value, updated_at) VALUES (:key, :val, :updated_at)");
     
-    $stmt->execute([':key' => 'proline_webhook_url', ':val' => $url, ':updated_at' => $nowJst]);
+    $stmt->execute([':key' => 'proline_webhook_url', ':val' => $cleanUrlStr, ':updated_at' => $nowJst]);
     $stmt->execute([':key' => 'proline_relay_enabled', ':val' => $enabled ? '1' : '0', ':updated_at' => $nowJst]);
     if (!empty($calendarUrl)) {
         $stmt->execute([':key' => 'proline_calendar_url', ':val' => $calendarUrl, ':updated_at' => $nowJst]);
@@ -3422,7 +3465,7 @@ function saveProlineSettings(string $url, bool $enabled, string $calendarUrl = '
 }
 
 /**
- * プロラインへWebhookリクエストを完全中継（プロキシPOST）
+ * プロラインおよび登録された外部ツールへWebhookリクエストを完全中継（並列プロキシPOST）
  * 
  * @param string $rawBody LINEから受信した生のJSONペイロード
  * @param string $signature LINE署名（X-Line-Signature）
@@ -3431,72 +3474,123 @@ function saveProlineSettings(string $url, bool $enabled, string $calendarUrl = '
  */
 function relayWebhookToProline(string $rawBody, string $signature = '', ?PDO $pdo = null): array {
     $settings = getProlineSettings($pdo);
-    $url = $settings['webhook_url'];
-    $enabled = $settings['relay_enabled'];
+    $urls = $settings['webhook_urls'] ?? [];
+    $enabled = $settings['relay_enabled'] ?? false;
 
-    if (!$enabled || empty($url)) {
+    if (!$enabled || empty($urls)) {
         return [
             'success' => false,
             'relayed' => false,
-            'reason' => empty($url) ? 'Proline Webhook URL is empty' : 'Proline Relay is disabled',
-            'http_code' => 0
+            'reason' => empty($urls) ? '転送先Webhook URLが未登録です' : 'Webhook中継が無効化されています',
+            'http_code' => 0,
+            'results' => []
         ];
     }
 
     $startTime = microtime(true);
     $headers = [
-        'Content-Type: application/json; charset=UTF-8',
-        'User-Agent: LineBot-ProLine-Relay-Proxy/1.0'
+        'Content-Type: application/json; charset=utf-8',
+        'User-Agent: LineBotWebhook/2.0'
     ];
     if (!empty($signature)) {
         $headers[] = 'X-Line-Signature: ' . $signature;
         $headers[] = 'x-line-signature: ' . $signature;
     }
 
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => $rawBody,
-        CURLOPT_HTTPHEADER => $headers,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 5,           // LINEのタイムアウト対策のため短めに設定
-        CURLOPT_CONNECTTIMEOUT => 3,
-        CURLOPT_SSL_VERIFYPEER => true,
-        CURLOPT_FOLLOWLOCATION => true
-    ]);
+    // curl_multi による並列非同期送信
+    $mh = curl_multi_init();
+    $curlHandles = [];
 
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlErrNo = curl_errno($ch);
-    $curlError = curl_error($ch);
-    $durationMs = round((microtime(true) - $startTime) * 1000, 2);
-    curl_close($ch);
+    foreach ($urls as $idx => $url) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $rawBody,
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 5,           // LINEのWebhook応答遅延防止のため5秒上限
+            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_FOLLOWLOCATION => true
+        ]);
+        curl_multi_add_handle($mh, $ch);
+        $curlHandles[$idx] = ['handle' => $ch, 'url' => $url];
+    }
+
+    $active = null;
+    do {
+        $mrc = curl_multi_exec($mh, $active);
+    } while ($mrc == CURLM_CALL_MULTI_PERFORM);
+
+    while ($active && $mrc == CURLM_OK) {
+        if (curl_multi_select($mh) != -1) {
+            do {
+                $mrc = curl_multi_exec($mh, $active);
+            } while ($mrc == CURLM_CALL_MULTI_PERFORM);
+        }
+    }
 
     $nowJst = date('Y-m-d H:i:s');
-    $isSuccess = ($curlErrNo === 0 && $httpCode >= 200 && $httpCode < 400);
-    $statusText = $isSuccess ? "OK ({$durationMs}ms)" : "FAIL ({$httpCode}: {$curlError})";
+    $results = [];
+    $allSuccess = true;
+    $statusSummaryParts = [];
+    $lastHttpCode = 200;
 
-    // ログ記録
-    $logLine = "[{$nowJst}] PROLINE_RELAY: {$statusText} | URL: {$url} | Bytes: " . strlen($rawBody) . "\n";
-    @file_put_contents(__DIR__ . '/proline_relay.log', $logLine, FILE_APPEND | LOCK_EX);
+    foreach ($curlHandles as $idx => $item) {
+        $ch = $item['handle'];
+        $url = $item['url'];
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErrNo = curl_errno($ch);
+        $curlError = curl_error($ch);
+        $response = curl_multi_getcontent($ch);
+
+        $isOk = ($curlErrNo === 0 && $httpCode >= 200 && $httpCode < 400);
+        if (!$isOk) {
+            $allSuccess = false;
+        }
+        $lastHttpCode = $httpCode;
+
+        $host = parse_url($url, PHP_URL_HOST) ?: 'target';
+        $statusSummaryParts[] = "{$host}:" . ($isOk ? "OK({$httpCode})" : "FAIL({$httpCode})");
+
+        $results[] = [
+            'url' => $url,
+            'success' => $isOk,
+            'http_code' => $httpCode,
+            'error' => $curlError,
+            'response_snippet' => mb_substr((string)$response, 0, 100)
+        ];
+
+        // 各URLごとの転送ログ記録
+        $statusText = $isOk ? "OK ({$httpCode})" : "FAIL ({$httpCode}: {$curlError})";
+        $logLine = "[{$nowJst}] WEBHOOK_RELAY: {$statusText} | URL: {$url} | Bytes: " . strlen($rawBody) . "\n";
+        @file_put_contents(__DIR__ . '/proline_relay.log', $logLine, FILE_APPEND | LOCK_EX);
+
+        curl_multi_remove_handle($mh, $ch);
+        curl_close($ch);
+    }
+    curl_multi_close($mh);
+
+    $durationMs = round((microtime(true) - $startTime) * 1000, 2);
+    $finalStatus = ($allSuccess ? "ALL OK" : "PARTIAL/FAIL") . " ({$durationMs}ms) [" . implode(', ', $statusSummaryParts) . "]";
 
     // DBに直近の中継状況を保存
     if ($pdo) {
         try {
             $stmt = $pdo->prepare("INSERT OR REPLACE INTO system_settings (key, value, updated_at) VALUES (:key, :val, :updated_at)");
             $stmt->execute([':key' => 'proline_last_relay_at', ':val' => $nowJst, ':updated_at' => $nowJst]);
-            $stmt->execute([':key' => 'proline_last_relay_status', ':val' => $statusText, ':updated_at' => $nowJst]);
-            $stmt->execute([':key' => 'proline_last_relay_http_code', ':val' => (string)$httpCode, ':updated_at' => $nowJst]);
+            $stmt->execute([':key' => 'proline_last_relay_status', ':val' => $finalStatus, ':updated_at' => $nowJst]);
+            $stmt->execute([':key' => 'proline_last_relay_http_code', ':val' => (string)$lastHttpCode, ':updated_at' => $nowJst]);
         } catch (Exception $e) {}
     }
 
     return [
-        'success' => $isSuccess,
+        'success' => $allSuccess,
         'relayed' => true,
-        'http_code' => $httpCode,
+        'http_code' => $lastHttpCode,
         'duration_ms' => $durationMs,
-        'error' => $curlError,
-        'response' => $response
+        'status' => $finalStatus,
+        'results' => $results
     ];
 }
 

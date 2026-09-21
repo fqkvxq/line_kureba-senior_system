@@ -36,14 +36,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $tokenConfigured = (!empty($channelAccessToken) && $channelAccessToken !== 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') ? '<span style="color:green;">設定済み</span>' : '<span style="color:red;">未設定 (config.phpに貼り付けてください)</span>';
     $secretConfigured = (!empty($channelSecret) && $channelSecret !== 'YOUR_CHANNEL_SECRET_HERE') ? '<span style="color:green;">設定済み</span>' : '<span style="color:red;">未設定</span>';
     
-    // プロライン連携状態
+    // プロライン＆外部ツール連携状態
     $proline = getProlineSettings($db);
-    $prolineStatusBadge = empty($proline['webhook_url'])
+    $urlCount = count($proline['webhook_urls'] ?? []);
+    $prolineStatusBadge = empty($urlCount)
         ? '<span style="color:#64748b;">未設定 (中継OFF)</span>'
         : ($proline['relay_enabled'] 
-            ? '<span style="color:green;font-weight:bold;">中継稼働中 (有効)</span>' 
+            ? "<span style=\"color:green;font-weight:bold;\">中継稼働中 ({$urlCount}件へ同時転送)</span>" 
             : '<span style="color:#d97706;font-weight:bold;">中継一時停止中 (無効)</span>');
-    $prolineUrlDisplay = !empty($proline['webhook_url']) ? htmlspecialchars($proline['webhook_url']) : '（未登録）';
+    
+    $urlsFormatted = !empty($proline['webhook_urls'])
+        ? implode('<br>', array_map(fn($u) => '<code style="font-size:11px; word-break:break-all;">' . htmlspecialchars($u) . '</code>', $proline['webhook_urls']))
+        : '（未登録）';
     $prolineLastRelay = !empty($proline['last_relay_at']) ? "{$proline['last_relay_at']} / {$proline['last_relay_status']}" : 'まだ転送履歴はありません';
 
     $accountListHtml = '';
@@ -58,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     echo <<<HTML
     <!DOCTYPE html>
     <html lang="ja">
-    <head><meta charset="utf-8"><title>LINE受講生管理 ＆ プロライン中継 診断</title>
+    <head><meta charset="utf-8"><title>LINE受講生管理 ＆ プロライン・外部ツール中継 診断</title>
     <style>body{font-family:sans-serif;padding:30px;line-height:1.6;background:#f8fafc;color:#1e293b}
     .card{background:#fff;padding:24px;border-radius:12px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);max-width:760px;margin:0 auto}
     h2{margin-top:0;color:#06C755}table{width:100%;border-collapse:collapse;margin:16px 0}
@@ -76,8 +80,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             <tr><td>チャネルアクセストークン</td><td>{$tokenConfigured}</td></tr>
             <tr><td>チャネルシークレット</td><td>{$secretConfigured}</td></tr>
             <tr><td>受講生データベース状態</td><td><strong>{$dbStatus}</strong></td></tr>
-            <tr><td>プロライン中継ステータス</td><td>{$prolineStatusBadge}</td></tr>
-            <tr><td>プロライン転送先URL</td><td><small style="word-break:break-all;"><code>{$prolineUrlDisplay}</code></small></td></tr>
+            <tr><td>外部ツール中継ステータス</td><td>{$prolineStatusBadge}</td></tr>
+            <tr><td>転送先Webhook URL一覧</td><td><div style="line-height:1.5;">{$urlsFormatted}</div></td></tr>
             <tr><td>直近の転送結果</td><td><small>{$prolineLastRelay}</small></td></tr>
         </table>
 

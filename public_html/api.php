@@ -4109,7 +4109,7 @@ try {
             echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
-        // --- 21. プロラインWebhook中継 疎通テスト送信 ---
+        // --- 21. プロライン＆外部ツールWebhook中継 疎通テスト送信 ---
         case 'admin_test_proline_relay':
             $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
@@ -4118,15 +4118,16 @@ try {
                 exit;
             }
 
-            $targetUrl = trim($_POST['url'] ?? '');
-            if (empty($targetUrl)) {
+            $rawTargetUrl = trim($_POST['url'] ?? '');
+            if (empty($rawTargetUrl)) {
                 $cur = getProlineSettings($db);
-                $targetUrl = $cur['webhook_url'];
+                $rawTargetUrl = $cur['webhook_url'];
             }
 
-            if (empty($targetUrl)) {
+            $targetUrls = parseWebhookUrls($rawTargetUrl);
+            if (empty($targetUrls)) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'error' => '転送先のプロラインWebhook URLを入力してください']);
+                echo json_encode(['success' => false, 'error' => '転送先のWebhook URL（https://...）を入力してください']);
                 exit;
             }
 
@@ -4136,46 +4137,73 @@ try {
                 'events' => []
             ], JSON_UNESCAPED_UNICODE);
 
-            $mockSignature = base64_encode(hash_hmac('sha256', $mockPayload, LINE_CHANNEL_SECRET, true));
+            $channelSecret = getLineChannelSecret(getActiveAccountKey());
+            $mockSignature = !empty($channelSecret) ? base64_encode(hash_hmac('sha256', $mockPayload, $channelSecret, true)) : '';
 
-            // 一時的に指定URLへテスト中継送信
-            $startTime = microtime(true);
-            $ch = curl_init($targetUrl);
-            curl_setopt_array($ch, [
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => $mockPayload,
-                CURLOPT_HTTPHEADER => [
-                    'Content-Type: application/json; charset=UTF-8',
-                    'X-Line-Signature: ' . $mockSignature,
-                    'User-Agent: LineBot-ProLine-Relay-Proxy-Test/1.0'
-                ],
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 6,
-                CURLOPT_CONNECTTIMEOUT => 4,
-                CURLOPT_SSL_VERIFYPEER => true
-            ]);
-            $res = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curlErr = curl_error($ch);
-            $durationMs = round((microtime(true) - $startTime) * 1000, 2);
-            curl_close($ch);
-
-            $isSuccess = ($httpCode >= 200 && $httpCode < 400);
-
-            // ログ追記
+            $testResults = [];
+            $allSuccess = true;
             $nowJst = date('Y-m-d H:i:s');
-            $statusText = $isSuccess ? "TEST OK ({$durationMs}ms)" : "TEST FAIL ({$httpCode}: {$curlErr})";
-            @file_put_contents(__DIR__ . '/proline_relay.log', "[{$nowJst}] MANUAL_TEST: {$statusText} | URL: {$targetUrl}\n", FILE_APPEND | LOCK_EX);
+
+            foreach ($targetUrls as $url) {
+                $startTime = microtime(true);
+                $ch = curl_init($url);
+                $headers = [
+                    'Content-Type: application/json; charset=utf-8',
+                    'User-Agent: LineBotWebhook/2.0'
+                ];
+                if (!empty($mockSignature)) {
+                    $headers[] = 'X-Line-Signature: ' . $mockSignature;
+                    $headers[] = 'x-line-signature: ' . $mockSignature;
+                }
+
+                curl_setopt_array($ch, [
+                    CURLOPT_POST => true,
+                    CURLOPT_POSTFIELDS => $mockPayload,
+                    CURLOPT_HTTPHEADER => $headers,
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_TIMEOUT => 6,
+                    CURLOPT_CONNECTTIMEOUT => 4,
+                    CURLOPT_SSL_VERIFYPEER => true
+                ]);
+                $res = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $curlErr = curl_error($ch);
+                $durationMs = round((microtime(true) - $startTime) * 1000, 2);
+                curl_close($ch);
+
+                $isSuccess = ($httpCode >= 200 && $httpCode < 400);
+                if (!$isSuccess) {
+                    $allSuccess = false;
+                }
+
+                $statusText = $isSuccess ? "TEST OK ({$durationMs}ms)" : "TEST FAIL ({$httpCode}: {$curlErr})";
+                @file_put_contents(__DIR__ . '/proline_relay.log', "[{$nowJst}] MANUAL_TEST: {$statusText} | URL: {$url}\n", FILE_APPEND | LOCK_EX);
+
+                $testResults[] = [
+                    'url' => $url,
+                    'success' => $isSuccess,
+                    'http_code' => $httpCode,
+                    'duration_ms' => $durationMs,
+                    'error' => $curlErr,
+                    'response_snippet' => mb_substr((string)$res, 0, 150)
+                ];
+            }
+
+            $successCount = count(array_filter($testResults, fn($r) => $r['success']));
+            $totalCount = count($testResults);
+
+            $msg = ($totalCount === 1)
+                ? ($allSuccess 
+                    ? "✅ 疎通テストに成功しました！(HTTP {$testResults[0]['http_code']} / {$testResults[0]['duration_ms']}ms)" 
+                    : "⚠️ 転送先からの応答エラー (HTTP {$testResults[0]['http_code']}): " . ($testResults[0]['error'] ?: '応答ステータスをご確認ください'))
+                : "疎通テスト完了: {$successCount} / {$totalCount} 件が成功";
 
             echo json_encode([
-                'success' => $isSuccess,
-                'http_code' => $httpCode,
-                'duration_ms' => $durationMs,
-                'error' => $curlErr,
-                'response_snippet' => mb_substr((string)$res, 0, 200),
-                'message' => $isSuccess 
-                    ? "✅ プロラインへの疎通テストに成功しました！(HTTP {$httpCode} / {$durationMs}ms)"
-                    : "⚠️ プロラインからの応答エラー (HTTP {$httpCode}): " . ($curlErr ?: '応答ステータスをご確認ください')
+                'success' => $allSuccess,
+                'total_count' => $totalCount,
+                'success_count' => $successCount,
+                'results' => $testResults,
+                'message' => $msg
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 

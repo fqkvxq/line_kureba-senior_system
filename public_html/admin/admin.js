@@ -3896,7 +3896,7 @@ async function saveProlineSettings() {
 async function testProlineRelay() {
     const url = elements.prolineWebhookUrlInput ? elements.prolineWebhookUrlInput.value.trim() : '';
     if (!url) {
-        alert('転送先のプロラインWebhook URLを入力してください');
+        alert('転送先のWebhook URLを入力してください');
         return;
     }
 
@@ -3906,14 +3906,14 @@ async function testProlineRelay() {
     try {
         if (btn) {
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> テスト中...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> テスト実行中...';
         }
         if (banner) {
             banner.style.display = 'block';
             banner.style.background = '#f1f5f9';
             banner.style.color = '#475569';
             banner.style.border = '1px solid #cbd5e1';
-            banner.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> プロラインへテストWebhook（Pingペイロード）を転送しています...';
+            banner.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 登録先へテストWebhook（Pingペイロード）を転送しています...';
         }
 
         const payload = new URLSearchParams({
@@ -3929,17 +3929,52 @@ async function testProlineRelay() {
         });
         const data = await res.json();
 
-        if (data.success) {
+        if (data.results && data.results.length > 0) {
+            const isAllOk = Boolean(data.success);
             if (banner) {
+                banner.style.display = 'block';
+                banner.style.background = isAllOk ? '#ecfdf5' : '#fffbeb';
+                banner.style.color = isAllOk ? '#065f46' : '#92400e';
+                banner.style.border = isAllOk ? '1px solid #a7f3d0' : '1px solid #fde68a';
+
+                let resultsHtml = `<div style="font-weight: bold; margin-bottom: 6px;">${escapeHtml(data.message)}</div>`;
+                resultsHtml += '<div style="display: flex; flex-direction: column; gap: 4px; font-size: 11.5px;">';
+                data.results.forEach((r, i) => {
+                    const badge = r.success 
+                        ? `<span style="background: #10b981; color: #fff; padding: 1px 6px; border-radius: 4px; font-weight: bold; font-size: 10px;">OK (${r.http_code})</span>`
+                        : `<span style="background: #ef4444; color: #fff; padding: 1px 6px; border-radius: 4px; font-weight: bold; font-size: 10px;">FAIL (${r.http_code})</span>`;
+                    resultsHtml += `
+                        <div style="background: rgba(255,255,255,0.7); padding: 6px 8px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.06);">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                                <div style="font-family: monospace; word-break: break-all; font-weight: 600;">${escapeHtml(r.url)}</div>
+                                <div>${badge} <span style="font-size: 10.5px; color: #64748b;">${r.duration_ms}ms</span></div>
+                            </div>
+                            ${r.error ? `<div style="color: #dc2626; font-size: 10.5px; margin-top: 2px;">エラー: ${escapeHtml(r.error)}</div>` : ''}
+                        </div>
+                    `;
+                });
+                resultsHtml += '</div>';
+                banner.innerHTML = resultsHtml;
+            }
+            if (isAllOk) {
+                showToast('✅ 全ての転送先への疎通テストに成功しました！');
+            } else {
+                showToast('⚠️ 一部の転送先で疎通エラーが発生しました');
+            }
+            loadProlineSettings();
+        } else if (data.success) {
+            if (banner) {
+                banner.style.display = 'block';
                 banner.style.background = '#ecfdf5';
                 banner.style.color = '#065f46';
                 banner.style.border = '1px solid #a7f3d0';
                 banner.innerHTML = `<strong>${escapeHtml(data.message)}</strong><br><span style="font-size:11px;">応答所要時間: ${data.duration_ms}ms / HTTPステータス: ${data.http_code}</span>`;
             }
-            showToast('✅ プロライン疎通テスト成功！');
+            showToast('✅ 疎通テスト成功！');
             loadProlineSettings();
         } else {
             if (banner) {
+                banner.style.display = 'block';
                 banner.style.background = '#fef2f2';
                 banner.style.color = '#991b1b';
                 banner.style.border = '1px solid #fecaca';
@@ -3949,6 +3984,7 @@ async function testProlineRelay() {
         }
     } catch (e) {
         if (banner) {
+            banner.style.display = 'block';
             banner.style.background = '#fef2f2';
             banner.style.color = '#991b1b';
             banner.style.border = '1px solid #fecaca';
@@ -3957,7 +3993,7 @@ async function testProlineRelay() {
     } finally {
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-rotate"></i> 疎通テスト';
+            btn.innerHTML = '<i class="fa-solid fa-rotate"></i> 疎通テスト実行';
         }
     }
 }
