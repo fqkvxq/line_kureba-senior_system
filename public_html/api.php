@@ -224,6 +224,7 @@ try {
             }
 
             $webhookUrl = getBaseUrl() . "/webhook.php" . (!empty($accConfig['is_default']) ? '' : "?account={$accConfig['id']}");
+            $prolineSettings = getProlineSettings(null, $targetAcc);
 
             echo json_encode([
                 'success' => true,
@@ -242,8 +243,8 @@ try {
                     'channel_access_token' => $accConfig['channel_access_token'] ?? '',
                     'channel_secret' => $accConfig['channel_secret'] ?? '',
                     'liff_id' => $accConfig['liff_id'] ?? '',
-                    'proline_calendar_url' => $accConfig['proline_calendar_url'] ?? '',
-                    'proline_webhook_url' => $accConfig['proline_webhook_url'] ?? '',
+                    'proline_calendar_url' => $prolineSettings['calendar_url'] ?? ($accConfig['proline_calendar_url'] ?? ''),
+                    'proline_webhook_url' => $prolineSettings['webhook_url'] ?? ($accConfig['proline_webhook_url'] ?? ''),
                     'db_file' => $accConfig['db_file'] ?? "cars_{$accConfig['id']}.db",
                     'is_default' => !empty($accConfig['is_default']),
                     'webhook_url' => $webhookUrl
@@ -335,12 +336,20 @@ try {
                 exit;
             }
 
-            // 新規アカウントなら該当DBファイルとテーブル構造を自動初期化
+            // 新規アカウントなら該当DBファイルとテーブル構造を自動初期化し、system_settingsへも完全同期
             try {
-                getDbConnection($cleanId);
+                $accDb = getDbConnection($cleanId);
+                if ($accDb) {
+                    $nowJst = date('Y-m-d H:i:s');
+                    $upStmt = $accDb->prepare("INSERT OR REPLACE INTO system_settings (key, value, updated_at) VALUES (:key, :val, :updated_at)");
+                    $upStmt->execute([':key' => 'proline_webhook_url', ':val' => $prolineWebhookUrl, ':updated_at' => $nowJst]);
+                    if (!empty($prolineCalUrl)) {
+                        $upStmt->execute([':key' => 'proline_calendar_url', ':val' => $prolineCalUrl, ':updated_at' => $nowJst]);
+                    }
+                }
             } catch (Exception $e) {
                 // 初期化失敗時はログに記録するが設定自体は保持
-                error_log("DB init error for account {$cleanId}: " . $e->getMessage());
+                error_log("DB init/sync error for account {$cleanId}: " . $e->getMessage());
             }
 
             // グローバルアカウントをリロード
@@ -4648,7 +4657,9 @@ try {
                 exit;
             }
 
-            $settings = getProlineSettings($db);
+            $targetAccount = trim($_GET['account'] ?? ($_POST['account'] ?? getActiveAccountKey()));
+            $targetDb = getDbConnection($targetAccount);
+            $settings = getProlineSettings($targetDb, $targetAccount);
             $logFile = __DIR__ . '/proline_relay.log';
             $recentLogs = [];
             if (file_exists($logFile)) {
@@ -4659,6 +4670,7 @@ try {
 
             echo json_encode([
                 'success' => true,
+                'account' => $targetAccount,
                 'settings' => $settings,
                 'recent_logs' => $recentLogs
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
@@ -4673,11 +4685,13 @@ try {
                 exit;
             }
 
+            $targetAccount = trim($_POST['account'] ?? ($_GET['account'] ?? getActiveAccountKey()));
+            $targetDb = getDbConnection($targetAccount);
             $url = $_POST['url'] ?? '';
             $enabled = isset($_POST['relay_enabled']) ? (bool)(int)$_POST['relay_enabled'] : true;
             $calendarUrl = $_POST['calendar_url'] ?? '';
 
-            $result = saveProlineSettings($url, $enabled, $calendarUrl, $db);
+            $result = saveProlineSettings($url, $enabled, $calendarUrl, $targetDb, $targetAccount);
             echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
@@ -4690,9 +4704,12 @@ try {
                 exit;
             }
 
+            $targetAccount = trim($_POST['account'] ?? ($_GET['account'] ?? getActiveAccountKey()));
+            $targetDb = getDbConnection($targetAccount);
+
             $rawTargetUrl = trim($_POST['url'] ?? '');
             if (empty($rawTargetUrl)) {
-                $cur = getProlineSettings($db);
+                $cur = getProlineSettings($targetDb, $targetAccount);
                 $rawTargetUrl = $cur['webhook_url'];
             }
 
@@ -4709,7 +4726,8 @@ try {
                 'events' => []
             ], JSON_UNESCAPED_UNICODE);
 
-            $channelSecret = getLineChannelSecret(getActiveAccountKey());
+            $channelSecret = getLineChannelSecret($targetAccount);
+            $mockSignature = !empty($channelSecret) ? base64_encode(hash_hmac('sha256', $mockPayload, $channelSecret, true)) : '';
             $mockSignature = !empty($channelSecret) ? base64_encode(hash_hmac('sha256', $mockPayload, $channelSecret, true)) : '';
 
             $testResults = [];

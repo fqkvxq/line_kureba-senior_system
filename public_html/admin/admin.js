@@ -4631,9 +4631,11 @@ async function openProlineSettingsModal() {
     if (elements.prolineSaveStatus) elements.prolineSaveStatus.textContent = '';
     if (elements.prolineTestResultBanner) elements.prolineTestResultBanner.style.display = 'none';
 
-    // 本システムのWebhook URL（LINE Developersに登録するURL）を自動生成表示
+    // 本システムのWebhook URL（LINE Developersに登録するURL）を対象アカウントに応じて自動生成表示
     if (elements.displayOurWebhookUrl) {
-        const fullUrl = `${getAppBaseUrl()}/webhook.php`;
+        const curAcc = state.activeAccount || 'senior';
+        const query = (curAcc === 'senior') ? '' : `?account=${encodeURIComponent(curAcc)}`;
+        const fullUrl = `${getAppBaseUrl()}/webhook.php${query}`;
         elements.displayOurWebhookUrl.textContent = fullUrl;
     }
 
@@ -4655,7 +4657,8 @@ async function loadProlineSettings() {
     if (!elements.prolineRecentLogsWrap) return;
     try {
         elements.prolineRecentLogsWrap.textContent = '設定と中継ログを読み込み中...';
-        const res = await fetch(`../api.php?action=admin_get_proline_settings`);
+        const curAcc = state.activeAccount || 'senior';
+        const res = await fetch(`../api.php?action=admin_get_proline_settings&account=${encodeURIComponent(curAcc)}`);
         const data = await res.json();
         if (data.success) {
             if (elements.prolineWebhookUrlInput) {
@@ -4685,6 +4688,7 @@ async function saveProlineSettings() {
     const url = elements.prolineWebhookUrlInput ? elements.prolineWebhookUrlInput.value.trim() : '';
     const calendarUrl = elements.prolineCalendarUrlInput ? elements.prolineCalendarUrlInput.value.trim() : '';
     const enabled = elements.prolineRelayEnabledCheck && elements.prolineRelayEnabledCheck.checked ? 1 : 0;
+    const curAcc = state.activeAccount || 'senior';
 
     try {
         if (elements.saveProlineSettingsBtn) elements.saveProlineSettingsBtn.disabled = true;
@@ -4693,6 +4697,7 @@ async function saveProlineSettings() {
         const payload = new URLSearchParams({
             action: 'admin_save_proline_settings',
             password: state.password,
+            account: curAcc,
             url: url,
             calendar_url: calendarUrl,
             relay_enabled: enabled
@@ -4706,7 +4711,14 @@ async function saveProlineSettings() {
         const data = await res.json();
         if (data.success) {
             if (elements.prolineSaveStatus) elements.prolineSaveStatus.textContent = '✅ 設定を保存しました！';
-            showToast('✅ プロライン連携設定を保存しました');
+            showToast('✅ プロライン連携設定を保存しました（アカウント設定と完全同期）');
+            
+            // state.accounts も同期更新
+            if (state.accounts && state.accounts[curAcc]) {
+                state.accounts[curAcc].proline_webhook_url = url;
+                if (calendarUrl) state.accounts[curAcc].proline_calendar_url = calendarUrl;
+            }
+
             setTimeout(() => {
                 if (elements.prolineSaveStatus) elements.prolineSaveStatus.textContent = '';
             }, 3000);
@@ -4731,6 +4743,7 @@ async function testProlineRelay() {
 
     const btn = elements.testProlineRelayBtn;
     const banner = elements.prolineTestResultBanner;
+    const curAcc = state.activeAccount || 'senior';
 
     try {
         if (btn) {
@@ -4748,6 +4761,7 @@ async function testProlineRelay() {
         const payload = new URLSearchParams({
             action: 'admin_test_proline_relay',
             password: state.password,
+            account: curAcc,
             url: url
         });
 

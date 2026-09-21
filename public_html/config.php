@@ -3791,19 +3791,27 @@ function parseWebhookUrls(string $input): array {
 }
 
 /**
- * プロライン & 外部ツール連携設定を取得 (DB優先、未設定時は定数デフォルト)
+ * プロライン & 外部ツール連携設定を取得 (DBとaccounts.jsonを双方向完全同期)
  */
-function getProlineSettings(?PDO $pdo = null): array {
-    $defaultCalUrl = defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1';
-    $defaultWebhookUrl = defined('PROLINE_WEBHOOK_URL') ? PROLINE_WEBHOOK_URL : '';
+function getProlineSettings(?PDO $pdo = null, ?string $accountKey = null): array {
+    $accountKey = $accountKey ?: getActiveAccountKey();
+    $accConfig = getAccountConfig($accountKey);
+    
+    $defaultCalUrl = !empty($accConfig['proline_calendar_url']) 
+        ? $accConfig['proline_calendar_url'] 
+        : (defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1');
+    $defaultWebhookUrl = !empty($accConfig['proline_webhook_url']) 
+        ? $accConfig['proline_webhook_url'] 
+        : (defined('PROLINE_WEBHOOK_URL') ? PROLINE_WEBHOOK_URL : '');
     $defaultEnabled = defined('PROLINE_RELAY_ENABLED') ? PROLINE_RELAY_ENABLED : true;
 
     if (!$pdo) {
         try {
-            $pdo = getDbConnection();
+            $pdo = getDbConnection($accountKey);
         } catch (Exception $e) {
             $urls = parseWebhookUrls($defaultWebhookUrl);
             return [
+                'account' => $accountKey,
                 'webhook_url' => $defaultWebhookUrl,
                 'webhook_urls' => $urls,
                 'relay_enabled' => $defaultEnabled,
@@ -3820,9 +3828,13 @@ function getProlineSettings(?PDO $pdo = null): array {
         $stmt->execute();
         $rows = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
 
-        $urlStr = isset($rows['proline_webhook_url']) ? $rows['proline_webhook_url'] : $defaultWebhookUrl;
+        $urlStr = isset($rows['proline_webhook_url']) && trim((string)$rows['proline_webhook_url']) !== '' 
+            ? $rows['proline_webhook_url'] 
+            : $defaultWebhookUrl;
         $enabled = isset($rows['proline_relay_enabled']) ? (bool)(int)$rows['proline_relay_enabled'] : $defaultEnabled;
-        $calUrl = isset($rows['proline_calendar_url']) ? $rows['proline_calendar_url'] : $defaultCalUrl;
+        $calUrl = isset($rows['proline_calendar_url']) && trim((string)$rows['proline_calendar_url']) !== '' 
+            ? $rows['proline_calendar_url'] 
+            : $defaultCalUrl;
 
         // 旧URL（fsmk.co や裸のautosns.app）がDBに残っている場合は自動でLIFF個別予約URLへ更新
         if (str_contains($calUrl, 'fsmk.co') || (str_contains($calUrl, 'autosns.app') && !str_contains($calUrl, 'liff.line.me')) || empty($calUrl)) {
@@ -3836,6 +3848,7 @@ function getProlineSettings(?PDO $pdo = null): array {
         $urls = parseWebhookUrls($urlStr);
 
         return [
+            'account' => $accountKey,
             'webhook_url' => trim($urlStr),
             'webhook_urls' => $urls,
             'relay_enabled' => $enabled,
@@ -3847,6 +3860,7 @@ function getProlineSettings(?PDO $pdo = null): array {
     } catch (Exception $e) {
         $urls = parseWebhookUrls($defaultWebhookUrl);
         return [
+            'account' => $accountKey,
             'webhook_url' => $defaultWebhookUrl,
             'webhook_urls' => $urls,
             'relay_enabled' => $defaultEnabled,
@@ -3859,11 +3873,12 @@ function getProlineSettings(?PDO $pdo = null): array {
 }
 
 /**
- * プロライン & 外部ツール連携設定を保存
+ * プロライン & 外部ツール連携設定を保存 (DBとaccounts.jsonの両方に完全同期保存)
  */
-function saveProlineSettings(string $url, bool $enabled, string $calendarUrl = '', ?PDO $pdo = null): array {
+function saveProlineSettings(string $url, bool $enabled, string $calendarUrl = '', ?PDO $pdo = null, ?string $accountKey = null): array {
+    $accountKey = $accountKey ?: getActiveAccountKey();
     if (!$pdo) {
-        $pdo = getDbConnection();
+        $pdo = getDbConnection($accountKey);
     }
 
     $rawLines = preg_split('/[\r\n,]+/', trim($url));
@@ -3895,15 +3910,30 @@ function saveProlineSettings(string $url, bool $enabled, string $calendarUrl = '
     }
 
     $nowJst = date('Y-m-d H:i:s');
-    $stmt = $pdo->prepare("INSERT OR REPLACE INTO system_settings (key, value, updated_at) VALUES (:key, :val, :updated_at)");
     
+    // 1. SQLite DB の system_settings に保存
+    $stmt = $pdo->prepare("INSERT OR REPLACE INTO system_settings (key, value, updated_at) VALUES (:key, :val, :updated_at)");
     $stmt->execute([':key' => 'proline_webhook_url', ':val' => $cleanUrlStr, ':updated_at' => $nowJst]);
     $stmt->execute([':key' => 'proline_relay_enabled', ':val' => $enabled ? '1' : '0', ':updated_at' => $nowJst]);
     if (!empty($calendarUrl)) {
         $stmt->execute([':key' => 'proline_calendar_url', ':val' => $calendarUrl, ':updated_at' => $nowJst]);
     }
 
-    return ['success' => true, 'settings' => getProlineSettings($pdo)];
+    // 2. data/accounts.json の該当アカウント設定にも完全同期保存
+    try {
+        $allAccounts = loadSystemLineAccounts();
+        if (isset($allAccounts[$accountKey])) {
+            $allAccounts[$accountKey]['proline_webhook_url'] = $cleanUrlStr;
+            if (!empty($calendarUrl)) {
+                $allAccounts[$accountKey]['proline_calendar_url'] = $calendarUrl;
+            }
+            saveSystemLineAccounts($allAccounts);
+        }
+    } catch (Exception $e) {
+        error_log("Failed to sync proline settings to accounts.json: " . $e->getMessage());
+    }
+
+    return ['success' => true, 'settings' => getProlineSettings($pdo, $accountKey)];
 }
 
 /**
@@ -3912,10 +3942,12 @@ function saveProlineSettings(string $url, bool $enabled, string $calendarUrl = '
  * @param string $rawBody LINEから受信した生のJSONペイロード
  * @param string $signature LINE署名（X-Line-Signature）
  * @param PDO|null $pdo DB接続インスタンス
+ * @param string|null $accountKey アカウントキー
  * @return array 中継結果
  */
-function relayWebhookToProline(string $rawBody, string $signature = '', ?PDO $pdo = null): array {
-    $settings = getProlineSettings($pdo);
+function relayWebhookToProline(string $rawBody, string $signature = '', ?PDO $pdo = null, ?string $accountKey = null): array {
+    $accountKey = $accountKey ?: getActiveAccountKey();
+    $settings = getProlineSettings($pdo, $accountKey);
     $urls = $settings['webhook_urls'] ?? [];
     $enabled = $settings['relay_enabled'] ?? false;
 

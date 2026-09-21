@@ -152,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // 【最優先・最重要】プロライン (ProLine) ＆ 外部ツールへ即座に完全中継（並列プロキシPOST）
     // DB接続や本システム内部エラーの影響を受けないよう、何よりも先に転送を実行
-    $prolineRelayResult = relayWebhookToProline($rawInput, $lineSignature);
+    $prolineRelayResult = relayWebhookToProline($rawInput, $lineSignature, null, $activeAccount);
     writeDebugLog("外部ツール中継実行", $prolineRelayResult);
 
     // 署名検証 (Channel Secretが設定されている場合)
@@ -179,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $prolineSettings = getProlineSettings($db);
+    $prolineSettings = getProlineSettings($db, $activeAccount);
     $isProlineActive = (!empty($prolineSettings['webhook_url']) && $prolineSettings['relay_enabled']);
 
     foreach ($data['events'] as $event) {
