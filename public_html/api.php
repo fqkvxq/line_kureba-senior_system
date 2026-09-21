@@ -208,6 +208,29 @@ try {
             ], JSON_UNESCAPED_UNICODE);
             exit;
 
+        // --- 0-0. システムオンライン更新確認 & 実行 (管理者認証必須) ---
+        case 'check_system_update':
+            $authPass = getAdminAuthPassword($db);
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+            $updateInfo = checkSystemRemoteUpdate();
+            echo json_encode($updateInfo, JSON_UNESCAPED_UNICODE);
+            exit;
+
+        case 'execute_system_update':
+            $authPass = getAdminAuthPassword($db);
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+            // タイムアウトを延長
+            @set_time_limit(300);
+            $updateResult = performSystemSelfUpdate();
+            echo json_encode($updateResult, JSON_UNESCAPED_UNICODE);
+            exit;
+
         // --- 0-2. アカウント詳細情報取得 (編集用・管理者認証必須) ---
         case 'get_account_detail':
             $authPass = getAdminAuthPassword();

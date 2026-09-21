@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260921_browser_notif_v3">
+    <link rel="stylesheet" href="manual.css?v=20260921_system_updater_v4">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -131,7 +131,8 @@
                         <li class="toc-item"><a href="#sec-2fa"><i class="fa-solid fa-shield-halved" style="color:#0284c7;"></i> 16. メール二段階認証（2FA / セキュリティ）</a></li>
                         <li class="toc-item"><a href="#sec-quick-reply"><i class="fa-solid fa-bolt" style="color:#f59e0b;"></i> 17. クイックリプライ管理（画面下部ボタン設定）</a></li>
                         <li class="toc-item"><a href="#sec-server-setup"><i class="fa-solid fa-server" style="color:#10b981;"></i> 18. 他社・別サーバー移行＆初期セットアップ</a></li>
-                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 19. よくある質問・トラブルシューティング</a></li>
+                        <li class="toc-item"><a href="#sec-system-updater"><i class="fa-solid fa-cloud-arrow-down" style="color:#0284c7;"></i> 19. システムオンライン更新（ワンクリックOTAアップデート）</a></li>
+                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 20. よくある質問・トラブルシューティング</a></li>
                     </ul>
                 </div>
             </aside>
@@ -1532,14 +1533,83 @@
                     </div>
                 </section>
 
-                <!-- 19. よくある質問・トラブルシューティング -->
+                <!-- 19. システムオンライン更新（ワンクリックOTAアップデート） -->
+                <section class="manual-section" id="sec-system-updater">
+                    <div class="section-header">
+                        <div class="section-header-icon" style="background: #e0f2fe; color: #0284c7;">
+                            <i class="fa-solid fa-cloud-arrow-down"></i>
+                        </div>
+                        <div class="section-header-text">
+                            <h2>19. システムオンライン更新（ワンクリックOTAアップデート）</h2>
+                            <p>管理画面からワンクリックで最新機能を安全にインストール</p>
+                        </div>
+                    </div>
+
+                    <p class="section-lead">各社・各教室のサーバーに導入されたシステムを、FTPや手動ファイル配置を行わず、管理画面上の「🚀 システム更新」ボタンからワンクリックで最新版に安全に更新できるセルフアップデート（OTA）機能です。</p>
+
+                    <div class="tip-box" style="margin: 16px 0; background: #ecfdf5; border-left: 4px solid #10b981; padding: 12px 16px; border-radius: var(--radius-xs);">
+                        <strong style="color: #065f46;"><i class="fa-solid fa-shield-halved"></i> 既存データ・環境設定の完全保護保証:</strong><br>
+                        システム更新を実行しても、<strong>各社・各教室の受講生データベース（<code>data/*.db</code>）、LINE公式アカウント設定（<code>data/line_accounts.json</code>）、受講生画像（<code>uploads/</code>）</strong> は自動除外・保護されるため、<strong>既存の顧客データや設定が消去・初期化されることは一切ありません</strong>。
+                    </div>
+
+                    <div class="feature-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 18px 0;">
+                        <div class="feature-card" style="background: #ffffff; border: 1px solid var(--gray-200); border-radius: var(--radius-md); padding: 16px;">
+                            <div style="font-size: 20px; color: #0284c7; margin-bottom: 8px;"><i class="fa-solid fa-bell"></i></div>
+                            <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 6px; color: var(--gray-800);">更新の自動検知</h4>
+                            <p style="font-size: 12.5px; color: var(--gray-600); line-height: 1.5; margin: 0;">GitHub公式リポジトリの最新コミットを自動照合。新機能リリース時にヘッダーに赤丸「NEW」バッジを表示します。</p>
+                        </div>
+                        <div class="feature-card" style="background: #ffffff; border: 1px solid var(--gray-200); border-radius: var(--radius-md); padding: 16px;">
+                            <div style="font-size: 20px; color: #059669; margin-bottom: 8px;"><i class="fa-solid fa-bolt"></i></div>
+                            <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 6px; color: var(--gray-800);">ワンクリック自動更新</h4>
+                            <p style="font-size: 12.5px; color: var(--gray-600); line-height: 1.5; margin: 0;">ボタン1つで最新ZIPパッケージのダウンロード・解凍・安全ファイル上書きが完了します。</p>
+                        </div>
+                        <div class="feature-card" style="background: #ffffff; border: 1px solid var(--gray-200); border-radius: var(--radius-md); padding: 16px;">
+                            <div style="font-size: 20px; color: #9333ea; margin-bottom: 8px;"><i class="fa-solid fa-database"></i></div>
+                            <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 6px; color: var(--gray-800);">DB自動マイグレーション</h4>
+                            <p style="font-size: 12.5px; color: var(--gray-600); line-height: 1.5; margin: 0;">新機能で必要なテーブルやカラムの追加も更新時に完全自動で実行されます。</p>
+                        </div>
+                    </div>
+
+                    <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <div class="step-body">
+                                <h4>管理画面右上の「システム更新」ボタンをクリック</h4>
+                                <p>管理画面ヘッダー右上の青色ボタン「<i class="fa-solid fa-cloud-arrow-down"></i> システム更新」またはツールバーのボタンをクリックします。</p>
+                            </div>
+                        </div>
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <div class="step-body">
+                                <h4>現在のバージョンと最新コミット内容を確認</h4>
+                                <p>更新モーダルが開き、現在のバージョン・コミットIDと、リモートでリリースされた最新バージョンの更新内容・コミットログが表示されます。</p>
+                            </div>
+                        </div>
+                        <div class="step-card">
+                            <div class="step-number">3</div>
+                            <div class="step-body">
+                                <h4>「今すぐシステムを更新」をクリック</h4>
+                                <p>確認ダイアログで「OK」を選択すると、自動更新シーケンスが開始されます。進捗プログレスバーが表示され、自動で最新ファイルが反映されます。</p>
+                            </div>
+                        </div>
+                        <div class="step-card">
+                            <div class="step-number">4</div>
+                            <div class="step-body">
+                                <h4>更新完了 & 自動リロード</h4>
+                                <p>「システム更新が完了しました！」のメッセージ後、3秒でブラウザが自動再読み込みされ、最新バージョンが即座に適用されます。</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 20. よくある質問・トラブルシューティング -->
                 <section class="manual-section" id="sec-faq">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #fef2f2; color: #ef4444;">
                             <i class="fa-solid fa-circle-question"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>19. よくある質問・トラブルシューティング</h2>
+                            <h2>20. よくある質問・トラブルシューティング</h2>
                             <p>困ったときの解決方法</p>
                         </div>
                     </div>
@@ -1725,6 +1795,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_browser_notif_v3"></script>
+    <script src="manual.js?v=20260921_system_updater_v4"></script>
 </body>
 </html>

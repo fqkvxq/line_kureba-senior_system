@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260921_browser_notif_v3">
+    <link rel="stylesheet" href="admin.css?v=20260921_system_updater_v4">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -95,6 +95,13 @@
                         </button>
                     </div>
 
+                    <!-- システムオンライン更新ボタン -->
+                    <button type="button" class="btn-system-update" id="btnOpenSystemUpdateModal" title="システムの最新バージョン確認・オンラインアップデート" style="position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; font-size: 13px; font-weight: 700; color: #fff; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35); transition: all 0.2s ease;">
+                        <i class="fa-solid fa-cloud-arrow-down"></i>
+                        <span>システム更新</span>
+                        <span class="update-pulse-dot" id="headerUpdatePulseDot" style="display: none; position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; background: #ef4444; border: 2px solid #fff; border-radius: 50%;"></span>
+                    </button>
+
                     <button class="btn-logout" id="logoutBtn" title="ログアウト">
                         <i class="fa-solid fa-arrow-right-from-bracket"></i>
                     </button>
@@ -105,6 +112,9 @@
             <div class="admin-header-actions">
                 <!-- 連携・通知設定グループ -->
                 <div class="header-action-group">
+                    <button type="button" class="btn-hdr-action btn-hdr-updater" id="btnToolbarSystemUpdate" title="システムの最新アップデートを確認・実行します" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd; font-weight: 700;">
+                        <i class="fa-solid fa-cloud-arrow-down" style="color: #0284c7;"></i> システム更新 <span class="badge-new-update" id="toolbarUpdateBadge" style="display: none; background: #ef4444; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 10px; margin-left: 2px;">NEW</span>
+                    </button>
                     <button type="button" class="btn-hdr-action btn-hdr-browser-notif" id="btnToggleBrowserNotif" onclick="window.toggleBrowserNotification && window.toggleBrowserNotification()" title="新着LINEメッセージ受信時のPCブラウザ通知（デスクトップポップアップ＆チャイム音）">
                         <i class="fa-solid fa-bell" id="iconBrowserNotif" style="color: #64748b;"></i> <span id="labelBrowserNotif">ブラウザ通知: OFF</span>
                     </button>
@@ -2231,7 +2241,87 @@
         </div>
     </div>
 
+    <!-- システム更新モーダル -->
+    <div class="modal-overlay" id="systemUpdateModal" style="display: none; z-index: 1300;">
+        <div class="modal-card" style="max-width: 680px; width: 95%;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #fff;">
+                <h3 style="color: #fff; display: flex; align-items: center; gap: 8px; font-size: 16px;">
+                    <i class="fa-solid fa-cloud-arrow-down"></i> システムオンライン更新 (OTAアップデート)
+                </h3>
+                <button class="modal-close" id="closeSystemUpdateModalBtn" style="color: #fff;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <!-- ステータス概要ボックス -->
+                <div class="update-status-panel" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 16px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div style="background: #fff; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                            <div style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 4px;">現在のシステムバージョン</div>
+                            <div style="font-size: 18px; font-weight: 800; color: #0f172a;" id="updateCurrentVersion">v2.5.0</div>
+                            <div style="font-size: 11px; color: #94a3b8;" id="updateCurrentCommit">コミット: 読込中...</div>
+                        </div>
+                        <div style="background: #fff; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                            <div style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 4px;">GitHub最新リモートバージョン</div>
+                            <div style="font-size: 18px; font-weight: 800; color: #0284c7;" id="updateRemoteVersion">確認中...</div>
+                            <div style="font-size: 11px; color: #94a3b8;" id="updateRemoteCommit">コミット: 確認中...</div>
+                        </div>
+                    </div>
+
+                    <!-- 判定ステータスメッセージ -->
+                    <div id="updateStatusAlert" style="padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
+                        <i class="fa-solid fa-spinner fa-spin" id="updateStatusIcon"></i>
+                        <span id="updateStatusText">最新の更新情報をチェックしています...</span>
+                    </div>
+                </div>
+
+                <!-- 最新更新内容・コミット情報 -->
+                <div id="updateCommitDetailsWrap" style="display: none; margin-bottom: 16px;">
+                    <div style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+                        <span><i class="fa-solid fa-code-commit" style="color: #6366f1;"></i> 最新リリースの更新内容:</span>
+                        <span style="font-size: 11px; color: #64748b;" id="updateRemoteDate"></span>
+                    </div>
+                    <div style="background: #1e293b; color: #f8fafc; padding: 12px 14px; border-radius: 8px; font-size: 12px; line-height: 1.6; font-family: monospace; max-height: 120px; overflow-y: auto; white-space: pre-wrap;" id="updateCommitMessage">
+                        - 
+                    </div>
+                </div>
+
+                <!-- 安心保護ポリシー -->
+                <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 12px; color: #065f46; line-height: 1.5;">
+                    <div style="font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                        <i class="fa-solid fa-shield-halved"></i> 既存データ・環境設定の保護保証
+                    </div>
+                    <p style="margin: 0; font-size: 11.5px;">
+                        システム更新を行っても、<strong>各社・各教室の顧客データベース（受講生・カルテ・点検履歴）、LINEアカウント設定、アップロード画像</strong> は完全に保護され、上書き・消去されることは一切ありません。
+                    </p>
+                </div>
+
+                <!-- プログレス / 実行ログ表示 -->
+                <div id="updateProgressWrap" style="display: none; margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: #0284c7; margin-bottom: 6px;">
+                        <span id="updateProgressStep">更新ファイルをダウンロード中...</span>
+                        <span id="updateProgressPercent">0%</span>
+                    </div>
+                    <div style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-bottom: 10px;">
+                        <div id="updateProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #0284c7, #38bdf8); transition: width 0.3s ease;"></div>
+                    </div>
+                    <div id="updateLogBox" style="background: #0f172a; color: #38bdf8; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 11px; height: 90px; overflow-y: auto; line-height: 1.4;">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 14px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                <button type="button" class="btn-cancel" id="btnRefreshUpdateCheck" style="font-size: 12px; display: inline-flex; align-items: center; gap: 5px;">
+                    <i class="fa-solid fa-arrows-rotate"></i> 更新を再チェック
+                </button>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn-cancel" id="closeSystemUpdateModalFooterBtn">閉じる</button>
+                    <button type="button" class="btn-primary" id="btnExecuteSystemUpdate" disabled style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border-color: #0284c7; padding: 9px 20px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-cloud-arrow-down"></i> 今すぐシステムを更新
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- チャットモーダル直接起動フェイルセーフ (キャッシュ影響防止) -->
-    <script src="admin.js?v=20260921_browser_notif_v3"></script>
+    <script src="admin.js?v=20260921_system_updater_v4"></script>
 </body>
 </html>

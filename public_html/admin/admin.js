@@ -470,6 +470,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initSlackSettings();
     init2FASettings();
     initQuickReplySettings();
+    initSystemUpdater();
     updateBrowserNotifUi();
     if (!globalChatUnreadTimer) {
         globalChatUnreadTimer = setInterval(loadUnreadChatCounts, 10000);
@@ -7551,6 +7552,278 @@ function openEditModalByIndex(idx) {
     }
 }
 
+// ==============================================================================
+// 🚀 システムオンライン更新 (OTAアップデーター) 機能
+// ==============================================================================
+let isSystemUpdateInProgress = false;
+
+function initSystemUpdater() {
+    const btnHeader = document.getElementById('btnOpenSystemUpdateModal');
+    const btnToolbar = document.getElementById('btnToolbarSystemUpdate');
+    const modal = document.getElementById('systemUpdateModal');
+    const btnClose = document.getElementById('closeSystemUpdateModalBtn');
+    const btnCloseFooter = document.getElementById('closeSystemUpdateModalFooterBtn');
+    const btnRefresh = document.getElementById('btnRefreshUpdateCheck');
+    const btnExecute = document.getElementById('btnExecuteSystemUpdate');
+
+    if (!modal) return;
+
+    const openModal = () => {
+        modal.style.display = 'flex';
+        checkSystemUpdate(false);
+    };
+
+    const closeModal = () => {
+        if (isSystemUpdateInProgress) {
+            if (!confirm('システム更新が実行中です。途中で閉じると更新が不完全になる可能性があります。本当に閉じますか？')) {
+                return;
+            }
+        }
+        modal.style.display = 'none';
+    };
+
+    if (btnHeader) btnHeader.addEventListener('click', openModal);
+    if (btnToolbar) btnToolbar.addEventListener('click', openModal);
+    if (btnClose) btnClose.addEventListener('click', closeModal);
+    if (btnCloseFooter) btnCloseFooter.addEventListener('click', closeModal);
+
+    if (btnRefresh) {
+        btnRefresh.addEventListener('click', () => {
+            checkSystemUpdate(false);
+        });
+    }
+
+    if (btnExecute) {
+        btnExecute.addEventListener('click', () => {
+            executeSystemUpdate();
+        });
+    }
+
+    // 起動時にサイレントで更新チェック (1回)
+    setTimeout(() => {
+        checkSystemUpdate(true);
+    }, 2500);
+}
+
+/**
+ * リモートの最新更新情報をチェック
+ * @param {boolean} isSilent - trueの場合はエラーや通知トーストを表示せずバッジのみ更新
+ */
+async function checkSystemUpdate(isSilent = false) {
+    const currentVerEl = document.getElementById('updateCurrentVersion');
+    const currentCommitEl = document.getElementById('updateCurrentCommit');
+    const remoteVerEl = document.getElementById('updateRemoteVersion');
+    const remoteCommitEl = document.getElementById('updateRemoteCommit');
+    const alertBox = document.getElementById('updateStatusAlert');
+    const alertIcon = document.getElementById('updateStatusIcon');
+    const alertText = document.getElementById('updateStatusText');
+    const commitWrap = document.getElementById('updateCommitDetailsWrap');
+    const commitMsgEl = document.getElementById('updateCommitMessage');
+    const remoteDateEl = document.getElementById('updateRemoteDate');
+    const btnExecute = document.getElementById('btnExecuteSystemUpdate');
+    const headerPulseDot = document.getElementById('headerUpdatePulseDot');
+    const toolbarBadge = document.getElementById('toolbarUpdateBadge');
+
+    if (!isSilent && alertBox) {
+        alertBox.style.background = '#e0f2fe';
+        alertBox.style.borderColor = '#bae6fd';
+        alertBox.style.color = '#0369a1';
+        if (alertIcon) alertIcon.className = 'fa-solid fa-spinner fa-spin';
+        if (alertText) alertText.textContent = '最新の更新情報をチェックしています...';
+        if (btnExecute) btnExecute.disabled = true;
+    }
+
+    try {
+        const res = await fetch(`../api.php?action=check_system_update&account=${encodeURIComponent(state.activeAccount)}`);
+        const data = await res.json();
+
+        if (!data.success) {
+            throw new Error(data.error || '更新チェックに失敗しました');
+        }
+
+        // ローカルバージョン情報の反映
+        const local = data.local || {};
+        if (currentVerEl) currentVerEl.textContent = `v${local.version || '2.5.0'}`;
+        if (currentCommitEl) {
+            const shortC = local.commit ? local.commit.substring(0, 7) : '不明';
+            currentCommitEl.textContent = `コミット: ${shortC} (${local.updated_at ? local.updated_at.split(' ')[0] : '標準版'})`;
+        }
+
+        // リモートバージョン情報の反映
+        const remote = data.remote || {};
+        if (remoteVerEl) remoteVerEl.textContent = `v${remote.version || local.version || '2.5.0'}`;
+        if (remoteCommitEl) {
+            const shortR = remote.commit ? remote.commit.substring(0, 7) : '未検出';
+            remoteCommitEl.textContent = `最新コミット: ${shortR}`;
+        }
+        if (remoteDateEl && remote.commit_date) {
+            remoteDateEl.textContent = `更新日: ${remote.commit_date}`;
+        }
+        if (commitMsgEl && remote.commit_message) {
+            commitMsgEl.textContent = remote.commit_message;
+        }
+
+        // アップデート有無の判定
+        if (data.has_update) {
+            if (headerPulseDot) headerPulseDot.style.display = 'block';
+            if (toolbarBadge) toolbarBadge.style.display = 'inline-block';
+            if (commitWrap) commitWrap.style.display = 'block';
+
+            if (alertBox) {
+                alertBox.style.background = '#fef3c7';
+                alertBox.style.borderColor = '#fde68a';
+                alertBox.style.color = '#92400e';
+            }
+            if (alertIcon) alertIcon.className = 'fa-solid fa-bell';
+            if (alertText) {
+                alertText.innerHTML = `<strong>🚀 新しいアップデートが利用可能です！</strong>（${escapeHtml(remote.commit ? remote.commit.substring(0, 7) : '')}）`;
+            }
+            if (btnExecute) {
+                btnExecute.disabled = false;
+                btnExecute.innerHTML = '<i class="fa-solid fa-cloud-arrow-down"></i> 今すぐシステムを更新';
+            }
+        } else {
+            if (headerPulseDot) headerPulseDot.style.display = 'none';
+            if (toolbarBadge) toolbarBadge.style.display = 'none';
+            if (commitWrap) commitWrap.style.display = remote.commit_message ? 'block' : 'none';
+
+            if (alertBox) {
+                alertBox.style.background = '#ecfdf5';
+                alertBox.style.borderColor = '#a7f3d0';
+                alertBox.style.color = '#065f46';
+            }
+            if (alertIcon) alertIcon.className = 'fa-solid fa-circle-check';
+            if (alertText) {
+                alertText.innerHTML = '<strong>✅ お使いのシステムは最新バージョンです</strong>（更新の必要はありません）';
+            }
+            if (btnExecute) {
+                btnExecute.disabled = true;
+                btnExecute.innerHTML = '<i class="fa-solid fa-check"></i> 最新版が適用済みです';
+            }
+        }
+    } catch (e) {
+        console.error('System update check error:', e);
+        if (!isSilent) {
+            if (alertBox) {
+                alertBox.style.background = '#fee2e2';
+                alertBox.style.borderColor = '#fecaca';
+                alertBox.style.color = '#b91c1c';
+            }
+            if (alertIcon) alertIcon.className = 'fa-solid fa-triangle-exclamation';
+            if (alertText) {
+                alertText.textContent = `更新情報の取得に失敗しました: ${e.message}`;
+            }
+            if (btnExecute) btnExecute.disabled = true;
+        }
+    }
+}
+
+/**
+ * オンライン更新を実行
+ */
+async function executeSystemUpdate() {
+    if (isSystemUpdateInProgress) return;
+
+    const ok = confirm(
+        "【システム更新の確認】\n\n" +
+        "最新のシステムファイルをダウンロードし、自動アップデートを実行します。\n" +
+        "※各社の顧客データベース・設定・画像は安全に保護され保持されます。\n\n" +
+        "更新を開始してもよろしいですか？"
+    );
+    if (!ok) return;
+
+    isSystemUpdateInProgress = true;
+    const btnExecute = document.getElementById('btnExecuteSystemUpdate');
+    const btnCloseFooter = document.getElementById('closeSystemUpdateModalFooterBtn');
+    const btnRefresh = document.getElementById('btnRefreshUpdateCheck');
+    const progressWrap = document.getElementById('updateProgressWrap');
+    const progressStep = document.getElementById('updateProgressStep');
+    const progressPercent = document.getElementById('updateProgressPercent');
+    const progressBar = document.getElementById('updateProgressBar');
+    const logBox = document.getElementById('updateLogBox');
+
+    if (btnExecute) {
+        btnExecute.disabled = true;
+        btnExecute.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> アップデート実行中...';
+    }
+    if (btnCloseFooter) btnCloseFooter.disabled = true;
+    if (btnRefresh) btnRefresh.disabled = true;
+    if (progressWrap) progressWrap.style.display = 'block';
+
+    const appendLog = (msg) => {
+        if (!logBox) return;
+        const line = document.createElement('div');
+        line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        logBox.appendChild(line);
+        logBox.scrollTop = logBox.scrollHeight;
+    };
+
+    const setProgress = (percent, stepText) => {
+        if (progressBar) progressBar.style.width = `${percent}%`;
+        if (progressPercent) progressPercent.textContent = `${percent}%`;
+        if (progressStep) progressStep.textContent = stepText;
+    };
+
+    try {
+        appendLog('🚀 システム自動更新シーケンスを開始します...');
+        setProgress(15, '最新パッケージをGitHubより取得中...');
+
+        const updateTimer = setTimeout(() => {
+            setProgress(45, 'ZIPパッケージを展開・差分検証中...');
+            appendLog('📦 パッケージアーカイブを展開中...');
+        }, 1200);
+
+        const updateTimer2 = setTimeout(() => {
+            setProgress(75, '保護ファイルを除外して安全上書き中...');
+            appendLog('🛡️ 顧客データベース・個別設定・画像を保護しています...');
+        }, 2800);
+
+        const res = await fetch(`../api.php?action=execute_system_update&account=${encodeURIComponent(state.activeAccount)}`, {
+            method: 'POST'
+        });
+        clearTimeout(updateTimer);
+        clearTimeout(updateTimer2);
+
+        const data = await res.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'システム更新処理でエラーが発生しました');
+        }
+
+        setProgress(90, 'データベーススキーマの自動マイグレーション実行中...');
+        appendLog(`📂 上書き更新完了: ${data.updated_files_count || 0} ファイルを更新しました`);
+
+        if (Array.isArray(data.migrations) && data.migrations.length > 0) {
+            data.migrations.forEach(m => appendLog(`⚡ DBマイグレーション: ${m}`));
+        }
+
+        setProgress(100, '更新完了！画面を再読み込みします...');
+        appendLog(`✨ システム更新成功！ 現在バージョン: v${data.current_version || '2.5.0'} (${data.current_commit ? data.current_commit.substring(0, 7) : ''})`);
+        appendLog('🔄 3秒後にブラウザを自動リフレッシュして新バージョンを適用します...');
+
+        showToast('🎉 システムの最新アップデートが完了しました！');
+
+        // 3秒後に自動リロード
+        setTimeout(() => {
+            window.location.reload(true);
+        }, 3000);
+
+    } catch (e) {
+        console.error('Update execution failed:', e);
+        isSystemUpdateInProgress = false;
+        setProgress(0, 'アップデート失敗');
+        appendLog(`❌ エラー: ${e.message}`);
+        alert(`システム更新に失敗しました:\n${e.message}`);
+
+        if (btnExecute) {
+            btnExecute.disabled = false;
+            btnExecute.innerHTML = '<i class="fa-solid fa-cloud-arrow-down"></i> 再試行';
+        }
+        if (btnCloseFooter) btnCloseFooter.disabled = false;
+        if (btnRefresh) btnRefresh.disabled = false;
+    }
+}
+
 // グローバルスコープ公開
 window.filterByTag = filterByTag;
 window.toggleCustomerSelection = toggleCustomerSelection;
@@ -7562,6 +7835,10 @@ window.appendTagToBulkInput = appendTagToBulkInput;
 window.appendTagToEditInput = appendTagToEditInput;
 window.executeBulkTagUpdate = executeBulkTagUpdate;
 window.openEditModalByIndex = openEditModalByIndex;
+window.initSystemUpdater = initSystemUpdater;
+window.checkSystemUpdate = checkSystemUpdate;
+window.executeSystemUpdate = executeSystemUpdate;
+
 
 
 

@@ -1,0 +1,8 @@
+{
+  "version": "2.5.0",
+  "build_date": "2026-09-21 19:15:00",
+  "branch": "main",
+  "commit_hash": "19e27f4",
+  "commit_message": "feat: LINE友だちメッセージ表示の自己修復同期処理およびPCブラウザ通知機能を実装",
+  "updated_at": "2026-09-21 19:15:00"
+}

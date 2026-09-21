@@ -18,6 +18,12 @@ $CURRENT_ACTIVE_LINE_ACCOUNT_KEY = null;
 define('LINE_ACCOUNTS_DATA_DIR', __DIR__ . '/data');
 define('LINE_ACCOUNTS_DATA_FILE', LINE_ACCOUNTS_DATA_DIR . '/line_accounts.json');
 
+// --- システムバージョン & 配布リポジトリ定義 (OTA自動更新用) ---
+define('SYSTEM_CURRENT_VERSION', '2.5.0');
+define('SYSTEM_BUILD_DATE', '2026-09-21');
+define('SYSTEM_GITHUB_REPO', 'fqkvxq/line_kureba-senior_system');
+define('SYSTEM_GITHUB_BRANCH', 'main');
+
 // 業種別プリセット定義（各種ビジネス向け項目名・期日名マッピング）
 global $INDUSTRY_PRESETS;
 $INDUSTRY_PRESETS = [
@@ -5628,5 +5634,350 @@ function generateSeniorKnowledgeFlexMessage(string $topicId, bool $attachQuickRe
     }
 
     return $msg;
+}
+
+/**
+ * 現在のローカルシステムバージョン情報を取得
+ */
+function getSystemLocalVersionInfo(): array {
+    $versionFile = __DIR__ . '/data/version.json';
+    if (file_exists($versionFile)) {
+        $content = @file_get_contents($versionFile);
+        $json = json_decode((string)$content, true);
+        if (is_array($json)) {
+            return array_merge([
+                'version' => defined('SYSTEM_CURRENT_VERSION') ? SYSTEM_CURRENT_VERSION : '2.5.0',
+                'build_date' => defined('SYSTEM_BUILD_DATE') ? SYSTEM_BUILD_DATE : date('Y-m-d'),
+                'commit_hash' => 'unknown',
+                'commit_message' => 'ローカル稼働中',
+                'updated_at' => date('Y-m-d H:i:s')
+            ], $json);
+        }
+    }
+    return [
+        'version' => defined('SYSTEM_CURRENT_VERSION') ? SYSTEM_CURRENT_VERSION : '2.5.0',
+        'build_date' => defined('SYSTEM_BUILD_DATE') ? SYSTEM_BUILD_DATE : date('Y-m-d'),
+        'commit_hash' => 'installed',
+        'commit_message' => '初期インストールバージョン',
+        'updated_at' => date('Y-m-d H:i:s')
+    ];
+}
+
+/**
+ * GitHubリポジトリ上の最新アップデート情報を確認
+ */
+function checkSystemRemoteUpdate(): array {
+    $local = getSystemLocalVersionInfo();
+    $repo = defined('SYSTEM_GITHUB_REPO') ? SYSTEM_GITHUB_REPO : 'fqkvxq/line_kureba-senior_system';
+    $branch = defined('SYSTEM_GITHUB_BRANCH') ? SYSTEM_GITHUB_BRANCH : 'main';
+
+    $url = "https://api.github.com/repos/{$repo}/commits/{$branch}";
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 8,
+        CURLOPT_HTTPHEADER => [
+            'User-Agent: KurebaSystemUpdater/2.5',
+            'Accept: application/vnd.github.v3+json'
+        ],
+        CURLOPT_SSL_VERIFYPEER => true
+    ]);
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    $remoteData = json_decode((string)$res, true);
+
+    if ($httpCode !== 200 || empty($remoteData) || !isset($remoteData['sha'])) {
+        // レート制限等のフォールバック: raw GitHubからversion.jsonを直接取得
+        $rawUrl = "https://raw.githubusercontent.com/{$repo}/{$branch}/public_html/data/version.json";
+        $rawCh = curl_init($rawUrl);
+        curl_setopt_array($rawCh, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 6,
+            CURLOPT_HTTPHEADER => ['User-Agent: KurebaSystemUpdater/2.5'],
+            CURLOPT_SSL_VERIFYPEER => true
+        ]);
+        $rawRes = curl_exec($rawCh);
+        $rawCode = curl_getinfo($rawCh, CURLINFO_HTTP_CODE);
+        curl_close($rawCh);
+
+        if ($rawCode === 200 && !empty($rawRes)) {
+            $rawJson = json_decode((string)$rawRes, true);
+            if (is_array($rawJson)) {
+                $remoteSha = $rawJson['commit_hash'] ?? 'latest';
+                $hasUpdate = ($remoteSha !== $local['commit_hash']);
+                return [
+                    'success' => true,
+                    'has_update' => $hasUpdate,
+                    'current' => $local,
+                    'remote' => [
+                        'version' => $rawJson['version'] ?? 'latest',
+                        'commit_hash' => $remoteSha,
+                        'commit_message' => $rawJson['commit_message'] ?? '最新の機能更新',
+                        'date' => $rawJson['updated_at'] ?? date('Y-m-d H:i:s'),
+                        'recent_commits' => []
+                    ],
+                    'check_method' => 'raw_fallback'
+                ];
+            }
+        }
+
+        return [
+            'success' => false,
+            'has_update' => false,
+            'current' => $local,
+            'error' => $curlErr ?: "GitHub API通信エラー (HTTP {$httpCode})"
+        ];
+    }
+
+    $remoteSha = substr((string)$remoteData['sha'], 0, 7);
+    $fullSha = (string)$remoteData['sha'];
+    $remoteDate = isset($remoteData['commit']['committer']['date']) 
+        ? date('Y-m-d H:i:s', strtotime($remoteData['commit']['committer']['date'])) 
+        : date('Y-m-d H:i:s');
+    $commitMsg = $remoteData['commit']['message'] ?? '最新版の更新';
+
+    // 直近のコミット一覧（リリースノート用）を5件取得
+    $recentCommits = [];
+    $listUrl = "https://api.github.com/repos/{$repo}/commits?sha={$branch}&per_page=5";
+    $chList = curl_init($listUrl);
+    curl_setopt_array($chList, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 6,
+        CURLOPT_HTTPHEADER => [
+            'User-Agent: KurebaSystemUpdater/2.5',
+            'Accept: application/vnd.github.v3+json'
+        ],
+        CURLOPT_SSL_VERIFYPEER => true
+    ]);
+    $resList = curl_exec($chList);
+    curl_close($chList);
+    $commitsData = json_decode((string)$resList, true);
+    if (is_array($commitsData)) {
+        foreach ($commitsData as $cItem) {
+            $recentCommits[] = [
+                'sha' => substr((string)$cItem['sha'], 0, 7),
+                'message' => explode("\n", $cItem['commit']['message'] ?? '')[0],
+                'date' => date('Y-m-d H:i', strtotime($cItem['commit']['committer']['date'] ?? 'now')),
+                'author' => $cItem['commit']['author']['name'] ?? 'Maintainer'
+            ];
+        }
+    }
+
+    $localSha = $local['commit_hash'] ?? '';
+    $hasUpdate = ($localSha !== $remoteSha && $localSha !== $fullSha);
+
+    return [
+        'success' => true,
+        'has_update' => $hasUpdate,
+        'current' => $local,
+        'remote' => [
+            'commit_hash' => $remoteSha,
+            'full_hash' => $fullSha,
+            'commit_message' => explode("\n", $commitMsg)[0],
+            'date' => $remoteDate,
+            'recent_commits' => $recentCommits
+        ],
+        'repo' => $repo,
+        'branch' => $branch,
+        'checked_at' => date('Y-m-d H:i:s')
+    ];
+}
+
+/**
+ * オンラインアップデート実行
+ * 
+ * GitHubから最新のZIPアーカイブを取得し、データベースや個別設定を保護しながら
+ * システムファイルを安全に上書き更新し、DBマイグレーションを実行します。
+ */
+function performSystemSelfUpdate(?string $targetBranch = 'main', ?PDO $db = null): array {
+    // 実行時間制限を延長
+    @set_time_limit(300);
+    @ini_set('max_execution_time', '300');
+
+    $repo = defined('SYSTEM_GITHUB_REPO') ? SYSTEM_GITHUB_REPO : 'fqkvxq/line_kureba-senior_system';
+    $branch = $targetBranch ?: (defined('SYSTEM_GITHUB_BRANCH') ? SYSTEM_GITHUB_BRANCH : 'main');
+
+    $tmpDir = __DIR__ . '/uploads/tmp_update_' . date('YmdHis');
+    $zipFile = __DIR__ . '/uploads/update_pkg.zip';
+
+    if (!is_dir(__DIR__ . '/uploads')) {
+        @mkdir(__DIR__ . '/uploads', 0755, true);
+    }
+
+    // 1. 最新ZIPアーカイブのダウンロード
+    $zipUrl = "https://github.com/{$repo}/archive/refs/heads/{$branch}.zip";
+    $ch = curl_init($zipUrl);
+    $fp = fopen($zipFile, 'wb');
+    if (!$fp) {
+        return ['success' => false, 'error' => '一時ファイルの作成に失敗しました。uploadsディレクトリの書き込み権限をご確認ください。'];
+    }
+
+    curl_setopt_array($ch, [
+        CURLOPT_FILE => $fp,
+        CURLOPT_TIMEOUT => 60,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTPHEADER => ['User-Agent: KurebaSystemUpdater/2.5'],
+        CURLOPT_SSL_VERIFYPEER => true
+    ]);
+    curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    fclose($fp);
+    curl_close($ch);
+
+    if ($httpCode !== 200 || filesize($zipFile) < 1000) {
+        @unlink($zipFile);
+        return ['success' => false, 'error' => "アップデートZIPのダウンロードに失敗しました (HTTP {$httpCode}) " . $curlErr];
+    }
+
+    // 2. ZIPの解凍
+    if (!class_exists('ZipArchive')) {
+        @unlink($zipFile);
+        return ['success' => false, 'error' => 'サーバーのPHP環境で ZipArchive 拡張機能が有効になっていません。'];
+    }
+
+    $zip = new ZipArchive();
+    if ($zip->open($zipFile) !== true) {
+        @unlink($zipFile);
+        return ['success' => false, 'error' => 'ダウンロードしたZIPファイルの展開に失敗しました。'];
+    }
+
+    @mkdir($tmpDir, 0755, true);
+    $zip->extractTo($tmpDir);
+    $zip->close();
+    @unlink($zipFile);
+
+    // ZIP内のルートディレクトリを特定 (例: line_kureba-senior_system-main/)
+    $extractedItems = scandir($tmpDir);
+    $innerRoot = $tmpDir;
+    foreach ($extractedItems as $item) {
+        if ($item !== '.' && $item !== '..' && is_dir($tmpDir . '/' . $item)) {
+            $innerRoot = $tmpDir . '/' . $item;
+            break;
+        }
+    }
+
+    // 3. ファイル上書き処理（保護リストの適用）
+    $sourcePublicHtml = is_dir($innerRoot . '/public_html') ? $innerRoot . '/public_html' : $innerRoot;
+    $targetPublicHtml = __DIR__;
+
+    $updatedFiles = [];
+    $protectedFiles = [];
+
+    // 再帰的コピー関数（安全除外ロジック付き）
+    $copyDirectorySafe = function ($src, $dst, $relPath = '') use (&$copyDirectorySafe, &$updatedFiles, &$protectedFiles) {
+        if (!is_dir($dst)) {
+            @mkdir($dst, 0755, true);
+        }
+        $dir = opendir($src);
+        if (!$dir) return;
+
+        while (($file = readdir($dir)) !== false) {
+            if ($file === '.' || $file === '..') continue;
+            
+            $srcPath = $src . '/' . $file;
+            $dstPath = $dst . '/' . $file;
+            $currentRel = trim($relPath . '/' . $file, '/');
+
+            // --- 保護除外ルール (絶対に上書き・削除しない) ---
+            // 1. データベースファイル (*.db, *.sqlite)
+            if (preg_match('/\.(db|sqlite)$/i', $file)) {
+                $protectedFiles[] = $currentRel . ' (データベース保護)';
+                continue;
+            }
+            // 2. data/ ディレクトリ内の既存アカウント設定やデータベース
+            if (str_starts_with($currentRel, 'data/') && file_exists($dstPath)) {
+                if ($file !== 'version.json') {
+                    $protectedFiles[] = $currentRel . ' (個別設定データ保護)';
+                    continue;
+                }
+            }
+            // 3. uploads/ ディレクトリ内の既存アップロード画像・メディア
+            if (str_starts_with($currentRel, 'uploads/') && file_exists($dstPath)) {
+                $protectedFiles[] = $currentRel . ' (アップロード画像保護)';
+                continue;
+            }
+            // 4. config.php は既存のバックアップを作成してから上書き
+            if ($currentRel === 'config.php' && file_exists($dstPath)) {
+                @copy($dstPath, $dstPath . '.bak.' . date('YmdHis'));
+            }
+
+            if (is_dir($srcPath)) {
+                $copyDirectorySafe($srcPath, $dstPath, $currentRel);
+            } else {
+                if (@copy($srcPath, $dstPath)) {
+                    $updatedFiles[] = $currentRel;
+                }
+            }
+        }
+        closedir($dir);
+    };
+
+    // public_html の更新
+    $copyDirectorySafe($sourcePublicHtml, $targetPublicHtml);
+
+    // batch ディレクトリの更新 (存在する場合)
+    $sourceBatch = is_dir($innerRoot . '/batch') ? $innerRoot . '/batch' : null;
+    $targetBatch = dirname(__DIR__) . '/batch';
+    if ($sourceBatch && is_dir($targetBatch)) {
+        $copyDirectorySafe($sourceBatch, $targetBatch, 'batch');
+    }
+
+    // 4. 一時ディレクトリの完全削除
+    $deleteDirRecursive = function ($dirPath) use (&$deleteDirRecursive) {
+        if (!is_dir($dirPath)) return;
+        $files = array_diff(scandir($dirPath), ['.', '..']);
+        foreach ($files as $file) {
+            $p = $dirPath . '/' . $file;
+            is_dir($p) ? $deleteDirRecursive($p) : @unlink($p);
+        }
+        @rmdir($dirPath);
+    };
+    $deleteDirRecursive($tmpDir);
+
+    // 5. データベース自動マイグレーション実行
+    try {
+        if ($db === null) {
+            $db = getDbConnection();
+        }
+        initDatabaseSchema($db);
+    } catch (Throwable $e) {
+        writeDebugLog("アップデート時DBマイグレーション例外", ['error' => $e->getMessage()]);
+    }
+
+    // 6. 最新のリモート情報を取得して version.json を更新
+    $remoteInfo = checkSystemRemoteUpdate();
+    $newCommit = $remoteInfo['remote']['commit_hash'] ?? 'latest';
+    $newDate = $remoteInfo['remote']['date'] ?? date('Y-m-d H:i:s');
+    $newMsg = $remoteInfo['remote']['commit_message'] ?? '最新アップデート適用済み';
+
+    $versionData = [
+        'version' => defined('SYSTEM_CURRENT_VERSION') ? SYSTEM_CURRENT_VERSION : '2.5.0',
+        'build_date' => $newDate,
+        'branch' => $branch,
+        'commit_hash' => $newCommit,
+        'commit_message' => $newMsg,
+        'updated_at' => date('Y-m-d H:i:s'),
+        'updated_files_count' => count($updatedFiles)
+    ];
+    @file_put_contents(__DIR__ . '/data/version.json', json_encode($versionData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+    writeDebugLog("システムアップデート完了", [
+        'commit' => $newCommit,
+        'updated_count' => count($updatedFiles),
+        'protected_count' => count($protectedFiles)
+    ]);
+
+    return [
+        'success' => true,
+        'message' => "システムを最新版 ({$newCommit}) へ正常にアップデートしました！",
+        'version_info' => $versionData,
+        'updated_files_count' => count($updatedFiles),
+        'protected_files_count' => count($protectedFiles)
+    ];
 }
 
