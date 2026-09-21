@@ -19,7 +19,7 @@ define('SHOP_NAME', 'アップファーレン');
 define('SHOP_GOO_URL', 'https://www.goo-net.com/usedcar_shop/0601492/stock.html');
 
 // データベースファイルへのパス
-define('DB_PATH', __DIR__ . '/../batch/cars.db');
+define('DB_PATH', __DIR__ . '/../batch/kureba-senior-system.db');
 
 /**
  * データベース接続オブジェクト (PDO) を取得
@@ -28,7 +28,7 @@ define('DB_PATH', __DIR__ . '/../batch/cars.db');
 function getDbConnection(): PDO {
     $dbFile = DB_PATH;
     if (!file_exists($dbFile)) {
-        $fallback = __DIR__ . '/cars.db';
+        $fallback = __DIR__ . '/kureba-senior-system.db';
         if (file_exists($fallback)) {
             $dbFile = $fallback;
         } else {

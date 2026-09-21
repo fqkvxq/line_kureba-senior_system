@@ -574,7 +574,7 @@ function renderAccountCardsList() {
                         </h4>
                         <p>
                             ID: <code>${escapeHtml(acc.id)}</code> &nbsp;|&nbsp; 
-                            DB: <code>${escapeHtml(acc.db_file || 'cars.db')}</code><br>
+                            DB: <code>${escapeHtml(acc.db_file || 'kureba-senior-system.db')}</code><br>
                             Webhook: <code style="user-select:all;">${escapeHtml(whUrl)}</code>
                         </p>
                     </div>

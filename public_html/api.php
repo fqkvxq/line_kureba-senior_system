@@ -289,7 +289,7 @@ try {
                 $isDefault = true;
             }
 
-            $dbFile = ($cleanId === 'senior') ? 'cars.db' : "cars_{$cleanId}.db";
+            $dbFile = ($cleanId === 'senior') ? 'kureba-senior-system.db' : "kureba_{$cleanId}.db";
 
             $allAccounts[$cleanId] = [
                 'id' => $cleanId,

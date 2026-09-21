@@ -30,7 +30,7 @@ $DEFAULT_SYSTEM_LINE_ACCOUNTS = [
         'liff_id' => '2000276344-YL1wXh0h',
         'proline_calendar_url' => 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1',
         'proline_webhook_url' => '',
-        'db_file' => 'cars.db', // 既存メインDB
+        'db_file' => 'kureba-senior-system.db', // メインDB (受講生・カルテ・チャット管理)
         'is_default' => true,
     ],
     'kaisya_dx' => [
@@ -68,12 +68,12 @@ function loadSystemLineAccounts(): array {
                             $base = $accounts[$key] ?? [
                                 'id' => $key,
                                 'is_default' => false,
-                                'db_file' => "cars_{$key}.db"
+                                'db_file' => ($key === 'senior') ? 'kureba-senior-system.db' : "cars_{$key}.db"
                             ];
                             $accounts[$key] = array_merge($base, $acc);
                             $accounts[$key]['id'] = $key;
-                            if (empty($accounts[$key]['db_file'])) {
-                                $accounts[$key]['db_file'] = ($key === 'senior') ? 'cars.db' : "cars_{$key}.db";
+                            if (empty($accounts[$key]['db_file']) || $accounts[$key]['db_file'] === 'cars.db') {
+                                $accounts[$key]['db_file'] = ($key === 'senior') ? 'kureba-senior-system.db' : "cars_{$key}.db";
                             }
                         }
                     }
@@ -127,7 +127,7 @@ function saveSystemLineAccounts(array $accounts): bool {
             'liff_id' => trim((string)($acc['liff_id'] ?? '')),
             'proline_calendar_url' => trim((string)($acc['proline_calendar_url'] ?? '')),
             'proline_webhook_url' => trim((string)($acc['proline_webhook_url'] ?? '')),
-            'db_file' => !empty($acc['db_file']) ? $acc['db_file'] : (($key === 'senior') ? 'cars.db' : "cars_{$key}.db"),
+            'db_file' => !empty($acc['db_file']) ? $acc['db_file'] : (($key === 'senior') ? 'kureba-senior-system.db' : "kureba_{$key}.db"),
             'is_default' => !empty($acc['is_default']),
             'updated_at' => date('Y-m-d H:i:s')
         ];
@@ -373,46 +373,56 @@ function getAccountProlineCalendarUrl(?string $key = null): string {
 }
 
 /**
- * データベースファイルのパスを自動検出 (アカウント別対応)
+ * データベースファイルのパスを自動検出 (アカウント別対応・kureba-senior-system.db自動移行対応)
  */
 function getDbFilePath(?string $accountKey = null): string {
     $key = $accountKey ?: getActiveAccountKey();
     $conf = getAccountConfig($key);
-    $dbFileName = !empty($conf['db_file']) ? $conf['db_file'] : 'cars.db';
-
-    // デフォルト（既存メインDB）の場合
+    $dbFileName = !empty($conf['db_file']) ? $conf['db_file'] : 'kureba-senior-system.db';
     if ($dbFileName === 'cars.db') {
-        $candidates = [
-            __DIR__ . '/batch/cars.db',
-            __DIR__ . '/../batch/cars.db',
-            __DIR__ . '/cars.db',
-            __DIR__ . '/../../batch/cars.db',
-            dirname(__DIR__) . '/batch/cars.db'
-        ];
-
-        foreach ($candidates as $path) {
-            if (file_exists($path)) {
-                return $path;
-            }
-        }
-        return __DIR__ . '/batch/cars.db';
+        $dbFileName = 'kureba-senior-system.db';
     }
 
-    // 別アカウント用DBファイル: メインDB (cars.db) と同じディレクトリに配置
-    // 再帰呼び出しを避けるため、候補ディレクトリから cars.db を直接探す
-    $seniorDirs = [
+    $candidateDirs = [
         __DIR__ . '/batch',
         __DIR__ . '/../batch',
         __DIR__,
         __DIR__ . '/../../batch',
         dirname(__DIR__) . '/batch'
     ];
-    foreach ($seniorDirs as $sDir) {
-        if (file_exists($sDir . '/cars.db')) {
+
+    // メインアカウント（senior / kureba-senior-system.db）の場合
+    if ($dbFileName === 'kureba-senior-system.db') {
+        // 1. すでに kureba-senior-system.db が存在するか確認
+        foreach ($candidateDirs as $dir) {
+            $path = $dir . '/kureba-senior-system.db';
+            if (file_exists($path)) {
+                return $path;
+            }
+        }
+
+        // 2. 既存の cars.db が存在する場合は自動移行（コピーしてデータを完全引き継ぎ）
+        foreach ($candidateDirs as $dir) {
+            $oldPath = $dir . '/cars.db';
+            $newPath = $dir . '/kureba-senior-system.db';
+            if (file_exists($oldPath)) {
+                if (!file_exists($newPath)) {
+                    @copy($oldPath, $newPath);
+                    @chmod($newPath, 0666);
+                }
+                return $newPath;
+            }
+        }
+
+        return __DIR__ . '/batch/kureba-senior-system.db';
+    }
+
+    // 別アカウント用DBファイル
+    foreach ($candidateDirs as $sDir) {
+        if (file_exists($sDir . '/kureba-senior-system.db') || file_exists($sDir . '/cars.db')) {
             return $sDir . '/' . $dbFileName;
         }
     }
-    // cars.db が見つからない場合は batch/ ディレクトリに作成
     return __DIR__ . '/batch/' . $dbFileName;
 }
 
