@@ -4318,11 +4318,14 @@ function handleCloseNoticeMenu(?PDO $db, string $replyToken, string $userId): vo
 
 /**
  * クイックリプライボタン一覧（LINE Messaging API 完全準拠: postbackのみ）
- * シニア向けお役立ち情報・相談・カレンダー予約のクイックリプライを返却
+ * アカウントの業種に応じたクイックリプライを返却
  */
-function getQuickReplyItems(): array {
-    if (function_exists('getSeniorKnowledgeQuickReplyItems')) {
-        return getSeniorKnowledgeQuickReplyItems();
+function getQuickReplyItems(?string $accountKey = null): array {
+    if (function_exists('getAccountQuickReplyItems')) {
+        $qr = getAccountQuickReplyItems($accountKey);
+        if ($qr !== null) {
+            return $qr;
+        }
     }
 
     return [
@@ -4331,15 +4334,7 @@ function getQuickReplyItems(): array {
                 'type' => 'action',
                 'action' => [
                     'type' => 'postback',
-                    'label' => '💡 お役立ち情報',
-                    'data' => 'action=show_knowledge_menu'
-                ]
-            ],
-            [
-                'type' => 'action',
-                'action' => [
-                    'type' => 'postback',
-                    'label' => '💻 受講生マイカルテ',
+                    'label' => '📋 マイカルテ',
                     'data' => 'action=open_mycar'
                 ]
             ],
@@ -4347,8 +4342,8 @@ function getQuickReplyItems(): array {
                 'type' => 'action',
                 'action' => [
                     'type' => 'postback',
-                    'label' => '💬 教室に質問・相談',
-                    'data' => 'action=ask_class&topic=お役立ち情報'
+                    'label' => '💬 お問い合わせ・相談',
+                    'data' => 'action=ask_class&topic=お問い合わせ'
                 ]
             ]
         ]
@@ -4358,24 +4353,25 @@ function getQuickReplyItems(): array {
 /**
  * LINE Messaging API 返信送信
  */
-function sendReplyMessage(string $replyToken, array $messages, string $userId = '') {
+function sendReplyMessage(string $replyToken, array $messages, string $userId = '', ?string $accountKey = null) {
     if (empty($messages)) {
         return;
     }
-    $token = getLineAccessToken();
+    $targetAccount = $accountKey ?: getActiveAccountKey();
+    $token = getLineAccessToken($targetAccount);
     if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         writeDebugLog("返信スキップ: LINEアクセストークンが未設定です");
         return;
     }
 
-    // 【最重要】受講生のトーク画面最下部にクイックリプライボタンを常時表示し続けるため、
-    // 最後のメッセージに quickReply が未設定であれば自動的にシニアお役立ちクイックリプライを付与
+    // 最後のメッセージに quickReply が未設定であればアカウント業種に応じたクイックリプライを付与
     $lastIdx = count($messages) - 1;
     if ($lastIdx >= 0 && !isset($messages[$lastIdx]['quickReply'])) {
-        if (function_exists('getSeniorKnowledgeQuickReplyItems')) {
-            $messages[$lastIdx]['quickReply'] = getSeniorKnowledgeQuickReplyItems();
-        } elseif (function_exists('getQuickReplyItems')) {
-            $messages[$lastIdx]['quickReply'] = getQuickReplyItems();
+        if (function_exists('getAccountQuickReplyItems')) {
+            $qr = getAccountQuickReplyItems($targetAccount);
+            if (!empty($qr)) {
+                $messages[$lastIdx]['quickReply'] = $qr;
+            }
         }
     }
 

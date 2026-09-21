@@ -2923,7 +2923,10 @@ try {
                 'altText' => mb_substr("お役立ち情報をお送りします！【{$title}】", 0, 400),
                 'contents' => $bubble
             ];
-            if (function_exists('getSeniorKnowledgeQuickReplyItems')) {
+            $activeKey = getActiveAccountKey();
+            $accConfig = getAccountConfig($activeKey);
+            $indType = strtolower($accConfig['industry_type'] ?? 'senior');
+            if (($indType === 'senior' || $activeKey === 'senior') && function_exists('getSeniorKnowledgeQuickReplyItems')) {
                 $flexMessage['quickReply'] = getSeniorKnowledgeQuickReplyItems();
             }
 

@@ -1307,17 +1307,20 @@ function isNoticeMenu(?PDO $db, string $aliasOrMenuId): bool {
 /**
  * 特定のユーザーへ個別プッシュ送信 (Push Message API)
  */
-function sendLinePushMessage(string $userId, array $messages): array {
-    $token = getLineAccessToken();
+function sendLinePushMessage(string $userId, array $messages, ?string $accountKey = null): array {
+    $token = getLineAccessToken($accountKey);
     if (empty($userId) || empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => 'Token or userId missing'];
     }
 
-    // 常にクイックリプライを表示し続けるため、最後のメッセージに未設定なら自動付与
+    // 最後のメッセージに未設定ならアカウント業種に応じたクイックリプライを付与
     $lastIdx = count($messages) - 1;
     if ($lastIdx >= 0 && !isset($messages[$lastIdx]['quickReply'])) {
-        if (function_exists('getSeniorKnowledgeQuickReplyItems')) {
-            $messages[$lastIdx]['quickReply'] = getSeniorKnowledgeQuickReplyItems();
+        if (function_exists('getAccountQuickReplyItems')) {
+            $qr = getAccountQuickReplyItems($accountKey);
+            if (!empty($qr)) {
+                $messages[$lastIdx]['quickReply'] = $qr;
+            }
         }
     }
 
@@ -1380,18 +1383,21 @@ function sendLinePushMessage(string $userId, array $messages): array {
 /**
  * LINE公式アカウントの友だち全員へメッセージを一斉送信 (Broadcast API)
  */
-function sendLineBroadcastMessage(array $messages): array {
-    $token = getLineAccessToken();
+function sendLineBroadcastMessage(array $messages, ?string $accountKey = null): array {
+    $token = getLineAccessToken($accountKey);
     if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         writeDebugLog("一斉配信スキップ: LINEアクセストークンが未設定です");
         return ['success' => false, 'error' => 'Token not configured'];
     }
 
-    // 常にクイックリプライを表示し続けるため、最後のメッセージに未設定なら自動付与
+    // 最後のメッセージに未設定ならアカウント業種に応じたクイックリプライを付与
     $lastIdx = count($messages) - 1;
     if ($lastIdx >= 0 && !isset($messages[$lastIdx]['quickReply'])) {
-        if (function_exists('getSeniorKnowledgeQuickReplyItems')) {
-            $messages[$lastIdx]['quickReply'] = getSeniorKnowledgeQuickReplyItems();
+        if (function_exists('getAccountQuickReplyItems')) {
+            $qr = getAccountQuickReplyItems($accountKey);
+            if (!empty($qr)) {
+                $messages[$lastIdx]['quickReply'] = $qr;
+            }
         }
     }
 
@@ -4397,6 +4403,185 @@ function getSeniorKnowledgePresets(): array {
             'btn1_url' => $bookingUrl
         ]
     ];
+}
+
+/**
+ * 各アカウント・業種に応じた適切なクイックリプライボタンスキーマを生成
+ * - senior（シニア向けパソコン教室）: シニアお役立ち情報・相談クイックリプライ
+ * - auto（自動車・整備）: マイカーカルテ・相談・予約クイックリプライ
+ * - salon（サロン・整体）: マイカルテ・相談・予約クイックリプライ
+ * - school（スクール・習い事）: 受講生カルテ・相談・予約クイックリプライ
+ * - fitness（フィットネス・ジム）: 会員カルテ・相談・予約クイックリプライ
+ * - b2b/custom/他業種: マイページ・相談・予約クイックリプライ
+ */
+function getAccountQuickReplyItems(?string $accountKey = null, ?string $currentTopic = null): ?array {
+    $activeKey = $accountKey ?: getActiveAccountKey();
+    $acc = getAccountConfig($activeKey);
+    $indType = strtolower($acc['industry_type'] ?? 'senior');
+    $accId = strtolower($acc['id'] ?? $activeKey);
+
+    // シニア向けパソコン教室アカウントの場合のみシニアお役立ちクイックリプライを返す
+    if ($indType === 'senior' || $accId === 'senior') {
+        return getSeniorKnowledgeQuickReplyItems($currentTopic);
+    }
+
+    // 自動車・車両管理の場合
+    if ($indType === 'auto') {
+        return [
+            'items' => [
+                [
+                    'type' => 'action',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '🚗 マイカーカルテ',
+                        'data' => 'action=open_mycar'
+                    ]
+                ],
+                [
+                    'type' => 'action',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '💬 店舗に質問・相談',
+                        'data' => 'action=ask_class&topic=お問い合わせ'
+                    ]
+                ],
+                [
+                    'type' => 'action',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '📅 点検・車検予約',
+                        'data' => 'action=book_service'
+                    ]
+                ]
+            ]
+        ];
+    }
+
+    // サロン・エステ・整体の場合
+    if ($indType === 'salon') {
+        return [
+            'items' => [
+                [
+                    'type' => 'action',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '✨ マイカルテ/会員証',
+                        'data' => 'action=open_mycar'
+                    ]
+                ],
+                [
+                    'type' => 'action',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '💬 サロンに相談',
+                        'data' => 'action=ask_class&topic=お問い合わせ'
+                    ]
+                ],
+                [
+                    'type' => 'action',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '📅 WEB予約',
+                        'data' => 'action=book_service'
+                    ]
+                ]
+            ]
+        ];
+    }
+
+    // スクール・習い事の場合
+    if ($indType === 'school') {
+        return [
+            'items' => [
+                [
+                    'type' => 'action',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '🎓 受講生カルテ',
+                        'data' => 'action=open_mycar'
+                    ]
+                ],
+                [
+                    'type' => 'action',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '💬 教室・講師に連絡',
+                        'data' => 'action=ask_class&topic=お問い合わせ'
+                    ]
+                ],
+                [
+                    'type' => 'action',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '📅 レッスン予約',
+                        'data' => 'action=book_service'
+                    ]
+                ]
+            ]
+        ];
+    }
+
+    // フィットネス・ジムの場合
+    if ($indType === 'fitness') {
+        return [
+            'items' => [
+                [
+                    'type' => 'action',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '🏃 会員証・カルテ',
+                        'data' => 'action=open_mycar'
+                    ]
+                ],
+                [
+                    'type' => 'action',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '💬 トレーナーに相談',
+                        'data' => 'action=ask_class&topic=お問い合わせ'
+                    ]
+                ],
+                [
+                    'type' => 'action',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => '📅 トレーニング予約',
+                        'data' => 'action=book_service'
+                    ]
+                ]
+            ]
+        ];
+    }
+
+    // B2B・DX・カスタム汎用
+    $item1Name = !empty($acc['label_item1']) ? $acc['label_item1'] : 'マイカルテ';
+    return [
+        'items' => [
+            [
+                'type' => 'action',
+                'action' => [
+                    'type' => 'postback',
+                    'label' => "📋 {$item1Name}",
+                    'data' => 'action=open_mycar'
+                ]
+            ],
+            [
+                'type' => 'action',
+                'action' => [
+                    'type' => 'postback',
+                    'label' => '💬 お問い合わせ・相談',
+                    'data' => 'action=ask_class&topic=お問い合わせ'
+                ]
+            ]
+        ]
+    ];
+}
+
+/**
+ * 共通クイックリプライ取得ヘルパー
+ */
+function getQuickReplyItems(?string $accountKey = null): ?array {
+    return getAccountQuickReplyItems($accountKey);
 }
 
 /**
