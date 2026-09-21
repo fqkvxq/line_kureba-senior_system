@@ -819,75 +819,260 @@ window.onAccFormIndustryChange = function(typeKey) {
     if (date3) date3.value = preset.date3;
 };
 
-function applyDynamicLabels(labels) {
-    if (!labels) return;
+function normalizeCustomLabels(labels) {
+    if (!labels) {
+        return {
+            item1: '受講コース',
+            item2: '使用機器',
+            date1: '次回レッスン',
+            date2: 'PC健康診断',
+            date3: '会員・月謝更新',
+            customerTerm: '受講生'
+        };
+    }
+    return {
+        item1: labels.label_item1 || labels.item1 || '項目1',
+        item2: labels.label_item2 || labels.item2 || '項目2',
+        date1: labels.label_date1 || labels.date1 || '期日1',
+        date2: labels.label_date2 || labels.date2 || '期日2',
+        date3: labels.label_date3 || labels.date3 || '期日3',
+        customerTerm: labels.customer_term || labels.customerTerm || '顧客'
+    };
+}
+
+function applyDynamicLabels(rawLabels) {
+    if (!rawLabels) return;
+    const labels = normalizeCustomLabels(rawLabels);
     state.customLabels = labels;
     
-    // 統計カード
-    const stat1 = document.getElementById('lblStatDate1');
-    const stat2 = document.getElementById('lblStatDate2');
-    const stat3 = document.getElementById('lblStatDate3');
-    if (stat1 && labels.date1) stat1.textContent = `${labels.date1} 近日`;
-    if (stat2 && labels.date2) stat2.textContent = `${labels.date2} 近日`;
-    if (stat3 && labels.date3) stat3.textContent = `${labels.date3} 近日`;
+    // 1. 統計カード
+    const stat1 = document.getElementById('lblStatOilSoon');
+    const stat2 = document.getElementById('lblStatPeriodicSoon');
+    const stat3 = document.getElementById('lblStatInspSoon');
+    if (stat1) stat1.textContent = `${labels.date1}近し (30日以内)`;
+    if (stat2) stat2.textContent = `${labels.date2}近し (30日以内)`;
+    if (stat3) stat3.textContent = `${labels.date3}近し (30日以内)`;
 
-    // フィルタータブ
-    const tab1 = document.getElementById('tabFilterDate1');
-    const tab2 = document.getElementById('tabFilterDate2');
-    const tab3 = document.getElementById('tabFilterDate3');
-    if (tab1 && labels.date1) tab1.textContent = `${labels.date1}近日`;
-    if (tab2 && labels.date2) tab2.textContent = `${labels.date2}近日`;
-    if (tab3 && labels.date3) tab3.textContent = `${labels.date3}近日`;
+    // 2. フィルタータブ
+    const tab1 = document.getElementById('lblTabOil');
+    const tab2 = document.getElementById('lblTabPeriodic');
+    const tab3 = document.getElementById('lblTabInsp');
+    if (tab1) tab1.textContent = labels.date1;
+    if (tab2) tab2.textContent = labels.date2;
+    if (tab3) tab3.textContent = labels.date3;
 
-    // 並び替えオプション
-    const opt1 = document.getElementById('optSortDate1');
-    const opt2 = document.getElementById('optSortDate2');
-    const opt3 = document.getElementById('optSortDate3');
-    if (opt1 && labels.date1) opt1.textContent = `${labels.date1}が近い順`;
-    if (opt2 && labels.date2) opt2.textContent = `${labels.date2}が近い順`;
-    if (opt3 && labels.date3) opt3.textContent = `${labels.date3}が近い順`;
+    // 3. 並び替えオプション
+    const opt1 = document.getElementById('optSortOil');
+    const opt2 = document.getElementById('optSortPeriodic');
+    const opt3 = document.getElementById('optSortInsp');
+    if (opt1) opt1.textContent = `${labels.date1}が近い順`;
+    if (opt2) opt2.textContent = `${labels.date2}が近い順`;
+    if (opt3) opt3.textContent = `${labels.date3}が近い順`;
 
-    // カラム表示切替チェックボックス
-    const chkItem1 = document.getElementById('chkColLabelItem1');
-    const chkItem2 = document.getElementById('chkColLabelItem2');
-    const chkDate1 = document.getElementById('chkColLabelDate1');
-    const chkDate2 = document.getElementById('chkColLabelDate2');
-    const chkDate3 = document.getElementById('chkColLabelDate3');
-    if (chkItem1 && labels.item1) chkItem1.textContent = labels.item1;
-    if (chkItem2 && labels.item2) chkItem2.textContent = labels.item2;
-    if (chkDate1 && labels.date1) chkDate1.textContent = labels.date1;
-    if (chkDate2 && labels.date2) chkDate2.textContent = labels.date2;
-    if (chkDate3 && labels.date3) chkDate3.textContent = labels.date3;
+    // 4. カラム表示切替ドロップダウン
+    const colCourse = document.getElementById('colPickerLabelCourse');
+    const colOil = document.getElementById('colPickerLabelOil');
+    const colPeriodic = document.getElementById('colPickerLabelPeriodic');
+    const colInsp = document.getElementById('colPickerLabelInsp');
+    if (colCourse) colCourse.innerHTML = `<i class="fa-solid fa-tag"></i> ${escapeHtml(labels.item1)}・${escapeHtml(labels.item2)}`;
+    if (colOil) colOil.innerHTML = `<i class="fa-solid fa-calendar-day"></i> ${escapeHtml(labels.date1)}`;
+    if (colPeriodic) colPeriodic.innerHTML = `<i class="fa-solid fa-calendar-check"></i> ${escapeHtml(labels.date2)}`;
+    if (colInsp) colInsp.innerHTML = `<i class="fa-solid fa-calendar-days"></i> ${escapeHtml(labels.date3)}`;
 
-    // テーブルヘッダー
-    const thItem1 = document.getElementById('thLabelItem1');
-    const thItem2 = document.getElementById('thLabelItem2');
-    const thDate1 = document.getElementById('thLabelDate1');
-    const thDate2 = document.getElementById('thLabelDate2');
-    const thDate3 = document.getElementById('thLabelDate3');
-    if (thItem1 && labels.item1) thItem1.textContent = labels.item1;
-    if (thItem2 && labels.item2) thItem2.textContent = labels.item2;
-    if (thDate1 && labels.date1) thDate1.textContent = labels.date1;
-    if (thDate2 && labels.date2) thDate2.textContent = labels.date2;
-    if (thDate3 && labels.date3) thDate3.textContent = labels.date3;
+    // 5. テーブルヘッダー
+    const thCourse = document.getElementById('thCourse');
+    const thOil = document.getElementById('thOil');
+    const thPeriodic = document.getElementById('thPeriodic');
+    const thInsp = document.getElementById('thInsp');
+    if (thCourse) thCourse.textContent = `${labels.item1}・${labels.item2}`;
+    if (thOil) thOil.textContent = labels.date1;
+    if (thPeriodic) thPeriodic.textContent = labels.date2;
+    if (thInsp) thInsp.textContent = labels.date3;
 
-    // 顧客登録・編集モーダル
-    const modalItem1 = document.getElementById('lblModalItem1');
-    const modalItem2 = document.getElementById('lblModalItem2');
-    const modalDate1 = document.getElementById('lblModalDate1');
-    const modalDate2 = document.getElementById('lblModalDate2');
-    const modalDate3 = document.getElementById('lblModalDate3');
-    if (modalItem1 && labels.item1) modalItem1.textContent = labels.item1;
-    if (modalItem2 && labels.item2) modalItem2.textContent = labels.item2;
-    if (modalDate1 && labels.date1) modalDate1.textContent = labels.date1;
-    if (modalDate2 && labels.date2) modalDate2.textContent = labels.date2;
-    if (modalDate3 && labels.date3) modalDate3.textContent = labels.date3;
+    // 6. 顧客登録・編集モーダル
+    const lblEditItem1 = document.getElementById('lblEditCarModel');
+    const lblEditItem2 = document.getElementById('lblEditCarNumber');
+    const lblEditOilLast = document.getElementById('lblEditOilLastDate');
+    const lblEditDate1 = document.getElementById('lblEditOilNextDate');
+    const lblEditDate2 = document.getElementById('lblEditPeriodicNextDate');
+    const lblEditDate3 = document.getElementById('lblEditInspectionNextDate');
+    if (lblEditItem1) lblEditItem1.textContent = `${labels.item1} (主項目)`;
+    if (lblEditItem2) lblEditItem2.textContent = `${labels.item2} (番号・詳細)`;
+    if (lblEditOilLast) lblEditOilLast.textContent = `前回 利用・実施日 (${labels.date1})`;
+    if (lblEditDate1) lblEditDate1.textContent = `次回 予定日 (${labels.date1})`;
+    if (lblEditDate2) lblEditDate2.textContent = `定期メンテ・診断日 (${labels.date2})`;
+    if (lblEditDate3) lblEditDate3.textContent = `更新・満了期日 (${labels.date3})`;
 
     // モーダルのプレースホルダー
-    const inItem1 = document.getElementById('custCarModel');
-    const inItem2 = document.getElementById('custCarNumber');
-    if (inItem1 && labels.item1) inItem1.placeholder = `例: ${labels.item1}を入力`;
-    if (inItem2 && labels.item2) inItem2.placeholder = `例: ${labels.item2}を入力`;
+    const inItem1 = document.getElementById('editCarModel');
+    const inItem2 = document.getElementById('editCarNumber');
+    if (inItem1) inItem1.placeholder = `例: ${labels.item1}を入力`;
+    if (inItem2) inItem2.placeholder = `例: ${labels.item2}を入力`;
+
+    // 7. 検索入力ボックスのプレースホルダー
+    const searchIn = document.getElementById('adminSearchInput');
+    if (searchIn) {
+        searchIn.placeholder = `顧客名、${labels.item1}、${labels.item2}、メモで検索...`;
+    }
+}
+
+/**
+ * 項目名・期日名クイック変更モーダルの制御
+ */
+function openQuickLabelModal(focusTarget = null) {
+    const modal = document.getElementById('quickLabelModal');
+    if (!modal) return;
+
+    const labels = state.customLabels || normalizeCustomLabels(null);
+    const i1 = document.getElementById('quickLabelItem1');
+    const i2 = document.getElementById('quickLabelItem2');
+    const d1 = document.getElementById('quickLabelDate1');
+    const d2 = document.getElementById('quickLabelDate2');
+    const d3 = document.getElementById('quickLabelDate3');
+    const presetSelect = document.getElementById('quickLabelPresetSelect');
+
+    if (i1) i1.value = labels.item1 || '';
+    if (i2) i2.value = labels.item2 || '';
+    if (d1) d1.value = labels.date1 || '';
+    if (d2) d2.value = labels.date2 || '';
+    if (d3) d3.value = labels.date3 || '';
+
+    // 現在の業種プリセットに合わせて初期選択
+    if (presetSelect) {
+        let matchedKey = 'custom';
+        for (const [k, p] of Object.entries(window.INDUSTRY_PRESETS)) {
+            if (p.item1 === labels.item1 && p.date1 === labels.date1) {
+                matchedKey = k;
+                break;
+            }
+        }
+        presetSelect.value = matchedKey;
+    }
+
+    modal.classList.add('active');
+
+    // フォーカス制御
+    setTimeout(() => {
+        if (focusTarget === 'course' && i1) i1.focus();
+        else if (focusTarget === 'date1' && d1) d1.focus();
+        else if (focusTarget === 'date2' && d2) d2.focus();
+        else if (focusTarget === 'date3' && d3) d3.focus();
+        else if (i1) i1.focus();
+    }, 100);
+}
+
+function closeQuickLabelModal() {
+    const modal = document.getElementById('quickLabelModal');
+    if (modal) modal.classList.remove('active');
+}
+
+async function saveQuickLabels() {
+    const btnSave = document.getElementById('btnSaveQuickLabels');
+    const i1 = document.getElementById('quickLabelItem1');
+    const i2 = document.getElementById('quickLabelItem2');
+    const d1 = document.getElementById('quickLabelDate1');
+    const d2 = document.getElementById('quickLabelDate2');
+    const d3 = document.getElementById('quickLabelDate3');
+    const presetSelect = document.getElementById('quickLabelPresetSelect');
+
+    const item1Val = i1 ? i1.value.trim() : '';
+    const item2Val = i2 ? i2.value.trim() : '';
+    const date1Val = d1 ? d1.value.trim() : '';
+    const date2Val = d2 ? d2.value.trim() : '';
+    const date3Val = d3 ? d3.value.trim() : '';
+    const industryVal = presetSelect ? presetSelect.value : 'senior';
+
+    if (!item1Val || !date1Val) {
+        alert('項目1名と期日1名は必須です。');
+        return;
+    }
+
+    try {
+        if (btnSave) {
+            btnSave.disabled = true;
+            btnSave.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 保存中...';
+        }
+
+        const formData = new FormData();
+        formData.append('account', state.activeAccount);
+        formData.append('industry_type', industryVal);
+        formData.append('label_item1', item1Val);
+        formData.append('label_item2', item2Val);
+        formData.append('label_date1', date1Val);
+        formData.append('label_date2', date2Val);
+        formData.append('label_date3', date3Val);
+        formData.append('password', state.password || sessionStorage.getItem('admin_pass') || '');
+
+        const res = await fetch('../api.php?action=save_custom_labels', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            showToast('✅ 項目名・期日名を更新しました！');
+            closeQuickLabelModal();
+            if (data.custom_labels) {
+                applyDynamicLabels(data.custom_labels);
+            }
+            // 顧客テーブル再描画
+            renderTable();
+        } else {
+            alert(`保存失敗: ${data.error || '不明なエラー'}`);
+        }
+    } catch (e) {
+        console.error('Quick labels save error:', e);
+        alert('通信エラーが発生しました: ' + e.message);
+    } finally {
+        if (btnSave) {
+            btnSave.disabled = false;
+            btnSave.innerHTML = '<i class="fa-solid fa-check"></i> 変更を保存して反映';
+        }
+    }
+}
+
+function initQuickLabelModalEvents() {
+    const btnOpen = document.getElementById('btnOpenQuickLabelModal');
+    const btnClose = document.getElementById('closeQuickLabelModalBtn');
+    const btnCloseFooter = document.getElementById('closeQuickLabelModalFooterBtn');
+    const btnSave = document.getElementById('btnSaveQuickLabels');
+    const modal = document.getElementById('quickLabelModal');
+    const presetSelect = document.getElementById('quickLabelPresetSelect');
+
+    if (btnOpen) {
+        btnOpen.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openQuickLabelModal();
+        });
+    }
+
+    if (btnClose) btnClose.addEventListener('click', closeQuickLabelModal);
+    if (btnCloseFooter) btnCloseFooter.addEventListener('click', closeQuickLabelModal);
+    if (btnSave) btnSave.addEventListener('click', saveQuickLabels);
+
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeQuickLabelModal();
+        });
+    }
+
+    if (presetSelect) {
+        presetSelect.addEventListener('change', (e) => {
+            const key = e.target.value;
+            const preset = window.INDUSTRY_PRESETS[key];
+            if (!preset || key === 'custom') return;
+            const i1 = document.getElementById('quickLabelItem1');
+            const i2 = document.getElementById('quickLabelItem2');
+            const d1 = document.getElementById('quickLabelDate1');
+            const d2 = document.getElementById('quickLabelDate2');
+            const d3 = document.getElementById('quickLabelDate3');
+            if (i1) i1.value = preset.item1;
+            if (i2) i2.value = preset.item2;
+            if (d1) d1.value = preset.date1;
+            if (d2) d2.value = preset.date2;
+            if (d3) d3.value = preset.date3;
+        });
+    }
 }
 
 async function openAccountEditForm(accountId) {
@@ -1675,6 +1860,19 @@ function initColumnPicker() {
         e.stopPropagation();
     });
 
+    // 各カラム行のクイック編集鉛筆ボタン
+    document.querySelectorAll('.btn-col-quick-edit').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            const target = btn.getAttribute('data-target');
+            openQuickLabelModal(target);
+        });
+    });
+
+    // クイックラベルモーダルのイベント初期化
+    initQuickLabelModalEvents();
+
     // 外側クリックでメニューを閉じる
     document.addEventListener('click', (e) => {
         if (container && !container.contains(e.target)) {
@@ -2337,16 +2535,16 @@ function renderTable() {
                         </button>
 
                         <!-- 行2: 各種リマインド & 削除 -->
-                        <button class="btn-remind-oil" data-action="remind-oil" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" title="次回レッスン案内リマインドをLINE送信">
-                            <i class="fa-solid fa-laptop"></i> レッスン
+                        <button class="btn-remind-oil" data-action="remind-oil" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" title="${escapeHtml(labels.date1 || '期日1')}リマインドをLINE送信">
+                            <i class="fa-solid fa-calendar-day"></i> ${escapeHtml(labels.date1 || '期日1')}
                         </button>
-                        <button class="btn-remind-periodic" data-action="remind-periodic" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" title="定期PC健康診断リマインドをLINE送信">
-                            <i class="fa-solid fa-shield-virus"></i> PC診断
+                        <button class="btn-remind-periodic" data-action="remind-periodic" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" title="${escapeHtml(labels.date2 || '期日2')}リマインドをLINE送信">
+                            <i class="fa-solid fa-calendar-check"></i> ${escapeHtml(labels.date2 || '期日2')}
                         </button>
-                        <button class="btn-remind-insp" data-action="remind-insp" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" title="会員更新・月謝期日リマインドをLINE送信">
-                            <i class="fa-solid fa-calendar-check"></i> 会員更新
+                        <button class="btn-remind-insp" data-action="remind-insp" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" title="${escapeHtml(labels.date3 || '期日3')}リマインドをLINE送信">
+                            <i class="fa-solid fa-calendar-days"></i> ${escapeHtml(labels.date3 || '期日3')}
                         </button>
-                        <button class="btn-delete" data-action="delete" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" title="この受講生データを削除">
+                        <button class="btn-delete" data-action="delete" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" title="この顧客データを削除">
                             <i class="fa-solid fa-trash"></i> 削除
                         </button>
                     </div>
@@ -2540,15 +2738,16 @@ function initCustomerTableEvents() {
 
 window.sendManualReminder = async function(carId, userId, type, userName, carModel) {
     if (!userId || !userId.startsWith('U')) {
-        alert('この受講生は手動登録（LINE未連携）のため、LINEメッセージを送信できません。');
+        alert('この顧客は手動登録（LINE未連携）のため、LINEメッセージを送信できません。');
         return;
     }
 
-    let typeLabel = '💻 次回レッスン案内リマインド';
-    if (type === 'periodic') typeLabel = '🔍 定期パソコン健康診断リマインド';
-    if (type === 'inspection') typeLabel = '🗓️ 会員更新・月謝期日リマインド';
+    const labels = state.customLabels || normalizeCustomLabels(null);
+    let typeLabel = `💻 ${labels.date1 || '期日1'}リマインド`;
+    if (type === 'periodic') typeLabel = `🔍 ${labels.date2 || '期日2'}リマインド`;
+    if (type === 'inspection') typeLabel = `🗓️ ${labels.date3 || '期日3'}リマインド`;
 
-    if (!confirm(`【${userName || '受講生'} 様 (${carModel || '受講コース'})】へ\n「${typeLabel}」のLINEメッセージを今すぐ送信しますか？`)) {
+    if (!confirm(`【${userName || 'お客様'} 様 (${carModel || labels.item1})】へ\n「${typeLabel}」のLINEメッセージを今すぐ送信しますか？`)) {
         return;
     }
 
@@ -2899,9 +3098,10 @@ async function applyNearestRichMenuBackground(custData, nearest) {
 }
 
 function openEditModal(cust) {
+    const labels = state.customLabels || normalizeCustomLabels(null);
     if (cust) {
         activeEditingCarId = cust.id;
-        elements.modalTitle.textContent = `愛車・メンテナンス情報の編集: ${cust.car_model || ''} (${cust.user_name || ''})`;
+        elements.modalTitle.textContent = `カルテ情報の編集: ${cust.car_model || ''} (${cust.user_name || ''})`;
         elements.editUserId.value = cust.id || '';
         elements.editUserUid.value = cust.user_id || '';
         elements.editUserName.value = cust.user_name || '';
@@ -2923,7 +3123,7 @@ function openEditModal(cust) {
         }
     } else {
         activeEditingCarId = null;
-        elements.modalTitle.textContent = '新規顧客・愛車メンテナンス情報の登録';
+        elements.modalTitle.textContent = '新規顧客・カルテ情報の登録';
         elements.editUserId.value = '';
         elements.editUserUid.value = '';
         elements.editUserName.value = '';
@@ -2949,11 +3149,12 @@ function closeEditModal() {
 }
 
 async function saveCustomer() {
+    const labels = state.customLabels || normalizeCustomLabels(null);
     const userName = elements.editUserName.value.trim();
     const carModel = elements.editCarModel.value.trim();
 
     if (!userName || !carModel) {
-        alert('お名前と愛車の車種名は必須です');
+        alert(`お名前と${labels.item1 || '項目名'}は必須です`);
         return;
     }
 

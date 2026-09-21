@@ -1028,6 +1028,21 @@
                                     </table>
                                 </div>
                                 <p>業種プリセットを選択すると、管理画面のテーブルヘッダー、検索フィルター、統計カード、顧客カルテ編集モーダル、リッチメニュー帯の文言がすべて自動的にその業種の表記に切り替わります。</p>
+                                
+                                <div style="margin: 12px 0; background: #eef2ff; border: 1.5px solid #c7d2fe; border-radius: var(--radius-sm); padding: 12px 14px;">
+                                    <strong style="color: #3730a3; font-size: 13.5px;"><i class="fa-solid fa-pen-to-square" style="color: #4f46e5;"></i> 期日名・項目名はどこで変更できる？（2通りのカンタン変更方法）:</strong>
+                                    <div style="margin-top: 8px; font-size: 12.5px; color: #334155; line-height: 1.6;">
+                                        <div style="margin-bottom: 8px; padding: 6px 10px; background: #ffffff; border-radius: 4px; border: 1px solid #e0e7ff;">
+                                            <strong style="color: #4338ca;"><i class="fa-solid fa-bolt"></i> 方法1（一番カンタン）: 画面右上の「表示項目（表示カラム設定）」から変更</strong><br>
+                                            顧客一覧の検索バー右横にある「<span class="badge-feature badge-indigo"><i class="fa-solid fa-table-columns"></i> 表示項目</span>」ボタンをクリックし、ドロップダウン内の「<strong><i class="fa-solid fa-pen-to-square"></i> 項目名・期日名を変更</strong>」または各項目の横にある「<i class="fa-solid fa-pen"></i>」ボタンを押すと、専用のポップアップ画面が開き、その場ですぐに名前の変更・保存ができます。
+                                        </div>
+                                        <div style="padding: 6px 10px; background: #ffffff; border-radius: 4px; border: 1px solid #e0e7ff;">
+                                            <strong style="color: #4338ca;"><i class="fa-solid fa-gear"></i> 方法2: 「アカウント管理」画面から変更</strong><br>
+                                            画面右上の「<i class="fa-solid fa-gear"></i> アカウント管理」＞「編集」を開き、「業種プリセット & カルテ項目名・期日名のカスタマイズ」欄で変更して「この設定で保存する」を押すことで変更できます。
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="tip-box" style="margin-top:8px;background:#f0fdf4;border-left:4px solid #16a34a;padding:10px 14px;border-radius: var(--radius-xs);">
                                     <strong style="color:#166534;"><i class="fa-solid fa-shield-halved"></i> セキュア認証通信（パスワード漏洩防止仕様）:</strong><br>
                                     管理画面とAPI間の認証通信は、URLパラメータではなくHTTPリクエストヘッダー（<code>X-Admin-Password</code> / <code>Authorization Bearer</code>）で保護されて送信されます。ブラウザの開発者ツールやWebサーバーのアクセスログにパスワードが露出しない安全設計となっています。
@@ -1568,6 +1583,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_block_detection_v1"></script>
+    <script src="manual.js?v=20260921_custom_labels_v2"></script>
 </body>
 </html>

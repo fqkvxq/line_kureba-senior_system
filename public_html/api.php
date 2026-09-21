@@ -358,6 +358,57 @@ try {
             ], JSON_UNESCAPED_UNICODE);
             exit;
 
+        // --- 0-3-1. 項目名・期日名クイック更新保存 (管理者認証必須) ---
+        case 'save_custom_labels':
+            $authPass = getAdminAuthPassword();
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $targetAcc = $_POST['account'] ?? ($_GET['account'] ?? getActiveAccountKey());
+            $allAccounts = loadSystemLineAccounts();
+            if (!isset($allAccounts[$targetAcc])) {
+                echo json_encode(['success' => false, 'error' => '指定されたアカウントが存在しません']);
+                exit;
+            }
+
+            if (isset($_POST['industry_type'])) {
+                $allAccounts[$targetAcc]['industry_type'] = trim($_POST['industry_type']);
+            }
+            if (isset($_POST['label_item1']) || isset($_POST['item1'])) {
+                $allAccounts[$targetAcc]['label_item1'] = trim($_POST['label_item1'] ?? ($_POST['item1'] ?? ''));
+            }
+            if (isset($_POST['label_item2']) || isset($_POST['item2'])) {
+                $allAccounts[$targetAcc]['label_item2'] = trim($_POST['label_item2'] ?? ($_POST['item2'] ?? ''));
+            }
+            if (isset($_POST['label_date1']) || isset($_POST['date1'])) {
+                $allAccounts[$targetAcc]['label_date1'] = trim($_POST['label_date1'] ?? ($_POST['date1'] ?? ''));
+            }
+            if (isset($_POST['label_date2']) || isset($_POST['date2'])) {
+                $allAccounts[$targetAcc]['label_date2'] = trim($_POST['label_date2'] ?? ($_POST['date2'] ?? ''));
+            }
+            if (isset($_POST['label_date3']) || isset($_POST['date3'])) {
+                $allAccounts[$targetAcc]['label_date3'] = trim($_POST['label_date3'] ?? ($_POST['date3'] ?? ''));
+            }
+            $allAccounts[$targetAcc]['updated_at'] = date('Y-m-d H:i:s');
+
+            $saved = saveSystemLineAccounts($allAccounts);
+            if (!$saved) {
+                echo json_encode(['success' => false, 'error' => '設定ファイルの保存に失敗しました']);
+                exit;
+            }
+
+            global $SYSTEM_LINE_ACCOUNTS;
+            $SYSTEM_LINE_ACCOUNTS = loadSystemLineAccounts();
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'カルテ項目名・期日名を更新しました',
+                'custom_labels' => getAccountCustomLabels($targetAcc)
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+
         // --- 0-4. アカウント削除 (管理者認証必須) ---
         case 'delete_account':
             $authPass = getAdminAuthPassword();

@@ -749,6 +749,40 @@ body {
     font-size: 11px;
 }
 
+.col-picker-item span {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.btn-col-quick-edit {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    padding: 3px 5px;
+    border-radius: var(--radius-xs);
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-col-quick-edit:hover {
+    color: #4f46e5;
+    background: #e0e7ff;
+    transform: scale(1.1);
+}
+
+.btn-quick-rename-labels:hover {
+    background: #e0e7ff !important;
+    border-color: #818cf8 !important;
+    color: #3730a3 !important;
+}
+
 .col-picker-item.is-fixed {
     color: #94a3b8;
     cursor: not-allowed;

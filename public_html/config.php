@@ -165,16 +165,28 @@ function getAccountCustomLabels(string $accountKey = null): array {
     $indType = $config['industry_type'] ?? 'senior';
     $preset = $INDUSTRY_PRESETS[$indType] ?? $INDUSTRY_PRESETS['senior'];
 
+    $i1 = !empty($config['label_item1']) ? $config['label_item1'] : $preset['label_item1'];
+    $i2 = !empty($config['label_item2']) ? $config['label_item2'] : $preset['label_item2'];
+    $d1 = !empty($config['label_date1']) ? $config['label_date1'] : $preset['label_date1'];
+    $d2 = !empty($config['label_date2']) ? $config['label_date2'] : $preset['label_date2'];
+    $d3 = !empty($config['label_date3']) ? $config['label_date3'] : $preset['label_date3'];
+
     return [
         'industry_type' => $indType,
         'industry_name' => $preset['name'] ?? 'シニア向けパソコン教室',
         'industry_icon' => $preset['icon'] ?? 'fa-graduation-cap',
         'customer_term' => $preset['customer_term'] ?? '顧客・受講生',
-        'label_item1' => !empty($config['label_item1']) ? $config['label_item1'] : $preset['label_item1'],
-        'label_item2' => !empty($config['label_item2']) ? $config['label_item2'] : $preset['label_item2'],
-        'label_date1' => !empty($config['label_date1']) ? $config['label_date1'] : $preset['label_date1'],
-        'label_date2' => !empty($config['label_date2']) ? $config['label_date2'] : $preset['label_date2'],
-        'label_date3' => !empty($config['label_date3']) ? $config['label_date3'] : $preset['label_date3'],
+        'label_item1' => $i1,
+        'label_item2' => $i2,
+        'label_date1' => $d1,
+        'label_date2' => $d2,
+        'label_date3' => $d3,
+        // フロントエンド直感参照用エイリアス
+        'item1' => $i1,
+        'item2' => $i2,
+        'date1' => $d1,
+        'date2' => $d2,
+        'date3' => $d3,
         'placeholder_item1' => $preset['placeholder_item1'] ?? '',
         'placeholder_item2' => $preset['placeholder_item2'] ?? '',
     ];
