@@ -396,6 +396,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Discord & Slack 通知
                     sendDiscordChatMessageNotification($msgDataPayload, $userProfile, $db);
                     sendSlackChatMessageNotification($msgDataPayload, $userProfile, $db);
+
+                    // 🔔 ブラウザ WebPush 通知
+                    if (function_exists('sendWebPushChatMessageNotification')) {
+                        sendWebPushChatMessageNotification($msgDataPayload, $db, $activeAccount);
+                    }
                 } catch (Throwable $disEx) {
                     writeDebugLog("チャット通知送信エラー", ['error' => $disEx->getMessage()]);
                 }

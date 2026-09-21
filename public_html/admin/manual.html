@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260921_system_updater_v4">
+    <link rel="stylesheet" href="manual.css?v=20260921_webpush_v5">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -132,7 +132,8 @@
                         <li class="toc-item"><a href="#sec-quick-reply"><i class="fa-solid fa-bolt" style="color:#f59e0b;"></i> 17. クイックリプライ管理（画面下部ボタン設定）</a></li>
                         <li class="toc-item"><a href="#sec-server-setup"><i class="fa-solid fa-server" style="color:#10b981;"></i> 18. 他社・別サーバー移行＆初期セットアップ</a></li>
                         <li class="toc-item"><a href="#sec-system-updater"><i class="fa-solid fa-cloud-arrow-down" style="color:#0284c7;"></i> 19. システムオンライン更新（ワンクリックOTAアップデート）</a></li>
-                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 20. よくある質問・トラブルシューティング</a></li>
+                        <li class="toc-item"><a href="#sec-browser-push"><i class="fa-solid fa-bell-ring" style="color:#0ea5e9;"></i> 20. チャットのブラウザプッシュ通知（Web Push）</a></li>
+                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 21. よくある質問・トラブルシューティング</a></li>
                     </ul>
                 </div>
             </aside>
@@ -1602,14 +1603,76 @@
                     </div>
                 </section>
 
-                <!-- 20. よくある質問・トラブルシューティング -->
+                <!-- 20. チャットのブラウザプッシュ通知（Web Push） -->
+                <section class="manual-section" id="sec-browser-push">
+                    <div class="section-header">
+                        <div class="section-header-icon" style="background: #e0f2fe; color: #0284c7;">
+                            <i class="fa-solid fa-bell-ring"></i>
+                        </div>
+                        <div class="section-header-text">
+                            <h2>20. チャットのブラウザプッシュ通知（Web Push / バックグラウンド受信）</h2>
+                            <p>管理画面を閉じていても・別画面で作業していても新着LINEを画面右下に即時ポップアップ</p>
+                        </div>
+                    </div>
+
+                    <p class="section-lead">受講生からLINE公式アカウントへチャットメッセージや写真が届いた際、Service WorkerとWeb Push APIを通じて、PC・スマートフォンのデスクトップ画面右下にネイティブプッシュ通知とチャイム音でお知らせする機能です。</p>
+
+                    <div class="tip-box" style="margin: 16px 0; background: #eff6ff; border-left: 4px solid #0284c7; padding: 12px 16px; border-radius: var(--radius-xs);">
+                        <strong style="color: #1e40af;"><i class="fa-solid fa-laptop"></i> バックグラウンド通知の仕組み:</strong><br>
+                        Service Worker技術により、<strong>ブラウザが最小化されている時や、別のタブ・別のソフトウェア（ExcelやWordなど）で作業中であっても、画面右下に新着LINE通知が即座にポップアップ</strong>します。通知をクリックすると自動で管理画面が開き、該当受講生のチャット画面が直接起動します。
+                    </div>
+
+                    <div class="feature-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 18px 0;">
+                        <div class="feature-card" style="background: #ffffff; border: 1px solid var(--gray-200); border-radius: var(--radius-md); padding: 16px;">
+                            <div style="font-size: 20px; color: #0284c7; margin-bottom: 8px;"><i class="fa-solid fa-volume-high"></i></div>
+                            <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 6px; color: var(--gray-800);">心地よいチャイム音</h4>
+                            <p style="font-size: 12.5px; color: var(--gray-600); line-height: 1.5; margin: 0;">メッセージ受信時に「ポーン♪」と上品なWeb Audioチャイム音が鳴り、画面を見ていなくても新着に気づけます。</p>
+                        </div>
+                        <div class="feature-card" style="background: #ffffff; border: 1px solid var(--gray-200); border-radius: var(--radius-md); padding: 16px;">
+                            <div style="font-size: 20px; color: #10b981; margin-bottom: 8px;"><i class="fa-solid fa-image"></i></div>
+                            <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 6px; color: var(--gray-800);">写真・スタンプも即時通知</h4>
+                            <p style="font-size: 12.5px; color: var(--gray-600); line-height: 1.5; margin: 0;">テキストだけでなく、受講生から画像（パソコン画面の写真など）やスタンプが届いた際も漏れなく通知されます。</p>
+                        </div>
+                        <div class="feature-card" style="background: #ffffff; border: 1px solid var(--gray-200); border-radius: var(--radius-md); padding: 16px;">
+                            <div style="font-size: 20px; color: #6366f1; margin-bottom: 8px;"><i class="fa-solid fa-arrow-pointer"></i></div>
+                            <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 6px; color: var(--gray-800);">クリックで直接チャット起動</h4>
+                            <p style="font-size: 12.5px; color: var(--gray-600); line-height: 1.5; margin: 0;">デスクトップ通知をクリックするだけで、該当受講生の個別チャットモーダルが即座に開き、返信がスムーズに行えます。</p>
+                        </div>
+                    </div>
+
+                    <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <div class="step-body">
+                                <h4>ツールバーの「🔔 プッシュ通知」ボタンをクリック</h4>
+                                <p>管理画面上部の「プッシュ通知」ボタンをクリックして設定モーダルを開きます。</p>
+                            </div>
+                        </div>
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <div class="step-body">
+                                <h4>「通知を有効化」ボタンを押してブラウザの許可を承認</h4>
+                                <p>ブラウザから「通知を表示しますか？」という確認ダイアログが表示されるので、「<strong>許可</strong>」を選択します。</p>
+                            </div>
+                        </div>
+                        <div class="step-card">
+                            <div class="step-number">3</div>
+                            <div class="step-body">
+                                <h4>「テストプッシュ通知を送信」で動作確認</h4>
+                                <p>「テストプッシュ通知を送信」ボタンを押すと、サーバーから即座にテスト通知が届き、ポップアップとチャイム音が確認できます。</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 21. よくある質問・トラブルシューティング -->
                 <section class="manual-section" id="sec-faq">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #fef2f2; color: #ef4444;">
                             <i class="fa-solid fa-circle-question"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>20. よくある質問・トラブルシューティング</h2>
+                            <h2>21. よくある質問・トラブルシューティング</h2>
                             <p>困ったときの解決方法</p>
                         </div>
                     </div>
@@ -1795,6 +1858,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_system_updater_v4"></script>
+    <script src="manual.js?v=20260921_webpush_v5"></script>
 </body>
 </html>

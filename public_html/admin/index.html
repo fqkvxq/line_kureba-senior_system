@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260921_system_updater_v4">
+    <link rel="stylesheet" href="admin.css?v=20260921_webpush_v5">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -2321,7 +2321,87 @@
         </div>
     </div>
 
+    <!-- ブラウザプッシュ通知設定モーダル -->
+    <div class="modal-overlay" id="browserNotifModal" style="display: none; z-index: 1300;">
+        <div class="modal-card" style="max-width: 620px; width: 95%;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: #fff;">
+                <h3 style="color: #fff; display: flex; align-items: center; gap: 8px; font-size: 16px;">
+                    <i class="fa-solid fa-bell-ring"></i> チャットのブラウザプッシュ通知設定 (Web Push)
+                </h3>
+                <button class="modal-close" id="closeBrowserNotifModalBtn" style="color: #fff;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <!-- ステータス表示バナー -->
+                <div id="pushStatusBanner" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div id="pushStatusIconWrap" style="width: 38px; height: 38px; border-radius: 50%; background: #dcfce7; color: #15803d; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                            <i class="fa-solid fa-bell" id="pushStatusIcon"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 14px; font-weight: 800; color: #0f172a;" id="pushStatusTitle">ブラウザ通知: 設定確認中...</div>
+                            <div style="font-size: 12px; color: #64748b;" id="pushStatusDesc">新着メッセージ受信時のプッシュ通知とチャイム音を設定します</div>
+                        </div>
+                    </div>
+                    <button type="button" id="btnTogglePushSubscription" class="btn-primary" style="background: #0284c7; padding: 7px 14px; font-size: 12px; font-weight: 700; white-space: nowrap;">
+                        <i class="fa-solid fa-power-off"></i> <span id="btnTogglePushLabel">通知を有効化</span>
+                    </button>
+                </div>
+
+                <!-- WebPushバックグラウンド機能の解説 -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: 12px; color: #475569; line-height: 1.6;">
+                    <div style="font-weight: 700; color: #1e293b; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-shield-halved" style="color: #0284c7;"></i> Service Worker バックグラウンド受信対応
+                    </div>
+                    <p style="margin: 0; font-size: 11.5px;">
+                        Web Push API（Service Worker）により、<strong>管理画面を最小化している時や、別タブ・別ソフトで作業している時でも、受講生からメッセージが届くと画面右下にデスクトップ通知が即座にポップアップ</strong>します。通知をクリックすると該当受講生のチャットが直接開きます。
+                    </p>
+                </div>
+
+                <!-- 通知オプション設定 -->
+                <div style="margin-bottom: 16px;">
+                    <div style="font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 8px;">通知オプション</div>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <label style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer;">
+                            <span style="font-size: 13px; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-volume-high" style="color: #0284c7;"></i> 新着メッセージ受信時のチャイム音再生（ポーン♪）
+                            </span>
+                            <input type="checkbox" id="checkNotifSound" checked style="width: 16px; height: 16px; accent-color: #0284c7;">
+                        </label>
+                        <label style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer;">
+                            <span style="font-size: 13px; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-image" style="color: #10b981;"></i> 受講生の画像・写真受信時も通知する
+                            </span>
+                            <input type="checkbox" id="checkNotifImage" checked style="width: 16px; height: 16px; accent-color: #0284c7;">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- テスト送信・動作確認エリア -->
+                <div style="background: #eff6ff; border: 1px dashed #93c5fd; border-radius: 8px; padding: 14px; margin-bottom: 12px;">
+                    <div style="font-size: 12.5px; font-weight: 700; color: #1e40af; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-vial"></i> 通知の動作テスト
+                    </div>
+                    <p style="font-size: 11.5px; color: #3b82f6; margin: 0 0 10px 0;">
+                        設定が正常に完了しているか、テスト通知を送信して画面右下のポップアップと音を確認できます。
+                    </p>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button type="button" id="btnTestSoundOnly" class="btn-cancel" style="font-size: 12px; padding: 6px 12px; display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-music"></i> チャイム音テスト
+                        </button>
+                        <button type="button" id="btnSendTestWebPush" class="btn-primary" style="background: #2563eb; font-size: 12px; padding: 6px 14px; display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-paper-plane"></i> テストプッシュ通知を送信
+                        </button>
+                    </div>
+                    <div id="pushTestResultMsg" style="font-size: 11.5px; font-weight: 600; margin-top: 8px; display: none;"></div>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 12px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end;">
+                <button type="button" class="btn-cancel" id="closeBrowserNotifModalFooterBtn">閉じる</button>
+            </div>
+        </div>
+    </div>
+
     <!-- チャットモーダル直接起動フェイルセーフ (キャッシュ影響防止) -->
-    <script src="admin.js?v=20260921_system_updater_v4"></script>
+    <script src="admin.js?v=20260921_webpush_v5"></script>
 </body>
 </html>

@@ -231,6 +231,113 @@ try {
             echo json_encode($updateResult, JSON_UNESCAPED_UNICODE);
             exit;
 
+        // --- 0-0B. WebPush ブラウザプッシュ通知管理 ---
+        case 'get_vapid_public_key':
+            $keys = getOrCreateVapidKeys();
+            echo json_encode([
+                'success' => !empty($keys['publicKey']),
+                'publicKey' => $keys['publicKey'] ?? '',
+                'error' => empty($keys['publicKey']) ? 'VAPIDキーの生成に失敗しました' : null
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+
+        case 'save_push_subscription':
+            $rawJson = file_get_contents('php://input');
+            $subData = json_decode($rawJson, true) ?: $_POST;
+            $endpoint = trim($subData['endpoint'] ?? '');
+            $p256dh = trim($subData['keys']['p256dh'] ?? ($subData['p256dh'] ?? ''));
+            $auth = trim($subData['keys']['auth'] ?? ($subData['auth'] ?? ''));
+            $userAgent = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255);
+
+            if (empty($endpoint) || empty($p256dh) || empty($auth)) {
+                echo json_encode(['success' => false, 'error' => '無効なPushSubscriptionデータです']);
+                exit;
+            }
+
+            try {
+                $db->exec("
+                    CREATE TABLE IF NOT EXISTS push_subscriptions (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        account TEXT NOT NULL DEFAULT 'senior',
+                        endpoint TEXT NOT NULL UNIQUE,
+                        p256dh TEXT NOT NULL,
+                        auth TEXT NOT NULL,
+                        user_agent TEXT,
+                        created_at DATETIME NOT NULL,
+                        last_used_at DATETIME
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_push_acc ON push_subscriptions (account);
+                ");
+
+                $stmt = $db->prepare("
+                    INSERT INTO push_subscriptions (account, endpoint, p256dh, auth, user_agent, created_at, last_used_at)
+                    VALUES (:acc, :endpoint, :p256dh, :auth, :ua, :now, :now)
+                    ON CONFLICT(endpoint) DO UPDATE SET
+                        account = :acc,
+                        p256dh = :p256dh,
+                        auth = :auth,
+                        user_agent = :ua,
+                        last_used_at = :now
+                ");
+                $nowStr = date('Y-m-d H:i:s');
+                $stmt->execute([
+                    ':acc' => $activeAccountKey,
+                    ':endpoint' => $endpoint,
+                    ':p256dh' => $p256dh,
+                    ':auth' => $auth,
+                    ':ua' => $userAgent,
+                    ':now' => $nowStr
+                ]);
+
+                echo json_encode(['success' => true, 'message' => 'ブラウザプッシュ通知の購読を登録しました']);
+            } catch (Exception $e) {
+                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            }
+            exit;
+
+        case 'delete_push_subscription':
+            $rawJson = file_get_contents('php://input');
+            $subData = json_decode($rawJson, true) ?: $_POST;
+            $endpoint = trim($subData['endpoint'] ?? '');
+
+            if (!empty($endpoint)) {
+                try {
+                    $stmt = $db->prepare("DELETE FROM push_subscriptions WHERE endpoint = :endpoint");
+                    $stmt->execute([':endpoint' => $endpoint]);
+                } catch (Exception $e) {}
+            }
+            echo json_encode(['success' => true, 'message' => 'プッシュ購読を解除しました']);
+            exit;
+
+        case 'test_web_push':
+            $authPass = getAdminAuthPassword($db);
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $testPayload = [
+                'title' => '🔔 【テスト通知】ブラウザプッシュ連携',
+                'body' => 'WebPush通知は正常に稼働しています！受講生からメッセージが届くと即座にここにお知らせします。',
+                'icon' => 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/linecorp_code_withborder.png',
+                'data' => [
+                    'url' => 'admin/index.html',
+                    'user_id' => '',
+                    'account' => $activeAccountKey
+                ]
+            ];
+
+            $pushResult = sendWebPushNotification($testPayload, $db, $activeAccountKey);
+            echo json_encode([
+                'success' => ($pushResult['sent'] > 0),
+                'result' => $pushResult,
+                'message' => ($pushResult['sent'] > 0)
+                    ? "{$pushResult['sent']}台のブラウザ端末へテストプッシュ通知を送信しました！"
+                    : "送信対象の登録端末がありません。先にブラウザ側でプッシュ通知を「有効化」してください。"
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+
+
         // --- 0-2. アカウント詳細情報取得 (編集用・管理者認証必須) ---
         case 'get_account_detail':
             $authPass = getAdminAuthPassword();

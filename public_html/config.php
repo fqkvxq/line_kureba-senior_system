@@ -5981,3 +5981,46 @@ function performSystemSelfUpdate(?string $targetBranch = 'main', ?PDO $db = null
     ];
 }
 
+// ==============================================================================
+// 🔔 ブラウザ WebPush 通知 連携
+// ==============================================================================
+require_once __DIR__ . '/webpush.php';
+
+/**
+ * チャット新着メッセージ受信時の WebPush 通知送信
+ */
+function sendWebPushChatMessageNotification(array $msgData, ?PDO $db = null, string $account = 'senior'): array {
+    $uName = !empty($msgData['user_name']) ? $msgData['user_name'] : '受講生';
+    $uId = $msgData['user_id'] ?? '';
+    $msgType = $msgData['message_type'] ?? 'text';
+    $mText = $msgData['message_text'] ?? '';
+    $picUrl = $msgData['picture_url'] ?? '';
+
+    $body = $mText;
+    if ($msgType === 'image') {
+        $body = '📷 [写真・画像を受信しました]';
+    } elseif ($msgType === 'sticker') {
+        $body = '🎨 [スタンプを受信しました]';
+    } elseif ($msgType === 'video' || $msgType === 'audio' || $msgType === 'file') {
+        $body = '📎 [ファイルを受信しました]';
+    }
+
+    $icon = !empty($picUrl) ? $picUrl : 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/linecorp_code_withborder.png';
+
+    $payload = [
+        'title' => "💬 LINE: {$uName} 様",
+        'body' => $body,
+        'icon' => $icon,
+        'image' => !empty($msgData['image_url']) ? $msgData['image_url'] : null,
+        'data' => [
+            'url' => 'admin/index.html?open_chat=' . urlencode($uId) . '&account=' . urlencode($account),
+            'user_id' => $uId,
+            'user_name' => $uName,
+            'account' => $account
+        ]
+    ];
+
+    return sendWebPushNotification($payload, $db, $account);
+}
+
+

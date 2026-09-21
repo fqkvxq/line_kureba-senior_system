@@ -471,6 +471,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     init2FASettings();
     initQuickReplySettings();
     initSystemUpdater();
+    initBrowserNotifControls();
+    await initWebPushServiceWorker();
     updateBrowserNotifUi();
     if (!globalChatUnreadTimer) {
         globalChatUnreadTimer = setInterval(loadUnreadChatCounts, 10000);
@@ -6291,82 +6293,394 @@ function playNotificationSound() {
     }
 }
 
-// ブラウザ通知ボタンのUI更新
-function updateBrowserNotifUi() {
-    const btn = document.getElementById('btnToggleBrowserNotif');
-    const icon = document.getElementById('iconBrowserNotif');
-    const label = document.getElementById('labelBrowserNotif');
-    if (!btn) return;
+// ==============================================================================
+// 🔔 ブラウザ WebPush 通知 & チャイム音管理システム
+// ==============================================================================
 
-    const isSupported = ("Notification" in window);
-    const isGranted = isSupported && Notification.permission === "granted";
-    const isEnabled = (localStorage.getItem('kureba_browser_notif_enabled') === 'true') && isGranted;
+// Base64URL を Uint8Array に変換 (VAPID公開鍵登録用)
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
 
-    if (!isSupported) {
-        btn.style.display = 'none';
-        return;
+let serviceWorkerRegistration = null;
+
+// Service Worker の初期化 & WebPush 準備
+async function initWebPushServiceWorker() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        console.log('Web Push / Service Worker is not supported in this browser.');
+        return null;
     }
 
-    if (isEnabled) {
-        btn.classList.add('active');
-        if (icon) {
-            icon.className = 'fa-solid fa-bell-ring';
-            icon.style.color = '#5eead4';
-        }
-        if (label) label.textContent = 'ブラウザ通知: ON';
-        btn.title = 'ブラウザ通知が有効です（新着LINEメッセージ時にポップアップと音でお知らせします。クリックでOFF）';
-    } else {
-        btn.classList.remove('active');
-        if (icon) {
-            icon.className = 'fa-solid fa-bell';
-            icon.style.color = '#64748b';
-        }
-        if (label) label.textContent = 'ブラウザ通知: OFF';
-        btn.title = 'クリックしてブラウザ通知を有効化（新着LINEメッセージ時にポップアップとチャイム音でお知らせ）';
+    try {
+        // ルートまたは admin の Service Worker を登録
+        const swUrl = '../sw.js?v=20260921_webpush_v1';
+        serviceWorkerRegistration = await navigator.serviceWorker.register(swUrl, { scope: '../' }).catch(() => {
+            return navigator.serviceWorker.register('sw.js?v=20260921_webpush_v1');
+        });
+
+        // Service Worker からのプッシュ通知クリックイベント受信
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'OPEN_CHAT_BY_PUSH' && event.data.user_id) {
+                openChatModalByUid(event.data.user_id);
+            }
+        });
+
+        return serviceWorkerRegistration;
+    } catch (e) {
+        console.warn('Service Worker registration failed:', e);
+        return null;
     }
 }
 
-// ブラウザ通知ON/OFF切り替え
-async function toggleBrowserNotification() {
+// ブラウザ通知UI & モーダル状態の更新
+async function updateBrowserNotifUi() {
+    const btn = document.getElementById('btnToggleBrowserNotif');
+    const icon = document.getElementById('iconBrowserNotif');
+    const label = document.getElementById('labelBrowserNotif');
+
+    const statusTitle = document.getElementById('pushStatusTitle');
+    const statusDesc = document.getElementById('pushStatusDesc');
+    const statusIcon = document.getElementById('pushStatusIcon');
+    const statusIconWrap = document.getElementById('pushStatusIconWrap');
+    const btnTogglePush = document.getElementById('btnTogglePushSubscription');
+    const btnToggleLabel = document.getElementById('btnTogglePushLabel');
+
+    const isSupported = ("Notification" in window);
+    const permission = isSupported ? Notification.permission : "unsupported";
+
+    let hasActiveSubscription = false;
+    if (serviceWorkerRegistration && serviceWorkerRegistration.pushManager) {
+        try {
+            const sub = await serviceWorkerRegistration.pushManager.getSubscription();
+            hasActiveSubscription = (sub !== null);
+        } catch (e) {}
+    }
+
+    const isEnabled = isSupported && (permission === "granted") && (localStorage.getItem('kureba_browser_notif_enabled') !== 'false');
+
+    // ツールバーボタンの更新
+    if (btn) {
+        if (!isSupported) {
+            btn.style.display = 'none';
+        } else if (isEnabled) {
+            btn.classList.add('active');
+            btn.style.background = '#e0f2fe';
+            btn.style.borderColor = '#38bdf8';
+            if (icon) {
+                icon.className = 'fa-solid fa-bell-ring';
+                icon.style.color = '#0284c7';
+            }
+            if (label) {
+                label.innerHTML = 'プッシュ通知: <strong style="color:#0284c7;">ON</strong>';
+            }
+            btn.title = 'ブラウザプッシュ通知が稼働中です（クリックして設定・テスト）';
+        } else {
+            btn.classList.remove('active');
+            btn.style.background = '';
+            btn.style.borderColor = '';
+            if (icon) {
+                icon.className = 'fa-solid fa-bell';
+                icon.style.color = '#64748b';
+            }
+            if (label) {
+                label.textContent = 'プッシュ通知: OFF';
+            }
+            btn.title = 'ブラウザプッシュ通知はOFFです（クリックして設定・有効化）';
+        }
+    }
+
+    // モーダル内のステータス表示更新
+    if (statusTitle) {
+        if (!isSupported) {
+            statusTitle.textContent = 'お使いのブラウザはプッシュ通知非対応です';
+            statusDesc.textContent = 'Chrome, Edge, Firefox, Safari(macOS) などの最新ブラウザをご利用ください';
+            if (statusIconWrap) { statusIconWrap.style.background = '#f1f5f9'; statusIconWrap.style.color = '#94a3b8'; }
+            if (btnTogglePush) btnTogglePush.disabled = true;
+        } else if (permission === 'denied') {
+            statusTitle.textContent = 'ブラウザ通知がブロックされています';
+            statusDesc.textContent = 'アドレスバー左側の鍵アイコン（サイト設定）から「通知」を「許可」に変更してください';
+            if (statusIconWrap) { statusIconWrap.style.background = '#fee2e2'; statusIconWrap.style.color = '#dc2626'; }
+            if (statusIcon) statusIcon.className = 'fa-solid fa-ban';
+            if (btnToggleLabel) btnToggleLabel.textContent = 'ブラウザ設定でブロック中';
+            if (btnTogglePush) {
+                btnTogglePush.disabled = true;
+                btnTogglePush.style.background = '#ef4444';
+            }
+        } else if (isEnabled) {
+            statusTitle.textContent = '✅ ブラウザプッシュ通知: 有効 (稼働中)';
+            statusDesc.textContent = hasActiveSubscription 
+                ? 'Service Workerバックグラウンド受信 & サウンド再生が正常に待機しています'
+                : 'デスクトップ通知が許可されています（新着メッセージを画面右下にお知らせ）';
+            if (statusIconWrap) { statusIconWrap.style.background = '#dcfce7'; statusIconWrap.style.color = '#15803d'; }
+            if (statusIcon) statusIcon.className = 'fa-solid fa-bell-ring';
+            if (btnToggleLabel) btnToggleLabel.textContent = 'プッシュ通知を無効化 (OFF)';
+            if (btnTogglePush) {
+                btnTogglePush.disabled = false;
+                btnTogglePush.style.background = '#64748b';
+            }
+        } else {
+            statusTitle.textContent = 'ブラウザプッシュ通知: 未設定 (OFF)';
+            statusDesc.textContent = '「通知を有効化」を押すと、新着メッセージを画面右下に即座にお知らせします';
+            if (statusIconWrap) { statusIconWrap.style.background = '#f1f5f9'; statusIconWrap.style.color = '#64748b'; }
+            if (statusIcon) statusIcon.className = 'fa-solid fa-bell';
+            if (btnToggleLabel) btnToggleLabel.textContent = '今すぐ通知を有効化 (ON)';
+            if (btnTogglePush) {
+                btnTogglePush.disabled = false;
+                btnTogglePush.style.background = '#0284c7';
+            }
+        }
+    }
+}
+
+// プッシュ通知設定モーダルを開く
+function openBrowserNotifModal() {
+    const modal = document.getElementById('browserNotifModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        updateBrowserNotifUi();
+    }
+}
+
+// プッシュ通知設定モーダルを閉じる
+function closeBrowserNotifModal() {
+    const modal = document.getElementById('browserNotifModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// プッシュ通知購読の有効化 (Permission Request & PushManager Subscribe)
+async function enableWebPushNotification() {
     if (!("Notification" in window)) {
         alert("お使いのブラウザはデスクトップ通知に対応していません。Google Chrome / Edge / Firefox等の最新版をご利用ください。");
         return;
     }
 
-    if (Notification.permission === "granted") {
-        const cur = (localStorage.getItem('kureba_browser_notif_enabled') === 'true');
-        const next = !cur;
-        localStorage.setItem('kureba_browser_notif_enabled', next ? 'true' : 'false');
-        updateBrowserNotifUi();
-        if (next) {
-            playNotificationSound();
-            showToast("🔔 ブラウザ通知を有効にしました！新着メッセージ受信時に通知します。");
-        } else {
-            showToast("🔕 ブラウザ通知をOFFにしました。");
-        }
-    } else if (Notification.permission !== "denied") {
+    try {
         const perm = await Notification.requestPermission();
-        if (perm === "granted") {
-            localStorage.setItem('kureba_browser_notif_enabled', 'true');
+        if (perm !== "granted") {
+            alert("通知の許可が得られませんでした。ブラウザのアドレスバーの鍵アイコンから通知を「許可」に変更してください。");
             updateBrowserNotifUi();
-            playNotificationSound();
+            return;
+        }
+
+        localStorage.setItem('kureba_browser_notif_enabled', 'true');
+
+        // Service Worker PushManager 購読
+        if (serviceWorkerRegistration || ('serviceWorker' in navigator)) {
+            if (!serviceWorkerRegistration) {
+                serviceWorkerRegistration = await initWebPushServiceWorker();
+            }
+
+            if (serviceWorkerRegistration && serviceWorkerRegistration.pushManager) {
+                // VAPID公開鍵をサーバーから取得
+                const vapidRes = await fetch(`../api.php?action=get_vapid_public_key&account=${encodeURIComponent(state.activeAccount)}`);
+                const vapidData = await vapidRes.json();
+
+                if (vapidData.success && vapidData.publicKey) {
+                    const convertedVapidKey = urlBase64ToUint8Array(vapidData.publicKey);
+                    let subscription = await serviceWorkerRegistration.pushManager.getSubscription();
+                    if (!subscription) {
+                        subscription = await serviceWorkerRegistration.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: convertedVapidKey
+                        });
+                    }
+
+                    if (subscription) {
+                        // サーバーに購読情報を保存
+                        const subJson = subscription.toJSON();
+                        await fetch(`../api.php?action=save_push_subscription&account=${encodeURIComponent(state.activeAccount)}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                endpoint: subscription.endpoint,
+                                keys: subJson.keys || {}
+                            })
+                        });
+                    }
+                }
+            }
+        }
+
+        playNotificationSound();
+        showToast("🔔 ブラウザプッシュ通知を有効にしました！");
+        updateBrowserNotifUi();
+
+        // 動作確認用バナー通知
+        try {
+            new Notification("🔔 LINE受講生管理システム", {
+                body: "ブラウザプッシュ通知が有効化されました！受講生からメッセージが届くとここにお知らせします。",
+                icon: "https://scdn.line-apps.com/n/channel_devcenter/img/fx/linecorp_code_withborder.png"
+            });
+        } catch (e) {}
+
+    } catch (e) {
+        console.error('WebPush enable error:', e);
+        alert('プッシュ通知の登録中にエラーが発生しました: ' + e.message);
+    }
+}
+
+// プッシュ通知の解除
+async function disableWebPushNotification() {
+    localStorage.setItem('kureba_browser_notif_enabled', 'false');
+
+    if (serviceWorkerRegistration && serviceWorkerRegistration.pushManager) {
+        try {
+            const subscription = await serviceWorkerRegistration.pushManager.getSubscription();
+            if (subscription) {
+                await fetch(`../api.php?action=delete_push_subscription&account=${encodeURIComponent(state.activeAccount)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ endpoint: subscription.endpoint })
+                });
+                await subscription.unsubscribe();
+            }
+        } catch (e) {
+            console.warn('Unsubscribe error:', e);
+        }
+    }
+
+    showToast("🔕 ブラウザプッシュ通知をOFFにしました。");
+    updateBrowserNotifUi();
+}
+
+// モーダルやヘッダーからのトグル処理
+async function toggleBrowserNotification() {
+    const isSupported = ("Notification" in window);
+    if (!isSupported) {
+        alert("お使いのブラウザはプッシュ通知に対応していません。");
+        return;
+    }
+
+    const permission = Notification.permission;
+    const isCurrentlyEnabled = (permission === "granted") && (localStorage.getItem('kureba_browser_notif_enabled') !== 'false');
+
+    if (isCurrentlyEnabled) {
+        await disableWebPushNotification();
+    } else {
+        await enableWebPushNotification();
+    }
+}
+
+// テストプッシュ通知の送信
+async function sendTestWebPush() {
+    const btn = document.getElementById('btnSendTestWebPush');
+    const resultMsg = document.getElementById('pushTestResultMsg');
+    const origHtml = btn ? btn.innerHTML : '';
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> テスト送信中...';
+    }
+    if (resultMsg) {
+        resultMsg.style.display = 'block';
+        resultMsg.style.color = '#0284c7';
+        resultMsg.textContent = 'サーバーからプッシュ通知を送信しています...';
+    }
+
+    try {
+        playNotificationSound();
+
+        const res = await fetch(`../api.php?action=test_web_push&account=${encodeURIComponent(state.activeAccount)}`, {
+            method: 'POST'
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            if (resultMsg) {
+                resultMsg.style.color = '#15803d';
+                resultMsg.textContent = `✅ ${data.message || 'テストプッシュ通知を正常に送信しました！'}`;
+            }
+            showToast('🎉 テストプッシュ通知を送信しました！');
+        } else {
+            // ローカルフォールバック通知を発行
             try {
-                new Notification("🔔 LINE受講生管理システム", {
-                    body: "ブラウザ通知が有効化されました！新着メッセージが届くとここにお知らせします。",
+                new Notification("🔔 【テスト通知】ブラウザプッシュ通知", {
+                    body: "デスクトップ通知は正常に機能しています！（Service Worker登録もお試しください）",
                     icon: "https://scdn.line-apps.com/n/channel_devcenter/img/fx/linecorp_code_withborder.png"
                 });
-            } catch (e) {}
-            showToast("🔔 ブラウザ通知を有効にしました！");
-        } else {
-            showToast("ブラウザ通知の許可が得られませんでした。");
-            updateBrowserNotifUi();
+            } catch (ne) {}
+
+            if (resultMsg) {
+                resultMsg.style.color = '#d97706';
+                resultMsg.textContent = `ℹ️ ${data.message || 'デスクトップ通知を表示しました'}`;
+            }
         }
-    } else {
-        alert("ブラウザ通知がブロックされています。ブラウザのアドレスバー左側にある鍵アイコン（またはサイト設定）から通知を「許可」に変更してください。");
+    } catch (e) {
+        console.error('Test push error:', e);
+        if (resultMsg) {
+            resultMsg.style.color = '#dc2626';
+            resultMsg.textContent = `❌ エラー: ${e.message}`;
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
+
+// 初期化リスナー
+function initBrowserNotifControls() {
+    const btnHdr = document.getElementById('btnToggleBrowserNotif');
+    const btnClose = document.getElementById('closeBrowserNotifModalBtn');
+    const btnCloseFooter = document.getElementById('closeBrowserNotifModalFooterBtn');
+    const btnTogglePush = document.getElementById('btnTogglePushSubscription');
+    const btnTestSound = document.getElementById('btnTestSoundOnly');
+    const btnTestPush = document.getElementById('btnSendTestWebPush');
+
+    if (btnHdr) {
+        btnHdr.addEventListener('click', () => {
+            openBrowserNotifModal();
+        });
+    }
+
+    if (btnClose) btnClose.addEventListener('click', closeBrowserNotifModal);
+    if (btnCloseFooter) btnCloseFooter.addEventListener('click', closeBrowserNotifModal);
+
+    if (btnTogglePush) {
+        btnTogglePush.addEventListener('click', () => {
+            toggleBrowserNotification();
+        });
+    }
+
+    if (btnTestSound) {
+        btnTestSound.addEventListener('click', () => {
+            playNotificationSound();
+            showToast('🎵 チャイム音を再生しました');
+        });
+    }
+
+    if (btnTestPush) {
+        btnTestPush.addEventListener('click', () => {
+            sendTestWebPush();
+        });
+    }
+
+    // URLパラメータから `open_chat` が指定されている場合は自動でチャットモーダルを開く
+    const urlParams = new URLSearchParams(window.location.search);
+    const openChatUid = urlParams.get('open_chat');
+    if (openChatUid) {
+        setTimeout(() => {
+            openChatModalByUid(openChatUid);
+        }, 800);
     }
 }
 
 window.toggleBrowserNotification = toggleBrowserNotification;
+window.enableWebPushNotification = enableWebPushNotification;
+window.disableWebPushNotification = disableWebPushNotification;
+window.openBrowserNotifModal = openBrowserNotifModal;
+window.closeBrowserNotifModal = closeBrowserNotifModal;
+window.sendTestWebPush = sendTestWebPush;
 window.updateBrowserNotifUi = updateBrowserNotifUi;
 
 async function loadUnreadChatCounts() {
@@ -6379,7 +6693,10 @@ async function loadUnreadChatCounts() {
             let totalUnread = 0;
             Object.values(newCounts).forEach(cnt => { totalUnread += parseInt(cnt, 10) || 0; });
 
-            const isNotifEnabled = ("Notification" in window) && (Notification.permission === "granted") && (localStorage.getItem('kureba_browser_notif_enabled') === 'true');
+            const checkSound = document.getElementById('checkNotifSound');
+            const shouldPlaySound = !checkSound || checkSound.checked;
+
+            const isNotifEnabled = ("Notification" in window) && (Notification.permission === "granted") && (localStorage.getItem('kureba_browser_notif_enabled') !== 'false');
 
             // 新着メッセージ検知時の通知処理
             if (Array.isArray(recentUnread) && recentUnread.length > 0) {
@@ -6390,7 +6707,9 @@ async function loadUnreadChatCounts() {
 
                     // 初期ロード時でなければ通知を発行
                     if (lastTotalUnreadCount >= 0) {
-                        playNotificationSound();
+                        if (shouldPlaySound) {
+                            playNotificationSound();
+                        }
 
                         const sName = msg.user_name || '受講生';
                         let previewText = msg.message_text || '';
@@ -6404,7 +6723,7 @@ async function loadUnreadChatCounts() {
                             previewText = '🎵 [音声を受信しました]';
                         }
 
-                        // デスクトップ通知
+                        // デスクトップ通知 (フォアグラウンド表示)
                         if (isNotifEnabled) {
                             try {
                                 const notif = new Notification(`💬【新着LINE】${sName} 様`, {
@@ -6420,9 +6739,7 @@ async function loadUnreadChatCounts() {
                                     }
                                     notif.close();
                                 };
-                            } catch (nErr) {
-                                console.warn('Desktop Notification error:', nErr);
-                            }
+                            } catch (e) {}
                         }
 
                         // 画面内トースト通知
