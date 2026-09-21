@@ -901,7 +901,71 @@ try {
             echo json_encode($testRes, JSON_UNESCAPED_UNICODE);
             exit;
 
-        // --- 0-21. 管理者ログアウト ---
+        // --- 0-21. クイックリプライ設定取得 ---
+        case 'get_quick_reply_settings':
+            $authPass = getAdminAuthPassword();
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $targetAcc = $_GET['account'] ?? ($_POST['account'] ?? getActiveAccountKey());
+            $settings = getQuickReplySettings($targetAcc, $db);
+            $accConfig = getAccountConfig($targetAcc);
+
+            echo json_encode([
+                'success' => true,
+                'account' => $targetAcc,
+                'account_name' => $accConfig['name'] ?? $targetAcc,
+                'industry_type' => $accConfig['industry_type'] ?? 'senior',
+                'settings' => $settings
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+
+        // --- 0-22. クイックリプライ設定保存 ---
+        case 'save_quick_reply_settings':
+            $authPass = getAdminAuthPassword();
+            if ($authPass !== ADMIN_PASSWORD) {
+                echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
+                exit;
+            }
+
+            $targetAcc = $_POST['account'] ?? ($_GET['account'] ?? getActiveAccountKey());
+            $enabled = filter_var($_POST['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $mode = trim((string)($_POST['mode'] ?? 'none'));
+
+            $customItems = [];
+            if (!empty($_POST['custom_items'])) {
+                if (is_array($_POST['custom_items'])) {
+                    $customItems = $_POST['custom_items'];
+                } else {
+                    $decoded = json_decode($_POST['custom_items'], true);
+                    if (is_array($decoded)) {
+                        $customItems = $decoded;
+                    }
+                }
+            }
+
+            $settings = [
+                'enabled' => $enabled,
+                'mode' => $mode,
+                'custom_items' => $customItems
+            ];
+
+            $res = saveQuickReplySettings($targetAcc, $settings, $db);
+            if ($res) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'クイックリプライ設定を保存しました',
+                    'account' => $targetAcc,
+                    'settings' => $settings
+                ], JSON_UNESCAPED_UNICODE);
+            } else {
+                echo json_encode(['success' => false, 'error' => '設定の保存に失敗しました']);
+            }
+            exit;
+
+        // --- 0-23. 管理者ログアウト ---
         case 'admin_logout':
             $token = $_COOKIE['admin_auth_token'] ?? ($_POST['auth_token'] ?? ($_GET['auth_token'] ?? ''));
             if (!empty($token)) {

@@ -331,6 +331,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initEventListeners();
     initAccountManagement();
     init2FASettings();
+    initQuickReplySettings();
 });
 
 async function loadAccounts() {
@@ -4861,4 +4862,301 @@ async function test2FAEmail() {
         if (testBtn) testBtn.disabled = false;
     }
 }
+
+/* ==========================================================================
+   クイックリプライ（画面下部ボタン）設定機能
+   ========================================================================== */
+
+let qrState = {
+    account: '',
+    enabled: false,
+    mode: 'none',
+    custom_items: []
+};
+
+function initQuickReplySettings() {
+    const btnOpen = document.getElementById('openQuickReplySettingsBtn') || document.getElementById('btnOpenQuickReplySettingsModal');
+    const modal = document.getElementById('quickReplySettingsModal');
+    const btnClose = document.getElementById('btnCloseQuickReplyModal');
+    const btnCancel = document.getElementById('btnCancelQuickReplyModal');
+    const toggle = document.getElementById('qrEnabledToggle');
+    const btnSave = document.getElementById('btnSaveQuickReplySettings');
+    const btnAddItem = document.getElementById('btnAddQrCustomItem');
+    const accSelect = document.getElementById('qrAccountSelect');
+    const modeRadios = document.querySelectorAll('input[name="qrMode"]');
+
+    if (btnOpen) {
+        btnOpen.addEventListener('click', () => openQuickReplySettingsModal());
+    }
+    if (btnClose) {
+        btnClose.addEventListener('click', closeQuickReplySettingsModal);
+    }
+    if (btnCancel) {
+        btnCancel.addEventListener('click', closeQuickReplySettingsModal);
+    }
+    if (toggle) {
+        toggle.addEventListener('change', (e) => {
+            qrState.enabled = e.target.checked;
+            updateQuickReplyVisual(qrState.enabled);
+            renderQuickReplyLivePreview();
+        });
+    }
+    if (accSelect) {
+        accSelect.addEventListener('change', (e) => {
+            loadQuickReplySettings(e.target.value);
+        });
+    }
+    modeRadios.forEach(r => {
+        r.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                qrState.mode = e.target.value;
+                const editorWrap = document.getElementById('qrCustomEditorWrap');
+                if (editorWrap) editorWrap.style.display = (qrState.mode === 'custom') ? 'block' : 'none';
+                renderQuickReplyLivePreview();
+            }
+        });
+    });
+    if (btnAddItem) {
+        btnAddItem.addEventListener('click', () => {
+            if (qrState.custom_items.length >= 13) {
+                alert('クイックリプライボタンは最大13個までです。');
+                return;
+            }
+            qrState.custom_items.push({
+                label: `ボタン ${qrState.custom_items.length + 1}`,
+                action_type: 'postback',
+                data: 'action=open_mycar',
+                uri: '',
+                text: ''
+            });
+            renderQuickReplyCustomItems();
+            renderQuickReplyLivePreview();
+        });
+    }
+    if (btnSave) {
+        btnSave.addEventListener('click', saveQuickReplySettings);
+    }
+}
+
+function updateQuickReplyVisual(isEnabled) {
+    const card = document.getElementById('qrStatusCard');
+    const title = document.getElementById('qrStatusTitle');
+    const subtitle = document.getElementById('qrStatusSubtitle');
+
+    if (card) {
+        if (isEnabled) {
+            card.classList.remove('is-disabled');
+            card.classList.add('is-enabled');
+            if (title) title.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #16a34a;"></i> クイックリプライ自動付与：<span style="color: #16a34a;">有効</span>';
+            if (subtitle) {
+                subtitle.style.color = '#15803d';
+                subtitle.textContent = 'LINEメッセージ送信時に画面下部に選択肢ボタンを表示します';
+            }
+        } else {
+            card.classList.remove('is-enabled');
+            card.classList.add('is-disabled');
+            if (title) title.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color: #64748b;"></i> クイックリプライ自動付与：<span style="color: #64748b;">無効（オフ）</span>';
+            if (subtitle) {
+                subtitle.style.color = '#64748b';
+                subtitle.textContent = 'メッセージ送信時にクイックリプライボタンを一切付けません（他社利用時推奨）';
+            }
+        }
+    }
+}
+
+async function openQuickReplySettingsModal(targetAcc) {
+    const modal = document.getElementById('quickReplySettingsModal');
+    if (!modal) return;
+
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+
+    const accSelect = document.getElementById('qrAccountSelect');
+    if (accSelect) {
+        accSelect.innerHTML = '';
+        const accounts = (state && state.accounts && state.accounts.length) ? state.accounts : [
+            { id: 'senior', name: 'シニア向けパソコン教室' }
+        ];
+        accounts.forEach(acc => {
+            const opt = document.createElement('option');
+            opt.value = acc.id;
+            opt.textContent = `${acc.name} (${acc.id})`;
+            accSelect.appendChild(opt);
+        });
+        const currentTarget = targetAcc || state.activeAccount || 'senior';
+        accSelect.value = currentTarget;
+    }
+
+    const currentAcc = (accSelect && accSelect.value) ? accSelect.value : (targetAcc || state.activeAccount || 'senior');
+    await loadQuickReplySettings(currentAcc);
+}
+
+function closeQuickReplySettingsModal() {
+    const modal = document.getElementById('quickReplySettingsModal');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    }
+}
+
+async function loadQuickReplySettings(accountKey) {
+    qrState.account = accountKey || state.activeAccount || 'senior';
+
+    try {
+        const res = await fetch(`../api.php?action=get_quick_reply_settings&account=${encodeURIComponent(qrState.account)}&password=${encodeURIComponent(state.password || '')}`);
+        const data = await res.json();
+
+        if (data.success && data.settings) {
+            const s = data.settings;
+            qrState.enabled = !!s.enabled;
+            qrState.mode = s.mode || (data.industry_type === 'senior' ? 'senior_knowledge' : 'none');
+            qrState.custom_items = Array.isArray(s.custom_items) ? s.custom_items : [];
+
+            const toggle = document.getElementById('qrEnabledToggle');
+            if (toggle) toggle.checked = qrState.enabled;
+            updateQuickReplyVisual(qrState.enabled);
+
+            const modeRadio = document.querySelector(`input[name="qrMode"][value="${qrState.mode}"]`);
+            if (modeRadio) {
+                modeRadio.checked = true;
+            } else {
+                const defaultRadio = document.querySelector('input[name="qrMode"][value="none"]');
+                if (defaultRadio) defaultRadio.checked = true;
+            }
+
+            const editorWrap = document.getElementById('qrCustomEditorWrap');
+            if (editorWrap) editorWrap.style.display = (qrState.mode === 'custom') ? 'block' : 'none';
+
+            renderQuickReplyCustomItems();
+            renderQuickReplyLivePreview();
+        }
+    } catch (e) {
+        console.error('Failed to load Quick Reply settings:', e);
+    }
+}
+
+function renderQuickReplyCustomItems() {
+    const container = document.getElementById('qrCustomItemsList');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!qrState.custom_items.length) {
+        container.innerHTML = '<div style="font-size: 11.5px; color: #94a3b8; text-align: center; padding: 10px;">「ボタン追加」を押してカスタムボタンを作成してください</div>';
+        return;
+    }
+
+    qrState.custom_items.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display: flex; align-items: center; gap: 8px; background: #fff; padding: 8px 10px; border-radius: var(--radius-xs); border: 1px solid #e2e8f0;';
+        
+        row.innerHTML = `
+            <span style="font-size: 11px; font-weight: 800; color: #64748b; width: 20px;">#${idx + 1}</span>
+            <input type="text" placeholder="ボタン名（例: 📋 カルテ）" value="${escapeHtml(item.label || '')}" maxlength="20" style="flex: 1.2; padding: 5px 8px; font-size: 12px; font-weight: bold; border: 1px solid #cbd5e1; border-radius: var(--radius-xs);" oninput="qrState.custom_items[${idx}].label = this.value; renderQuickReplyLivePreview();">
+            <select style="flex: 1; padding: 5px 6px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-xs); background: #fff;" onchange="qrState.custom_items[${idx}].action_type = this.value; renderQuickReplyCustomItems(); renderQuickReplyLivePreview();">
+                <option value="postback" ${item.action_type === 'postback' ? 'selected' : ''}>カルテ/予約 (Postback)</option>
+                <option value="uri" ${item.action_type === 'uri' ? 'selected' : ''}>URLを開く (URI)</option>
+                <option value="message" ${item.action_type === 'message' ? 'selected' : ''}>メッセージ送信</option>
+            </select>
+            ${item.action_type === 'uri' ? `
+                <input type="text" placeholder="https://..." value="${escapeHtml(item.uri || '')}" style="flex: 1.5; padding: 5px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-xs);" oninput="qrState.custom_items[${idx}].uri = this.value; renderQuickReplyLivePreview();">
+            ` : (item.action_type === 'message' ? `
+                <input type="text" placeholder="送信テキスト" value="${escapeHtml(item.text || '')}" style="flex: 1.5; padding: 5px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: var(--radius-xs);" oninput="qrState.custom_items[${idx}].text = this.value; renderQuickReplyLivePreview();">
+            ` : `
+                <input type="text" placeholder="action=open_mycar" value="${escapeHtml(item.data || '')}" style="flex: 1.5; padding: 5px 8px; font-size: 11.5px; font-family: monospace; border: 1px solid #cbd5e1; border-radius: var(--radius-xs);" oninput="qrState.custom_items[${idx}].data = this.value; renderQuickReplyLivePreview();">
+            `)}
+            <button type="button" style="background: #fee2e2; border: 1px solid #fca5a5; color: #dc2626; padding: 5px 8px; border-radius: var(--radius-xs); cursor: pointer; font-size: 11px;" onclick="qrState.custom_items.splice(${idx}, 1); renderQuickReplyCustomItems(); renderQuickReplyLivePreview();">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+        `;
+        container.appendChild(row);
+    });
+}
+
+function renderQuickReplyLivePreview() {
+    const container = document.getElementById('qrLivePreviewContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!qrState.enabled || qrState.mode === 'none') {
+        container.innerHTML = '<span style="font-size: 11.5px; color: #94a3b8; padding: 4px;">（クイックリプライは無効です。メッセージにボタンは付与されません）</span>';
+        return;
+    }
+
+    let buttons = [];
+
+    if (qrState.mode === 'senior_knowledge') {
+        buttons = [
+            '📄 偽PDF詐欺', '🚨 偽警告対策', '📞 偽電話サポート', '⚠️ 偽SMS対策',
+            '👤 LINE乗っ取り', '📱 文字拡大', '💬 LINE特大', '🗣️ 音声入力',
+            '🔍 画面拡大', '⚡ PC再起動', '🔢 数字打てない', '💬 教室に質問・相談', '📚 全20テーマ一覧'
+        ];
+    } else if (qrState.mode === 'industry_preset') {
+        buttons = ['🚗 マイカルテ/会員証', '💬 質問・相談', '📅 WEB予約'];
+    } else if (qrState.mode === 'custom') {
+        buttons = qrState.custom_items.map(it => it.label || 'ボタン');
+        if (!buttons.length) {
+            container.innerHTML = '<span style="font-size: 11.5px; color: #94a3b8; padding: 4px;">（カスタムボタンが未登録です）</span>';
+            return;
+        }
+    }
+
+    buttons.forEach(btnText => {
+        const pill = document.createElement('div');
+        pill.style.cssText = 'white-space: nowrap; background: #ffffff; border: 1px solid #06C755; color: #166534; font-size: 11.5px; font-weight: 700; padding: 6px 14px; border-radius: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px;';
+        pill.innerHTML = escapeHtml(btnText);
+        container.appendChild(pill);
+    });
+}
+
+async function saveQuickReplySettings() {
+    const btn = document.getElementById('btnSaveQuickReplySettings');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 保存中...';
+    }
+
+    try {
+        const payload = new URLSearchParams({
+            action: 'save_quick_reply_settings',
+            password: state.password,
+            account: qrState.account || state.activeAccount || 'senior',
+            enabled: qrState.enabled ? '1' : '0',
+            mode: qrState.mode || 'none',
+            custom_items: JSON.stringify(qrState.custom_items || [])
+        });
+
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            if (typeof showToast === 'function') {
+                showToast(`クイックリプライ設定を保存しました（${qrState.enabled ? '有効' : '完全無効'}）`, 'success');
+            } else {
+                alert('クイックリプライ設定を保存しました！');
+            }
+            closeQuickReplySettingsModal();
+        } else {
+            alert(data.error || '保存に失敗しました');
+        }
+    } catch (e) {
+        console.error('Save Quick Reply settings error:', e);
+        alert('保存エラーが発生しました: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
+
+window.openQuickReplySettings = openQuickReplySettingsModal;
+window.closeQuickReplySettings = closeQuickReplySettingsModal;
+window.qrState = qrState;
+window.renderQuickReplyCustomItems = renderQuickReplyCustomItems;
+window.renderQuickReplyLivePreview = renderQuickReplyLivePreview;
 

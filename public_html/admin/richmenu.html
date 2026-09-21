@@ -13,8 +13,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260921_2fa_toggle_fix_v2">
-    <link rel="stylesheet" href="richmenu.css?v=20260921_2fa_toggle_fix_v2">
+    <link rel="stylesheet" href="admin.css?v=20260921_quick_reply_settings_v1">
+    <link rel="stylesheet" href="richmenu.css?v=20260921_quick_reply_settings_v1">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -95,6 +95,10 @@
                             <i class="fa-solid fa-gear"></i>
                         </button>
                     </div>
+
+                    <button type="button" class="btn-account-manage" id="btnOpenQuickReplySettingsModal" title="クイックリプライ（画面下部ボタン）設定" style="background: #fffbeb; color: #d97706; border: 1px solid #fde68a;">
+                        <i class="fa-solid fa-bolt"></i>
+                    </button>
 
                     <button type="button" class="btn-account-manage" id="btnOpen2FASettingsModal" title="管理者ログイン時のメール二段階認証(2FA)セキュリティ設定" style="background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd;">
                         <i class="fa-solid fa-shield-halved"></i>
@@ -1038,6 +1042,123 @@
         </div>
     </div>
 
+    <!-- クイックリプライ設定モーダル -->
+    <div class="modal" id="quickReplySettingsModal" style="display: none;">
+        <div class="modal-dialog" style="max-width: 620px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #d97706 0%, #b45309 100%); color: #fff; padding: 16px 20px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #fff;">クイックリプライ（画面下部ボタン）設定</h3>
+                        <span style="font-size: 12px; opacity: 0.9;">メッセージ送信時にLINE画面下部に表示するボタンの設定</span>
+                    </div>
+                </div>
+                <button class="modal-close" id="btnCloseQuickReplyModal" style="color: #fff; opacity: 0.8;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div style="padding: 20px; max-height: 80vh; overflow-y: auto;">
+                <!-- 対象アカウント選択 -->
+                <div style="margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid #e2e8f0;">
+                    <label for="qrAccountSelect" style="font-size: 12.5px; font-weight: 700; color: #334155; margin: 0;">
+                        <i class="fa-solid fa-arrows-rotate" style="color: #6366f1;"></i> 設定対象アカウント:
+                    </label>
+                    <select id="qrAccountSelect" style="padding: 6px 12px; font-size: 12.5px; font-weight: 600; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); background: #fff;"></select>
+                </div>
+
+                <!-- 有効/無効 スイッチカード -->
+                <div id="qrStatusCard" class="twofa-status-card is-enabled" style="margin-bottom: 16px;">
+                    <div>
+                        <div id="qrStatusTitle" style="font-weight: 700; font-size: 14px; color: #166534; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-circle-check" style="color: #16a34a;"></i> クイックリプライ自動付与：<span style="color: #16a34a;">有効</span>
+                        </div>
+                        <div id="qrStatusSubtitle" style="font-size: 12px; color: #15803d; margin-top: 2px;">
+                            LINEメッセージ送信時に画面下部に選択肢ボタンを表示します
+                        </div>
+                    </div>
+                    <label class="switch-toggle" for="qrEnabledToggle" title="クイックリプライの有効/無効を切り替え">
+                        <input type="checkbox" id="qrEnabledToggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <!-- モード選択 -->
+                <div id="qrModeSelectionWrap" style="margin-bottom: 16px;">
+                    <label style="font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 8px; display: block;">
+                        <i class="fa-solid fa-layer-group" style="color: #d97706;"></i> 表示モード選択
+                    </label>
+
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <label class="qr-mode-option" style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); cursor: pointer; background: #fff;">
+                            <input type="radio" name="qrMode" value="none" style="margin-top: 3px; accent-color: #d97706;">
+                            <div>
+                                <div style="font-weight: 700; font-size: 13px; color: #334155;">❌ なし（付与しない・完全オフ）</div>
+                                <div style="font-size: 11.5px; color: #64748b;">LINEメッセージ送信時にクイックリプライボタンを一切付けません（他社利用時推奨）。</div>
+                            </div>
+                        </label>
+
+                        <label class="qr-mode-option" style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); cursor: pointer; background: #fff;">
+                            <input type="radio" name="qrMode" value="senior_knowledge" style="margin-top: 3px; accent-color: #d97706;">
+                            <div>
+                                <div style="font-weight: 700; font-size: 13px; color: #334155;">🎓 シニアお役立ち情報（11テーマ＋質問相談）<span style="font-size: 10.5px; background: #e0f2fe; color: #0369a1; padding: 1px 6px; border-radius: 4px; margin-left: 6px;">パソコン教室専用</span></div>
+                                <div style="font-size: 11.5px; color: #64748b;">偽警告・詐欺対策・便利ワザ・画面拡大などの知恵袋ボタンをスクロール表示します。</div>
+                            </div>
+                        </label>
+
+                        <label class="qr-mode-option" style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); cursor: pointer; background: #fff;">
+                            <input type="radio" name="qrMode" value="industry_preset" style="margin-top: 3px; accent-color: #d97706;">
+                            <div>
+                                <div style="font-weight: 700; font-size: 13px; color: #334155;">🏢 業種別標準プリセット（カルテ・相談・予約）</div>
+                                <div style="font-size: 11.5px; color: #64748b;">自動車ならマイカーカルテ、サロンなら会員証、一般ならお問い合わせ等の標準ボタンを表示します。</div>
+                            </div>
+                        </label>
+
+                        <label class="qr-mode-option" style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); cursor: pointer; background: #fff;">
+                            <input type="radio" name="qrMode" value="custom" style="margin-top: 3px; accent-color: #d97706;">
+                            <div>
+                                <div style="font-weight: 700; font-size: 13px; color: #334155;">✏️ 自由カスタム（オリジナルボタン作成）</div>
+                                <div style="font-size: 11.5px; color: #64748b;">ボタンの文言やタップ時の動作（マイカルテ/相談/リンク等）をご自身で自由に編集できます。</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- カスタムボタン編集エリア (custom選択時のみ表示) -->
+                <div id="qrCustomEditorWrap" style="display: none; background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-sm); padding: 14px; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="font-weight: 700; font-size: 12.5px; color: #92400e;">
+                            <i class="fa-solid fa-list"></i> カスタムボタン一覧（最大13個）
+                        </span>
+                        <button type="button" id="btnAddQrCustomItem" style="background: #d97706; color: #fff; border: none; padding: 4px 10px; border-radius: var(--radius-xs); font-size: 11.5px; font-weight: 700; cursor: pointer;">
+                            <i class="fa-solid fa-plus"></i> ボタン追加
+                        </button>
+                    </div>
+                    <div id="qrCustomItemsList" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- JSで動的生成 -->
+                    </div>
+                </div>
+
+                <!-- リアルタイムプレビュー -->
+                <div style="background: #f1f5f9; border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 16px;">
+                    <div style="font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 8px; display: flex; align-items: center; gap: 5px;">
+                        <i class="fa-brands fa-line" style="color: #06C755;"></i> LINE画面プレビュー（メッセージ最下部）
+                    </div>
+                    <div id="qrLivePreviewContainer" style="display: flex; gap: 8px; overflow-x: auto; padding: 6px 2px; scrollbar-width: thin;">
+                        <!-- JSで動的生成 -->
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 8px; pt: 12px; border-top: 1px solid #e2e8f0; padding-top: 14px;">
+                    <button type="button" class="btn-cancel" id="btnCancelQuickReplyModal">キャンセル</button>
+                    <button type="button" id="btnSaveQuickReplySettings" class="btn-primary" style="background: #d97706; border-color: #d97706; padding: 8px 18px; font-weight: 700; color: #fff;">
+                        <i class="fa-solid fa-floppy-disk"></i> 設定を保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ローディングオーバーレイ -->
     <div class="loading-overlay" id="loadingOverlay" style="display: none;">
         <div class="loading-spinner"></div>
@@ -1047,6 +1168,6 @@
     <!-- トースト通知 -->
     <div class="toast-notification" id="adminToast"></div>
 
-    <script src="richmenu.js?v=20260921_2fa_toggle_fix_v2"></script>
+    <script src="richmenu.js?v=20260921_quick_reply_settings_v1"></script>
 </body>
 </html>

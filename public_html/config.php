@@ -4406,26 +4406,149 @@ function getSeniorKnowledgePresets(): array {
 }
 
 /**
- * 各アカウント・業種に応じた適切なクイックリプライボタンスキーマを生成
- * - senior（シニア向けパソコン教室）: シニアお役立ち情報・相談クイックリプライ
- * - auto（自動車・整備）: マイカーカルテ・相談・予約クイックリプライ
- * - salon（サロン・整体）: マイカルテ・相談・予約クイックリプライ
- * - school（スクール・習い事）: 受講生カルテ・相談・予約クイックリプライ
- * - fitness（フィットネス・ジム）: 会員カルテ・相談・予約クイックリプライ
- * - b2b/custom/他業種: マイページ・相談・予約クイックリプライ
+ * クイックリプライ設定を取得
  */
-function getAccountQuickReplyItems(?string $accountKey = null, ?string $currentTopic = null): ?array {
+function getQuickReplySettings(?string $accountKey = null, ?PDO $db = null): array {
     $activeKey = $accountKey ?: getActiveAccountKey();
     $acc = getAccountConfig($activeKey);
     $indType = strtolower($acc['industry_type'] ?? 'senior');
     $accId = strtolower($acc['id'] ?? $activeKey);
+    $isSenior = ($indType === 'senior' || $accId === 'senior');
 
-    // シニア向けパソコン教室アカウントの場合のみシニアお役立ちクイックリプライを返す
-    if ($indType === 'senior' || $accId === 'senior') {
+    $default = [
+        'enabled' => $isSenior, // seniorのみ初期ON、他業種は初期OFF
+        'mode' => $isSenior ? 'senior_knowledge' : 'none', // none | senior_knowledge | industry_preset | custom
+        'custom_items' => [],
+        'updated_at' => null
+    ];
+
+    if (!$db) {
+        try {
+            $db = getDbConnection($activeKey);
+        } catch (Throwable $e) {
+            return $default;
+        }
+    }
+
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, value TEXT, updated_at DATETIME)");
+        $settingKey = "quick_reply_settings_{$activeKey}";
+        $stmt = $db->prepare("SELECT value FROM system_settings WHERE key = :key LIMIT 1");
+        $stmt->execute([':key' => $settingKey]);
+        $val = $stmt->fetchColumn();
+        if ($val) {
+            $decoded = json_decode($val, true);
+            if (is_array($decoded)) {
+                return [
+                    'enabled' => filter_var($decoded['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                    'mode' => !empty($decoded['mode']) ? (string)$decoded['mode'] : ($isSenior ? 'senior_knowledge' : 'none'),
+                    'custom_items' => !empty($decoded['custom_items']) && is_array($decoded['custom_items']) ? $decoded['custom_items'] : [],
+                    'updated_at' => $decoded['updated_at'] ?? null
+                ];
+            }
+        }
+    } catch (Throwable $e) {
+        writeDebugLog("getQuickReplySettings エラー", ['error' => $e->getMessage()]);
+    }
+
+    return $default;
+}
+
+/**
+ * クイックリプライ設定を保存
+ */
+function saveQuickReplySettings(string $accountKey, array $settings, ?PDO $db = null): bool {
+    $activeKey = !empty($accountKey) ? $accountKey : getActiveAccountKey();
+    if (!$db) {
+        try {
+            $db = getDbConnection($activeKey);
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, value TEXT, updated_at DATETIME)");
+        $nowJst = date('Y-m-d H:i:s');
+        $clean = [
+            'enabled' => filter_var($settings['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            'mode' => in_array($settings['mode'] ?? '', ['none', 'senior_knowledge', 'industry_preset', 'custom']) ? $settings['mode'] : 'none',
+            'custom_items' => is_array($settings['custom_items'] ?? null) ? array_values($settings['custom_items']) : [],
+            'updated_at' => $nowJst
+        ];
+        $json = json_encode($clean, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $settingKey = "quick_reply_settings_{$activeKey}";
+        $stmt = $db->prepare("INSERT OR REPLACE INTO system_settings (key, value, updated_at) VALUES (:key, :val, :now)");
+        return $stmt->execute([':key' => $settingKey, ':val' => $json, ':now' => $nowJst]);
+    } catch (Throwable $e) {
+        writeDebugLog("saveQuickReplySettings エラー", ['error' => $e->getMessage()]);
+        return false;
+    }
+}
+
+/**
+ * 各アカウント・業種に応じた適切なクイックリプライボタンスキーマを生成
+ */
+function getAccountQuickReplyItems(?string $accountKey = null, ?string $currentTopic = null): ?array {
+    $activeKey = $accountKey ?: getActiveAccountKey();
+    $settings = getQuickReplySettings($activeKey);
+
+    // クイックリプライが無効、またはモードが 'none' の場合は絶対にクイックリプライを付与しない（null返却）
+    if (empty($settings['enabled']) || $settings['mode'] === 'none') {
+        return null;
+    }
+
+    // シニアお役立ち情報モード
+    if ($settings['mode'] === 'senior_knowledge') {
         return getSeniorKnowledgeQuickReplyItems($currentTopic);
     }
 
-    // 自動車・車両管理の場合
+    // カスタムアイテムモード
+    if ($settings['mode'] === 'custom' && !empty($settings['custom_items'])) {
+        $items = [];
+        foreach ($settings['custom_items'] as $it) {
+            if (empty($it['label'])) continue;
+            $label = mb_substr(trim($it['label']), 0, 20);
+            $actionType = $it['action_type'] ?? 'postback';
+            if ($actionType === 'uri' && !empty($it['uri'])) {
+                $items[] = [
+                    'type' => 'action',
+                    'action' => [
+                        'type' => 'uri',
+                        'label' => $label,
+                        'uri' => trim($it['uri'])
+                    ]
+                ];
+            } elseif ($actionType === 'message' && !empty($it['text'])) {
+                $items[] = [
+                    'type' => 'action',
+                    'action' => [
+                        'type' => 'message',
+                        'label' => $label,
+                        'text' => trim($it['text'])
+                    ]
+                ];
+            } else {
+                $data = !empty($it['data']) ? trim($it['data']) : 'action=open_mycar';
+                $items[] = [
+                    'type' => 'action',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => $label,
+                        'data' => $data
+                    ]
+                ];
+            }
+        }
+        if (!empty($items)) {
+            return ['items' => array_slice($items, 0, 13)];
+        }
+    }
+
+    // 業種別プリセットモード (industry_preset)
+    $acc = getAccountConfig($activeKey);
+    $indType = strtolower($acc['industry_type'] ?? 'senior');
+
     if ($indType === 'auto') {
         return [
             'items' => [
@@ -4457,7 +4580,6 @@ function getAccountQuickReplyItems(?string $accountKey = null, ?string $currentT
         ];
     }
 
-    // サロン・エステ・整体の場合
     if ($indType === 'salon') {
         return [
             'items' => [
@@ -4489,7 +4611,6 @@ function getAccountQuickReplyItems(?string $accountKey = null, ?string $currentT
         ];
     }
 
-    // スクール・習い事の場合
     if ($indType === 'school') {
         return [
             'items' => [
@@ -4521,7 +4642,6 @@ function getAccountQuickReplyItems(?string $accountKey = null, ?string $currentT
         ];
     }
 
-    // フィットネス・ジムの場合
     if ($indType === 'fitness') {
         return [
             'items' => [

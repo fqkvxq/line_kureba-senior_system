@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260921_2fa_toggle_fix_v2">
+    <link rel="stylesheet" href="manual.css?v=20260921_quick_reply_settings_v1">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -129,8 +129,9 @@
                         <li class="toc-item"><a href="#sec-slack-notify"><i class="fa-brands fa-slack" style="color:#ECB22E;"></i> 14. Slack通知設定</a></li>
                         <li class="toc-item"><a href="#sec-dx-survey"><i class="fa-solid fa-clipboard-question" style="color:#2563eb;"></i> 15. 会社DX 関心度アンケート配信</a></li>
                         <li class="toc-item"><a href="#sec-2fa"><i class="fa-solid fa-shield-halved" style="color:#0284c7;"></i> 16. メール二段階認証（2FA / セキュリティ）</a></li>
-                        <li class="toc-item"><a href="#sec-server-setup"><i class="fa-solid fa-server" style="color:#10b981;"></i> 17. 他社・別サーバー移行＆初期セットアップ</a></li>
-                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 18. よくある質問・トラブルシューティング</a></li>
+                        <li class="toc-item"><a href="#sec-quick-reply"><i class="fa-solid fa-bolt" style="color:#f59e0b;"></i> 17. クイックリプライ管理（画面下部ボタン設定）</a></li>
+                        <li class="toc-item"><a href="#sec-server-setup"><i class="fa-solid fa-server" style="color:#10b981;"></i> 18. 他社・別サーバー移行＆初期セットアップ</a></li>
+                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 19. よくある質問・トラブルシューティング</a></li>
                     </ul>
                 </div>
             </aside>
@@ -1312,14 +1313,75 @@
                     </div>
                 </section>
 
-                <!-- 17. 他社・別レンタルサーバー移行＆初期セットアップ -->
+                <!-- 17. クイックリプライ管理（画面下部ボタン設定） -->
+                <section class="manual-section" id="sec-quick-reply">
+                    <div class="section-header">
+                        <div class="section-header-icon" style="background: #fef3c7; color: #d97706;">
+                            <i class="fa-solid fa-bolt"></i>
+                        </div>
+                        <div class="section-header-text">
+                            <h2>17. クイックリプライ管理（画面下部ボタン設定）</h2>
+                            <p>LINEトーク画面下部に表示される丸型アクションボタンの有効化・無効化・モード選択・自由カスタマイズ</p>
+                        </div>
+                    </div>
+
+                    <p>LINE公式アカウントからメッセージ（プッシュ配信・個別チャット・リマインドなど）を送信した際、トーク画面最下部に表示される丸いボタン（クイックリプライ）をアカウントごとに管理できます。<br>
+                    他社アカウント運用時や新規アカウント導入時には<strong>完全無効化（オフ）</strong>に設定したり、自社サービスに合わせたボタンを自由に編集・追加できます。</p>
+
+                    <div class="step-flow">
+                        <!-- ステップ1: クイックリプライ設定を開く -->
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <div class="step-body">
+                                <h4>設定モーダルを開く</h4>
+                                <p>管理画面（受講生カルテまたはリッチメニュー管理）の上部ヘッダーにある「<strong><i class="fa-solid fa-bolt" style="color: #d97706;"></i> クイックリプライ</strong>」ボタンをクリックします。<br>
+                                設定画面がポップアップで開き、現在選択されているアカウントの設定状態とリアルタイムプレビューが表示されます。</p>
+                            </div>
+                        </div>
+
+                        <!-- ステップ2: モード選択 -->
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <div class="step-body">
+                                <h4>クイックリプライの有効化と表示モードの選択</h4>
+                                <p><strong>・クイックリプライ機能スイッチ</strong>：トグルをOFFにすると、一切のクイックリプライが付与されず、完全無効化されます。<br>
+                                <strong>・4つの表示プリセット/モード</strong>：<br>
+                                1. <strong>🚫 表示しない（完全無効化）</strong>：クイックリプライを出さず、通常のリッチメニューとメッセージのみで運用する場合に選択します。<br>
+                                2. <strong>👴 シニア知恵袋モード</strong>：「💡 詐欺に遭わないための心得」「💻 PC再起動の正しいやり方」「❓ お困りごと相談」「📅 レッスン予約・変更」などのパソコン教室用プリセット。<br>
+                                3. <strong>🏢 汎用ビジネス・店舗モード</strong>：「📅 ご来店予約」「ℹ️ サービス概要」「📍 アクセス・営業時間」「❓ よくある質問」「💬 スタッフへ問い合わせ」の業種汎用プリセット。<br>
+                                4. <strong>✏️ 自由カスタムモード</strong>：最大13個まで、ボタン名・送信テキスト・アイコン絵文字を自由に追加・編集・削除できます。</p>
+                            </div>
+                        </div>
+
+                        <!-- ステップ3: カスタム編集とリアルタイムプレビュー -->
+                        <div class="step-card">
+                            <div class="step-number">3</div>
+                            <div class="step-body">
+                                <h4>リアルタイムプレビューと保存</h4>
+                                <p>「自由カスタム」を選択した場合、ボタンの追加（「＋ ボタンを追加」）や削除（ゴミ箱アイコン）を行えます。<br>
+                                画面右側（または下部）の<strong>LINE風リアルタイムプレビュー</strong>で、受講生や顧客のLINE画面にどのように丸ボタンが並ぶかを即座に確認できます。<br>
+                                「<strong>設定を保存</strong>」ボタンを押すと、即座にサーバーへ反映されます。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tips-box">
+                        <div class="tips-box-title"><i class="fa-solid fa-lightbulb"></i> ワンポイントTips: 他社アカウント運用時の注意点とLINEの表示仕様</div>
+                        <div class="tips-box-content">
+                            ・<strong>他社アカウントでの誤表示防止</strong>：<code>senior</code>（シニア向けパソコン教室）以外のアカウントでは、初期状態でクイックリプライが<strong>完全無効（オフ）</strong>に設定されています。<br>
+                            ・<strong>LINE画面からボタンが消えるタイミング</strong>：LINEの仕様上、過去に届いたメッセージのクイックリプライは、<strong>「クイックリプライ設定がOFFの状態で新しいメッセージ（チャット返信やプッシュ配信）を受信した時点」</strong>で画面から完全に消去されます。
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 18. 他社・別レンタルサーバー移行＆初期セットアップ -->
                 <section class="manual-section" id="sec-server-setup">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #ecfdf5; color: #10b981;">
                             <i class="fa-solid fa-server"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>17. 他社・別レンタルサーバー移行＆初期セットアップ</h2>
+                            <h2>18. 他社・別レンタルサーバー移行＆初期セットアップ</h2>
                             <p>自社レンタルサーバーへの導入手順・環境診断ウィザード・個人情報ゼロのクリーンセットアップ</p>
                         </div>
                     </div>
@@ -1383,19 +1445,36 @@
                     </div>
                 </section>
 
-                <!-- 18. よくある質問・トラブルシューティング -->
+                <!-- 19. よくある質問・トラブルシューティング -->
                 <section class="manual-section" id="sec-faq">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #fef2f2; color: #ef4444;">
                             <i class="fa-solid fa-circle-question"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>18. よくある質問・トラブルシューティング</h2>
+                            <h2>19. よくある質問・トラブルシューティング</h2>
                             <p>困ったときの解決方法</p>
                         </div>
                     </div>
 
                     <div class="step-flow">
+                        <div class="step-card">
+                            <div class="step-number">Q</div>
+                            <div class="step-body">
+                                <h4>クイックリプライをオフにしたのに、受講生・顧客のLINE画面からボタンが消えない場合は？</h4>
+                                <p><strong>LINEアプリの仕様</strong>：クイックリプライは、端末側に届いた「直近のメッセージ」に紐づいて画面下部に表示されます。<br>
+                                クイックリプライを「表示しない（完全無効化）」に設定後、<strong>一度個別チャットまたはプッシュ配信（テスト配信など）を送信してください</strong>。クイックリプライ無しの新しいメッセージが届いた時点で、LINE画面下部の丸ボタンは完全に消去されます。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">Q</div>
+                            <div class="step-body">
+                                <h4>他社アカウントを作成した際、パソコン教室用のクイックリプライが出ないようにするには？</h4>
+                                <p>本システムでは、<code>senior</code> 以外のすべてのアカウントにおいて、初期状態でクイックリプライが<strong>完全無効（オフ）</strong>に設定されています。ヘッダーの「⚡ クイックリプライ」から必要に応じて「汎用ビジネス」や「自由カスタム」に切り替えてご利用いただけます。</p>
+                            </div>
+                        </div>
+
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
@@ -1540,6 +1619,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_2fa_toggle_fix_v2"></script>
+    <script src="manual.js?v=20260921_quick_reply_settings_v1"></script>
 </body>
 </html>
