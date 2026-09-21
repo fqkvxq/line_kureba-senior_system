@@ -9,6 +9,23 @@ date_default_timezone_set('Asia/Tokyo');
 ini_set('date.timezone', 'Asia/Tokyo');
 putenv('TZ=Asia/Tokyo');
 
+// PHP 7.x 互換 polyfill (str_starts_with, str_ends_with, str_contains)
+if (!function_exists('str_starts_with')) {
+    function str_starts_with(string $haystack, string $needle): bool {
+        return $needle === '' || strncmp($haystack, $needle, strlen($needle)) === 0;
+    }
+}
+if (!function_exists('str_ends_with')) {
+    function str_ends_with(string $haystack, string $needle): bool {
+        return $needle === '' || $needle === substr($haystack, -strlen($needle));
+    }
+}
+if (!function_exists('str_contains')) {
+    function str_contains(string $haystack, string $needle): bool {
+        return $needle === '' || strpos($haystack, $needle) !== false;
+    }
+}
+
 // --- 複数LINE公式アカウント設定 (マルチテナント対応) ---
 // 切り替えて運用したいLINE公式アカウントを管理します。
 // 管理画面からの新規追加・編集・削除にも完全対応しています。

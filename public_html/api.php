@@ -5629,7 +5629,24 @@ try {
             echo json_encode(['success' => false, 'error' => '無効なアクションです。']);
             break;
     }
-} catch (Exception $e) {
+} catch (Throwable $e) {
+    if (function_exists('writeDebugLog')) {
+        writeDebugLog("API 最外側例外", [
+            'action' => $_REQUEST['action'] ?? 'unknown',
+            'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
+        ]);
+    }
+    
+    // get_unread_chat_counts などの定期ポーリング系は UI をクラッシュさせないため 200 で空データを返却
+    $curAction = $_REQUEST['action'] ?? '';
+    if ($curAction === 'get_unread_chat_counts') {
+        http_response_code(200);
+        echo json_encode(['success' => true, 'unread_counts' => [], 'total_unread' => 0, 'recent_unread' => []], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     http_response_code(500);
     echo json_encode([
         'success' => false,
