@@ -2226,6 +2226,7 @@ body {
     transition: transform 0.2s ease;
 }
 
+.modal-overlay.active .chat-modal-dialog,
 .modal-overlay.active .slack-settings-dialog,
 .modal-overlay.active .discord-settings-dialog,
 .modal-overlay.active .proline-settings-dialog,

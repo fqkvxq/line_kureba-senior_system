@@ -1923,39 +1923,39 @@ function renderTable() {
                 <td data-col="actions">
                     <div class="action-btns">
                         <!-- 行1: メイン操作・個別対応 -->
-                        <button class="btn-table-chat" data-action="chat" data-idx="${globalIdx}" title="この受講生との1対1トーク確認・返信">
+                        <button class="btn-table-chat" data-action="chat" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" title="この受講生との1対1トーク確認・返信">
                             <i class="fa-solid fa-comments"></i> チャット
                             ${state.unreadChatCounts && state.unreadChatCounts[userId] ? `
                                 <span class="badge-chat-unread">${state.unreadChatCounts[userId]}</span>
                             ` : ''}
                         </button>
-                        <button class="btn-user-richmenu ${isCustomized ? 'is-active' : ''}" data-action="custom-menu" data-idx="${globalIdx}" title="リッチメニューの確認・個別指定・メッセージ設定">
+                        <button class="btn-user-richmenu ${isCustomized ? 'is-active' : ''}" data-action="custom-menu" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" title="リッチメニューの確認・個別指定・メッセージ設定">
                             <i class="fa-solid fa-table-cells-large"></i> メニュー
                         </button>
                         ${isDxAccount ? `
-                            <button class="btn-dx-survey-user-row" data-action="dx-survey-send" data-idx="${globalIdx}" title="この顧客へDX関心度アンケート（Flex Message）を送信">
+                            <button class="btn-dx-survey-user-row" data-action="dx-survey-send" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" title="この顧客へDX関心度アンケート（Flex Message）を送信">
                                 <i class="fa-solid fa-clipboard-question"></i> アンケート
                             </button>
                         ` : `
-                            <button class="btn-knowledge-user-row" data-action="knowledge-send" data-idx="${globalIdx}" title="この受講生へスマホ・PCお役立ち情報（Flex Message）を個別送信">
+                            <button class="btn-knowledge-user-row" data-action="knowledge-send" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" title="この受講生へスマホ・PCお役立ち情報（Flex Message）を個別送信">
                                 <i class="fa-solid fa-bullhorn"></i> お役立ち
                             </button>
                         `}
-                        <button class="btn-edit" data-action="edit" data-idx="${globalIdx}" title="受講生情報を編集">
+                        <button class="btn-edit" data-action="edit" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" title="受講生情報を編集">
                             <i class="fa-solid fa-pen"></i> 編集
                         </button>
 
                         <!-- 行2: 各種リマインド & 削除 -->
-                        <button class="btn-remind-oil" data-action="remind-oil" data-idx="${globalIdx}" title="次回レッスン案内リマインドをLINE送信">
+                        <button class="btn-remind-oil" data-action="remind-oil" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" title="次回レッスン案内リマインドをLINE送信">
                             <i class="fa-solid fa-laptop"></i> レッスン
                         </button>
-                        <button class="btn-remind-periodic" data-action="remind-periodic" data-idx="${globalIdx}" title="定期PC健康診断リマインドをLINE送信">
+                        <button class="btn-remind-periodic" data-action="remind-periodic" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" title="定期PC健康診断リマインドをLINE送信">
                             <i class="fa-solid fa-shield-virus"></i> PC診断
                         </button>
-                        <button class="btn-remind-insp" data-action="remind-insp" data-idx="${globalIdx}" title="会員更新・月謝期日リマインドをLINE送信">
+                        <button class="btn-remind-insp" data-action="remind-insp" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" title="会員更新・月謝期日リマインドをLINE送信">
                             <i class="fa-solid fa-calendar-check"></i> 会員更新
                         </button>
-                        <button class="btn-delete" data-action="delete" data-idx="${globalIdx}" title="この受講生データを削除">
+                        <button class="btn-delete" data-action="delete" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" title="この受講生データを削除">
                             <i class="fa-solid fa-trash"></i> 削除
                         </button>
                     </div>
@@ -1998,17 +1998,6 @@ function renderPagination(totalCount, totalPages, startIndex, endIndex) {
     let buttonsHtml = '';
 
     // 「最初へ」「前へ」
-    const prevDisabled = current === 1 ? 'disabled' : '';
-    buttonsHtml += `
-        <button type="button" class="page-btn" data-page="1" ${prevDisabled} title="最初のページへ">
-            <i class="fa-solid fa-angles-left"></i>
-        </button>
-        <button type="button" class="page-btn" data-page="${current - 1}" ${prevDisabled} title="前のページへ">
-            <i class="fa-solid fa-chevron-left"></i>
-        </button>
-    `;
-
-    // ページ番号リスト (省略記号 ... つき)
     const pageNumbers = getPageNumbers(current, totalPages);
     pageNumbers.forEach(p => {
         if (p === '...') {
@@ -2088,16 +2077,31 @@ function initCustomerTableEvents() {
     isTableEventDelegated = true;
 
     // テーブルボディの委譲クリック
-    if (elements.customerTableBody) {
-        elements.customerTableBody.addEventListener('click', (e) => {
+    const tableBody = elements.customerTableBody || document.getElementById('customerTableBody');
+    if (tableBody) {
+        tableBody.addEventListener('click', (e) => {
             const btn = e.target.closest('button[data-action]');
             if (!btn) return;
             e.stopPropagation();
 
             const action = btn.getAttribute('data-action');
             const idx = parseInt(btn.getAttribute('data-idx'), 10);
-            const cust = state.currentFilteredList ? state.currentFilteredList[idx] : null;
-            if (!cust) return;
+            const uid = btn.getAttribute('data-uid');
+
+            let cust = null;
+            if (uid && state.allCustomers && state.allCustomers.length > 0) {
+                cust = state.allCustomers.find(c => (c.user_id && c.user_id === uid) || String(c.id) === String(uid));
+            }
+            if (!cust && state.currentFilteredList && !isNaN(idx) && state.currentFilteredList[idx]) {
+                cust = state.currentFilteredList[idx];
+            }
+            if (!cust && state.allCustomers && !isNaN(idx) && state.allCustomers[idx]) {
+                cust = state.allCustomers[idx];
+            }
+            if (!cust) {
+                console.warn('[Table Event] Target customer could not be resolved. action:', action, 'idx:', idx, 'uid:', uid);
+                return;
+            }
 
             if (action === 'chat') {
                 openChatModal(cust);
@@ -4781,21 +4785,25 @@ window.closeDxSurveyModal = closeDxSurveyModal;
    ========================================================================== */
 
 function initChatModal() {
-    if (elements.btnCloseChatModal) {
-        elements.btnCloseChatModal.addEventListener('click', closeChatModal);
+    const closeBtn = elements.btnCloseChatModal || document.getElementById('btnCloseChatModal');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeChatModal);
     }
-    if (elements.btnRefreshChatMessages) {
-        elements.btnRefreshChatMessages.addEventListener('click', () => {
+    const refreshBtn = elements.btnRefreshChatMessages || document.getElementById('btnRefreshChatMessages');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
             if (state.activeChatUser && state.activeChatUser.user_id) {
                 loadChatMessages(state.activeChatUser.user_id);
             }
         });
     }
-    if (elements.btnSendChatMessage) {
-        elements.btnSendChatMessage.addEventListener('click', sendChatMessage);
+    const sendBtn = elements.btnSendChatMessage || document.getElementById('btnSendChatMessage');
+    if (sendBtn) {
+        sendBtn.addEventListener('click', sendChatMessage);
     }
-    if (elements.chatInputText) {
-        elements.chatInputText.addEventListener('keydown', (e) => {
+    const inputArea = elements.chatInputText || document.getElementById('chatInputText');
+    if (inputArea) {
+        inputArea.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
                 sendChatMessage();
@@ -4807,19 +4815,21 @@ function initChatModal() {
     document.querySelectorAll('.chat-quick-templates .quick-tpl-chip').forEach(chip => {
         chip.addEventListener('click', () => {
             const tpl = chip.getAttribute('data-tpl');
-            if (tpl && elements.chatInputText) {
-                const cur = elements.chatInputText.value;
-                elements.chatInputText.value = cur ? (cur + "\n" + tpl) : tpl;
-                elements.chatInputText.focus();
-                elements.chatInputText.scrollTop = elements.chatInputText.scrollHeight;
+            const targetInput = elements.chatInputText || document.getElementById('chatInputText');
+            if (tpl && targetInput) {
+                const cur = targetInput.value;
+                targetInput.value = cur ? (cur + "\n" + tpl) : tpl;
+                targetInput.focus();
+                targetInput.scrollTop = targetInput.scrollHeight;
             }
         });
     });
 
     // モーダル背景クリックで閉じる
-    if (elements.chatModal) {
-        elements.chatModal.addEventListener('click', (e) => {
-            if (e.target === elements.chatModal) {
+    const modal = elements.chatModal || document.getElementById('chatModal');
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
                 closeChatModal();
             }
         });
@@ -4837,20 +4847,26 @@ function openChatModal(cust) {
     const pic = cust.picture_url || DEFAULT_AVATAR_URL;
     const course = `${cust.car_model || 'コース未設定'}${cust.car_number ? ' / ' + cust.car_number : ''}`;
 
-    if (elements.chatModalAvatar) {
-        elements.chatModalAvatar.src = pic;
-        elements.chatModalAvatar.onerror = function() {
+    const avatarEl = elements.chatModalAvatar || document.getElementById('chatModalAvatar');
+    if (avatarEl) {
+        avatarEl.src = pic;
+        avatarEl.onerror = function() {
             this.onerror = null;
             this.src = DEFAULT_AVATAR_URL;
         };
     }
-    if (elements.chatModalUserName) {
-        elements.chatModalUserName.innerHTML = `${escapeHtml(name)} <span id="chatModalUidTag" style="font-size: 11px; font-weight: normal; color: #64748b; font-family: monospace;">(${escapeHtml(uid || '未連携')})</span>`;
-    }
-    if (elements.chatModalCourseInfo) elements.chatModalCourseInfo.textContent = course;
 
-    if (elements.chatInputText) {
-        elements.chatInputText.value = '';
+    const userNameEl = elements.chatModalUserName || document.getElementById('chatModalUserName');
+    if (userNameEl) {
+        userNameEl.innerHTML = `${escapeHtml(name)} <span id="chatModalUidTag" style="font-size: 11px; font-weight: normal; color: #64748b; font-family: monospace;">(${escapeHtml(uid || '未連携')})</span>`;
+    }
+
+    const courseInfoEl = elements.chatModalCourseInfo || document.getElementById('chatModalCourseInfo');
+    if (courseInfoEl) courseInfoEl.textContent = course;
+
+    const inputArea = elements.chatInputText || document.getElementById('chatInputText');
+    if (inputArea) {
+        inputArea.value = '';
     }
 
     // 未読数をローカルで即時クリア
@@ -4859,8 +4875,12 @@ function openChatModal(cust) {
         renderTable();
     }
 
-    if (elements.chatModal) {
-        elements.chatModal.classList.add('active');
+    const modal = elements.chatModal || document.getElementById('chatModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        requestAnimationFrame(() => {
+            modal.classList.add('active');
+        });
     }
 
     loadChatMessages(uid);
@@ -4868,15 +4888,22 @@ function openChatModal(cust) {
     // ポーリングタイマー開始（10秒ごとに新着自動確認）
     if (state.chatPollTimer) clearInterval(state.chatPollTimer);
     state.chatPollTimer = setInterval(() => {
-        if (state.activeChatUser && state.activeChatUser.user_id && elements.chatModal && elements.chatModal.classList.contains('active')) {
+        const checkModal = elements.chatModal || document.getElementById('chatModal');
+        if (state.activeChatUser && state.activeChatUser.user_id && checkModal && checkModal.classList.contains('active')) {
             loadChatMessages(state.activeChatUser.user_id, true);
         }
     }, 10000);
 }
 
 function closeChatModal() {
-    if (elements.chatModal) {
-        elements.chatModal.classList.remove('active');
+    const modal = elements.chatModal || document.getElementById('chatModal');
+    if (modal) {
+        modal.classList.remove('active');
+        setTimeout(() => {
+            if (modal && !modal.classList.contains('active')) {
+                modal.style.display = 'none';
+            }
+        }, 200);
     }
     if (state.chatPollTimer) {
         clearInterval(state.chatPollTimer);
@@ -4885,6 +4912,9 @@ function closeChatModal() {
     state.activeChatUser = null;
     loadUnreadChatCounts();
 }
+
+window.openChatModal = openChatModal;
+window.closeChatModal = closeChatModal;
 
 async function loadChatMessages(userId, isSilent = false) {
     if (!userId) {
