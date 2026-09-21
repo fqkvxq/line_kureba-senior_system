@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260921_webpush_v5">
+    <link rel="stylesheet" href="manual.css?v=20260921_chat_fix_v7">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -1777,6 +1777,26 @@
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
+                                <h4>友だち（受講生）からのLINEチャットが管理画面に届かない・反映されない場合は？</h4>
+                                <p>以下の3つのチェックポイントを順にご確認ください：<br>
+                                <strong>1. LINE Official Account Manager（管理画面）の応答設定</strong>：<br>
+                                ・管理画面（manager.line.biz）の「設定（歯車マーク）」＞「応答設定」を開きます。<br>
+                                ・「応答モード」が<strong>「Bot」</strong>になっているか確認してください（「チャット」になっているとLINE社側でWebhook送信が遮断されます）。<br>
+                                ・「詳細設定」の「Webhook」が<strong>「オン」</strong>になっていることを確認してください。<br>
+                                ・「あいさつメッセージ」や「自動応答メッセージ」は必要に応じてオフにしておくと二重返信を防げます。<br>
+                                <strong>2. LINE Developers コンソールの Webhook URL 設定</strong>：<br>
+                                ・LINE Developers（developers.line.biz）の該当チャネルの「Messaging API」タブを開きます。<br>
+                                ・「Webhook URL」に <code>https://あなたのドメイン/webhook.php</code>（マルチアカウント時は <code>?account=アカウントID</code>）が登録されているか確認します。<br>
+                                ・「Webhookの利用（Use webhook）」トグルが<strong>ON（緑色）</strong>になっているか確認し、「検証（Verify）」ボタンで「Success」が出るか確認します。<br>
+                                <strong>3. プロライン連携や外部中継ツールとの併用</strong>：<br>
+                                ・プロライン等を併用している場合でも、本システムは受信と同時に<strong>ミリ秒単位で最優先にローカルDB保存・未読カウント更新・マルチ通知（LINE/Discord/Slack/ブラウザPush）</strong>を行い、その後にプロラインへ完全並列転送します。<br>
+                                ・そのため、外部ツールの接続遅延やタイムアウトが発生しても、本システム側でチャットメッセージが消失することはありません。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">Q</div>
+                            <div class="step-body">
                                 <h4>手動登録した受講生にチャットで返信できません</h4>
                                 <p>受講生一覧で「新規受講生登録」から手動作成された受講生は、LINEのユーザーID（<code>U...</code>）が未連携の状態です。受講生に教室のLINE公式アカウントを友だち追加していただき、マイカルテを開いてもらうか、メッセージを送信してもらうと自動的にLINE連携が完了し、チャット送受信が可能になります。</p>
                             </div>
@@ -1858,6 +1878,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_webpush_v5"></script>
+    <script src="manual.js?v=20260921_chat_fix_v7"></script>
 </body>
 </html>

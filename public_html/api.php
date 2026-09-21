@@ -627,6 +627,25 @@ try {
                 exit;
             }
 
+            // テーブル存在保証
+            try {
+                $db->exec("
+                    CREATE TABLE IF NOT EXISTS chat_messages (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id TEXT NOT NULL,
+                        direction TEXT NOT NULL DEFAULT 'incoming',
+                        message_type TEXT NOT NULL DEFAULT 'text',
+                        message_text TEXT NOT NULL DEFAULT '',
+                        payload_json TEXT DEFAULT '{}',
+                        is_read INTEGER NOT NULL DEFAULT 0,
+                        sent_by TEXT DEFAULT '',
+                        created_at DATETIME NOT NULL
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_chat_uid ON chat_messages (user_id);
+                    CREATE INDEX IF NOT EXISTS idx_chat_read ON chat_messages (direction, is_read);
+                ");
+            } catch (Throwable $t) {}
+
             // 受講生情報を取得 (未登録なら自動生成・同期)
             $cStmt = $db->prepare("SELECT id, user_id, user_name, picture_url, car_model, car_number, is_blocked FROM customer_cars WHERE TRIM(user_id) = :uid LIMIT 1");
             $cStmt->execute([':uid' => $uid]);
@@ -646,6 +665,41 @@ try {
             ");
             $msgStmt->execute([':uid' => $uid]);
             $messages = $msgStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // もし現在のアカウントDBにメッセージが無く、別アカウントDBに保存されている可能性がある場合、横断検索してマージ
+            if (empty($messages) && function_exists('getAccountList')) {
+                foreach (getAccountList() as $otherAcc) {
+                    if ($otherAcc['id'] === $activeAccountKey) continue;
+                    try {
+                        $otherDb = getDbConnection($otherAcc['id']);
+                        $oStmt = $otherDb->prepare("SELECT id, user_id, direction, message_type, message_text, payload_json, is_read, sent_by, created_at FROM chat_messages WHERE TRIM(user_id) = :uid ORDER BY id ASC LIMIT 200");
+                        $oStmt->execute([':uid' => $uid]);
+                        $otherMsgs = $oStmt->fetchAll(PDO::FETCH_ASSOC);
+                        if (!empty($otherMsgs)) {
+                            // 現在のDBへ同期コピー
+                            $insStmt = $db->prepare("INSERT INTO chat_messages (user_id, direction, message_type, message_text, payload_json, is_read, sent_by, created_at) VALUES (:uid, :dir, :mtype, :mtext, :payload, :is_read, :sent_by, :created_at)");
+                            foreach ($otherMsgs as $om) {
+                                try {
+                                    $insStmt->execute([
+                                        ':uid' => $om['user_id'],
+                                        ':dir' => $om['direction'],
+                                        ':mtype' => $om['message_type'],
+                                        ':mtext' => $om['message_text'],
+                                        ':payload' => $om['payload_json'],
+                                        ':is_read' => $om['is_read'],
+                                        ':sent_by' => $om['sent_by'] ?? '',
+                                        ':created_at' => $om['created_at']
+                                    ]);
+                                } catch (Throwable $exx) {}
+                            }
+                            // 改めて再取得
+                            $msgStmt->execute([':uid' => $uid]);
+                            $messages = $msgStmt->fetchAll(PDO::FETCH_ASSOC);
+                            break;
+                        }
+                    } catch (Throwable $e) {}
+                }
+            }
 
             foreach ($messages as &$m) {
                 $m['payload'] = !empty($m['payload_json']) ? json_decode($m['payload_json'], true) : [];

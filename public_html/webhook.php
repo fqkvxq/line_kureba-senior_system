@@ -150,11 +150,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     writeDebugLog("Webhook受信", ['account' => $activeAccount, 'bytes' => strlen($rawInput), 'has_sig' => !empty($lineSignature)]);
 
-    // 【最優先・最重要】プロライン (ProLine) ＆ 外部ツールへ即座に完全中継（並列プロキシPOST）
-    // DB接続や本システム内部エラーの影響を受けないよう、何よりも先に転送を実行
-    $prolineRelayResult = relayWebhookToProline($rawInput, $lineSignature, null, $activeAccount);
-    writeDebugLog("外部ツール中継実行", $prolineRelayResult);
-
     // 署名検証 (Channel Secretが設定されている場合)
     if (!empty($channelSecret) && $channelSecret !== 'YOUR_CHANNEL_SECRET_HERE' && !empty($lineSignature)) {
         $hash = base64_encode(hash_hmac('sha256', $rawInput, $channelSecret, true));
@@ -163,8 +158,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // 1. データベース接続の確立
     try {
         $db = getDbConnection($activeAccount);
+        // チャットメッセージテーブルの自動作成保証
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS chat_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                direction TEXT NOT NULL DEFAULT 'incoming',
+                message_type TEXT NOT NULL DEFAULT 'text',
+                message_text TEXT NOT NULL DEFAULT '',
+                payload_json TEXT DEFAULT '{}',
+                is_read INTEGER NOT NULL DEFAULT 0,
+                sent_by TEXT DEFAULT '',
+                created_at DATETIME NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_chat_uid ON chat_messages (user_id);
+            CREATE INDEX IF NOT EXISTS idx_chat_read ON chat_messages (direction, is_read);
+        ");
     } catch (Exception $e) {
         writeDebugLog("DB接続例外: " . $e->getMessage(), ['account' => $activeAccount]);
         http_response_code(500);
@@ -174,19 +186,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = json_decode($rawInput, true);
     if (empty($data['events'])) {
         writeDebugLog("イベントなし (検証Pingなど)");
+        // プロライン中継
+        relayWebhookToProline($rawInput, $lineSignature, $db, $activeAccount);
         http_response_code(200);
         echo 'OK (No events)';
         exit;
     }
 
     $prolineSettings = getProlineSettings($db, $activeAccount);
-    $isProlineActive = (!empty($prolineSettings['webhook_url']) && $prolineSettings['relay_enabled']);
+    $isProlineActive = (!empty($prolineSettings['webhook_urls']) && $prolineSettings['relay_enabled']);
 
+    // 2. 【最優先】LINEメッセージ・イベントを即座にローカルデータベースに保存・反映
     foreach ($data['events'] as $event) {
         $replyToken = $event['replyToken'] ?? null;
-        $userId = $event['source']['userId'] ?? '';
+        $userId = trim($event['source']['userId'] ?? '');
         $type = $event['type'] ?? '';
-        writeDebugLog("イベント処理開始", ['type' => $type, 'userId' => $userId, 'prolineActive' => $isProlineActive]);
+
+        writeDebugLog("イベント処理開始", ['type' => $type, 'userId' => $userId, 'account' => $activeAccount]);
 
         try {
             // 友だち追加・メッセージ送信・ボタン操作時に自動で受講生管理へ登録＆名前同期（ブロック時はスキップ）
@@ -194,88 +210,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ensureCustomerExists($db, $userId, $activeAccount);
             }
 
-            if ($type === 'follow') {
-                // 友だち追加・ブロック解除時: 受講生登録、ブロックフラグ解除、管理者通知、リッチメニュー自動適用
-                recordCustomerInteraction($db, $userId, 'follow', "✨ 友だち追加");
-                try {
-                    $prof = getLineUserProfile($userId, $activeAccount);
-                    $uName = $prof['displayName'] ?? 'LINE受講生';
-                    $pUrl = $prof['pictureUrl'] ?? '';
-
-                    // 名前とアイコンを更新し、確実にブロック解除 (is_blocked = 0)
-                    $db->prepare("UPDATE customer_cars SET user_name = :uname, picture_url = :pic, is_blocked = 0, blocked_at = NULL, updated_at = :now WHERE TRIM(user_id) = :uid")
-                        ->execute([':uname' => $uName, ':pic' => $pUrl, ':now' => date('Y-m-d H:i:s'), ':uid' => $userId]);
-
-                    // 1. 管理者向けLINEプッシュ通知
-                    if (function_exists('sendAdminLineFollowNotification')) {
-                        sendAdminLineFollowNotification($userId, $uName, $db);
-                    }
-
-                    // 2. Slack通知
-                    sendSlackFollowNotification([
-                        'user_id' => $userId,
-                        'user_name' => $uName,
-                        'picture_url' => $pUrl,
-                        'event_text' => '新しいユーザーが友だち追加（またはブロック解除）しました！'
-                    ], $prof, $db);
-
-                    // 3. Discord通知
-                    if (function_exists('sendDiscordNotification')) {
-                        sendDiscordNotification($db, "✨【LINE】友だち追加・ブロック解除", "受講生: {$uName} 様\nLINE UID: {$userId}\n日時: " . date('Y-m-d H:i:s'), '#10b981');
-                    }
-
-                    // 4. プロライン非稼働時は本システムのあいさつ返信を実行
-                    if (!$isProlineActive && !empty($replyToken)) {
-                        handleFollow($replyToken, $userId);
-                    }
-                } catch (Throwable $sEx) {
-                    writeDebugLog("フォロー通知エラー", ['error' => $sEx->getMessage()]);
-                }
-            } elseif ($type === 'unfollow') {
-                // ブロック（友だち解除）時: is_blocked = 1、最終やり取り記録、管理者通知
-                $nowJst = date('Y-m-d H:i:s');
-                try {
-                    // DBの該当レコードを確実にブロック中 (is_blocked = 1) に更新
-                    $db->prepare("
-                        UPDATE customer_cars 
-                        SET is_blocked = 1,
-                            blocked_at = :blocked_at,
-                            last_interaction_at = :last_at,
-                            last_interaction_type = 'unfollow',
-                            last_interaction_preview = '🚫 ブロック',
-                            updated_at = :up_at
-                        WHERE TRIM(user_id) = :uid
-                    ")->execute([
-                        ':blocked_at' => $nowJst,
-                        ':last_at' => $nowJst,
-                        ':up_at' => $nowJst,
-                        ':uid' => $userId
-                    ]);
-                } catch (Throwable $dbEx) {
-                    writeDebugLog("DBブロック更新エラー", ['error' => $dbEx->getMessage()]);
-                }
-
-                recordCustomerInteraction($db, $userId, 'unfollow', "🚫 ブロック");
-                writeDebugLog("🚫 友だちブロック検知・DB更新完了", ['userId' => $userId, 'time' => $nowJst]);
-
-                // ユーザー名を取得して通知
-                try {
-                    $cStmt = $db->prepare("SELECT user_name FROM customer_cars WHERE TRIM(user_id) = :uid LIMIT 1");
-                    $cStmt->execute([':uid' => $userId]);
-                    $uRow = $cStmt->fetch(PDO::FETCH_ASSOC);
-                    $uName = $uRow['user_name'] ?? 'LINE友だち';
-
-                    if (function_exists('sendDiscordNotification')) {
-                        sendDiscordNotification($db, "🚫【LINE】友だちブロック検知", "受講生: {$uName} 様\nLINE公式アカウントがブロック（友だち解除）されました。\nLINE UID: {$userId}\n日時: {$nowJst}", '#ef4444');
-                    }
-
-                    if (function_exists('sendSlackNotification')) {
-                        sendSlackNotification($db, "🚫【LINE】友だちブロック検知", "受講生: {$uName} 様\nLINE公式アカウントがブロックされました。\n日時: {$nowJst}");
-                    }
-                } catch (Throwable $unEx) {
-                    writeDebugLog("ブロック通知エラー", ['error' => $unEx->getMessage()]);
-                }
-            } elseif ($type === 'message') {
+            if ($type === 'message') {
                 $msgType = $event['message']['type'] ?? 'text';
                 $messageId = $event['message']['id'] ?? '';
                 $userText = '';
@@ -285,18 +220,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if ($msgType === 'text') {
                     $userText = trim($event['message']['text'] ?? '');
-                    writeDebugLog("テキスト受信", ['text' => $userText, 'userId' => $userId]);
                     $preview = "💬 " . mb_substr($userText, 0, 45);
                 } elseif ($msgType === 'sticker') {
                     $userText = '🎨 スタンプを受信しました';
                     $preview = '🎨 スタンプを受信';
-                    writeDebugLog("スタンプ受信", ['userId' => $userId]);
                 } elseif ($msgType === 'image') {
                     $userText = '📷 画像を受信しました';
                     $preview = '📷 画像を受信';
-                    writeDebugLog("画像受信", ['userId' => $userId, 'messageId' => $messageId]);
-
-                    // LINE Messaging APIから画像バイナリをダウンロードして保存
+                    // 画像ダウンロード
                     if (!empty($messageId) && function_exists('downloadLineMessageContent')) {
                         $dlRes = downloadLineMessageContent($messageId, $activeAccount);
                         if (!empty($dlRes['success']) && !empty($dlRes['url'])) {
@@ -304,9 +235,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $rawPayload['url'] = $imageUrl;
                             $rawPayload['file_name'] = $dlRes['file_name'] ?? '';
                             $rawPayload['file_path'] = $dlRes['file_path'] ?? '';
-                            writeDebugLog("画像ダウンロード＆保存成功", ['url' => $imageUrl, 'size' => $dlRes['size'] ?? 0]);
-                        } else {
-                            writeDebugLog("画像ダウンロード失敗", ['error' => $dlRes['error'] ?? '不明']);
                         }
                     }
                 } elseif ($msgType === 'video' || $msgType === 'audio' || $msgType === 'file') {
@@ -323,14 +251,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     $userText = '📎 メッセージを受信しました';
                     $preview = '📎 メッセージを受信';
-                    writeDebugLog("その他メッセージ受信", ['msgType' => $msgType, 'userId' => $userId]);
                 }
 
                 $payloadJson = json_encode($rawPayload, JSON_UNESCAPED_UNICODE);
+                $nowJst = date('Y-m-d H:i:s');
 
-                // 1. チャットメッセージ履歴テーブルへ保存
+                // A. チャットメッセージ履歴テーブルへ即座に確実に保存 (最優先)
                 try {
-                    $nowJst = date('Y-m-d H:i:s');
                     $chatStmt = $db->prepare("
                         INSERT INTO chat_messages (
                             user_id, direction, message_type, message_text, payload_json, is_read, created_at
@@ -345,38 +272,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ':payload' => $payloadJson,
                         ':now' => $nowJst
                     ]);
+                    writeDebugLog("チャットメッセージDB保存完了", ['uid' => $userId, 'text' => $userText, 'msgType' => $msgType]);
                 } catch (Throwable $chatEx) {
                     writeDebugLog("chat_messages 保存エラー", ['error' => $chatEx->getMessage()]);
                 }
 
-                // 2. 顧客カルテの自動登録確認・最終やり取り更新 & ブロック解除 (メッセージ送信＝有効な友だち)
+                // B. 顧客カルテの自動登録確認・最終やり取り更新 & ブロック解除
                 try {
                     ensureCustomerExists($db, $userId, $activeAccount);
-                    $db->prepare("UPDATE customer_cars SET is_blocked = 0, blocked_at = NULL WHERE TRIM(user_id) = :uid")
-                        ->execute([':uid' => $userId]);
+                    $db->prepare("UPDATE customer_cars SET is_blocked = 0, blocked_at = NULL, last_interaction_at = :now, last_interaction_type = 'user_message', last_interaction_preview = :prev WHERE TRIM(user_id) = :uid")
+                        ->execute([':now' => $nowJst, ':prev' => $preview, ':uid' => $userId]);
                 } catch (Throwable $e) {}
-                recordCustomerInteraction($db, $userId, 'user_message', $preview);
 
-                // 3. 管理者LINE通知 & Discord & Slack Webhook通知送信
+                // C. 管理者マルチ通知送信 (LINE Push / Discord / Slack / WebPush)
                 try {
                     $cStmt = $db->prepare("SELECT user_name, picture_url FROM customer_cars WHERE TRIM(user_id) = :uid LIMIT 1");
                     $cStmt->execute([':uid' => $userId]);
                     $cRow = $cStmt->fetch(PDO::FETCH_ASSOC);
-                    $userName = !empty($cRow['user_name']) ? $cRow['user_name'] : '';
+                    $userName = !empty($cRow['user_name']) ? $cRow['user_name'] : 'LINE受講生';
                     $picUrl = $cRow['picture_url'] ?? '';
 
                     $userProfile = null;
-                    if (empty($userName) || empty($picUrl) || $userName === '受講生' || $userName === '新規顧客' || $userName === 'LINE友だち') {
+                    if (empty($userName) || $userName === '受講生' || $userName === 'LINE受講生') {
                         $userProfile = getLineUserProfile($userId, $activeAccount);
-                        if (!empty($userProfile['displayName'])) {
-                            $userName = $userProfile['displayName'];
-                        }
-                        if (!empty($userProfile['pictureUrl'])) {
-                            $picUrl = $userProfile['pictureUrl'];
-                        }
-                    }
-                    if (empty($userName)) {
-                        $userName = 'LINE受講生';
+                        if (!empty($userProfile['displayName'])) $userName = $userProfile['displayName'];
+                        if (!empty($userProfile['pictureUrl'])) $picUrl = $userProfile['pictureUrl'];
                     }
 
                     $msgDataPayload = [
@@ -405,16 +325,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     writeDebugLog("チャット通知送信エラー", ['error' => $disEx->getMessage()]);
                 }
 
-                // 4. プロライン非中継時の自動返信（中継時はプロラインへ委譲）
-                if ($msgType === 'text') {
-                    if ($isProlineActive) {
-                        writeDebugLog("プロライン中継モードのため本システムの自動テキスト返信はスキップ（プロラインへ委譲）");
-                    } else {
-                        if ($replyToken) {
-                            handleTextMessage($db, $replyToken, $userText, $userId);
-                        }
-                    }
+                // D. プロライン中継が無効な場合の自動テキスト応答
+                if (!$isProlineActive && !empty($replyToken)) {
+                    handleTextMessage($db, $replyToken, $userText, $userId);
                 }
+
+            } elseif ($type === 'follow') {
+                // 友だち追加・ブロック解除時
+                recordCustomerInteraction($db, $userId, 'follow', "✨ 友だち追加");
+                try {
+                    $prof = getLineUserProfile($userId, $activeAccount);
+                    $uName = $prof['displayName'] ?? 'LINE受講生';
+                    $pUrl = $prof['pictureUrl'] ?? '';
+
+                    $db->prepare("UPDATE customer_cars SET user_name = :uname, picture_url = :pic, is_blocked = 0, blocked_at = NULL, updated_at = :now WHERE TRIM(user_id) = :uid")
+                        ->execute([':uname' => $uName, ':pic' => $pUrl, ':now' => date('Y-m-d H:i:s'), ':uid' => $userId]);
+
+                    if (function_exists('sendAdminLineFollowNotification')) {
+                        sendAdminLineFollowNotification($userId, $uName, $db);
+                    }
+                    sendSlackFollowNotification([
+                        'user_id' => $userId,
+                        'user_name' => $uName,
+                        'picture_url' => $pUrl,
+                        'event_text' => '新しいユーザーが友だち追加（またはブロック解除）しました！'
+                    ], $prof, $db);
+                    if (function_exists('sendDiscordNotification')) {
+                        sendDiscordNotification($db, "✨【LINE】友だち追加・ブロック解除", "受講生: {$uName} 様\nLINE UID: {$userId}\n日時: " . date('Y-m-d H:i:s'), '#10b981');
+                    }
+                } catch (Throwable $sEx) {
+                    writeDebugLog("フォロー通知エラー", ['error' => $sEx->getMessage()]);
+                }
+
+                // プロライン中継が無効な場合の自動フォロー応答
+                if (!$isProlineActive && !empty($replyToken)) {
+                    handleFollow($replyToken, $userId);
+                }
+
+            } elseif ($type === 'unfollow') {
+                $nowJst = date('Y-m-d H:i:s');
+                try {
+                    $db->prepare("
+                        UPDATE customer_cars 
+                        SET is_blocked = 1,
+                            blocked_at = :blocked_at,
+                            last_interaction_at = :last_at,
+                            last_interaction_type = 'unfollow',
+                            last_interaction_preview = '🚫 ブロック',
+                            updated_at = :up_at
+                        WHERE TRIM(user_id) = :uid
+                    ")->execute([
+                        ':blocked_at' => $nowJst,
+                        ':last_at' => $nowJst,
+                        ':up_at' => $nowJst,
+                        ':uid' => $userId
+                    ]);
+                } catch (Throwable $dbEx) {}
+                recordCustomerInteraction($db, $userId, 'unfollow', "🚫 ブロック");
+
             } elseif ($type === 'postback') {
                 $postbackData = $event['postback']['data'] ?? '';
                 writeDebugLog("ポストバック受信", ['data' => $postbackData, 'userId' => $userId]);
@@ -454,6 +422,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
         }
     }
+
+    // 3. プロライン (ProLine) ＆ 外部ツールへ完全中継（DB保存・通知完了後に安全に並列送信）
+    $prolineRelayResult = relayWebhookToProline($rawInput, $lineSignature, $db, $activeAccount);
+    writeDebugLog("外部ツール中継実行", $prolineRelayResult);
 
     http_response_code(200);
     echo 'OK';
