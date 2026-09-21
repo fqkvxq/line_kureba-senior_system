@@ -206,8 +206,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
                     $uName = $prof['displayName'] ?? '受講生';
                     $pUrl = $prof['pictureUrl'] ?? '';
 
-                    // 名前とアイコンを更新し、ブロック解除 (is_blocked = 0)
-                    $db->prepare("UPDATE customer_cars SET user_name = :uname, picture_url = :pic, is_blocked = 0, blocked_at = NULL, updated_at = :now WHERE user_id = :uid")
+                    // 名前とアイコンを更新し、確実にブロック解除 (is_blocked = 0)
+                    $db->prepare("UPDATE customer_cars SET user_name = :uname, picture_url = :pic, is_blocked = 0, blocked_at = NULL, updated_at = :now WHERE TRIM(user_id) = :uid")
                         ->execute([':uname' => $uName, ':pic' => $pUrl, ':now' => date('Y-m-d H:i:s'), ':uid' => $userId]);
 
                     // 1. 管理者向けLINEプッシュ通知
@@ -248,7 +248,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
                             last_interaction_type = 'unfollow',
                             last_interaction_preview = '🚫 ブロック',
                             updated_at = :up_at
-                        WHERE user_id = :uid
+                        WHERE TRIM(user_id) = :uid
                     ")->execute([
                         ':blocked_at' => $nowJst,
                         ':last_at' => $nowJst,
@@ -264,7 +264,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
 
                 // ユーザー名を取得して通知
                 try {
-                    $cStmt = $db->prepare("SELECT user_name FROM customer_cars WHERE user_id = :uid LIMIT 1");
+                    $cStmt = $db->prepare("SELECT user_name FROM customer_cars WHERE TRIM(user_id) = :uid LIMIT 1");
                     $cStmt->execute([':uid' => $userId]);
                     $uRow = $cStmt->fetch(PDO::FETCH_ASSOC);
                     $uName = $uRow['user_name'] ?? 'LINE友だち';
@@ -324,12 +324,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
                     writeDebugLog("chat_messages 保存エラー", ['error' => $chatEx->getMessage()]);
                 }
 
-                // 2. 顧客カルテの最終やり取り更新
+                // 2. 顧客カルテの最終やり取り更新 & ブロック解除 (メッセージ送信＝有効な友だち)
+                try {
+                    $db->prepare("UPDATE customer_cars SET is_blocked = 0, blocked_at = NULL WHERE TRIM(user_id) = :uid")
+                        ->execute([':uid' => $userId]);
+                } catch (Throwable $e) {}
                 recordCustomerInteraction($db, $userId, 'user_message', $preview);
 
                 // 3. 管理者LINE通知 & Discord & Slack Webhook通知送信
                 try {
-                    $cStmt = $db->prepare("SELECT user_name, picture_url FROM customer_cars WHERE user_id = :uid LIMIT 1");
+                    $cStmt = $db->prepare("SELECT user_name, picture_url FROM customer_cars WHERE TRIM(user_id) = :uid LIMIT 1");
                     $cStmt->execute([':uid' => $userId]);
                     $cRow = $cStmt->fetch(PDO::FETCH_ASSOC);
                     $userName = !empty($cRow['user_name']) ? $cRow['user_name'] : '';
@@ -399,6 +403,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
                 } elseif ($pbAction === 'notice') {
                     $actionLabel = '📢 お知らせの確認';
                 }
+
+                // 操作があった＝確実にブロック解除
+                try {
+                    $db->prepare("UPDATE customer_cars SET is_blocked = 0, blocked_at = NULL WHERE TRIM(user_id) = :uid")
+                        ->execute([':uid' => $userId]);
+                } catch (Throwable $e) {}
                 recordCustomerInteraction($db, $userId, 'user_action', $actionLabel);
 
                 handlePostback($db, $replyToken, $postbackData, $userId, $event['postback']['params'] ?? []);

@@ -2946,15 +2946,14 @@ async function toggleBlockStatus(cust, btn) {
 
     if (!confirm(confirmMsg)) return;
 
-    // ── 楽観的UI更新: 先にstateとUIを更新 ──
-    const custIdx = state.allCustomers.findIndex(c =>
-        (c.user_id && c.user_id === cust.user_id) || String(c.id) === String(cust.id)
-    );
-    if (custIdx >= 0) {
-        state.allCustomers[custIdx].is_blocked = newBlocked ? 1 : 0;
-        state.allCustomers[custIdx].last_interaction_type = newBlocked ? 'unfollow' : 'follow';
-        state.allCustomers[custIdx].last_interaction_preview = newBlocked ? '🚫 ブロック（手動）' : '✅ ブロック解除（手動）';
-    }
+    // ── 楽観的UI更新: 先にstate内の同一UIDの全レコードとUIを更新 ──
+    state.allCustomers.forEach(c => {
+        if ((c.user_id && cust.user_id && c.user_id.trim() === cust.user_id.trim()) || String(c.id) === String(cust.id)) {
+            c.is_blocked = newBlocked ? 1 : 0;
+            c.last_interaction_type = newBlocked ? 'unfollow' : 'follow';
+            c.last_interaction_preview = newBlocked ? '🚫 ブロック（手動）' : '✅ ブロック解除（手動）';
+        }
+    });
 
     // UIを即時再描画
     renderTable();
@@ -2981,10 +2980,12 @@ async function toggleBlockStatus(cust, btn) {
         if (!data.success) {
             // 失敗したらロールバック
             console.warn('[toggleBlock] API error:', data.error);
-            if (custIdx >= 0) {
-                state.allCustomers[custIdx].is_blocked = currentlyBlocked ? 1 : 0;
-                state.allCustomers[custIdx].last_interaction_type = currentlyBlocked ? 'unfollow' : 'follow';
-            }
+            state.allCustomers.forEach(c => {
+                if ((c.user_id && cust.user_id && c.user_id.trim() === cust.user_id.trim()) || String(c.id) === String(cust.id)) {
+                    c.is_blocked = currentlyBlocked ? 1 : 0;
+                    c.last_interaction_type = currentlyBlocked ? 'unfollow' : 'follow';
+                }
+            });
             renderTable();
             updateStats();
             alert('⚠️ ブロック状態の保存に失敗しました: ' + (data.error || '通信エラー'));
@@ -2992,9 +2993,11 @@ async function toggleBlockStatus(cust, btn) {
     } catch (e) {
         // 通信エラー時もロールバック
         console.error('[toggleBlock] Fetch error:', e);
-        if (custIdx >= 0) {
-            state.allCustomers[custIdx].is_blocked = currentlyBlocked ? 1 : 0;
-        }
+        state.allCustomers.forEach(c => {
+            if ((c.user_id && cust.user_id && c.user_id.trim() === cust.user_id.trim()) || String(c.id) === String(cust.id)) {
+                c.is_blocked = currentlyBlocked ? 1 : 0;
+            }
+        });
         renderTable();
         updateStats();
         alert('⚠️ 通信エラーが発生しました。ブロック状態が保存されていない可能性があります。');

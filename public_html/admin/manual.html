@@ -34,52 +34,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>操作マニュアル - シニア向けパソコン教室 LINE受講生・カルテ管理システム</title>
+    <title>謫堺ｽ懊�繝九Η繧｢繝ｫ - 繧ｷ繝九い蜷代￠繝代た繧ｳ繝ｳ謨吝ｮ､ LINE蜿苓ｬ帷函繝ｻ繧ｫ繝ｫ繝�ｮ｡逅�す繧ｹ繝�Β</title>
     <!-- Google Fonts & Font Awesome -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260921_toolbar_layout_v1">
+    <link rel="stylesheet" href="manual.css?v=20260921_fix_unblock_sync">
 </head>
 <body>
-    <!-- ログインモーダル (二段階認証対応) -->
+    <!-- 繝ｭ繧ｰ繧､繝ｳ繝｢繝ｼ繝繝ｫ (莠梧ｮｵ髫手ｪ崎ｨｼ蟇ｾ蠢�) -->
     <div class="login-overlay" id="loginModal">
         <div class="login-card">
-            <!-- STEP 1: パスワード入力 -->
+            <!-- STEP 1: 繝代せ繝ｯ繝ｼ繝牙�蜉� -->
             <div id="loginStep1Wrap">
                 <div class="login-icon">
                     <i class="fa-solid fa-book-open"></i>
                 </div>
-                <h2>操作マニュアル</h2>
-                <p>管理者パスワードを入力して閲覧してください</p>
+                <h2>謫堺ｽ懊�繝九Η繧｢繝ｫ</h2>
+                <p>邂｡逅��ヱ繧ｹ繝ｯ繝ｼ繝峨ｒ蜈･蜉帙＠縺ｦ髢ｲ隕ｧ縺励※縺上□縺輔＞</p>
                 <div class="form-group">
-                    <label for="adminPasswordInput">パスワード</label>
-                    <input type="password" id="adminPasswordInput" class="form-input" placeholder="••••••••" autofocus autocomplete="current-password">
+                    <label for="adminPasswordInput">繝代せ繝ｯ繝ｼ繝�</label>
+                    <input type="password" id="adminPasswordInput" class="form-input" placeholder="窶｢窶｢窶｢窶｢窶｢窶｢窶｢窶｢" autofocus autocomplete="current-password">
                 </div>
-                <button type="button" class="btn-login" id="loginBtn">ログインして閲覧</button>
+                <button type="button" class="btn-login" id="loginBtn">繝ｭ繧ｰ繧､繝ｳ縺励※髢ｲ隕ｧ</button>
             </div>
 
-            <!-- STEP 2: メール二段階認証コード入力 -->
+            <!-- STEP 2: 繝｡繝ｼ繝ｫ莠梧ｮｵ髫手ｪ崎ｨｼ繧ｳ繝ｼ繝牙�蜉� -->
             <div id="loginStep2Wrap" style="display: none;">
                 <div class="login-icon" style="background: #e0f2fe; color: #0284c7;">
                     <i class="fa-solid fa-envelope-circle-check"></i>
                 </div>
-                <h2>二段階認証コードの入力</h2>
+                <h2>莠梧ｮｵ髫手ｪ崎ｨｼ繧ｳ繝ｼ繝峨�蜈･蜉�</h2>
                 <p style="font-size: 13px; line-height: 1.5; color: #475569; margin-bottom: 16px;">
-                    <span id="login2FAEmailHint" style="font-weight: 700; color: #0f172a;">kawai@kureba.co.jp</span> 宛てに送信された6桁の認証コードを入力してください。
+                    <span id="login2FAEmailHint" style="font-weight: 700; color: #0f172a;">kawai@kureba.co.jp</span> 螳帙※縺ｫ騾∽ｿ｡縺輔ｌ縺�6譯√�隱崎ｨｼ繧ｳ繝ｼ繝峨ｒ蜈･蜉帙＠縺ｦ縺上□縺輔＞縲�
                 </p>
                 <div class="form-group" style="margin-bottom: 16px;">
-                    <label for="admin2FACodeInput">認証コード（6桁数字）</label>
-                    <input type="text" id="admin2FACodeInput" class="form-input" placeholder="6桁の認証コード" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" style="text-align: center; font-size: 22px; font-weight: 800; letter-spacing: 6px;">
+                    <label for="admin2FACodeInput">隱崎ｨｼ繧ｳ繝ｼ繝会ｼ�6譯∵焚蟄暦ｼ�</label>
+                    <input type="text" id="admin2FACodeInput" class="form-input" placeholder="6譯√�隱崎ｨｼ繧ｳ繝ｼ繝�" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" style="text-align: center; font-size: 22px; font-weight: 800; letter-spacing: 6px;">
                 </div>
-                <button type="button" class="btn-login" id="btnVerify2FA" style="background: #0284c7;">認証して閲覧</button>
+                <button type="button" class="btn-login" id="btnVerify2FA" style="background: #0284c7;">隱崎ｨｼ縺励※髢ｲ隕ｧ</button>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; font-size: 12px;">
                     <button type="button" id="btnBackToPassword" style="background: none; border: none; color: #64748b; cursor: pointer; text-decoration: underline; padding: 0;">
-                        <i class="fa-solid fa-arrow-left"></i> パスワード再入力
+                        <i class="fa-solid fa-arrow-left"></i> 繝代せ繝ｯ繝ｼ繝牙�蜈･蜉�
                     </button>
                     <button type="button" id="btnResend2FACode" style="background: none; border: none; color: #0284c7; cursor: pointer; font-weight: 600; padding: 0;">
-                        <i class="fa-solid fa-rotate-right"></i> コード再送信 <span id="resendTimerText"></span>
+                        <i class="fa-solid fa-rotate-right"></i> 繧ｳ繝ｼ繝牙�騾∽ｿ｡ <span id="resendTimerText"></span>
                     </button>
                 </div>
             </div>
@@ -88,102 +88,102 @@
         </div>
     </div>
 
-    <!-- メインアプリケーション -->
+    <!-- 繝｡繧､繝ｳ繧｢繝励Μ繧ｱ繝ｼ繧ｷ繝ｧ繝ｳ -->
     <div class="admin-wrapper" id="adminApp" style="display: none;">
-        <!-- ヘッダー -->
+        <!-- 繝倥ャ繝繝ｼ -->
         <header class="admin-header">
-            <!-- ヘッダー上段: ブランド・ナビゲーション・アカウント切替 -->
+            <!-- 繝倥ャ繝繝ｼ荳頑ｮｵ: 繝悶Λ繝ｳ繝峨�繝翫ン繧ｲ繝ｼ繧ｷ繝ｧ繝ｳ繝ｻ繧｢繧ｫ繧ｦ繝ｳ繝亥�譖ｿ -->
             <div class="admin-header-top">
                 <div class="admin-header-left">
                     <div class="admin-brand">
                         <div class="brand-badge" id="systemBrandBadge"><i class="fa-solid fa-graduation-cap"></i></div>
                         <div>
-                            <h1 id="systemBrandTitle">シニア向けパソコン教室 管理システム</h1>
-                            <span id="systemBrandSubtitle">システム操作マニュアル & プロライン連携設定ガイド</span>
+                            <h1 id="systemBrandTitle">繧ｷ繝九い蜷代￠繝代た繧ｳ繝ｳ謨吝ｮ､ 邂｡逅�す繧ｹ繝�Β</h1>
+                            <span id="systemBrandSubtitle">繧ｷ繧ｹ繝�Β謫堺ｽ懊�繝九Η繧｢繝ｫ & 繝励Ο繝ｩ繧､繝ｳ騾｣謳ｺ險ｭ螳壹ぎ繧､繝�</span>
                         </div>
                     </div>
 
-                    <!-- ナビゲーションリンク -->
+                    <!-- 繝翫ン繧ｲ繝ｼ繧ｷ繝ｧ繝ｳ繝ｪ繝ｳ繧ｯ -->
                     <nav class="admin-nav-links">
-                        <a href="index.html" class="nav-link"><i class="fa-solid fa-users"></i> 受講生・カルテ管理</a>
-                        <a href="richmenu.html" class="nav-link"><i class="fa-solid fa-table-cells-large"></i> リッチメニュー管理</a>
-                        <a href="manual.html" class="nav-link active"><i class="fa-solid fa-book-open"></i> 操作マニュアル</a>
+                        <a href="index.html" class="nav-link"><i class="fa-solid fa-users"></i> 蜿苓ｬ帷函繝ｻ繧ｫ繝ｫ繝�ｮ｡逅�</a>
+                        <a href="richmenu.html" class="nav-link"><i class="fa-solid fa-table-cells-large"></i> 繝ｪ繝�メ繝｡繝九Η繝ｼ邂｡逅�</a>
+                        <a href="manual.html" class="nav-link active"><i class="fa-solid fa-book-open"></i> 謫堺ｽ懊�繝九Η繧｢繝ｫ</a>
                     </nav>
                 </div>
 
                 <div class="admin-header-right">
-                    <!-- アカウント切り替えスイッチャー -->
+                    <!-- 繧｢繧ｫ繧ｦ繝ｳ繝亥�繧頑崛縺医せ繧､繝�メ繝｣繝ｼ -->
                     <div class="account-switcher-wrap" id="accountSwitcherWrap" style="display: flex; align-items: center; gap: 8px;">
                         <label for="accountSelect" class="account-switcher-label">
-                            <i class="fa-solid fa-arrows-rotate"></i> アカウント:
+                            <i class="fa-solid fa-arrows-rotate"></i> 繧｢繧ｫ繧ｦ繝ｳ繝�:
                         </label>
                         <div class="account-select-box">
                             <span class="account-badge-dot" id="accountBadgeDot"></span>
-                            <select id="accountSelect" class="account-select-dropdown" title="操作対象のLINE公式アカウントを切り替えます">
-                                <option value="senior">シニア向けパソコン教室</option>
+                            <select id="accountSelect" class="account-select-dropdown" title="謫堺ｽ懷ｯｾ雎｡縺ｮLINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医ｒ蛻�ｊ譖ｿ縺医∪縺�">
+                                <option value="senior">繧ｷ繝九い蜷代￠繝代た繧ｳ繝ｳ謨吝ｮ､</option>
                             </select>
                         </div>
                     </div>
 
-                    <button class="btn-logout" id="logoutBtn" title="ログアウト">
+                    <button class="btn-logout" id="logoutBtn" title="繝ｭ繧ｰ繧｢繧ｦ繝�">
                         <i class="fa-solid fa-arrow-right-from-bracket"></i>
                     </button>
                 </div>
             </div>
         </header>
 
-        <!-- マニュアルコンテナ -->
+        <!-- 繝槭ル繝･繧｢繝ｫ繧ｳ繝ｳ繝�リ -->
         <div class="manual-container">
-            <!-- 左サイドバー（目次 & 検索） -->
+            <!-- 蟾ｦ繧ｵ繧､繝峨ヰ繝ｼ�育岼谺｡ & 讀懃ｴ｢�� -->
             <aside class="manual-sidebar">
                 <div class="manual-search-box">
                     <i class="fa-solid fa-magnifying-glass manual-search-icon"></i>
-                    <input type="text" id="manualSearchInput" class="manual-search-input" placeholder="マニュアル内を検索...">
+                    <input type="text" id="manualSearchInput" class="manual-search-input" placeholder="繝槭ル繝･繧｢繝ｫ蜀�ｒ讀懃ｴ｢...">
                 </div>
 
                 <div class="toc-card">
-                    <div class="toc-title"><i class="fa-solid fa-list-ol"></i> 目次</div>
+                    <div class="toc-title"><i class="fa-solid fa-list-ol"></i> 逶ｮ谺｡</div>
                     <ul class="toc-list">
-                        <li class="toc-item"><a href="#sec-overview" class="active"><i class="fa-solid fa-compass"></i> 1. システム全体概要</a></li>
-                        <li class="toc-item"><a href="#sec-proline"><i class="fa-solid fa-network-wired" style="color:#2563eb;"></i> 2. プロライン＆外部ツール連携（マルチWebhook中継）</a></li>
-                        <li class="toc-item"><a href="#sec-line-sync"><i class="fa-brands fa-line" style="color:#06C755;"></i> 3. LINE受講生一括同期</a></li>
-                        <li class="toc-item"><a href="#sec-customer-maint"><i class="fa-solid fa-laptop"></i> 4. 受講生カルテ・期日管理</a></li>
-                        <li class="toc-item"><a href="#sec-auto-nearest"><i class="fa-solid fa-wand-magic-sparkles" style="color:#6366f1;"></i> 5. 直近予定日の自動反映</a></li>
-                        <li class="toc-item"><a href="#sec-user-richmenu"><i class="fa-solid fa-table-cells-large"></i> 6. 個別リッチメニュー設定</a></li>
-                        <li class="toc-item"><a href="#sec-line-reminder"><i class="fa-solid fa-paper-plane"></i> 7. LINE個別リマインド・自動バッチ</a></li>
-                        <li class="toc-item"><a href="#sec-global-richmenu"><i class="fa-solid fa-sliders"></i> 8. 全体リッチメニュー管理</a></li>
-                        <li class="toc-item"><a href="#sec-admin-notify"><i class="fa-solid fa-bell" style="color:#0284c7;"></i> 9. 管理者向けLINE通知設定</a></li>
-                        <li class="toc-item"><a href="#sec-knowledge-broadcast"><i class="fa-solid fa-lightbulb" style="color:#f59e0b;"></i> 10. シニア向けお役立ち情報 配信スタジオ</a></li>
-                        <li class="toc-item"><a href="#sec-multi-account"><i class="fa-solid fa-arrows-rotate" style="color:#6366f1;"></i> 11. 複数LINE公式アカウントの切り替え・運用</a></li>
-                        <li class="toc-item"><a href="#sec-line-chat"><i class="fa-solid fa-comments" style="color:#06C755;"></i> 12. 個別LINEチャット・メッセージ返信</a></li>
-                        <li class="toc-item"><a href="#sec-discord-notify"><i class="fa-brands fa-discord" style="color:#5865F2;"></i> 13. Discord通知設定</a></li>
-                        <li class="toc-item"><a href="#sec-slack-notify"><i class="fa-brands fa-slack" style="color:#ECB22E;"></i> 14. Slack通知設定</a></li>
-                        <li class="toc-item"><a href="#sec-dx-survey"><i class="fa-solid fa-clipboard-question" style="color:#2563eb;"></i> 15. 会社DX 関心度アンケート配信</a></li>
-                        <li class="toc-item"><a href="#sec-2fa"><i class="fa-solid fa-shield-halved" style="color:#0284c7;"></i> 16. メール二段階認証（2FA / セキュリティ）</a></li>
-                        <li class="toc-item"><a href="#sec-server-setup"><i class="fa-solid fa-server" style="color:#10b981;"></i> 17. 他社・別サーバー移行＆初期セットアップ</a></li>
-                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 18. よくある質問・トラブルシューティング</a></li>
+                        <li class="toc-item"><a href="#sec-overview" class="active"><i class="fa-solid fa-compass"></i> 1. 繧ｷ繧ｹ繝�Β蜈ｨ菴捺ｦりｦ�</a></li>
+                        <li class="toc-item"><a href="#sec-proline"><i class="fa-solid fa-network-wired" style="color:#2563eb;"></i> 2. 繝励Ο繝ｩ繧､繝ｳ��､夜Κ繝��繝ｫ騾｣謳ｺ�医�繝ｫ繝仝ebhook荳ｭ邯呻ｼ�</a></li>
+                        <li class="toc-item"><a href="#sec-line-sync"><i class="fa-brands fa-line" style="color:#06C755;"></i> 3. LINE蜿苓ｬ帷函荳諡ｬ蜷梧悄</a></li>
+                        <li class="toc-item"><a href="#sec-customer-maint"><i class="fa-solid fa-laptop"></i> 4. 蜿苓ｬ帷函繧ｫ繝ｫ繝��譛滓律邂｡逅�</a></li>
+                        <li class="toc-item"><a href="#sec-auto-nearest"><i class="fa-solid fa-wand-magic-sparkles" style="color:#6366f1;"></i> 5. 逶ｴ霑台ｺ亥ｮ壽律縺ｮ閾ｪ蜍募渚譏�</a></li>
+                        <li class="toc-item"><a href="#sec-user-richmenu"><i class="fa-solid fa-table-cells-large"></i> 6. 蛟句挨繝ｪ繝�メ繝｡繝九Η繝ｼ險ｭ螳�</a></li>
+                        <li class="toc-item"><a href="#sec-line-reminder"><i class="fa-solid fa-paper-plane"></i> 7. LINE蛟句挨繝ｪ繝槭う繝ｳ繝峨�閾ｪ蜍輔ヰ繝�メ</a></li>
+                        <li class="toc-item"><a href="#sec-global-richmenu"><i class="fa-solid fa-sliders"></i> 8. 蜈ｨ菴薙Μ繝�メ繝｡繝九Η繝ｼ邂｡逅�</a></li>
+                        <li class="toc-item"><a href="#sec-admin-notify"><i class="fa-solid fa-bell" style="color:#0284c7;"></i> 9. 邂｡逅��髄縺銑INE騾夂衍險ｭ螳�</a></li>
+                        <li class="toc-item"><a href="#sec-knowledge-broadcast"><i class="fa-solid fa-lightbulb" style="color:#f59e0b;"></i> 10. 繧ｷ繝九い蜷代￠縺雁ｽｹ遶九■諠��ｱ 驟堺ｿ｡繧ｹ繧ｿ繧ｸ繧ｪ</a></li>
+                        <li class="toc-item"><a href="#sec-multi-account"><i class="fa-solid fa-arrows-rotate" style="color:#6366f1;"></i> 11. 隍�焚LINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医�蛻�ｊ譖ｿ縺医�驕狗畑</a></li>
+                        <li class="toc-item"><a href="#sec-line-chat"><i class="fa-solid fa-comments" style="color:#06C755;"></i> 12. 蛟句挨LINE繝√Ε繝�ヨ繝ｻ繝｡繝�そ繝ｼ繧ｸ霑比ｿ｡</a></li>
+                        <li class="toc-item"><a href="#sec-discord-notify"><i class="fa-brands fa-discord" style="color:#5865F2;"></i> 13. Discord騾夂衍險ｭ螳�</a></li>
+                        <li class="toc-item"><a href="#sec-slack-notify"><i class="fa-brands fa-slack" style="color:#ECB22E;"></i> 14. Slack騾夂衍險ｭ螳�</a></li>
+                        <li class="toc-item"><a href="#sec-dx-survey"><i class="fa-solid fa-clipboard-question" style="color:#2563eb;"></i> 15. 莨夂､ｾDX 髢｢蠢�ｺｦ繧｢繝ｳ繧ｱ繝ｼ繝磯�菫｡</a></li>
+                        <li class="toc-item"><a href="#sec-2fa"><i class="fa-solid fa-shield-halved" style="color:#0284c7;"></i> 16. 繝｡繝ｼ繝ｫ莠梧ｮｵ髫手ｪ崎ｨｼ��2FA / 繧ｻ繧ｭ繝･繝ｪ繝�ぅ��</a></li>
+                        <li class="toc-item"><a href="#sec-server-setup"><i class="fa-solid fa-server" style="color:#10b981;"></i> 17. 莉也､ｾ繝ｻ蛻･繧ｵ繝ｼ繝舌�遘ｻ陦鯉ｼ��譛溘そ繝�ヨ繧｢繝��</a></li>
+                        <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 18. 繧医￥縺ゅｋ雉ｪ蝠上�繝医Λ繝悶Ν繧ｷ繝･繝ｼ繝�ぅ繝ｳ繧ｰ</a></li>
                     </ul>
                 </div>
             </aside>
 
-            <!-- メインコンテンツ -->
+            <!-- 繝｡繧､繝ｳ繧ｳ繝ｳ繝�Φ繝� -->
             <main class="manual-main">
-                <!-- ヒーローセクション -->
+                <!-- 繝偵�繝ｭ繝ｼ繧ｻ繧ｯ繧ｷ繝ｧ繝ｳ -->
                 <section class="manual-hero">
-                    <div class="manual-hero-tag"><i class="fa-solid fa-shield-halved"></i> 教室スタッフ向け公式ガイド</div>
-                    <h2>シニア向けパソコン教室 LINE受講生・カルテ管理システム 操作マニュアル</h2>
-                    <p>LINE公式アカウントおよびプロライン（ProLine Free）と連携し、受講生の次回レッスン日・定期PC健康診断・月謝更新期日の一元管理や、受講生一人ひとりに合わせたパーソナライズ・リッチメニューの自動表示を行うための公式運用ガイドです。</p>
+                    <div class="manual-hero-tag"><i class="fa-solid fa-shield-halved"></i> 謨吝ｮ､繧ｹ繧ｿ繝�ヵ蜷代￠蜈ｬ蠑上ぎ繧､繝�</div>
+                    <h2>繧ｷ繝九い蜷代￠繝代た繧ｳ繝ｳ謨吝ｮ､ LINE蜿苓ｬ帷函繝ｻ繧ｫ繝ｫ繝�ｮ｡逅�す繧ｹ繝�Β 謫堺ｽ懊�繝九Η繧｢繝ｫ</h2>
+                    <p>LINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医♀繧医�繝励Ο繝ｩ繧､繝ｳ��roLine Free�峨→騾｣謳ｺ縺励∝女隰帷函縺ｮ谺｡蝗槭Ξ繝�せ繝ｳ譌･繝ｻ螳壽悄PC蛛･蠎ｷ險ｺ譁ｭ繝ｻ譛郁ｬ晄峩譁ｰ譛滓律縺ｮ荳蜈�ｮ｡逅�ｄ縲∝女隰帷函荳莠ｺ縺ｲ縺ｨ繧翫↓蜷医ｏ縺帙◆繝代�繧ｽ繝翫Λ繧､繧ｺ繝ｻ繝ｪ繝�メ繝｡繝九Η繝ｼ縺ｮ閾ｪ蜍戊｡ｨ遉ｺ繧定｡後≧縺溘ａ縺ｮ蜈ｬ蠑城°逕ｨ繧ｬ繧､繝峨〒縺吶�</p>
                 </section>
 
-                <!-- クイックサマリーグリッド -->
+                <!-- 繧ｯ繧､繝�け繧ｵ繝槭Μ繝ｼ繧ｰ繝ｪ繝�ラ -->
                 <div class="quick-summary-grid">
                     <a href="#sec-proline" class="summary-card">
                         <div class="summary-icon-wrap" style="background: #eff6ff; color: #2563eb;">
                             <i class="fa-solid fa-network-wired"></i>
                         </div>
                         <div class="summary-card-content">
-                            <h3>プロライン連携（中継）</h3>
-                            <p>LINE公式アカウントとプロラインの間に挟み込み、プロラインのステップ配信を活かしたまま共存運用。</p>
+                            <h3>繝励Ο繝ｩ繧､繝ｳ騾｣謳ｺ�井ｸｭ邯呻ｼ�</h3>
+                            <p>LINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医→繝励Ο繝ｩ繧､繝ｳ縺ｮ髢薙↓謖溘∩霎ｼ縺ｿ縲√�繝ｭ繝ｩ繧､繝ｳ縺ｮ繧ｹ繝�ャ繝鈴�菫｡繧呈ｴｻ縺九＠縺溘∪縺ｾ蜈ｱ蟄倬°逕ｨ縲�</p>
                         </div>
                     </a>
 
@@ -192,8 +192,8 @@
                             <i class="fa-solid fa-laptop"></i>
                         </div>
                         <div class="summary-card-content">
-                            <h3>受講生カルテ・期日管理</h3>
-                            <p>次回レッスン・定期PC健康診断・会員更新期日を色分けバッジで可視化・管理。</p>
+                            <h3>蜿苓ｬ帷函繧ｫ繝ｫ繝��譛滓律邂｡逅�</h3>
+                            <p>谺｡蝗槭Ξ繝�せ繝ｳ繝ｻ螳壽悄PC蛛･蠎ｷ險ｺ譁ｭ繝ｻ莨壼藤譖ｴ譁ｰ譛滓律繧定牡蛻�￠繝舌ャ繧ｸ縺ｧ蜿ｯ隕門喧繝ｻ邂｡逅��</p>
                         </div>
                     </a>
 
@@ -202,8 +202,8 @@
                             <i class="fa-solid fa-table-cells-large"></i>
                         </div>
                         <div class="summary-card-content">
-                            <h3>個別リッチメニュー</h3>
-                            <p>受講生のLINE画面に「次回レッスン：10月15日」などの専用メッセージ帯を自動合成して表示。</p>
+                            <h3>蛟句挨繝ｪ繝�メ繝｡繝九Η繝ｼ</h3>
+                            <p>蜿苓ｬ帷函縺ｮLINE逕ｻ髱｢縺ｫ縲梧ｬ｡蝗槭Ξ繝�せ繝ｳ��10譛�15譌･縲阪↑縺ｩ縺ｮ蟆ら畑繝｡繝�そ繝ｼ繧ｸ蟶ｯ繧定�蜍募粋謌舌＠縺ｦ陦ｨ遉ｺ縲�</p>
                         </div>
                     </a>
 
@@ -212,8 +212,8 @@
                             <i class="fa-solid fa-bell"></i>
                         </div>
                         <div class="summary-card-content">
-                            <h3>管理者LINE通知</h3>
-                            <p>受講生からのレッスン予約やお困りごと相談を、講師・スタッフの個人LINEへ即座にプッシュ通知。</p>
+                            <h3>邂｡逅��INE騾夂衍</h3>
+                            <p>蜿苓ｬ帷函縺九ｉ縺ｮ繝ｬ繝�せ繝ｳ莠育ｴ�ｄ縺雁峅繧翫＃縺ｨ逶ｸ隲�ｒ縲∬ｬ帛ｸｫ繝ｻ繧ｹ繧ｿ繝�ヵ縺ｮ蛟倶ｺｺLINE縺ｸ蜊ｳ蠎ｧ縺ｫ繝励ャ繧ｷ繝･騾夂衍縲�</p>
                         </div>
                     </a>
 
@@ -222,8 +222,8 @@
                             <i class="fa-solid fa-lightbulb"></i>
                         </div>
                         <div class="summary-card-content">
-                            <h3>お役立ち情報配信</h3>
-                            <p>シニアに優しい大文字カード（Flex）でスマホ・PC便利ワザや詐欺対策を一斉・個別配信。</p>
+                            <h3>縺雁ｽｹ遶九■諠��ｱ驟堺ｿ｡</h3>
+                            <p>繧ｷ繝九い縺ｫ蜆ｪ縺励＞螟ｧ譁�ｭ励き繝ｼ繝会ｼ�lex�峨〒繧ｹ繝槭�繝ｻPC萓ｿ蛻ｩ繝ｯ繧ｶ繧�ｩ先ｬｺ蟇ｾ遲悶ｒ荳譁峨�蛟句挨驟堺ｿ｡縲�</p>
                         </div>
                     </a>
 
@@ -232,8 +232,8 @@
                             <i class="fa-solid fa-comments"></i>
                         </div>
                         <div class="summary-card-content">
-                            <h3>個別チャット・返信</h3>
-                            <p>受講生からのLINEメッセージを管理画面で直接確認し、Pushメッセージで即座に返信対応。</p>
+                            <h3>蛟句挨繝√Ε繝�ヨ繝ｻ霑比ｿ｡</h3>
+                            <p>蜿苓ｬ帷函縺九ｉ縺ｮLINE繝｡繝�そ繝ｼ繧ｸ繧堤ｮ｡逅�判髱｢縺ｧ逶ｴ謗･遒ｺ隱阪＠縲￣ush繝｡繝�そ繝ｼ繧ｸ縺ｧ蜊ｳ蠎ｧ縺ｫ霑比ｿ｡蟇ｾ蠢懊�</p>
                         </div>
                     </a>
 
@@ -242,8 +242,8 @@
                             <i class="fa-brands fa-discord"></i>
                         </div>
                         <div class="summary-card-content">
-                            <h3>Discord通知</h3>
-                            <p>メッセージ受信や友だち追加、予約相談をDiscordチャンネルへリアルタイム通知＆直リンク返信。</p>
+                            <h3>Discord騾夂衍</h3>
+                            <p>繝｡繝�そ繝ｼ繧ｸ蜿嶺ｿ｡繧�暑縺�縺｡霑ｽ蜉�縲∽ｺ育ｴ�嶌隲�ｒDiscord繝√Ε繝ｳ繝阪Ν縺ｸ繝ｪ繧｢繝ｫ繧ｿ繧､繝�騾夂衍��峩繝ｪ繝ｳ繧ｯ霑比ｿ｡縲�</p>
                         </div>
                     </a>
 
@@ -252,8 +252,8 @@
                             <i class="fa-brands fa-slack"></i>
                         </div>
                         <div class="summary-card-content">
-                            <h3>Slack通知</h3>
-                            <p>LINEメッセージ受信や友だち追加、予約相談をSlackチャンネルへリアルタイム通知＆カルテ直通リンク。</p>
+                            <h3>Slack騾夂衍</h3>
+                            <p>LINE繝｡繝�そ繝ｼ繧ｸ蜿嶺ｿ｡繧�暑縺�縺｡霑ｽ蜉�縲∽ｺ育ｴ�嶌隲�ｒSlack繝√Ε繝ｳ繝阪Ν縺ｸ繝ｪ繧｢繝ｫ繧ｿ繧､繝�騾夂衍��き繝ｫ繝�峩騾壹Μ繝ｳ繧ｯ縲�</p>
                         </div>
                     </a>
 
@@ -262,95 +262,95 @@
                             <i class="fa-solid fa-server"></i>
                         </div>
                         <div class="summary-card-content">
-                            <h3>他社サーバー移行 & 初期設定</h3>
-                            <p>個人情報ゼロのクリーン導入、setup.phpによる環境診断、LINE API自動疎通テストと簡単初期化。</p>
+                            <h3>莉也､ｾ繧ｵ繝ｼ繝舌�遘ｻ陦� & 蛻晄悄險ｭ螳�</h3>
+                            <p>蛟倶ｺｺ諠��ｱ繧ｼ繝ｭ縺ｮ繧ｯ繝ｪ繝ｼ繝ｳ蟆主�縲《etup.php縺ｫ繧医ｋ迺ｰ蠅�ｨｺ譁ｭ縲´INE API閾ｪ蜍慕鮪騾壹ユ繧ｹ繝医→邁｡蜊伜�譛溷喧縲�</p>
                         </div>
                     </a>
                 </div>
 
-                <!-- 1. システム全体概要 -->
+                <!-- 1. 繧ｷ繧ｹ繝�Β蜈ｨ菴捺ｦりｦ� -->
                 <section class="manual-section" id="sec-overview">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #eef2ff; color: #4f46e5;">
                             <i class="fa-solid fa-compass"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>1. システム全体概要</h2>
-                            <p>シニア向けパソコン教室向けLINE管理システムの目的と構成</p>
+                            <h2>1. 繧ｷ繧ｹ繝�Β蜈ｨ菴捺ｦりｦ�</h2>
+                            <p>繧ｷ繝九い蜷代￠繝代た繧ｳ繝ｳ謨吝ｮ､蜷代￠LINE邂｡逅�す繧ｹ繝�Β縺ｮ逶ｮ逧�→讒区�</p>
                         </div>
                     </div>
 
-                    <p>当システムは、シニア向けパソコン教室において、受講生とのコミュニケーション向上、レッスンの無断欠席防止、定期的なパソコン・スマホのメンテナンス受診促進を実現するための専用管理システムです。<br>
-                    <strong>既存の「プロラインフリー（ProLine Free）」「エルメ（L-messh）」「LINE Harness（ラインハーネス）」等の外部マーケティングツールで構築された環境を壊すことなく、100%干渉ゼロで共存できる</strong>設計となっています。</p>
+                    <p>蠖薙す繧ｹ繝�Β縺ｯ縲√す繝九い蜷代￠繝代た繧ｳ繝ｳ謨吝ｮ､縺ｫ縺翫＞縺ｦ縲∝女隰帷函縺ｨ縺ｮ繧ｳ繝溘Η繝九こ繝ｼ繧ｷ繝ｧ繝ｳ蜷台ｸ翫√Ξ繝�せ繝ｳ縺ｮ辟｡譁ｭ谺�蟶ｭ髦ｲ豁｢縲∝ｮ壽悄逧�↑繝代た繧ｳ繝ｳ繝ｻ繧ｹ繝槭�縺ｮ繝｡繝ｳ繝�リ繝ｳ繧ｹ蜿苓ｨｺ菫�ｲ繧貞ｮ溽樟縺吶ｋ縺溘ａ縺ｮ蟆ら畑邂｡逅�す繧ｹ繝�Β縺ｧ縺吶�<br>
+                    <strong>譌｢蟄倥�縲後�繝ｭ繝ｩ繧､繝ｳ繝輔Μ繝ｼ��roLine Free�峨阪後お繝ｫ繝｡��-messh�峨阪鍬INE Harness�医Λ繧､繝ｳ繝上�繝阪せ�峨咲ｭ峨�螟夜Κ繝槭�繧ｱ繝�ぅ繝ｳ繧ｰ繝��繝ｫ縺ｧ讒狗ｯ峨＆繧後◆迺ｰ蠅�ｒ螢翫☆縺薙→縺ｪ縺上�100%蟷ｲ貂峨ぞ繝ｭ縺ｧ蜈ｱ蟄倥〒縺阪ｋ</strong>險ｭ險医→縺ｪ縺｣縺ｦ縺�∪縺吶�</p>
                     
                     <div class="step-flow">
                         <div class="step-card">
                             <div class="step-number">A</div>
                             <div class="step-body">
-                                <h4>受講生・カルテ管理画面 (index.html)</h4>
-                                <p>受講生一覧、受講コース（パソコン入門、スマホ活用、Word/Excelなど）、使用機器（Windows11、iPad等）、次回レッスン日・定期PC健康診断日・会員更新（月謝）期日の管理とリマインド配信を行います。</p>
+                                <h4>蜿苓ｬ帷函繝ｻ繧ｫ繝ｫ繝�ｮ｡逅�判髱｢ (index.html)</h4>
+                                <p>蜿苓ｬ帷函荳隕ｧ縲∝女隰帙さ繝ｼ繧ｹ�医ヱ繧ｽ繧ｳ繝ｳ蜈･髢縲√せ繝槭�豢ｻ逕ｨ縲仝ord/Excel縺ｪ縺ｩ�峨∽ｽｿ逕ｨ讖溷勣��indows11縲（Pad遲会ｼ峨∵ｬ｡蝗槭Ξ繝�せ繝ｳ譌･繝ｻ螳壽悄PC蛛･蠎ｷ險ｺ譁ｭ譌･繝ｻ莨壼藤譖ｴ譁ｰ�域怦隰晢ｼ画悄譌･縺ｮ邂｡逅�→繝ｪ繝槭う繝ｳ繝蛾�菫｡繧定｡後＞縺ｾ縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">B</div>
                             <div class="step-body">
-                                <h4>マルチWebhook中継ハブ (webhook.php)</h4>
-                                <p>LINE公式アカウントから届くWebhookイベントを本システムで瞬時に受講生カルテへ同期した上で、署名ヘッダー付きでプロライン、エルメ、LINE Harness等へ並列同時転送します。各ツールの自動応答・ステップ配信・シナリオ・分析機能に一切支障を与えません。</p>
+                                <h4>繝槭Ν繝仝ebhook荳ｭ邯吶ワ繝� (webhook.php)</h4>
+                                <p>LINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医°繧牙ｱ翫￥Webhook繧､繝吶Φ繝医ｒ譛ｬ繧ｷ繧ｹ繝�Β縺ｧ迸ｬ譎ゅ↓蜿苓ｬ帷函繧ｫ繝ｫ繝�∈蜷梧悄縺励◆荳翫〒縲∫ｽｲ蜷阪�繝�ム繝ｼ莉倥″縺ｧ繝励Ο繝ｩ繧､繝ｳ縲√お繝ｫ繝｡縲´INE Harness遲峨∈荳ｦ蛻怜酔譎りｻ｢騾√＠縺ｾ縺吶ょ推繝��繝ｫ縺ｮ閾ｪ蜍募ｿ懃ｭ斐�繧ｹ繝�ャ繝鈴�菫｡繝ｻ繧ｷ繝翫Μ繧ｪ繝ｻ蛻�梵讖溯�縺ｫ荳蛻�髪髫懊ｒ荳弱∴縺ｾ縺帙ｓ縲�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">C</div>
                             <div class="step-body">
-                                <h4>受講生向け マイカルテ & 予約画面 (LIFF / liff/mycar.html)</h4>
-                                <p>受講生がLINEのメニューからワンタップで開き、自分の受講コース、次回レッスン日時、PC健康診断の予定確認、受講予約やお困りごとの個別LINE相談ができます。</p>
+                                <h4>蜿苓ｬ帷函蜷代￠ 繝槭う繧ｫ繝ｫ繝� & 莠育ｴ�判髱｢ (LIFF / liff/mycar.html)</h4>
+                                <p>蜿苓ｬ帷函縺鍬INE縺ｮ繝｡繝九Η繝ｼ縺九ｉ繝ｯ繝ｳ繧ｿ繝��縺ｧ髢九″縲∬�蛻��蜿苓ｬ帙さ繝ｼ繧ｹ縲∵ｬ｡蝗槭Ξ繝�せ繝ｳ譌･譎ゅ￣C蛛･蠎ｷ險ｺ譁ｭ縺ｮ莠亥ｮ夂｢ｺ隱阪∝女隰帑ｺ育ｴ�ｄ縺雁峅繧翫＃縺ｨ縺ｮ蛟句挨LINE逶ｸ隲�′縺ｧ縺阪∪縺吶�</p>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- 2. 外部マーケティングツール連携（プロライン / エルメ / LINE Harness等 Webhook並列中継） -->
+                <!-- 2. 螟夜Κ繝槭�繧ｱ繝�ぅ繝ｳ繧ｰ繝��繝ｫ騾｣謳ｺ�医�繝ｭ繝ｩ繧､繝ｳ / 繧ｨ繝ｫ繝｡ / LINE Harness遲� Webhook荳ｦ蛻嶺ｸｭ邯呻ｼ� -->
                 <section class="manual-section" id="sec-proline">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #eff6ff; color: #2563eb;">
                             <i class="fa-solid fa-network-wired"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>2. 外部マーケティングツール連携（プロライン / エルメ / LINE Harness等 並列中継・完全共存）</h2>
-                            <p>プロライン・エルメ・LINE Harness等の自動応答・ステップ配信・シナリオと本システムを100%干渉させずに共存させる設定手順</p>
+                            <h2>2. 螟夜Κ繝槭�繧ｱ繝�ぅ繝ｳ繧ｰ繝��繝ｫ騾｣謳ｺ�医�繝ｭ繝ｩ繧､繝ｳ / 繧ｨ繝ｫ繝｡ / LINE Harness遲� 荳ｦ蛻嶺ｸｭ邯吶�螳悟�蜈ｱ蟄假ｼ�</h2>
+                            <p>繝励Ο繝ｩ繧､繝ｳ繝ｻ繧ｨ繝ｫ繝｡繝ｻLINE Harness遲峨�閾ｪ蜍募ｿ懃ｭ斐�繧ｹ繝�ャ繝鈴�菫｡繝ｻ繧ｷ繝翫Μ繧ｪ縺ｨ譛ｬ繧ｷ繧ｹ繝�Β繧�100%蟷ｲ貂峨＆縺帙★縺ｫ蜈ｱ蟄倥＆縺帙ｋ險ｭ螳壽焔鬆�</p>
                         </div>
                     </div>
 
-                    <p>LINE公式アカウントの仕様上、LINE Developersコンソールに登録できるWebhook URLは1アカウントにつき1箇所しかありません。<br>
-                    そのため、直接プロラインやエルメ、LINE Harnessのいずれか1つのURLを登録すると他のツールや本システムにWebhookが届かなくなります。<br>
-                    当システムを<strong>「LINE中継ハブ」</strong>として位置づけ、受信したLINEの全メッセージ・友だち追加イベントを<strong>【プロライン】【エルメ (L-messh)】【LINE Harness】等の複数ツールへミリ秒単位で並列同時転送（マルチWebhookプロキシ中継）</strong>することで、すべてのツールの自動応答・ステップ配信・チャット通知を生かしたまま完全共存を実現します。</p>
+                    <p>LINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医�莉墓ｧ倅ｸ翫´INE Developers繧ｳ繝ｳ繧ｽ繝ｼ繝ｫ縺ｫ逋ｻ骭ｲ縺ｧ縺阪ｋWebhook URL縺ｯ1繧｢繧ｫ繧ｦ繝ｳ繝医↓縺､縺�1邂�園縺励°縺ゅｊ縺ｾ縺帙ｓ縲�<br>
+                    縺昴�縺溘ａ縲∫峩謗･繝励Ο繝ｩ繧､繝ｳ繧�お繝ｫ繝｡縲´INE Harness縺ｮ縺�★繧後°1縺､縺ｮURL繧堤匳骭ｲ縺吶ｋ縺ｨ莉悶�繝��繝ｫ繧�悽繧ｷ繧ｹ繝�Β縺ｫWebhook縺悟ｱ翫°縺ｪ縺上↑繧翫∪縺吶�<br>
+                    蠖薙す繧ｹ繝�Β繧�<strong>縲鍬INE荳ｭ邯吶ワ繝悶�</strong>縺ｨ縺励※菴咲ｽｮ縺･縺代∝女菫｡縺励◆LINE縺ｮ蜈ｨ繝｡繝�そ繝ｼ繧ｸ繝ｻ蜿九□縺｡霑ｽ蜉�繧､繝吶Φ繝医ｒ<strong>縲舌�繝ｭ繝ｩ繧､繝ｳ縲代舌お繝ｫ繝｡ (L-messh)縲代伸INE Harness縲醍ｭ峨�隍�焚繝��繝ｫ縺ｸ繝溘Μ遘貞腰菴阪〒荳ｦ蛻怜酔譎りｻ｢騾�ｼ医�繝ｫ繝仝ebhook繝励Ο繧ｭ繧ｷ荳ｭ邯呻ｼ�</strong>縺吶ｋ縺薙→縺ｧ縲√☆縺ｹ縺ｦ縺ｮ繝��繝ｫ縺ｮ閾ｪ蜍募ｿ懃ｭ斐�繧ｹ繝�ャ繝鈴�菫｡繝ｻ繝√Ε繝�ヨ騾夂衍繧堤函縺九＠縺溘∪縺ｾ螳悟�蜈ｱ蟄倥ｒ螳溽樟縺励∪縺吶�</p>
 
                     <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: var(--radius-md); padding: 16px; margin: 16px 0; font-family: monospace; font-size: 13px; line-height: 1.6; color: #1e293b;">
-                        【メッセージ・イベントのリアルタイム並列中継フロー】<br>
-                        受講生のLINE ➡ <strong>[LINE公式アカウント]</strong><br>
-                        &nbsp;&nbsp;⬇ (LINE Messaging API Webhook)<br>
-                        <strong>[本システム: webhook.php]</strong> ➡ 受講生カルテ・チャット履歴に自動同期＆未読管理・Slack/Discord通知<br>
-                        &nbsp;&nbsp;⬇ (並列非同期curl_multi転送 / 生署名X-Line-Signature完全付与)<br>
-                        ├➡ <strong>[プロライン: autosns.pro/...]</strong> ➡ <strong>チャット受信通知・ステップ配信・個別返信がそのまま稼働！</strong><br>
-                        ├➡ <strong>[エルメ (L-messh): l-messh.com/...]</strong> ➡ <strong>シナリオ配信・フォーム・リッチメニューアクションが連動！</strong><br>
-                        ├➡ <strong>[LINE Harness: line-harness.com/...]</strong> ➡ <strong>高度な顧客分析・自動トリガー配信が稼働！</strong><br>
-                        └➡ <strong>[その他外部ツール: Zapier / Make / 自社Webhook等]</strong> ➡ 複数URLへも同時にリアルタイム配信！
+                        縲舌Γ繝�そ繝ｼ繧ｸ繝ｻ繧､繝吶Φ繝医�繝ｪ繧｢繝ｫ繧ｿ繧､繝�荳ｦ蛻嶺ｸｭ邯吶ヵ繝ｭ繝ｼ縲�<br>
+                        蜿苓ｬ帷函縺ｮLINE 筐｡ <strong>[LINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝�</strong><br>
+                        &nbsp;&nbsp;筮� (LINE Messaging API Webhook)<br>
+                        <strong>[譛ｬ繧ｷ繧ｹ繝�Β: webhook.php]</strong> 筐｡ 蜿苓ｬ帷函繧ｫ繝ｫ繝��繝√Ε繝�ヨ螻･豁ｴ縺ｫ閾ｪ蜍募酔譛滂ｼ�悴隱ｭ邂｡逅��Slack/Discord騾夂衍<br>
+                        &nbsp;&nbsp;筮� (荳ｦ蛻鈴撼蜷梧悄curl_multi霆｢騾� / 逕溽ｽｲ蜷更-Line-Signature螳悟�莉倅ｸ�)<br>
+                        笏懌棕 <strong>[繝励Ο繝ｩ繧､繝ｳ: autosns.pro/...]</strong> 筐｡ <strong>繝√Ε繝�ヨ蜿嶺ｿ｡騾夂衍繝ｻ繧ｹ繝�ャ繝鈴�菫｡繝ｻ蛟句挨霑比ｿ｡縺後◎縺ｮ縺ｾ縺ｾ遞ｼ蜒搾ｼ�</strong><br>
+                        笏懌棕 <strong>[繧ｨ繝ｫ繝｡ (L-messh): l-messh.com/...]</strong> 筐｡ <strong>繧ｷ繝翫Μ繧ｪ驟堺ｿ｡繝ｻ繝輔か繝ｼ繝�繝ｻ繝ｪ繝�メ繝｡繝九Η繝ｼ繧｢繧ｯ繧ｷ繝ｧ繝ｳ縺碁｣蜍包ｼ�</strong><br>
+                        笏懌棕 <strong>[LINE Harness: line-harness.com/...]</strong> 筐｡ <strong>鬮伜ｺｦ縺ｪ鬘ｧ螳｢蛻�梵繝ｻ閾ｪ蜍輔ヨ繝ｪ繧ｬ繝ｼ驟堺ｿ｡縺檎ｨｼ蜒搾ｼ�</strong><br>
+                        笏披棕 <strong>[縺昴�莉門､夜Κ繝��繝ｫ: Zapier / Make / 閾ｪ遉ｾWebhook遲云</strong> 筐｡ 隍�焚URL縺ｸ繧ょ酔譎ゅ↓繝ｪ繧｢繝ｫ繧ｿ繧､繝�驟堺ｿ｡��
                     </div>
 
                     <div class="step-flow">
                         <div class="step-card">
                             <div class="step-number">1</div>
                             <div class="step-body">
-                                <h4>管理画面で各外部ツール（プロライン / エルメ / LINE Harness等）のWebhook URLを登録</h4>
-                                <p>管理画面ヘッダーのアカウント名「<strong>⚙️ アカウント設定</strong>」をクリックして設定モーダルを開きます。</p>
+                                <h4>邂｡逅�判髱｢縺ｧ蜷�､夜Κ繝��繝ｫ�医�繝ｭ繝ｩ繧､繝ｳ / 繧ｨ繝ｫ繝｡ / LINE Harness遲会ｼ峨�Webhook URL繧堤匳骭ｲ</h4>
+                                <p>邂｡逅�判髱｢繝倥ャ繝繝ｼ縺ｮ繧｢繧ｫ繧ｦ繝ｳ繝亥錐縲�<strong>笞呻ｸ� 繧｢繧ｫ繧ｦ繝ｳ繝郁ｨｭ螳�</strong>縲阪ｒ繧ｯ繝ｪ繝�け縺励※險ｭ螳壹Δ繝ｼ繝繝ｫ繧帝幕縺阪∪縺吶�</p>
                                 <ul>
-                                    <li><strong>転送先 Webhook URL一覧（1行に1件・複数登録可能）</strong>: 各ツールで案内されるWebhook URLを改行で入力します。<br>
-                                    ・プロライン: <code>https://autosns.pro/api/webhook/...</code><br>
-                                    ・エルメ: <code>https://l-messh.com/api/webhook/...</code><br>
-                                    ・LINE Harness: <code>https://line-harness.com/api/webhook/...</code><br>
-                                    ※ 画面上の「＋ プロライン」「＋ エルメ」「＋ LINE Harness」チップを押すだけで簡単に入力・追加できます。</li>
-                                    <li>「<strong><i class="fa-solid fa-floppy-disk"></i> この設定で保存する</strong>」ボタンを押します。</li>
+                                    <li><strong>霆｢騾∝� Webhook URL荳隕ｧ��1陦後↓1莉ｶ繝ｻ隍�焚逋ｻ骭ｲ蜿ｯ閭ｽ��</strong>: 蜷�ヤ繝ｼ繝ｫ縺ｧ譯亥�縺輔ｌ繧妓ebhook URL繧呈隼陦後〒蜈･蜉帙＠縺ｾ縺吶�<br>
+                                    繝ｻ繝励Ο繝ｩ繧､繝ｳ: <code>https://autosns.pro/api/webhook/...</code><br>
+                                    繝ｻ繧ｨ繝ｫ繝｡: <code>https://l-messh.com/api/webhook/...</code><br>
+                                    繝ｻLINE Harness: <code>https://line-harness.com/api/webhook/...</code><br>
+                                    窶ｻ 逕ｻ髱｢荳翫�縲鯉ｼ� 繝励Ο繝ｩ繧､繝ｳ縲阪鯉ｼ� 繧ｨ繝ｫ繝｡縲阪鯉ｼ� LINE Harness縲阪メ繝��繧呈款縺吶□縺代〒邁｡蜊倥↓蜈･蜉帙�霑ｽ蜉�縺ｧ縺阪∪縺吶�</li>
+                                    <li>縲�<strong><i class="fa-solid fa-floppy-disk"></i> 縺薙�險ｭ螳壹〒菫晏ｭ倥☆繧�</strong>縲阪�繧ｿ繝ｳ繧呈款縺励∪縺吶�</li>
                                 </ul>
                             </div>
                         </div>
@@ -358,39 +358,39 @@
                         <div class="step-card">
                             <div class="step-number">2</div>
                             <div class="step-body">
-                                <h4>LINE DevelopersコンソールのWebhook URLを本システムに設定</h4>
-                                <p><a href="http                <!-- 3. LINE受講生一括同期 -->
+                                <h4>LINE Developers繧ｳ繝ｳ繧ｽ繝ｼ繝ｫ縺ｮWebhook URL繧呈悽繧ｷ繧ｹ繝�Β縺ｫ險ｭ螳�</h4>
+                                <p><a href="http                <!-- 3. LINE蜿苓ｬ帷函荳諡ｬ蜷梧悄 -->
                 <section class="manual-section" id="sec-line-sync">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #e8f9ed; color: #06C755;">
                             <i class="fa-brands fa-line"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>3. LINE受講生一括同期 ＆ ブロック管理</h2>
-                            <p>LINE公式アカウントの全友だち情報を瞬時にカルテ一覧へ同期 ＆ ブロック状態を即時反映</p>
+                            <h2>3. LINE蜿苓ｬ帷函荳諡ｬ蜷梧悄 �� 繝悶Ο繝�け邂｡逅�</h2>
+                            <p>LINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医�蜈ｨ蜿九□縺｡諠��ｱ繧堤椪譎ゅ↓繧ｫ繝ｫ繝�ｸ隕ｧ縺ｸ蜷梧悄 �� 繝悶Ο繝�け迥ｶ諷九ｒ蜊ｳ譎ょ渚譏�</p>
                         </div>
                     </div>
 
-                    <p>LINE公式アカウントの友だちリスト（フォロー中の受講生）を自動取得し、受講生カルテ一覧に一括同期します。</p>
+                    <p>LINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医�蜿九□縺｡繝ｪ繧ｹ繝茨ｼ医ヵ繧ｩ繝ｭ繝ｼ荳ｭ縺ｮ蜿苓ｬ帷函�峨ｒ閾ｪ蜍募叙蠕励＠縲∝女隰帷函繧ｫ繝ｫ繝�ｸ隕ｧ縺ｫ荳諡ｬ蜷梧悄縺励∪縺吶�</p>
 
                     <div class="step-flow">
                         <div class="step-card">
                             <div class="step-number">1</div>
                             <div class="step-body">
-                                <h4>ヘッダーの「LINE友だち一括同期」ボタンをクリック</h4>
-                                <p>管理画面上部にある緑色の「<strong><i class="fa-brands fa-line"></i> LINE友だち一括同期</strong>」ボタンを押します。確認ダイアログが表示されるので「OK」をクリックします。</p>
+                                <h4>繝倥ャ繝繝ｼ縺ｮ縲鍬INE蜿九□縺｡荳諡ｬ蜷梧悄縲阪�繧ｿ繝ｳ繧偵け繝ｪ繝�け</h4>
+                                <p>邂｡逅�判髱｢荳企Κ縺ｫ縺ゅｋ邱題牡縺ｮ縲�<strong><i class="fa-brands fa-line"></i> LINE蜿九□縺｡荳諡ｬ蜷梧悄</strong>縲阪�繧ｿ繝ｳ繧呈款縺励∪縺吶ら｢ｺ隱阪ム繧､繧｢繝ｭ繧ｰ縺瑚｡ｨ遉ｺ縺輔ｌ繧九�縺ｧ縲薫K縲阪ｒ繧ｯ繝ｪ繝�け縺励∪縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">2</div>
                             <div class="step-body">
-                                <h4>リアルタイム進捗率（パーセント・件数）の可視化</h4>
-                                <p>同期中は専用の<strong>進捗プログレスダイアログ</strong>がオーバーレイ表示されます。<br>
-                                <strong>進捗率（0%〜100%）</strong>、<strong>処理件数（例: 150 / 300名）</strong>、<strong>新規登録数</strong>、<strong>情報更新数</strong>、および<strong>現在同期中の受講生名ストリーム</strong>がリアルタイムに滑らかにアニメーション更新されます。</p>
+                                <h4>繝ｪ繧｢繝ｫ繧ｿ繧､繝�騾ｲ謐礼紫�医ヱ繝ｼ繧ｻ繝ｳ繝医�莉ｶ謨ｰ�峨�蜿ｯ隕門喧</h4>
+                                <p>蜷梧悄荳ｭ縺ｯ蟆ら畑縺ｮ<strong>騾ｲ謐励�繝ｭ繧ｰ繝ｬ繧ｹ繝繧､繧｢繝ｭ繧ｰ</strong>縺後が繝ｼ繝舌�繝ｬ繧､陦ｨ遉ｺ縺輔ｌ縺ｾ縺吶�<br>
+                                <strong>騾ｲ謐礼紫��0%縲�100%��</strong>縲�<strong>蜃ｦ逅�ｻｶ謨ｰ�井ｾ�: 150 / 300蜷搾ｼ�</strong>縲�<strong>譁ｰ隕冗匳骭ｲ謨ｰ</strong>縲�<strong>諠��ｱ譖ｴ譁ｰ謨ｰ</strong>縲√♀繧医�<strong>迴ｾ蝨ｨ蜷梧悄荳ｭ縺ｮ蜿苓ｬ帷函蜷阪せ繝医Μ繝ｼ繝�</strong>縺後Μ繧｢繝ｫ繧ｿ繧､繝�縺ｫ貊代ｉ縺九↓繧｢繝九Γ繝ｼ繧ｷ繝ｧ繝ｳ譖ｴ譁ｰ縺輔ｌ縺ｾ縺吶�</p>
                                 <div class="tip-box" style="margin-top:8px;background:#f0fdf4;border-left:4px solid #06C755;padding:10px 14px;border-radius: var(--radius-xs);">
-                                    <strong style="color:#15803d;">💡 進捗ダイアログについて:</strong><br>
-                                    ボタンをクリックすると緑色のヘッダーを持つモーダルが表示されます。処理中はクローズボタンが非表示（操作ロック）となり、完了後に「完了して受講生一覧を更新」ボタンが現れます。
+                                    <strong style="color:#15803d;">�庁 騾ｲ謐励ム繧､繧｢繝ｭ繧ｰ縺ｫ縺､縺�※:</strong><br>
+                                    繝懊ち繝ｳ繧偵け繝ｪ繝�け縺吶ｋ縺ｨ邱題牡縺ｮ繝倥ャ繝繝ｼ繧呈戟縺､繝｢繝ｼ繝繝ｫ縺瑚｡ｨ遉ｺ縺輔ｌ縺ｾ縺吶ょ�逅�ｸｭ縺ｯ繧ｯ繝ｭ繝ｼ繧ｺ繝懊ち繝ｳ縺碁撼陦ｨ遉ｺ�域桃菴懊Ο繝�け�峨→縺ｪ繧翫∝ｮ御ｺ�ｾ後↓縲悟ｮ御ｺ�＠縺ｦ蜿苓ｬ帷函荳隕ｧ繧呈峩譁ｰ縲阪�繧ｿ繝ｳ縺檎樟繧後∪縺吶�
                                 </div>
                             </div>
                         </div>
@@ -398,39 +398,39 @@
                         <div class="step-card">
                             <div class="step-number">3</div>
                             <div class="step-body">
-                                <h4>高速並列通信（curl_multi）＆分割バッチ処理</h4>
-                                <p>友だちが何百人・何千人いてもサーバーがタイムアウト（フリーズ）しないよう、15件ずつの分割バッチ処理と並列プロフィール取得を自動実行します。数十秒かかる大量のデータ同期も途切れることなく安全に完了します。</p>
+                                <h4>鬮倬滉ｸｦ蛻鈴壻ｿ｡��url_multi�会ｼ��蜑ｲ繝舌ャ繝∝�逅�</h4>
+                                <p>蜿九□縺｡縺御ｽ慕卆莠ｺ繝ｻ菴募鴻莠ｺ縺�※繧ゅし繝ｼ繝舌�縺後ち繧､繝�繧｢繧ｦ繝茨ｼ医ヵ繝ｪ繝ｼ繧ｺ�峨＠縺ｪ縺�ｈ縺��15莉ｶ縺壹▽縺ｮ蛻�牡繝舌ャ繝∝�逅�→荳ｦ蛻励�繝ｭ繝輔ぅ繝ｼ繝ｫ蜿門ｾ励ｒ閾ｪ蜍募ｮ溯｡後＠縺ｾ縺吶よ焚蜊∫ｧ偵°縺九ｋ螟ｧ驥上�繝��繧ｿ蜷梧悄繧る泌�繧後ｋ縺薙→縺ｪ縺丞ｮ牙�縺ｫ螳御ｺ�＠縺ｾ縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">4</div>
                             <div class="step-body">
-                                <h4>同期完了と自動カルテ更新</h4>
-                                <p>100%に達すると完了トーストとお祝いメッセージが表示され、最新のアイコン画像・受講生名がカルテ一覧へ自動反映されます。</p>
+                                <h4>蜷梧悄螳御ｺ�→閾ｪ蜍輔き繝ｫ繝�峩譁ｰ</h4>
+                                <p>100%縺ｫ驕斐☆繧九→螳御ｺ�ヨ繝ｼ繧ｹ繝医→縺顔･昴＞繝｡繝�そ繝ｼ繧ｸ縺瑚｡ｨ遉ｺ縺輔ｌ縲∵怙譁ｰ縺ｮ繧｢繧､繧ｳ繝ｳ逕ｻ蜒上�蜿苓ｬ帷函蜷阪′繧ｫ繝ｫ繝�ｸ隕ｧ縺ｸ閾ｪ蜍募渚譏�縺輔ｌ縺ｾ縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card" style="border: 1.5px solid #fca5a5; background: #fff8f8;">
                             <div class="step-number" style="background: #ef4444; color: #fff;"><i class="fa-solid fa-user-slash" style="font-size:11px;"></i></div>
                             <div class="step-body">
-                                <h4>LINEブロック状態の自動検知・手動切り替え（即時反映）</h4>
-                                <p><strong>・リアルタイム自動検知</strong>: 受講生がLINE公式アカウントをブロック（友だち解除）した瞬間にWebhook（<code>unfollow</code> イベント）を検知し、カルテ上に「<span style="font-size:11px; background:#fee2e2; color:#b91c1c; padding:1px 6px; border-radius:4px; font-weight:bold;">🚫 ブロック中</span>」バッジを自動付与して最終やり取りに記録します。再度ブロック解除（<code>follow</code>）された際も自動で「<span style="font-size:11px; background:#ecfdf5; color:#065f46; padding:1px 6px; border-radius:4px; font-weight:bold;">✨ 友だち</span>」状態へ復帰します。<br>
-                                <strong>・一括同期でのブロック整合性チェック</strong>: 「LINE友だち一括同期」実行時にも、LINE公式アカウントのフォロワー一覧から外れた受講生を自動でブロック中として整合同期します。<br>
-                                <strong>・絞り込みフィルター</strong>: 管理画面の「友だち中」「🚫 ブロック中」タブでワンクリックで切り替えて一覧表示できます。<br>
-                                <strong>・スタッフ通知</strong>: ブロック発生時やブロック解除時には、DiscordやSlackへ即座に通知が送信されます。</p>
+                                <h4>LINE繝悶Ο繝�け迥ｶ諷九�閾ｪ蜍墓､懃衍繝ｻ謇句虚蛻�ｊ譖ｿ縺茨ｼ亥叉譎ょ渚譏���</h4>
+                                <p><strong>繝ｻ繝ｪ繧｢繝ｫ繧ｿ繧､繝�閾ｪ蜍墓､懃衍</strong>: 蜿苓ｬ帷函縺鍬INE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医ｒ繝悶Ο繝�け�亥暑縺�縺｡隗｣髯､�峨＠縺溽椪髢薙↓Webhook��<code>unfollow</code> 繧､繝吶Φ繝茨ｼ峨ｒ讀懃衍縺励√き繝ｫ繝�ｸ翫↓縲�<span style="font-size:11px; background:#fee2e2; color:#b91c1c; padding:1px 6px; border-radius:4px; font-weight:bold;">�圻 繝悶Ο繝�け荳ｭ</span>縲阪ヰ繝�ず繧定�蜍穂ｻ倅ｸ弱＠縺ｦ譛邨ゅｄ繧雁叙繧翫↓險倬鹸縺励∪縺吶ょ�蠎ｦ繝悶Ο繝�け隗｣髯､��<code>follow</code>�峨＆繧後◆髫帙ｂ閾ｪ蜍輔〒縲�<span style="font-size:11px; background:#ecfdf5; color:#065f46; padding:1px 6px; border-radius:4px; font-weight:bold;">笨ｨ 蜿九□縺｡</span>縲咲憾諷九∈蠕ｩ蟶ｰ縺励∪縺吶�<br>
+                                <strong>繝ｻ荳諡ｬ蜷梧悄縺ｧ縺ｮ繝悶Ο繝�け謨ｴ蜷域ｧ繝√ぉ繝�け</strong>: 縲鍬INE蜿九□縺｡荳諡ｬ蜷梧悄縲榊ｮ溯｡梧凾縺ｫ繧ゅ´INE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医�繝輔か繝ｭ繝ｯ繝ｼ荳隕ｧ縺九ｉ螟悶ｌ縺溷女隰帷函繧定�蜍輔〒繝悶Ο繝�け荳ｭ縺ｨ縺励※謨ｴ蜷亥酔譛溘＠縺ｾ縺吶�<br>
+                                <strong>繝ｻ邨槭ｊ霎ｼ縺ｿ繝輔ぅ繝ｫ繧ｿ繝ｼ</strong>: 邂｡逅�判髱｢縺ｮ縲悟暑縺�縺｡荳ｭ縲阪交泅ｫ 繝悶Ο繝�け荳ｭ縲阪ち繝悶〒繝ｯ繝ｳ繧ｯ繝ｪ繝�け縺ｧ蛻�ｊ譖ｿ縺医※荳隕ｧ陦ｨ遉ｺ縺ｧ縺阪∪縺吶�<br>
+                                <strong>繝ｻ繧ｹ繧ｿ繝�ヵ騾夂衍</strong>: 繝悶Ο繝�け逋ｺ逕滓凾繧�ヶ繝ｭ繝�け隗｣髯､譎ゅ↓縺ｯ縲．iscord繧Тlack縺ｸ蜊ｳ蠎ｧ縺ｫ騾夂衍縺碁∽ｿ｡縺輔ｌ縺ｾ縺吶�</p>
 
                                 <div class="tip-box" style="margin-top:12px;background:#fdf4ff;border-left:4px solid #c026d3;padding:10px 14px;border-radius: var(--radius-xs);">
-                                    <strong style="color:#86198f;">🆕 手動ブロック切り替えボタン（同期不要）:</strong><br>
-                                    受講生カルテ一覧のLINE連携済み受講生（UID「U」から始まる）の操作欄に<strong>「ブロック」/「解除」ボタン</strong>が表示されます。クリックすると<strong>同期を実行しなくても即座に</strong>ブロック状態がUIに反映され、バックグラウンドでデータベースに保存されます。<br>
-                                    ・ブロック中の行 → <span style="font-size:11px; background:#fee2e2; color:#991b1b; border:1.5px solid #fca5a5; padding:1px 8px; border-radius:4px; font-weight:700;"><i class="fa-solid fa-user-check"></i> 解除</span> ボタンで「友だち」に戻す<br>
-                                    ・友だち中の行 → <span style="font-size:11px; background:#f0fdf4; color:#166534; border:1.5px solid #86efac; padding:1px 8px; border-radius:4px; font-weight:700;"><i class="fa-solid fa-user-slash"></i> ブロック</span> ボタンでブロック中に設定
+                                    <strong style="color:#86198f;">�� 謇句虚繝悶Ο繝�け蛻�ｊ譖ｿ縺医�繧ｿ繝ｳ�亥酔譛滉ｸ崎ｦ�ｼ�:</strong><br>
+                                    蜿苓ｬ帷函繧ｫ繝ｫ繝�ｸ隕ｧ縺ｮLINE騾｣謳ｺ貂医∩蜿苓ｬ帷函��ID縲袈縲阪°繧牙ｧ九∪繧具ｼ峨�謫堺ｽ懈ｬ�↓<strong>縲後ヶ繝ｭ繝�け縲�/縲瑚ｧ｣髯､縲阪�繧ｿ繝ｳ</strong>縺瑚｡ｨ遉ｺ縺輔ｌ縺ｾ縺吶ゅけ繝ｪ繝�け縺吶ｋ縺ｨ<strong>蜷梧悄繧貞ｮ溯｡後＠縺ｪ縺上※繧ょ叉蠎ｧ縺ｫ</strong>繝悶Ο繝�け迥ｶ諷九′UI縺ｫ蜿肴丐縺輔ｌ縲√ヰ繝�け繧ｰ繝ｩ繧ｦ繝ｳ繝峨〒繝��繧ｿ繝吶�繧ｹ縺ｫ菫晏ｭ倥＆繧後∪縺吶�<br>
+                                    繝ｻ繝悶Ο繝�け荳ｭ縺ｮ陦� 竊� <span style="font-size:11px; background:#fee2e2; color:#991b1b; border:1.5px solid #fca5a5; padding:1px 8px; border-radius:4px; font-weight:700;"><i class="fa-solid fa-user-check"></i> 隗｣髯､</span> 繝懊ち繝ｳ縺ｧ縲悟暑縺�縺｡縲阪↓謌ｻ縺�<br>
+                                    繝ｻ蜿九□縺｡荳ｭ縺ｮ陦� 竊� <span style="font-size:11px; background:#f0fdf4; color:#166534; border:1.5px solid #86efac; padding:1px 8px; border-radius:4px; font-weight:700;"><i class="fa-solid fa-user-slash"></i> 繝悶Ο繝�け</span> 繝懊ち繝ｳ縺ｧ繝悶Ο繝�け荳ｭ縺ｫ險ｭ螳�
                                 </div>
                             </div>
                         </div>
                     </div>
                 </section>
-�、この公式予約URLへ自動直結されます。</li>
+ゅ√％縺ｮ蜈ｬ蠑丈ｺ育ｴФRL縺ｸ閾ｪ蜍慕峩邨舌＆繧後∪縺吶�</li>
                                 </ul>
                             </div>
                         </div>
@@ -438,14 +438,14 @@
                         <div class="step-card" style="border: 2px solid #3b82f6; background: #eff6ff;">
                             <div class="step-number" style="background: #2563eb; color: #fff;">6</div>
                             <div class="step-body">
-                                <h4>プロライン・外部ツールの「登録発生時送信」連携（フォーム回答・予約の自動カルテ反映＆スタッフ通知）</h4>
-                                <p>プロラインや外部ツール側で受講生が<strong>アンケートフォームを送信</strong>したり、<strong>カレンダーからレッスン予約・日程変更</strong>を行った際に、本システムへリアルタイムにデータを送信させ、カルテへの記録とスタッフ通知を即座に連動させる設定です。</p>
+                                <h4>繝励Ο繝ｩ繧､繝ｳ繝ｻ螟夜Κ繝��繝ｫ縺ｮ縲檎匳骭ｲ逋ｺ逕滓凾騾∽ｿ｡縲埼｣謳ｺ�医ヵ繧ｩ繝ｼ繝�蝗樒ｭ斐�莠育ｴ��閾ｪ蜍輔き繝ｫ繝�渚譏���せ繧ｿ繝�ヵ騾夂衍��</h4>
+                                <p>繝励Ο繝ｩ繧､繝ｳ繧�､夜Κ繝��繝ｫ蛛ｴ縺ｧ蜿苓ｬ帷函縺�<strong>繧｢繝ｳ繧ｱ繝ｼ繝医ヵ繧ｩ繝ｼ繝�繧帝∽ｿ｡</strong>縺励◆繧翫�<strong>繧ｫ繝ｬ繝ｳ繝繝ｼ縺九ｉ繝ｬ繝�せ繝ｳ莠育ｴ��譌･遞句､画峩</strong>繧定｡後▲縺滄圀縺ｫ縲∵悽繧ｷ繧ｹ繝�Β縺ｸ繝ｪ繧｢繝ｫ繧ｿ繧､繝�縺ｫ繝��繧ｿ繧帝∽ｿ｡縺輔○縲√き繝ｫ繝�∈縺ｮ險倬鹸縺ｨ繧ｹ繧ｿ繝�ヵ騾夂衍繧貞叉蠎ｧ縺ｫ騾｣蜍輔＆縺帙ｋ險ｭ螳壹〒縺吶�</p>
                                 
                                 <div style="background: #ffffff; border: 1px solid #bfdbfe; border-radius: var(--radius-sm); padding: 12px; margin: 10px 0;">
-                                    <strong style="color: #1e40af;"><i class="fa-solid fa-link"></i> 設定するWebhook URLの確認方法:</strong><br>
-                                    受講生カルテ画面（<code>index.html</code>）またはリッチメニュー画面（<code>richmenu.html</code>）のアカウント設定を開き、<br>
-                                    青色枠の「<strong>外部システム『登録発生時送信』Webhook URL</strong>」をコピーして外部ツールのWebhook送信先へ登録します。<br>
-                                    <code style="font-size: 12px; color: #1e40af; background: #f0fdf4; padding: 2px 6px; border-radius: 4px;">https://あなたのドメイン/proline_webhook.php?account=senior</code>
+                                    <strong style="color: #1e40af;"><i class="fa-solid fa-link"></i> 險ｭ螳壹☆繧妓ebhook URL縺ｮ遒ｺ隱肴婿豕�:</strong><br>
+                                    蜿苓ｬ帷函繧ｫ繝ｫ繝�判髱｢��<code>index.html</code>�峨∪縺溘�繝ｪ繝�メ繝｡繝九Η繝ｼ逕ｻ髱｢��<code>richmenu.html</code>�峨�繧｢繧ｫ繧ｦ繝ｳ繝郁ｨｭ螳壹ｒ髢九″縲�<br>
+                                    髱定牡譫�縺ｮ縲�<strong>螟夜Κ繧ｷ繧ｹ繝�Β縲守匳骭ｲ逋ｺ逕滓凾騾∽ｿ｡縲集ebhook URL</strong>縲阪ｒ繧ｳ繝斐�縺励※螟夜Κ繝��繝ｫ縺ｮWebhook騾∽ｿ｡蜈医∈逋ｻ骭ｲ縺励∪縺吶�<br>
+                                    <code style="font-size: 12px; color: #1e40af; background: #f0fdf4; padding: 2px 6px; border-radius: 4px;">https://縺ゅ↑縺溘�繝峨Γ繧､繝ｳ/proline_webhook.php?account=senior</code>
                                 </div>
                             </div>
                         </div>
@@ -454,102 +454,102 @@
                     <div class="callout callout-info">
                         <i class="fa-solid fa-circle-info"></i>
                         <div>
-                            <strong>プロライン / エルメ / LINE Harness 完全共存の仕組み（干渉防止設計）:</strong><br>
-                            プロラインやエルメ、LINE Harness側がメッセージの自動返信（ReplyToken）を行うため、本システム側では受講生からの通常メッセージに対して自動返信を行わず、カルテの記録・最終やり取り日時の同期・個別リッチメニューの適用に専念します。これにより、LINEのReplyToken二重消費エラーを防止し、すべてのシステムが100%干渉せずに共存します。また、複数ツールへの転送は並列非同期通信（<code>curl_multi</code>）でミリ秒処理されるため、通信遅延が一切生じません。
+                            <strong>繝励Ο繝ｩ繧､繝ｳ / 繧ｨ繝ｫ繝｡ / LINE Harness 螳悟�蜈ｱ蟄倥�莉慕ｵ�∩�亥ｹｲ貂蛾亟豁｢險ｭ險茨ｼ�:</strong><br>
+                            繝励Ο繝ｩ繧､繝ｳ繧�お繝ｫ繝｡縲´INE Harness蛛ｴ縺後Γ繝�そ繝ｼ繧ｸ縺ｮ閾ｪ蜍戊ｿ比ｿ｡��eplyToken�峨ｒ陦後≧縺溘ａ縲∵悽繧ｷ繧ｹ繝�Β蛛ｴ縺ｧ縺ｯ蜿苓ｬ帷函縺九ｉ縺ｮ騾壼ｸｸ繝｡繝�そ繝ｼ繧ｸ縺ｫ蟇ｾ縺励※閾ｪ蜍戊ｿ比ｿ｡繧定｡後ｏ縺壹√き繝ｫ繝��險倬鹸繝ｻ譛邨ゅｄ繧雁叙繧頑律譎ゅ�蜷梧悄繝ｻ蛟句挨繝ｪ繝�メ繝｡繝九Η繝ｼ縺ｮ驕ｩ逕ｨ縺ｫ蟆ょｿｵ縺励∪縺吶ゅ％繧後↓繧医ｊ縲´INE縺ｮReplyToken莠碁㍾豸郁ｲｻ繧ｨ繝ｩ繝ｼ繧帝亟豁｢縺励√☆縺ｹ縺ｦ縺ｮ繧ｷ繧ｹ繝�Β縺�100%蟷ｲ貂峨○縺壹↓蜈ｱ蟄倥＠縺ｾ縺吶ゅ∪縺溘∬､�焚繝��繝ｫ縺ｸ縺ｮ霆｢騾√�荳ｦ蛻鈴撼蜷梧悄騾壻ｿ｡��<code>curl_multi</code>�峨〒繝溘Μ遘貞�逅�＆繧後ｋ縺溘ａ縲�壻ｿ｡驕�ｻｶ縺御ｸ蛻�函縺倥∪縺帙ｓ縲�
                         </div>
                     </div>
                 </section>
 
-                <!-- 3. LINE受講生一括同期 -->
+                <!-- 3. LINE蜿苓ｬ帷函荳諡ｬ蜷梧悄 -->
                 <section class="manual-section" id="sec-line-sync">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #e8f9ed; color: #06C755;">
                             <i class="fa-brands fa-line"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>3. LINE受講生一括同期</h2>
-                            <p>LINE公式アカウントの全友だち情報を瞬時にカルテ一覧へ同期</p>
+                            <h2>3. LINE蜿苓ｬ帷函荳諡ｬ蜷梧悄</h2>
+                            <p>LINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医�蜈ｨ蜿九□縺｡諠��ｱ繧堤椪譎ゅ↓繧ｫ繝ｫ繝�ｸ隕ｧ縺ｸ蜷梧悄</p>
                         </div>
                     </div>
 
-                    <p>LINE公式アカウントの友だちリスト（フォロー中の受講生）を自動取得し、受講生カルテ一覧に一括同期します。</p>
+                    <p>LINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医�蜿九□縺｡繝ｪ繧ｹ繝茨ｼ医ヵ繧ｩ繝ｭ繝ｼ荳ｭ縺ｮ蜿苓ｬ帷函�峨ｒ閾ｪ蜍募叙蠕励＠縲∝女隰帷函繧ｫ繝ｫ繝�ｸ隕ｧ縺ｫ荳諡ｬ蜷梧悄縺励∪縺吶�</p>
 
                     <div class="step-flow">
                         <div class="step-card">
                             <div class="step-number">1</div>
                             <div class="step-body">
-                                <h4>ヘッダーの「LINE友だち一括同期」ボタンをクリック</h4>
-                                <p>管理画面上部にある緑色の「<strong><i class="fa-brands fa-line"></i> LINE友だち一括同期</strong>」ボタンを押します。</p>
+                                <h4>繝倥ャ繝繝ｼ縺ｮ縲鍬INE蜿九□縺｡荳諡ｬ蜷梧悄縲阪�繧ｿ繝ｳ繧偵け繝ｪ繝�け</h4>
+                                <p>邂｡逅�判髱｢荳企Κ縺ｫ縺ゅｋ邱題牡縺ｮ縲�<strong><i class="fa-brands fa-line"></i> LINE蜿九□縺｡荳諡ｬ蜷梧悄</strong>縲阪�繧ｿ繝ｳ繧呈款縺励∪縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">2</div>
                             <div class="step-body">
-                                <h4>リアルタイム進捗率（パーセント・件数）の可視化</h4>
-                                <p>同期中は専用の<strong>進捗プログレスダイアログ</strong>が自動表示されます。<br>
-                                <strong>進捗率（0%〜100%）</strong>、<strong>処理件数（例: 150 / 300名）</strong>、<strong>新規登録数</strong>、<strong>情報更新数</strong>、および<strong>現在同期中の受講生名ストリーム</strong>がリアルタイムに滑らかにアニメーション更新されます。</p>
+                                <h4>繝ｪ繧｢繝ｫ繧ｿ繧､繝�騾ｲ謐礼紫�医ヱ繝ｼ繧ｻ繝ｳ繝医�莉ｶ謨ｰ�峨�蜿ｯ隕門喧</h4>
+                                <p>蜷梧悄荳ｭ縺ｯ蟆ら畑縺ｮ<strong>騾ｲ謐励�繝ｭ繧ｰ繝ｬ繧ｹ繝繧､繧｢繝ｭ繧ｰ</strong>縺瑚�蜍戊｡ｨ遉ｺ縺輔ｌ縺ｾ縺吶�<br>
+                                <strong>騾ｲ謐礼紫��0%縲�100%��</strong>縲�<strong>蜃ｦ逅�ｻｶ謨ｰ�井ｾ�: 150 / 300蜷搾ｼ�</strong>縲�<strong>譁ｰ隕冗匳骭ｲ謨ｰ</strong>縲�<strong>諠��ｱ譖ｴ譁ｰ謨ｰ</strong>縲√♀繧医�<strong>迴ｾ蝨ｨ蜷梧悄荳ｭ縺ｮ蜿苓ｬ帷函蜷阪せ繝医Μ繝ｼ繝�</strong>縺後Μ繧｢繝ｫ繧ｿ繧､繝�縺ｫ貊代ｉ縺九↓繧｢繝九Γ繝ｼ繧ｷ繝ｧ繝ｳ譖ｴ譁ｰ縺輔ｌ縺ｾ縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">3</div>
                             <div class="step-body">
-                                <h4>高速並列通信（curl_multi）＆分割バッチ処理</h4>
-                                <p>友だちが何百人・何千人いてもサーバーがタイムアウト（フリーズ）しないよう、15件ずつの分割バッチ処理と並列プロフィール取得を自動実行します。数十秒かかる大量のデータ同期も途切れることなく安全に完了します。</p>
+                                <h4>鬮倬滉ｸｦ蛻鈴壻ｿ｡��url_multi�会ｼ��蜑ｲ繝舌ャ繝∝�逅�</h4>
+                                <p>蜿九□縺｡縺御ｽ慕卆莠ｺ繝ｻ菴募鴻莠ｺ縺�※繧ゅし繝ｼ繝舌�縺後ち繧､繝�繧｢繧ｦ繝茨ｼ医ヵ繝ｪ繝ｼ繧ｺ�峨＠縺ｪ縺�ｈ縺��15莉ｶ縺壹▽縺ｮ蛻�牡繝舌ャ繝∝�逅�→荳ｦ蛻励�繝ｭ繝輔ぅ繝ｼ繝ｫ蜿門ｾ励ｒ閾ｪ蜍募ｮ溯｡後＠縺ｾ縺吶よ焚蜊∫ｧ偵°縺九ｋ螟ｧ驥上�繝��繧ｿ蜷梧悄繧る泌�繧後ｋ縺薙→縺ｪ縺丞ｮ牙�縺ｫ螳御ｺ�＠縺ｾ縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">4</div>
                             <div class="step-body">
-                                <h4>同期完了と自動カルテ更新</h4>
-                                <p>100%に達すると完了トーストとお祝いメッセージが表示され、最新のアイコン画像・受講生名がカルテ一覧へ自動反映されます。</p>
+                                <h4>蜷梧悄螳御ｺ�→閾ｪ蜍輔き繝ｫ繝�峩譁ｰ</h4>
+                                <p>100%縺ｫ驕斐☆繧九→螳御ｺ�ヨ繝ｼ繧ｹ繝医→縺顔･昴＞繝｡繝�そ繝ｼ繧ｸ縺瑚｡ｨ遉ｺ縺輔ｌ縲∵怙譁ｰ縺ｮ繧｢繧､繧ｳ繝ｳ逕ｻ蜒上�蜿苓ｬ帷函蜷阪′繧ｫ繝ｫ繝�ｸ隕ｧ縺ｸ閾ｪ蜍募渚譏�縺輔ｌ縺ｾ縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card" style="border: 1.5px solid #fca5a5; background: #fff8f8;">
                             <div class="step-number" style="background: #ef4444; color: #fff;"><i class="fa-solid fa-user-slash" style="font-size:11px;"></i></div>
                             <div class="step-body">
-                                <h4>LINE友だちのブロック・ブロック解除の自動認識</h4>
-                                <p><strong>・リアルタイム自動検知</strong>: 受講生がLINE公式アカウントをブロック（友だち解除）した瞬間にWebhook（<code>unfollow</code> イベント）を検知し、カルテ上に「<span style="font-size:11px; background:#fee2e2; color:#b91c1c; padding:1px 6px; border-radius:4px; font-weight:bold;">🚫 ブロック中</span>」バッジを自動付与して最終やり取りに記録します。再度ブロック解除（<code>follow</code>）された際も自動で「<span style="font-size:11px; background:#ecfdf5; color:#065f46; padding:1px 6px; border-radius:4px; font-weight:bold;">✨ 友だち</span>」状態へ復帰します。<br>
-                                <strong>・一括同期でのブロック整合性チェック</strong>: 「LINE友だち一括同期」実行時にも、LINE公式アカウントのフォロワー一覧から外れた受講生を自動でブロック中として整合同期します。<br>
-                                <strong>・絞り込みフィルター</strong>: 管理画面の「友だち中」「🚫 ブロック中」タブでワンクリックで切り替えて一覧表示できます。<br>
-                                <strong>・スタッフ通知</strong>: ブロック発生時やブロック解除時には、DiscordやSlackへ即座に通知が送信されます。</p>
+                                <h4>LINE蜿九□縺｡縺ｮ繝悶Ο繝�け繝ｻ繝悶Ο繝�け隗｣髯､縺ｮ閾ｪ蜍戊ｪ崎ｭ�</h4>
+                                <p><strong>繝ｻ繝ｪ繧｢繝ｫ繧ｿ繧､繝�閾ｪ蜍墓､懃衍</strong>: 蜿苓ｬ帷函縺鍬INE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医ｒ繝悶Ο繝�け�亥暑縺�縺｡隗｣髯､�峨＠縺溽椪髢薙↓Webhook��<code>unfollow</code> 繧､繝吶Φ繝茨ｼ峨ｒ讀懃衍縺励√き繝ｫ繝�ｸ翫↓縲�<span style="font-size:11px; background:#fee2e2; color:#b91c1c; padding:1px 6px; border-radius:4px; font-weight:bold;">�圻 繝悶Ο繝�け荳ｭ</span>縲阪ヰ繝�ず繧定�蜍穂ｻ倅ｸ弱＠縺ｦ譛邨ゅｄ繧雁叙繧翫↓險倬鹸縺励∪縺吶ょ�蠎ｦ繝悶Ο繝�け隗｣髯､��<code>follow</code>�峨＆繧後◆髫帙ｂ閾ｪ蜍輔〒縲�<span style="font-size:11px; background:#ecfdf5; color:#065f46; padding:1px 6px; border-radius:4px; font-weight:bold;">笨ｨ 蜿九□縺｡</span>縲咲憾諷九∈蠕ｩ蟶ｰ縺励∪縺吶�<br>
+                                <strong>繝ｻ荳諡ｬ蜷梧悄縺ｧ縺ｮ繝悶Ο繝�け謨ｴ蜷域ｧ繝√ぉ繝�け</strong>: 縲鍬INE蜿九□縺｡荳諡ｬ蜷梧悄縲榊ｮ溯｡梧凾縺ｫ繧ゅ´INE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医�繝輔か繝ｭ繝ｯ繝ｼ荳隕ｧ縺九ｉ螟悶ｌ縺溷女隰帷函繧定�蜍輔〒繝悶Ο繝�け荳ｭ縺ｨ縺励※謨ｴ蜷亥酔譛溘＠縺ｾ縺吶�<br>
+                                <strong>繝ｻ邨槭ｊ霎ｼ縺ｿ繝輔ぅ繝ｫ繧ｿ繝ｼ</strong>: 邂｡逅�判髱｢縺ｮ縲悟暑縺�縺｡荳ｭ縲阪交泅ｫ 繝悶Ο繝�け荳ｭ縲阪ち繝悶〒繝ｯ繝ｳ繧ｯ繝ｪ繝�け縺ｧ蛻�ｊ譖ｿ縺医※荳隕ｧ陦ｨ遉ｺ縺ｧ縺阪∪縺吶�<br>
+                                <strong>繝ｻ繧ｹ繧ｿ繝�ヵ騾夂衍</strong>: 繝悶Ο繝�け逋ｺ逕滓凾繧�ヶ繝ｭ繝�け隗｣髯､譎ゅ↓縺ｯ縲．iscord繧Тlack縺ｸ蜊ｳ蠎ｧ縺ｫ騾夂衍縺碁∽ｿ｡縺輔ｌ縺ｾ縺吶�</p>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- 4. 受講生カルテ・期日管理 -->
+                <!-- 4. 蜿苓ｬ帷函繧ｫ繝ｫ繝��譛滓律邂｡逅� -->
                 <section class="manual-section" id="sec-customer-maint">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #eff6ff; color: #2563eb;">
                             <i class="fa-solid fa-laptop"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>4. 受講生カルテ・期日管理</h2>
-                            <p>受講コース、使用機器、次回レッスン、PC健康診断、会員更新期日の管理</p>
+                            <h2>4. 蜿苓ｬ帷函繧ｫ繝ｫ繝��譛滓律邂｡逅�</h2>
+                            <p>蜿苓ｬ帙さ繝ｼ繧ｹ縲∽ｽｿ逕ｨ讖溷勣縲∵ｬ｡蝗槭Ξ繝�せ繝ｳ縲￣C蛛･蠎ｷ險ｺ譁ｭ縲∽ｼ壼藤譖ｴ譁ｰ譛滓律縺ｮ邂｡逅�</p>
                         </div>
                     </div>
 
-                    <p>受講生一覧テーブルでは、受講生ごとに必要なアクションを迅速に行えるよう、<strong>「4列 × 2行」の整然とした操作ボタングリッド</strong>を採用しています。全ボタンの高さ・幅・フォントサイズが統一され、直感的な配色で分かりやすく整理されています。</p>
+                    <p>蜿苓ｬ帷函荳隕ｧ繝��繝悶Ν縺ｧ縺ｯ縲∝女隰帷函縺斐→縺ｫ蠢�ｦ√↑繧｢繧ｯ繧ｷ繝ｧ繝ｳ繧定ｿ�溘↓陦後∴繧九ｈ縺��<strong>縲�4蛻� ﾃ� 2陦後阪�謨ｴ辟ｶ縺ｨ縺励◆謫堺ｽ懊�繧ｿ繝ｳ繧ｰ繝ｪ繝�ラ</strong>繧呈治逕ｨ縺励※縺�∪縺吶ょ�繝懊ち繝ｳ縺ｮ鬮倥＆繝ｻ蟷��繝輔か繝ｳ繝医し繧､繧ｺ縺檎ｵｱ荳縺輔ｌ縲∫峩諢溽噪縺ｪ驟崎牡縺ｧ蛻�°繧翫ｄ縺吶￥謨ｴ逅�＆繧後※縺�∪縺吶�</p>
 
                     <div class="step-flow">
                         <div class="step-card">
                             <div class="step-number">1</div>
                             <div class="step-body">
-                                <h4>操作ボタングリッドの構成（4列 × 2行）</h4>
-                                <p>各受講生行の右端にある「操作」列には、8つの機能が整列配置されています：</p>
+                                <h4>謫堺ｽ懊�繧ｿ繝ｳ繧ｰ繝ｪ繝�ラ縺ｮ讒区���4蛻� ﾃ� 2陦鯉ｼ�</h4>
+                                <p>蜷�女隰帷函陦後�蜿ｳ遶ｯ縺ｫ縺ゅｋ縲梧桃菴懊榊�縺ｫ縺ｯ縲�8縺､縺ｮ讖溯�縺梧紛蛻鈴�鄂ｮ縺輔ｌ縺ｦ縺�∪縺呻ｼ�</p>
                                 <ul>
-                                    <li><strong>【上段1】💬 チャット（緑）</strong>: 受講生との1対1トーク履歴の確認、返信、未読バッジの確認</li>
-                                    <li><strong>【上段2】🎛️ メニュー（紫）</strong>: 次回期日メッセージを帯合成した個別リッチメニューの設定・解除</li>
-                                    <li><strong>【上段3】📢 お役立ち / 📋 アンケート（青）</strong>: シニア向け役立つ情報やDXアンケートの個別Flex送信</li>
-                                    <li><strong>【上段4】✏️ 編集（スレート）</strong>: カルテ編集モーダルを開き、受講コースや期日情報を更新</li>
-                                    <li><strong>【下段1】💻 レッスン（水色）</strong>: 次回レッスン案内のFlexリマインドLINEを送信</li>
-                                    <li><strong>【下段2】🔍 PC診断（エメラルド）</strong>: 定期PC健康診断案内のFlexリマインドLINEを送信</li>
-                                    <li><strong>【下段3】🗓️ 会員更新（橙）</strong>: 会員更新・月謝期日案内のFlexリマインドLINEを送信</li>
-                                    <li><strong>【下段4】🗑️ 削除（赤）</strong>: 受講生レコードの削除（誤登録や重複データの整理）</li>
+                                    <li><strong>縲蝉ｸ頑ｮｵ1縲択汳ｬ 繝√Ε繝�ヨ�育ｷ托ｼ�</strong>: 蜿苓ｬ帷函縺ｨ縺ｮ1蟇ｾ1繝医�繧ｯ螻･豁ｴ縺ｮ遒ｺ隱阪∬ｿ比ｿ｡縲∵悴隱ｭ繝舌ャ繧ｸ縺ｮ遒ｺ隱�</li>
+                                    <li><strong>縲蝉ｸ頑ｮｵ2縲択沁幢ｸ� 繝｡繝九Η繝ｼ�育ｴｫ��</strong>: 谺｡蝗樊悄譌･繝｡繝�そ繝ｼ繧ｸ繧貞ｸｯ蜷域�縺励◆蛟句挨繝ｪ繝�メ繝｡繝九Η繝ｼ縺ｮ險ｭ螳壹�隗｣髯､</li>
+                                    <li><strong>縲蝉ｸ頑ｮｵ3縲択沒｢ 縺雁ｽｹ遶九■ / �搭 繧｢繝ｳ繧ｱ繝ｼ繝茨ｼ磯搨��</strong>: 繧ｷ繝九い蜷代￠蠖ｹ遶九▽諠��ｱ繧ДX繧｢繝ｳ繧ｱ繝ｼ繝医�蛟句挨Flex騾∽ｿ｡</li>
+                                    <li><strong>縲蝉ｸ頑ｮｵ4縲鯛恟�� 邱ｨ髮�ｼ医せ繝ｬ繝ｼ繝茨ｼ�</strong>: 繧ｫ繝ｫ繝�ｷｨ髮�Δ繝ｼ繝繝ｫ繧帝幕縺阪∝女隰帙さ繝ｼ繧ｹ繧�悄譌･諠��ｱ繧呈峩譁ｰ</li>
+                                    <li><strong>縲蝉ｸ区ｮｵ1縲択汳ｻ 繝ｬ繝�せ繝ｳ�域ｰｴ濶ｲ��</strong>: 谺｡蝗槭Ξ繝�せ繝ｳ譯亥�縺ｮFlex繝ｪ繝槭う繝ｳ繝鵜INE繧帝∽ｿ｡</li>
+                                    <li><strong>縲蝉ｸ区ｮｵ2縲択沐� PC險ｺ譁ｭ�医お繝｡繝ｩ繝ｫ繝会ｼ�</strong>: 螳壽悄PC蛛･蠎ｷ險ｺ譁ｭ譯亥�縺ｮFlex繝ｪ繝槭う繝ｳ繝鵜INE繧帝∽ｿ｡</li>
+                                    <li><strong>縲蝉ｸ区ｮｵ3縲択泓難ｸ� 莨壼藤譖ｴ譁ｰ�域ｩ呻ｼ�</strong>: 莨壼藤譖ｴ譁ｰ繝ｻ譛郁ｬ晄悄譌･譯亥�縺ｮFlex繝ｪ繝槭う繝ｳ繝鵜INE繧帝∽ｿ｡</li>
+                                    <li><strong>縲蝉ｸ区ｮｵ4縲択泓托ｸ� 蜑企勁�郁ｵ､��</strong>: 蜿苓ｬ帷函繝ｬ繧ｳ繝ｼ繝峨�蜑企勁�郁ｪ､逋ｻ骭ｲ繧�㍾隍�ョ繝ｼ繧ｿ縺ｮ謨ｴ逅�ｼ�</li>
                                 </ul>
                             </div>
                         </div>
@@ -557,15 +557,15 @@
                         <div class="step-card">
                             <div class="step-number">2</div>
                             <div class="step-body">
-                                <h4>受講コース・使用機器・期日の入力</h4>
+                                <h4>蜿苓ｬ帙さ繝ｼ繧ｹ繝ｻ菴ｿ逕ｨ讖溷勣繝ｻ譛滓律縺ｮ蜈･蜉�</h4>
                                 <ul>
-                                    <li><strong>受講生氏名</strong>: 受講生の実名（LINE名とは別に教室管理名として保持）</li>
-                                    <li><strong>受講コース名</strong>: 【シニア安心】パソコン入門コース、スマホ・タブレット活用コース、Word・Excel実用コースなど</li>
-                                    <li><strong>機器/会員番号</strong>: Windows 11 ノートPC、iPad Air、会員No.1024 など</li>
-                                    <li><strong>次回レッスン予定日</strong>: 次回予約している受講日時</li>
-                                    <li><strong>定期PC健康診断日</strong>: パソコンの動作チェック、空き容量整理、セキュリティ確認の推奨日</li>
-                                    <li><strong>会員更新・月謝期日</strong>: 月謝のお支払い期日または年次会員更新日</li>
-                                    <li><strong>カルテメモ</strong>: 苦手な操作（文字入力、マウス操作）、受講進捗、特記事項</li>
+                                    <li><strong>蜿苓ｬ帷函豌丞錐</strong>: 蜿苓ｬ帷函縺ｮ螳溷錐��INE蜷阪→縺ｯ蛻･縺ｫ謨吝ｮ､邂｡逅�錐縺ｨ縺励※菫晄戟��</li>
+                                    <li><strong>蜿苓ｬ帙さ繝ｼ繧ｹ蜷�</strong>: 縲舌す繝九い螳牙ｿ�代ヱ繧ｽ繧ｳ繝ｳ蜈･髢繧ｳ繝ｼ繧ｹ縲√せ繝槭�繝ｻ繧ｿ繝悶Ξ繝�ヨ豢ｻ逕ｨ繧ｳ繝ｼ繧ｹ縲仝ord繝ｻExcel螳溽畑繧ｳ繝ｼ繧ｹ縺ｪ縺ｩ</li>
+                                    <li><strong>讖溷勣/莨壼藤逡ｪ蜿ｷ</strong>: Windows 11 繝弱�繝�C縲（Pad Air縲∽ｼ壼藤No.1024 縺ｪ縺ｩ</li>
+                                    <li><strong>谺｡蝗槭Ξ繝�せ繝ｳ莠亥ｮ壽律</strong>: 谺｡蝗樔ｺ育ｴ�＠縺ｦ縺�ｋ蜿苓ｬ帶律譎�</li>
+                                    <li><strong>螳壽悄PC蛛･蠎ｷ險ｺ譁ｭ譌･</strong>: 繝代た繧ｳ繝ｳ縺ｮ蜍穂ｽ懊メ繧ｧ繝�け縲∫ｩｺ縺榊ｮｹ驥乗紛逅�√そ繧ｭ繝･繝ｪ繝�ぅ遒ｺ隱阪�謗ｨ螂ｨ譌･</li>
+                                    <li><strong>莨壼藤譖ｴ譁ｰ繝ｻ譛郁ｬ晄悄譌･</strong>: 譛郁ｬ昴�縺頑髪謇輔＞譛滓律縺ｾ縺溘�蟷ｴ谺｡莨壼藤譖ｴ譁ｰ譌･</li>
+                                    <li><strong>繧ｫ繝ｫ繝�Γ繝｢</strong>: 闍ｦ謇九↑謫堺ｽ懶ｼ域枚蟄怜�蜉帙√�繧ｦ繧ｹ謫堺ｽ懶ｼ峨∝女隰幃ｲ謐励∫音險倅ｺ矩��</li>
                                 </ul>
                             </div>
                         </div>
@@ -573,13 +573,13 @@
                         <div class="step-card">
                             <div class="step-number">3</div>
                             <div class="step-body">
-                                <h4>ツールバー（2段構造）・高速検索・フィルタータブ</h4>
+                                <h4>繝��繝ｫ繝舌���2谿ｵ讒矩��峨�鬮倬滓､懃ｴ｢繝ｻ繝輔ぅ繝ｫ繧ｿ繝ｼ繧ｿ繝�</h4>
                                 <ul>
-                                    <li><strong>扱いやすい2段構造レイアウト</strong>: 上段に「検索バー」と「フィルタータブ（すべて・友だち中・ブロック中・各期日）」、下段に「該当件数サマリー」と「並び替え」「表示項目設定」が整理配置され、画面幅に応じたカラム落ちやメニュー切れを完全に防止します。</li>
-                                    <li><strong>ワンクリック検索クリア</strong>: 検索ボックスに文字を入力すると右端に「<i class="fa-solid fa-xmark"></i>」クリアボタンが自動出現し、1クリックで瞬時に検索リセットできます。</li>
-                                    <li><strong>リアルタイム該当件数表示</strong>: 検索やタブフィルター適用時、現在該当している受講生数が「該当: ◯件」バッジで即座に表示されます。</li>
-                                    <li><strong>スマート並び替え</strong>: 「💬 最終チャット・やり取り順」「期日1/2/3が近い順」「五十音順」「登録が新しい順」をいつでもワンタッチで切り替え可能です。</li>
-                                    <li><strong>ページネーション（スマート分割）</strong>: 1ページあたり50件ずつの分割表示で大量の受講生データも快適に操作できます（25件・50件・100件・全件の切り替えも可能）。</li>
+                                    <li><strong>謇ｱ縺�ｄ縺吶＞2谿ｵ讒矩�繝ｬ繧､繧｢繧ｦ繝�</strong>: 荳頑ｮｵ縺ｫ縲梧､懃ｴ｢繝舌�縲阪→縲後ヵ繧｣繝ｫ繧ｿ繝ｼ繧ｿ繝厄ｼ医☆縺ｹ縺ｦ繝ｻ蜿九□縺｡荳ｭ繝ｻ繝悶Ο繝�け荳ｭ繝ｻ蜷�悄譌･�峨阪∽ｸ区ｮｵ縺ｫ縲瑚ｩｲ蠖謎ｻｶ謨ｰ繧ｵ繝槭Μ繝ｼ縲阪→縲御ｸｦ縺ｳ譖ｿ縺医阪瑚｡ｨ遉ｺ鬆�岼險ｭ螳壹阪′謨ｴ逅��鄂ｮ縺輔ｌ縲∫判髱｢蟷�↓蠢懊§縺溘き繝ｩ繝�關ｽ縺｡繧�Γ繝九Η繝ｼ蛻�ｌ繧貞ｮ悟�縺ｫ髦ｲ豁｢縺励∪縺吶�</li>
+                                    <li><strong>繝ｯ繝ｳ繧ｯ繝ｪ繝�け讀懃ｴ｢繧ｯ繝ｪ繧｢</strong>: 讀懃ｴ｢繝懊ャ繧ｯ繧ｹ縺ｫ譁�ｭ励ｒ蜈･蜉帙☆繧九→蜿ｳ遶ｯ縺ｫ縲�<i class="fa-solid fa-xmark"></i>縲阪け繝ｪ繧｢繝懊ち繝ｳ縺瑚�蜍募�迴ｾ縺励�1繧ｯ繝ｪ繝�け縺ｧ迸ｬ譎ゅ↓讀懃ｴ｢繝ｪ繧ｻ繝�ヨ縺ｧ縺阪∪縺吶�</li>
+                                    <li><strong>繝ｪ繧｢繝ｫ繧ｿ繧､繝�隧ｲ蠖謎ｻｶ謨ｰ陦ｨ遉ｺ</strong>: 讀懃ｴ｢繧�ち繝悶ヵ繧｣繝ｫ繧ｿ繝ｼ驕ｩ逕ｨ譎ゅ∫樟蝨ｨ隧ｲ蠖薙＠縺ｦ縺�ｋ蜿苓ｬ帷函謨ｰ縺後瑚ｩｲ蠖�: 笳ｯ莉ｶ縲阪ヰ繝�ず縺ｧ蜊ｳ蠎ｧ縺ｫ陦ｨ遉ｺ縺輔ｌ縺ｾ縺吶�</li>
+                                    <li><strong>繧ｹ繝槭�繝井ｸｦ縺ｳ譖ｿ縺�</strong>: 縲交汳ｬ 譛邨ゅメ繝｣繝�ヨ繝ｻ繧�ｊ蜿悶ｊ鬆�阪梧悄譌･1/2/3縺瑚ｿ代＞鬆�阪御ｺ泌香髻ｳ鬆�阪檎匳骭ｲ縺梧眠縺励＞鬆�阪ｒ縺�▽縺ｧ繧ゅΡ繝ｳ繧ｿ繝�メ縺ｧ蛻�ｊ譖ｿ縺亥庄閭ｽ縺ｧ縺吶�</li>
+                                    <li><strong>繝壹�繧ｸ繝阪�繧ｷ繝ｧ繝ｳ�医せ繝槭�繝亥�蜑ｲ��</strong>: 1繝壹�繧ｸ縺ゅ◆繧�50莉ｶ縺壹▽縺ｮ蛻�牡陦ｨ遉ｺ縺ｧ螟ｧ驥上�蜿苓ｬ帷函繝��繧ｿ繧ょｿｫ驕ｩ縺ｫ謫堺ｽ懊〒縺阪∪縺呻ｼ�25莉ｶ繝ｻ50莉ｶ繝ｻ100莉ｶ繝ｻ蜈ｨ莉ｶ縺ｮ蛻�ｊ譖ｿ縺医ｂ蜿ｯ閭ｽ�峨�</li>
                                 </ul>
                             </div>
                         </div>
@@ -587,12 +587,12 @@
                         <div class="step-card">
                             <div class="step-number">4</div>
                             <div class="step-body">
-                                <h4>表示項目の選択（カラムカスタマイズ＆項目名の即時変更）</h4>
+                                <h4>陦ｨ遉ｺ鬆�岼縺ｮ驕ｸ謚橸ｼ医き繝ｩ繝�繧ｫ繧ｹ繧ｿ繝槭う繧ｺ����岼蜷阪�蜊ｳ譎ょ､画峩��</h4>
                                 <ul>
-                                    <li><strong>表示項目の自由切替</strong>: ツールバー右側の「<i class="fa-solid fa-table-columns"></i> 表示項目」ボタンから、テーブルに表示したい列をチェックボックスでいつでも自由に切り替えられます。</li>
-                                    <li><strong>画面外はみ出し防止（安全設計）</strong>: ドロップダウンメニューは画面端のスペースを自動検知して常に画面内に収まるスマートポジショニング設計です。</li>
-                                    <li><strong>ワンクリック項目名変更</strong>: メニュー内の各列にある「✏️ 編集」アイコンや下部の「項目名・期日名を変更」ボタンから、項目名（コース名・使用機器・期日1〜3）をモーダルで即座に変更・反映できます。</li>
-                                    <li><strong>設定の自動保存</strong>: 選択した表示設定はブラウザ（localStorage）に自動保存され、次回アクセス時も維持されます。「初期化」を押すといつでも全表示に戻せます。</li>
+                                    <li><strong>陦ｨ遉ｺ鬆�岼縺ｮ閾ｪ逕ｱ蛻�崛</strong>: 繝��繝ｫ繝舌�蜿ｳ蛛ｴ縺ｮ縲�<i class="fa-solid fa-table-columns"></i> 陦ｨ遉ｺ鬆�岼縲阪�繧ｿ繝ｳ縺九ｉ縲√ユ繝ｼ繝悶Ν縺ｫ陦ｨ遉ｺ縺励◆縺��繧偵メ繧ｧ繝�け繝懊ャ繧ｯ繧ｹ縺ｧ縺�▽縺ｧ繧り�逕ｱ縺ｫ蛻�ｊ譖ｿ縺医ｉ繧後∪縺吶�</li>
+                                    <li><strong>逕ｻ髱｢螟悶�縺ｿ蜃ｺ縺鈴亟豁｢�亥ｮ牙�險ｭ險茨ｼ�</strong>: 繝峨Ο繝��繝繧ｦ繝ｳ繝｡繝九Η繝ｼ縺ｯ逕ｻ髱｢遶ｯ縺ｮ繧ｹ繝壹�繧ｹ繧定�蜍墓､懃衍縺励※蟶ｸ縺ｫ逕ｻ髱｢蜀�↓蜿弱∪繧九せ繝槭�繝医�繧ｸ繧ｷ繝ｧ繝九Φ繧ｰ險ｭ險医〒縺吶�</li>
+                                    <li><strong>繝ｯ繝ｳ繧ｯ繝ｪ繝�け鬆�岼蜷榊､画峩</strong>: 繝｡繝九Η繝ｼ蜀��蜷��縺ｫ縺ゅｋ縲娯恟�� 邱ｨ髮�阪い繧､繧ｳ繝ｳ繧�ｸ矩Κ縺ｮ縲碁��岼蜷阪�譛滓律蜷阪ｒ螟画峩縲阪�繧ｿ繝ｳ縺九ｉ縲���岼蜷搾ｼ医さ繝ｼ繧ｹ蜷阪�菴ｿ逕ｨ讖溷勣繝ｻ譛滓律1縲�3�峨ｒ繝｢繝ｼ繝繝ｫ縺ｧ蜊ｳ蠎ｧ縺ｫ螟画峩繝ｻ蜿肴丐縺ｧ縺阪∪縺吶�</li>
+                                    <li><strong>險ｭ螳壹�閾ｪ蜍穂ｿ晏ｭ�</strong>: 驕ｸ謚槭＠縺溯｡ｨ遉ｺ險ｭ螳壹�繝悶Λ繧ｦ繧ｶ��ocalStorage�峨↓閾ｪ蜍穂ｿ晏ｭ倥＆繧後∵ｬ｡蝗槭い繧ｯ繧ｻ繧ｹ譎ゅｂ邯ｭ謖√＆繧後∪縺吶ゅ悟�譛溷喧縲阪ｒ謚ｼ縺吶→縺�▽縺ｧ繧ょ�陦ｨ遉ｺ縺ｫ謌ｻ縺帙∪縺吶�</li>
                                 </ul>
                             </div>
                         </div>
@@ -601,130 +601,130 @@
                     <div class="callout callout-success">
                         <i class="fa-solid fa-lightbulb"></i>
                         <div>
-                            <strong>期日バッジの色の見方 & 操作Tips:</strong><br>
-                            ・<span class="badge-feature badge-rose">赤色</span>: 期日超過、または当日〜7日以内の緊急ステータス<br>
-                            ・<span class="badge-feature badge-amber">黄色</span>: 残り30日以内のリマインド推奨ステータス<br>
-                            ・<span class="badge-feature badge-green">緑色</span>: 余裕あり（30日以上先）<br>
-                            ・<span class="badge-feature badge-indigo">表示カラム選択</span>: 必要な項目だけに絞り込むことで、小さな画面やタブレットでも横スクロールなしで快適に受講生一覧を一覧できます。
+                            <strong>譛滓律繝舌ャ繧ｸ縺ｮ濶ｲ縺ｮ隕区婿 & 謫堺ｽ弋ips:</strong><br>
+                            繝ｻ<span class="badge-feature badge-rose">襍､濶ｲ</span>: 譛滓律雜�℃縲√∪縺溘�蠖捺律縲�7譌･莉･蜀��邱頑･繧ｹ繝��繧ｿ繧ｹ<br>
+                            繝ｻ<span class="badge-feature badge-amber">鮟�牡</span>: 谿九ｊ30譌･莉･蜀��繝ｪ繝槭う繝ｳ繝画耳螂ｨ繧ｹ繝��繧ｿ繧ｹ<br>
+                            繝ｻ<span class="badge-feature badge-green">邱題牡</span>: 菴呵｣輔≠繧奇ｼ�30譌･莉･荳雁���<br>
+                            繝ｻ<span class="badge-feature badge-indigo">陦ｨ遉ｺ繧ｫ繝ｩ繝�驕ｸ謚�</span>: 蠢�ｦ√↑鬆�岼縺�縺代↓邨槭ｊ霎ｼ繧縺薙→縺ｧ縲∝ｰ上＆縺ｪ逕ｻ髱｢繧�ち繝悶Ξ繝�ヨ縺ｧ繧よｨｪ繧ｹ繧ｯ繝ｭ繝ｼ繝ｫ縺ｪ縺励〒蠢ｫ驕ｩ縺ｫ蜿苓ｬ帷函荳隕ｧ繧剃ｸ隕ｧ縺ｧ縺阪∪縺吶�
                         </div>
                     </div>
                 </section>
 
-                <!-- 5. 直近予定日の自動反映 -->
+                <!-- 5. 逶ｴ霑台ｺ亥ｮ壽律縺ｮ閾ｪ蜍募渚譏� -->
                 <section class="manual-section" id="sec-auto-nearest">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #f5f3ff; color: #7c3aed;">
                             <i class="fa-solid fa-wand-magic-sparkles"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>5. 直近予定日の自動反映機能</h2>
-                            <p>次回レッスン・PC健康診断・会員更新のうち最も近い予定を自動判定</p>
+                            <h2>5. 逶ｴ霑台ｺ亥ｮ壽律縺ｮ閾ｪ蜍募渚譏�讖溯�</h2>
+                            <p>谺｡蝗槭Ξ繝�せ繝ｳ繝ｻPC蛛･蠎ｷ險ｺ譁ｭ繝ｻ莨壼藤譖ｴ譁ｰ縺ｮ縺�■譛繧りｿ代＞莠亥ｮ壹ｒ閾ｪ蜍募愛螳�</p>
                         </div>
                     </div>
 
-                    <p>期日を入力すると、システムが自動的に<strong>今日から一番期日が近い予定</strong>を計算し、メッセージ帯を作成して受講生のLINE画面に反映します。</p>
+                    <p>譛滓律繧貞�蜉帙☆繧九→縲√す繧ｹ繝�Β縺瑚�蜍慕噪縺ｫ<strong>莉頑律縺九ｉ荳逡ｪ譛滓律縺瑚ｿ代＞莠亥ｮ�</strong>繧定ｨ育ｮ励＠縲√Γ繝�そ繝ｼ繧ｸ蟶ｯ繧剃ｽ懈�縺励※蜿苓ｬ帷函縺ｮLINE逕ｻ髱｢縺ｫ蜿肴丐縺励∪縺吶�</p>
 
                     <div class="step-flow">
                         <div class="step-card">
                             <div class="step-number">1</div>
                             <div class="step-body">
-                                <h4>リアルタイムサマリー表示</h4>
-                                <p>日付を入力すると、フォーム下部に「最も期限が近い予定」が自動表示されます。<br>
-                                例: 「<i class="fa-solid fa-calendar-check"></i> 次回レッスン: 2026-10-15 (あと8日)」</p>
+                                <h4>繝ｪ繧｢繝ｫ繧ｿ繧､繝�繧ｵ繝槭Μ繝ｼ陦ｨ遉ｺ</h4>
+                                <p>譌･莉倥ｒ蜈･蜉帙☆繧九→縲√ヵ繧ｩ繝ｼ繝�荳矩Κ縺ｫ縲梧怙繧よ悄髯舌′霑代＞莠亥ｮ壹阪′閾ｪ蜍戊｡ｨ遉ｺ縺輔ｌ縺ｾ縺吶�<br>
+                                萓�: 縲�<i class="fa-solid fa-calendar-check"></i> 谺｡蝗槭Ξ繝�せ繝ｳ: 2026-10-15 (縺ゅ→8譌･)縲�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">2</div>
                             <div class="step-body">
-                                <h4>保存と同時にLINEへ自動適用（完全自動化）</h4>
-                                <p>「<strong>保存と同時に、直近の期限メッセージで専用リッチメニューをLINEに自動適用する</strong>」にチェックを入れた状態で保存すると、自動的にメッセージが入った個別メニュー画像が生成され、受講生のLINEメニューが即座に切り替わります。</p>
+                                <h4>菫晏ｭ倥→蜷梧凾縺ｫLINE縺ｸ閾ｪ蜍暮←逕ｨ�亥ｮ悟�閾ｪ蜍募喧��</h4>
+                                <p>縲�<strong>菫晏ｭ倥→蜷梧凾縺ｫ縲∫峩霑代�譛滄剞繝｡繝�そ繝ｼ繧ｸ縺ｧ蟆ら畑繝ｪ繝�メ繝｡繝九Η繝ｼ繧鱈INE縺ｫ閾ｪ蜍暮←逕ｨ縺吶ｋ</strong>縲阪↓繝√ぉ繝�け繧貞�繧後◆迥ｶ諷九〒菫晏ｭ倥☆繧九→縲∬�蜍慕噪縺ｫ繝｡繝�そ繝ｼ繧ｸ縺悟�縺｣縺溷句挨繝｡繝九Η繝ｼ逕ｻ蜒上′逕滓�縺輔ｌ縲∝女隰帷函縺ｮLINE繝｡繝九Η繝ｼ縺悟叉蠎ｧ縺ｫ蛻�ｊ譖ｿ繧上ｊ縺ｾ縺吶�</p>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- 6. 専用リッチメニュー設定 -->
+                <!-- 6. 蟆ら畑繝ｪ繝�メ繝｡繝九Η繝ｼ險ｭ螳� -->
                 <section class="manual-section" id="sec-user-richmenu">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #fdf2f8; color: #db2777;">
                             <i class="fa-solid fa-table-cells-large"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>6. 特定受講生向け個別リッチメニュー設定</h2>
-                            <p>受講生のLINE画面に専用メッセージ帯（次回レッスン日等）を焼き込み表示</p>
+                            <h2>6. 迚ｹ螳壼女隰帷函蜷代￠蛟句挨繝ｪ繝�メ繝｡繝九Η繝ｼ險ｭ螳�</h2>
+                            <p>蜿苓ｬ帷函縺ｮLINE逕ｻ髱｢縺ｫ蟆ら畑繝｡繝�そ繝ｼ繧ｸ蟶ｯ�域ｬ｡蝗槭Ξ繝�せ繝ｳ譌･遲会ｼ峨ｒ辟ｼ縺崎ｾｼ縺ｿ陦ｨ遉ｺ</p>
                         </div>
                     </div>
 
-                    <p>受講生一覧の「<strong><i class="fa-solid fa-table-cells-large"></i> メニュー設定</strong>」ボタンをクリックすると、その受講生専用の設定モーダルが開きます。</p>
+                    <p>蜿苓ｬ帷函荳隕ｧ縺ｮ縲�<strong><i class="fa-solid fa-table-cells-large"></i> 繝｡繝九Η繝ｼ險ｭ螳�</strong>縲阪�繧ｿ繝ｳ繧偵け繝ｪ繝�け縺吶ｋ縺ｨ縲√◎縺ｮ蜿苓ｬ帷函蟆ら畑縺ｮ險ｭ螳壹Δ繝ｼ繝繝ｫ縺碁幕縺阪∪縺吶�</p>
 
                     <div class="step-flow">
                         <div class="step-card">
                             <div class="step-number">A</div>
                             <div class="step-body">
-                                <h4>定型文チップによる簡単入力</h4>
-                                <p>「最も近い予定 (あと〇日)」「次回レッスン」「定期PC健康診断」「会員更新」ボタンを押すだけで、最適なメッセージが自動生成されます。「山田様 次回レッスンは10月15日(火)10時からです」など自由な編集も可能です。</p>
+                                <h4>螳壼梛譁�メ繝��縺ｫ繧医ｋ邁｡蜊伜�蜉�</h4>
+                                <p>縲梧怙繧りｿ代＞莠亥ｮ� (縺ゅ→縲�律)縲阪梧ｬ｡蝗槭Ξ繝�せ繝ｳ縲阪悟ｮ壽悄PC蛛･蠎ｷ險ｺ譁ｭ縲阪御ｼ壼藤譖ｴ譁ｰ縲阪�繧ｿ繝ｳ繧呈款縺吶□縺代〒縲∵怙驕ｩ縺ｪ繝｡繝�そ繝ｼ繧ｸ縺瑚�蜍慕函謌舌＆繧後∪縺吶ゅ悟ｱｱ逕ｰ讒� 谺｡蝗槭Ξ繝�せ繝ｳ縺ｯ10譛�15譌･(轣ｫ)10譎ゅ°繧峨〒縺吶阪↑縺ｩ閾ｪ逕ｱ縺ｪ邱ｨ髮�ｂ蜿ｯ閭ｽ縺ｧ縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">B</div>
                             <div class="step-body">
-                                <h4>帯の高さ設定（デフォルト300px・px直接指定）& 自動折り返し・フォント自動縮小調整</h4>
-                                <p><strong>・帯の高さ設定（デフォルト標準 300px 固定）</strong>:<br>
-                                初期状態で最もバランスの良い「<strong>標準 300px</strong>」が自動設定されています。スライダーや数値入力（50px〜1000px）、またはクイックチップ（細め180px、標準300px、太め420px、特大550px、極太700px、自動伸縮）で帯の高さを自由に微調整・固定できます。<br>
-                                <strong>・自然な自動折り返し（Word Wrap） & 帯枠内への自動フォント縮小（スマートフィット）</strong>:<br>
-                                長い文章や大きなフォントサイズを指定しても、横幅を超えたテキストは自然に次行へ折り返されます。さらに行数が増えて帯の高さ（300px等）に収まりきらなくなった場合は、<strong>文字が縦長に変形・潰れることなく、枠内にぴったり収まる最適なフォントサイズまで自動で縮小調整</strong>されます。<br>
-                                <strong>・文字フォントサイズ (20px〜250px)</strong>: スライダー操作に加え、<strong>直接数値入力ボックス</strong>（例: 85px、140pxなど）を完備。ワンクリックのサイズチップ（極小40px、標準65px、大90px、特大130px、超特大180px）も備え、極小注記から超特大テロップまで自在に調整可能です。<br>
-                                <strong>・文字の上下配置（垂直アライメント）</strong>: 中央揃え（標準）、上揃え、下揃えを選択可能。固定した帯の中で文字を好みの位置に美しく配置できます。<br>
-                                <strong>・帯の背景色 (HEX) & 文字色 (HEX)</strong>: カラーピッカーでの直感選択に加え、<code>#ff8700</code>（デフォルト：オレンジ）などの<strong>16進数HEXカラーコードを直接手入力</strong>可能。定番プリセット（オレンジ・赤・青・緑・ゴールド・黒・紫・ピンク・白）もワンタップで選択できます。<br>
-                                <strong>・立体グラデーション効果</strong>: チェックを付けると自然な陰影と高級感のある立体グラデーションが自動適用され、外すとフラットな単色で焼き込みされます。<br>
-                                <strong>・タップ誘導ガイド表示</strong>: チェックを入れると画像上に「👆 タップして開く」の小さな誘導ガイドが焼き込まれます（メッセージをすっきり見せるため<strong>初期設定はデフォルトでOFF</strong>になっています。必要に応じてONに切り替えてご利用ください）。</p>
+                                <h4>蟶ｯ縺ｮ鬮倥＆險ｭ螳夲ｼ医ョ繝輔か繝ｫ繝�300px繝ｻpx逶ｴ謗･謖�ｮ夲ｼ�& 閾ｪ蜍墓釜繧願ｿ斐＠繝ｻ繝輔か繝ｳ繝郁�蜍慕ｸｮ蟆剰ｪｿ謨ｴ</h4>
+                                <p><strong>繝ｻ蟶ｯ縺ｮ鬮倥＆險ｭ螳夲ｼ医ョ繝輔か繝ｫ繝域ｨ呎ｺ� 300px 蝗ｺ螳夲ｼ�</strong>:<br>
+                                蛻晄悄迥ｶ諷九〒譛繧ゅヰ繝ｩ繝ｳ繧ｹ縺ｮ濶ｯ縺��<strong>讓呎ｺ� 300px</strong>縲阪′閾ｪ蜍戊ｨｭ螳壹＆繧後※縺�∪縺吶ゅせ繝ｩ繧､繝繝ｼ繧�焚蛟､蜈･蜉幢ｼ�50px縲�1000px�峨√∪縺溘�繧ｯ繧､繝�け繝√ャ繝暦ｼ育ｴｰ繧�180px縲∵ｨ呎ｺ�300px縲∝､ｪ繧�420px縲∫音螟ｧ550px縲∵･ｵ螟ｪ700px縲∬�蜍穂ｼｸ邵ｮ�峨〒蟶ｯ縺ｮ鬮倥＆繧定�逕ｱ縺ｫ蠕ｮ隱ｿ謨ｴ繝ｻ蝗ｺ螳壹〒縺阪∪縺吶�<br>
+                                <strong>繝ｻ閾ｪ辟ｶ縺ｪ閾ｪ蜍墓釜繧願ｿ斐＠��ord Wrap�� & 蟶ｯ譫�蜀�∈縺ｮ閾ｪ蜍輔ヵ繧ｩ繝ｳ繝育ｸｮ蟆擾ｼ医せ繝槭�繝医ヵ繧｣繝�ヨ��</strong>:<br>
+                                髟ｷ縺�枚遶�繧�､ｧ縺阪↑繝輔か繝ｳ繝医し繧､繧ｺ繧呈欠螳壹＠縺ｦ繧ゅ∵ｨｪ蟷�ｒ雜�∴縺溘ユ繧ｭ繧ｹ繝医�閾ｪ辟ｶ縺ｫ谺｡陦後∈謚倥ｊ霑斐＆繧後∪縺吶ゅ＆繧峨↓陦梧焚縺悟｢励∴縺ｦ蟶ｯ縺ｮ鬮倥＆��300px遲会ｼ峨↓蜿弱∪繧翫″繧峨↑縺上↑縺｣縺溷�ｴ蜷医�縲�<strong>譁�ｭ励′邵ｦ髟ｷ縺ｫ螟牙ｽ｢繝ｻ貎ｰ繧後ｋ縺薙→縺ｪ縺上∵棧蜀�↓縺ｴ縺｣縺溘ｊ蜿弱∪繧区怙驕ｩ縺ｪ繝輔か繝ｳ繝医し繧､繧ｺ縺ｾ縺ｧ閾ｪ蜍輔〒邵ｮ蟆剰ｪｿ謨ｴ</strong>縺輔ｌ縺ｾ縺吶�<br>
+                                <strong>繝ｻ譁�ｭ励ヵ繧ｩ繝ｳ繝医し繧､繧ｺ (20px縲�250px)</strong>: 繧ｹ繝ｩ繧､繝繝ｼ謫堺ｽ懊↓蜉�縺医�<strong>逶ｴ謗･謨ｰ蛟､蜈･蜉帙�繝�け繧ｹ</strong>�井ｾ�: 85px縲�140px縺ｪ縺ｩ�峨ｒ螳悟ｙ縲ゅΡ繝ｳ繧ｯ繝ｪ繝�け縺ｮ繧ｵ繧､繧ｺ繝√ャ繝暦ｼ域･ｵ蟆�40px縲∵ｨ呎ｺ�65px縲∝､ｧ90px縲∫音螟ｧ130px縲∬ｶ�音螟ｧ180px�峨ｂ蛯吶∴縲∵･ｵ蟆乗ｳｨ險倥°繧芽ｶ�音螟ｧ繝�Ο繝��縺ｾ縺ｧ閾ｪ蝨ｨ縺ｫ隱ｿ謨ｴ蜿ｯ閭ｽ縺ｧ縺吶�<br>
+                                <strong>繝ｻ譁�ｭ励�荳贋ｸ矩�鄂ｮ�亥桙逶ｴ繧｢繝ｩ繧､繝｡繝ｳ繝茨ｼ�</strong>: 荳ｭ螟ｮ謠�∴�域ｨ呎ｺ厄ｼ峨∽ｸ頑純縺医∽ｸ区純縺医ｒ驕ｸ謚槫庄閭ｽ縲ょ崋螳壹＠縺溷ｸｯ縺ｮ荳ｭ縺ｧ譁�ｭ励ｒ螂ｽ縺ｿ縺ｮ菴咲ｽｮ縺ｫ鄒弱＠縺城�鄂ｮ縺ｧ縺阪∪縺吶�<br>
+                                <strong>繝ｻ蟶ｯ縺ｮ閭梧勹濶ｲ (HEX) & 譁�ｭ苓牡 (HEX)</strong>: 繧ｫ繝ｩ繝ｼ繝斐ャ繧ｫ繝ｼ縺ｧ縺ｮ逶ｴ諢滄∈謚槭↓蜉�縺医�<code>#ff8700</code>�医ョ繝輔か繝ｫ繝茨ｼ壹が繝ｬ繝ｳ繧ｸ�峨↑縺ｩ縺ｮ<strong>16騾ｲ謨ｰHEX繧ｫ繝ｩ繝ｼ繧ｳ繝ｼ繝峨ｒ逶ｴ謗･謇句�蜉�</strong>蜿ｯ閭ｽ縲ょｮ夂分繝励Μ繧ｻ繝�ヨ�医が繝ｬ繝ｳ繧ｸ繝ｻ襍､繝ｻ髱偵�邱代�繧ｴ繝ｼ繝ｫ繝峨�鮟偵�邏ｫ繝ｻ繝斐Φ繧ｯ繝ｻ逋ｽ�峨ｂ繝ｯ繝ｳ繧ｿ繝��縺ｧ驕ｸ謚槭〒縺阪∪縺吶�<br>
+                                <strong>繝ｻ遶倶ｽ薙げ繝ｩ繝��繧ｷ繝ｧ繝ｳ蜉ｹ譫�</strong>: 繝√ぉ繝�け繧剃ｻ倥￠繧九→閾ｪ辟ｶ縺ｪ髯ｰ蠖ｱ縺ｨ鬮倡ｴ壽─縺ｮ縺ゅｋ遶倶ｽ薙げ繝ｩ繝��繧ｷ繝ｧ繝ｳ縺瑚�蜍暮←逕ｨ縺輔ｌ縲∝､悶☆縺ｨ繝輔Λ繝�ヨ縺ｪ蜊倩牡縺ｧ辟ｼ縺崎ｾｼ縺ｿ縺輔ｌ縺ｾ縺吶�<br>
+                                <strong>繝ｻ繧ｿ繝��隱伜ｰ弱ぎ繧､繝芽｡ｨ遉ｺ</strong>: 繝√ぉ繝�け繧貞�繧後ｋ縺ｨ逕ｻ蜒丈ｸ翫↓縲交汨� 繧ｿ繝��縺励※髢九￥縲阪�蟆上＆縺ｪ隱伜ｰ弱ぎ繧､繝峨′辟ｼ縺崎ｾｼ縺ｾ繧後∪縺呻ｼ医Γ繝�そ繝ｼ繧ｸ繧偵☆縺｣縺阪ｊ隕九○繧九◆繧�<strong>蛻晄悄險ｭ螳壹�繝�ヵ繧ｩ繝ｫ繝医〒OFF</strong>縺ｫ縺ｪ縺｣縺ｦ縺�∪縺吶ょｿ�ｦ√↓蠢懊§縺ｦON縺ｫ蛻�ｊ譖ｿ縺医※縺泌茜逕ｨ縺上□縺輔＞�峨�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">C</div>
                             <div class="step-body">
-                                <h4>全体共通メニューへの復帰</h4>
-                                <p>「全体共通に戻す」ボタンを押すだけで、いつでも教室共通（プロライン標準）のデフォルトメニューに戻せます。</p>
+                                <h4>蜈ｨ菴灘�騾壹Γ繝九Η繝ｼ縺ｸ縺ｮ蠕ｩ蟶ｰ</h4>
+                                <p>縲悟�菴灘�騾壹↓謌ｻ縺吶阪�繧ｿ繝ｳ繧呈款縺吶□縺代〒縲√＞縺､縺ｧ繧よ蕗螳､蜈ｱ騾夲ｼ医�繝ｭ繝ｩ繧､繝ｳ讓呎ｺ厄ｼ峨�繝�ヵ繧ｩ繝ｫ繝医Γ繝九Η繝ｼ縺ｫ謌ｻ縺帙∪縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number" style="background:#06C755; color:#fff;"><i class="fa-brands fa-line"></i></div>
                             <div class="step-body">
-                                <h4>【重要】プロラインのボタン設定を100%引き継ぐ安心仕様</h4>
-                                <p>ベースメニューには「<strong>★ [全社公開中]（プロラインの現在メニュー）</strong>」が自動選択されます。モーダル内の「<strong><i class="fa-solid fa-cloud-arrow-down"></i> プロラインから同期</strong>」ボタンを押すと、LINEサーバーからプロライン最新メニュー（画像とボタン設定）が即座に取り込まれます。<br>
-                                <strong>本システムはプロラインが設定したボタン配置・アクションURL・予約設定をそのまま完全継承</strong>し、画像上部にメッセージ帯だけを上書き合成して受講生に個別配信するため、プロラインの既存機能（カレンダー予約等）を一切壊すことなく安全に共存できます。</p>
+                                <h4>縲宣㍾隕√代�繝ｭ繝ｩ繧､繝ｳ縺ｮ繝懊ち繝ｳ險ｭ螳壹ｒ100%蠑輔″邯吶＄螳牙ｿ�ｻ墓ｧ�</h4>
+                                <p>繝吶�繧ｹ繝｡繝九Η繝ｼ縺ｫ縺ｯ縲�<strong>笘� [蜈ｨ遉ｾ蜈ｬ髢倶ｸｭ]�医�繝ｭ繝ｩ繧､繝ｳ縺ｮ迴ｾ蝨ｨ繝｡繝九Η繝ｼ��</strong>縲阪′閾ｪ蜍暮∈謚槭＆繧後∪縺吶ゅΔ繝ｼ繝繝ｫ蜀��縲�<strong><i class="fa-solid fa-cloud-arrow-down"></i> 繝励Ο繝ｩ繧､繝ｳ縺九ｉ蜷梧悄</strong>縲阪�繧ｿ繝ｳ繧呈款縺吶→縲´INE繧ｵ繝ｼ繝舌�縺九ｉ繝励Ο繝ｩ繧､繝ｳ譛譁ｰ繝｡繝九Η繝ｼ�育判蜒上→繝懊ち繝ｳ險ｭ螳夲ｼ峨′蜊ｳ蠎ｧ縺ｫ蜿悶ｊ霎ｼ縺ｾ繧後∪縺吶�<br>
+                                <strong>譛ｬ繧ｷ繧ｹ繝�Β縺ｯ繝励Ο繝ｩ繧､繝ｳ縺瑚ｨｭ螳壹＠縺溘�繧ｿ繝ｳ驟咲ｽｮ繝ｻ繧｢繧ｯ繧ｷ繝ｧ繝ｳURL繝ｻ莠育ｴ�ｨｭ螳壹ｒ縺昴�縺ｾ縺ｾ螳悟�邯呎価</strong>縺励∫判蜒丈ｸ企Κ縺ｫ繝｡繝�そ繝ｼ繧ｸ蟶ｯ縺�縺代ｒ荳頑嶌縺榊粋謌舌＠縺ｦ蜿苓ｬ帷函縺ｫ蛟句挨驟堺ｿ｡縺吶ｋ縺溘ａ縲√�繝ｭ繝ｩ繧､繝ｳ縺ｮ譌｢蟄俶ｩ溯��医き繝ｬ繝ｳ繝繝ｼ莠育ｴ�ｭ会ｼ峨ｒ荳蛻�｣翫☆縺薙→縺ｪ縺丞ｮ牙�縺ｫ蜈ｱ蟄倥〒縺阪∪縺吶�</p>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- 7. LINE個別リマインド・自動バッチ -->
+                <!-- 7. LINE蛟句挨繝ｪ繝槭う繝ｳ繝峨�閾ｪ蜍輔ヰ繝�メ -->
                 <section class="manual-section" id="sec-line-reminder">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #fffbeb; color: #d97706;">
                             <i class="fa-solid fa-paper-plane"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>7. LINE個別リマインド送信 & 自動Cron配信バッチ</h2>
-                            <p>次回レッスン、PC健康診断、会員更新のリマインド配信</p>
+                            <h2>7. LINE蛟句挨繝ｪ繝槭う繝ｳ繝蛾∽ｿ｡ & 閾ｪ蜍匹ron驟堺ｿ｡繝舌ャ繝�</h2>
+                            <p>谺｡蝗槭Ξ繝�せ繝ｳ縲￣C蛛･蠎ｷ險ｺ譁ｭ縲∽ｼ壼藤譖ｴ譁ｰ縺ｮ繝ｪ繝槭う繝ｳ繝蛾�菫｡</p>
                         </div>
                     </div>
 
-                    <p>受講生一覧の「レッスン」「診断」「更新」ボタンから、該当の受講生へ美しいFlex Messageカード形式のLINEプッシュ通知を即座に手動送信できます。</p>
+                    <p>蜿苓ｬ帷函荳隕ｧ縺ｮ縲後Ξ繝�せ繝ｳ縲阪瑚ｨｺ譁ｭ縲阪梧峩譁ｰ縲阪�繧ｿ繝ｳ縺九ｉ縲∬ｩｲ蠖薙�蜿苓ｬ帷函縺ｸ鄒弱＠縺Ёlex Message繧ｫ繝ｼ繝牙ｽ｢蠑上�LINE繝励ャ繧ｷ繝･騾夂衍繧貞叉蠎ｧ縺ｫ謇句虚騾∽ｿ｡縺ｧ縺阪∪縺吶�</p>
 
                     <div class="step-flow">
                         <div class="step-card">
                             <div class="step-number">1</div>
                             <div class="step-body">
-                                <h4>手動リマインドボタン</h4>
+                                <h4>謇句虚繝ｪ繝槭う繝ｳ繝峨�繧ｿ繝ｳ</h4>
                                 <ul>
-                                    <li><button class="badge-feature badge-blue" style="border:none; cursor:default;"><i class="fa-solid fa-calendar-day"></i> レッスン</button>: 次回レッスン日時、持ち物（ノートPCや筆記用具）、受講予約の確認カードを送信</li>
-                                    <li><button class="badge-feature badge-green" style="border:none; cursor:default;"><i class="fa-solid fa-stethoscope"></i> 診断</button>: 定期PC健康診断（動作確認・ウイルスチェック・空き容量整理）のご案内を送信</li>
-                                    <li><button class="badge-feature badge-rose" style="border:none; cursor:default;"><i class="fa-solid fa-id-card"></i> 更新</button>: 会員継続手続き・月謝期日のご案内を送信</li>
+                                    <li><button class="badge-feature badge-blue" style="border:none; cursor:default;"><i class="fa-solid fa-calendar-day"></i> 繝ｬ繝�せ繝ｳ</button>: 谺｡蝗槭Ξ繝�せ繝ｳ譌･譎ゅ∵戟縺｡迚ｩ�医ヮ繝ｼ繝�C繧�ｭ�ｨ倡畑蜈ｷ�峨∝女隰帑ｺ育ｴ��遒ｺ隱阪き繝ｼ繝峨ｒ騾∽ｿ｡</li>
+                                    <li><button class="badge-feature badge-green" style="border:none; cursor:default;"><i class="fa-solid fa-stethoscope"></i> 險ｺ譁ｭ</button>: 螳壽悄PC蛛･蠎ｷ險ｺ譁ｭ�亥虚菴懃｢ｺ隱阪�繧ｦ繧､繝ｫ繧ｹ繝√ぉ繝�け繝ｻ遨ｺ縺榊ｮｹ驥乗紛逅�ｼ峨�縺疲｡亥�繧帝∽ｿ｡</li>
+                                    <li><button class="badge-feature badge-rose" style="border:none; cursor:default;"><i class="fa-solid fa-id-card"></i> 譖ｴ譁ｰ</button>: 莨壼藤邯咏ｶ壽焔邯壹″繝ｻ譛郁ｬ晄悄譌･縺ｮ縺疲｡亥�繧帝∽ｿ｡</li>
                                 </ul>
                             </div>
                         </div>
@@ -732,55 +732,55 @@
                         <div class="step-card">
                             <div class="step-number">2</div>
                             <div class="step-body">
-                                <h4>自動Cronリマインドバッチ (batch/reminder.php)</h4>
-                                <p>サーバーのCron設定により、毎朝8:00に自動実行されます：</p>
+                                <h4>閾ｪ蜍匹ron繝ｪ繝槭う繝ｳ繝峨ヰ繝�メ (batch/reminder.php)</h4>
+                                <p>繧ｵ繝ｼ繝舌�縺ｮCron險ｭ螳壹↓繧医ｊ縲∵ｯ取悃8:00縺ｫ閾ｪ蜍募ｮ溯｡後＆繧後∪縺呻ｼ�</p>
                                 <ul>
-                                    <li><strong>次回レッスン</strong>: 7日前、前日、当日の朝に自動リマインド通知</li>
-                                    <li><strong>定期PC健康診断</strong>: 14日前、7日前、当日の朝に自動リマインド通知</li>
-                                    <li><strong>会員更新・月謝期日</strong>: 30日前、14日前、当日の朝に自動リマインド通知</li>
+                                    <li><strong>谺｡蝗槭Ξ繝�せ繝ｳ</strong>: 7譌･蜑阪∝燕譌･縲∝ｽ捺律縺ｮ譛昴↓閾ｪ蜍輔Μ繝槭う繝ｳ繝蛾夂衍</li>
+                                    <li><strong>螳壽悄PC蛛･蠎ｷ險ｺ譁ｭ</strong>: 14譌･蜑阪�7譌･蜑阪∝ｽ捺律縺ｮ譛昴↓閾ｪ蜍輔Μ繝槭う繝ｳ繝蛾夂衍</li>
+                                    <li><strong>莨壼藤譖ｴ譁ｰ繝ｻ譛郁ｬ晄悄譌･</strong>: 30譌･蜑阪�14譌･蜑阪∝ｽ捺律縺ｮ譛昴↓閾ｪ蜍輔Μ繝槭う繝ｳ繝蛾夂衍</li>
                                 </ul>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- 8. 全体リッチメニュー管理 -->
+                <!-- 8. 蜈ｨ菴薙Μ繝�メ繝｡繝九Η繝ｼ邂｡逅� -->
                 <section class="manual-section" id="sec-global-richmenu">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #f1f5f9; color: #334155;">
                             <i class="fa-solid fa-sliders"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>8. 全体リッチメニュー管理</h2>
-                            <p>リッチメニュー管理エディタ (richmenu.html) の機能</p>
+                            <h2>8. 蜈ｨ菴薙Μ繝�メ繝｡繝九Η繝ｼ邂｡逅�</h2>
+                            <p>繝ｪ繝�メ繝｡繝九Η繝ｼ邂｡逅�お繝�ぅ繧ｿ (richmenu.html) 縺ｮ讖溯�</p>
                         </div>
                     </div>
 
-                    <p>ヘッダーの「<strong><i class="fa-solid fa-table-cells-large"></i> リッチメニュー管理</strong>」リンクから、教室全体の基本メニューを作成・編集・本番公開できます。</p>
+                    <p>繝倥ャ繝繝ｼ縺ｮ縲�<strong><i class="fa-solid fa-table-cells-large"></i> 繝ｪ繝�メ繝｡繝九Η繝ｼ邂｡逅�</strong>縲阪Μ繝ｳ繧ｯ縺九ｉ縲∵蕗螳､蜈ｨ菴薙�蝓ｺ譛ｬ繝｡繝九Η繝ｼ繧剃ｽ懈�繝ｻ邱ｨ髮��譛ｬ逡ｪ蜈ｬ髢九〒縺阪∪縺吶�</p>
 
                     <div class="step-flow">
                         <div class="step-card">
                             <div class="step-number">1</div>
                             <div class="step-body">
-                                <h4>本番公開メニューの切り替え</h4>
-                                <p>作成したメニューカードの「<strong>本番公開メニューに設定</strong>」を押すと、個別メニューが割り当てられていない全受講生のLINE画面が一括でそのメニューに切り替わります。</p>
+                                <h4>譛ｬ逡ｪ蜈ｬ髢九Γ繝九Η繝ｼ縺ｮ蛻�ｊ譖ｿ縺�</h4>
+                                <p>菴懈�縺励◆繝｡繝九Η繝ｼ繧ｫ繝ｼ繝峨�縲�<strong>譛ｬ逡ｪ蜈ｬ髢九Γ繝九Η繝ｼ縺ｫ險ｭ螳�</strong>縲阪ｒ謚ｼ縺吶→縲∝句挨繝｡繝九Η繝ｼ縺悟牡繧雁ｽ薙※繧峨ｌ縺ｦ縺�↑縺��蜿苓ｬ帷函縺ｮLINE逕ｻ髱｢縺御ｸ諡ｬ縺ｧ縺昴�繝｡繝九Η繝ｼ縺ｫ蛻�ｊ譖ｿ繧上ｊ縺ｾ縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">2</div>
                             <div class="step-body">
-                                <h4>ボタン領域（Areas）とお役立ち情報アクションの自由設定</h4>
-                                <p>メニュー画像上の各枠（ボタン）をタップした際の動作として、以下を自由に選択・配置できます：</p>
+                                <h4>繝懊ち繝ｳ鬆伜沺��reas�峨→縺雁ｽｹ遶九■諠��ｱ繧｢繧ｯ繧ｷ繝ｧ繝ｳ縺ｮ閾ｪ逕ｱ險ｭ螳�</h4>
+                                <p>繝｡繝九Η繝ｼ逕ｻ蜒丈ｸ翫�蜷�棧�医�繧ｿ繝ｳ�峨ｒ繧ｿ繝��縺励◆髫帙�蜍穂ｽ懊→縺励※縲∽ｻ･荳九ｒ閾ｪ逕ｱ縺ｫ驕ｸ謚槭�驟咲ｽｮ縺ｧ縺阪∪縺呻ｼ�</p>
                                 <ul>
-                                    <li><strong>💡 お役立ちガイド一覧</strong>: タップするとトーク画面下部に横スクロール式クイックリプライが表示され、全11テーマを自由に閲覧できます。</li>
-                                    <li><strong>📄 各種防犯・トラブル対策</strong>: 「偽PDFアプリ詐欺注意」「偽警告詐欺対策」「偽不在SMS対策」「スマホ文字拡大」など、特定のテーマカードを直接即時返信させるボタンもドロップダウンから1クリックで設定可能です。</li>
-                                    <li><strong>📅 レッスン予約・💻 受講生マイカルテ</strong>: プロライン個別自動ログイン対応URLやカルテ画面へスムーズに誘導できます。</li>
-                                    <li><strong>💬 教室スタッフに質問・相談</strong>: 受講生からのお問い合わせ受付カードを返信します。</li>
+                                    <li><strong>�庁 縺雁ｽｹ遶九■繧ｬ繧､繝我ｸ隕ｧ</strong>: 繧ｿ繝��縺吶ｋ縺ｨ繝医�繧ｯ逕ｻ髱｢荳矩Κ縺ｫ讓ｪ繧ｹ繧ｯ繝ｭ繝ｼ繝ｫ蠑上け繧､繝�け繝ｪ繝励Λ繧､縺瑚｡ｨ遉ｺ縺輔ｌ縲∝�11繝��繝槭ｒ閾ｪ逕ｱ縺ｫ髢ｲ隕ｧ縺ｧ縺阪∪縺吶�</li>
+                                    <li><strong>�塘 蜷�ｨｮ髦ｲ迥ｯ繝ｻ繝医Λ繝悶Ν蟇ｾ遲�</strong>: 縲悟⊃PDF繧｢繝励Μ隧先ｬｺ豕ｨ諢上阪悟⊃隴ｦ蜻願ｩ先ｬｺ蟇ｾ遲悶阪悟⊃荳榊惠SMS蟇ｾ遲悶阪後せ繝槭�譁�ｭ玲僑螟ｧ縲阪↑縺ｩ縲∫音螳壹�繝��繝槭き繝ｼ繝峨ｒ逶ｴ謗･蜊ｳ譎りｿ比ｿ｡縺輔○繧九�繧ｿ繝ｳ繧ゅラ繝ｭ繝��繝繧ｦ繝ｳ縺九ｉ1繧ｯ繝ｪ繝�け縺ｧ險ｭ螳壼庄閭ｽ縺ｧ縺吶�</li>
+                                    <li><strong>�套 繝ｬ繝�せ繝ｳ莠育ｴ���捗 蜿苓ｬ帷函繝槭う繧ｫ繝ｫ繝�</strong>: 繝励Ο繝ｩ繧､繝ｳ蛟句挨閾ｪ蜍輔Ο繧ｰ繧､繝ｳ蟇ｾ蠢弑RL繧�き繝ｫ繝�判髱｢縺ｸ繧ｹ繝�繝ｼ繧ｺ縺ｫ隱伜ｰ弱〒縺阪∪縺吶�</li>
+                                    <li><strong>�町 謨吝ｮ､繧ｹ繧ｿ繝�ヵ縺ｫ雉ｪ蝠上�逶ｸ隲�</strong>: 蜿苓ｬ帷函縺九ｉ縺ｮ縺雁撫縺�粋繧上○蜿嶺ｻ倥き繝ｼ繝峨ｒ霑比ｿ｡縺励∪縺吶�</li>
                                 </ul>
                                 <div class="tip-box" style="margin-top:8px; background:#eff6ff; border-left:4px solid #3b82f6; padding:8px 12px; border-radius: var(--radius-xs); font-size:12px;">
-                                    <strong>💡 操作のコツ（簡単プリセット選択）:</strong><br>
-                                    アクション種別で「⚡ ボット機能起動」を選択すると、「<strong>💡 シニアお役立ち情報・知恵袋から選ぶ</strong>」ドロップダウンまたはクイックチップが表示されます。読ませたいテーマを選ぶだけで、送信パラメータが自動セットされます（管理者への通知音を防止するサイレント送信仕様）。
+                                    <strong>�庁 謫堺ｽ懊�繧ｳ繝�ｼ育ｰ｡蜊倥�繝ｪ繧ｻ繝�ヨ驕ｸ謚橸ｼ�:</strong><br>
+                                    繧｢繧ｯ繧ｷ繝ｧ繝ｳ遞ｮ蛻･縺ｧ縲娯圍 繝懊ャ繝域ｩ溯�襍ｷ蜍輔阪ｒ驕ｸ謚槭☆繧九→縲√�<strong>�庁 繧ｷ繝九い縺雁ｽｹ遶九■諠��ｱ繝ｻ遏･諱ｵ陲九°繧蛾∈縺ｶ</strong>縲阪ラ繝ｭ繝��繝繧ｦ繝ｳ縺ｾ縺溘�繧ｯ繧､繝�け繝√ャ繝励′陦ｨ遉ｺ縺輔ｌ縺ｾ縺吶りｪｭ縺ｾ縺帙◆縺�ユ繝ｼ繝槭ｒ驕ｸ縺ｶ縺�縺代〒縲�∽ｿ｡繝代Λ繝｡繝ｼ繧ｿ縺瑚�蜍輔そ繝�ヨ縺輔ｌ縺ｾ縺呻ｼ育ｮ｡逅��∈縺ｮ騾夂衍髻ｳ繧帝亟豁｢縺吶ｋ繧ｵ繧､繝ｬ繝ｳ繝磯∽ｿ｡莉墓ｧ假ｼ峨�
                                 </div>
                             </div>
                         </div>
@@ -788,137 +788,137 @@
                         <div class="step-card">
                             <div class="step-number" style="background:#2563eb; color:#fff;"><i class="fa-solid fa-cloud-arrow-down"></i></div>
                             <div class="step-body">
-                                <h4>「プロラインからメニュー同期」機能</h4>
-                                <p>画面右上の「<strong><i class="fa-solid fa-cloud-arrow-down"></i> プロラインからメニュー同期</strong>」ボタンを押すと、LINE公式アカウント（プロライン）に現在公開されている最新メニューの「画像」と「ボタン設定（タップ領域・アクションURL）」をLINEサーバーから自動取得して本システムに取り込みます。<br>
-                                プロライン側でメニュー画像やボタン配置を更新した際、この同期ボタンを押すだけで最新デザインとボタン設定が本システムに即時反映されます。</p>
+                                <h4>縲後�繝ｭ繝ｩ繧､繝ｳ縺九ｉ繝｡繝九Η繝ｼ蜷梧悄縲肴ｩ溯�</h4>
+                                <p>逕ｻ髱｢蜿ｳ荳翫�縲�<strong><i class="fa-solid fa-cloud-arrow-down"></i> 繝励Ο繝ｩ繧､繝ｳ縺九ｉ繝｡繝九Η繝ｼ蜷梧悄</strong>縲阪�繧ｿ繝ｳ繧呈款縺吶→縲´INE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝茨ｼ医�繝ｭ繝ｩ繧､繝ｳ�峨↓迴ｾ蝨ｨ蜈ｬ髢九＆繧後※縺�ｋ譛譁ｰ繝｡繝九Η繝ｼ縺ｮ縲檎判蜒上阪→縲後�繧ｿ繝ｳ險ｭ螳夲ｼ医ち繝��鬆伜沺繝ｻ繧｢繧ｯ繧ｷ繝ｧ繝ｳURL�峨阪ｒLINE繧ｵ繝ｼ繝舌�縺九ｉ閾ｪ蜍募叙蠕励＠縺ｦ譛ｬ繧ｷ繧ｹ繝�Β縺ｫ蜿悶ｊ霎ｼ縺ｿ縺ｾ縺吶�<br>
+                                繝励Ο繝ｩ繧､繝ｳ蛛ｴ縺ｧ繝｡繝九Η繝ｼ逕ｻ蜒上ｄ繝懊ち繝ｳ驟咲ｽｮ繧呈峩譁ｰ縺励◆髫帙√％縺ｮ蜷梧悄繝懊ち繝ｳ繧呈款縺吶□縺代〒譛譁ｰ繝�じ繧､繝ｳ縺ｨ繝懊ち繝ｳ險ｭ螳壹′譛ｬ繧ｷ繧ｹ繝�Β縺ｫ蜊ｳ譎ょ渚譏�縺輔ｌ縺ｾ縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">3</div>
                             <div class="step-body">
-                                <h4>登録・履歴一覧とスマートページネーション</h4>
-                                <p>「<strong>登録・履歴一覧</strong>」タブでは、作成・保存した過去のリッチメニューを一覧管理できます。<br>
-                                メニュー数が増加した場合でも快適にブラウジングできるよう、<strong>スマートページネーション機能（6件 / 9件 / 18件 / 全件表示切り替え）</strong>を搭載しています。「すべて」「通常メニュー」「お知らせ専用メニュー」のフィルタータブとも連動し、ページめくりも高速・軽快に動作します。</p>
+                                <h4>逋ｻ骭ｲ繝ｻ螻･豁ｴ荳隕ｧ縺ｨ繧ｹ繝槭�繝医�繝ｼ繧ｸ繝阪�繧ｷ繝ｧ繝ｳ</h4>
+                                <p>縲�<strong>逋ｻ骭ｲ繝ｻ螻･豁ｴ荳隕ｧ</strong>縲阪ち繝悶〒縺ｯ縲∽ｽ懈�繝ｻ菫晏ｭ倥＠縺滄℃蜴ｻ縺ｮ繝ｪ繝�メ繝｡繝九Η繝ｼ繧剃ｸ隕ｧ邂｡逅�〒縺阪∪縺吶�<br>
+                                繝｡繝九Η繝ｼ謨ｰ縺悟｢怜刈縺励◆蝣ｴ蜷医〒繧ょｿｫ驕ｩ縺ｫ繝悶Λ繧ｦ繧ｸ繝ｳ繧ｰ縺ｧ縺阪ｋ繧医≧縲�<strong>繧ｹ繝槭�繝医�繝ｼ繧ｸ繝阪�繧ｷ繝ｧ繝ｳ讖溯���6莉ｶ / 9莉ｶ / 18莉ｶ / 蜈ｨ莉ｶ陦ｨ遉ｺ蛻�ｊ譖ｿ縺茨ｼ�</strong>繧呈政霈峨＠縺ｦ縺�∪縺吶ゅ後☆縺ｹ縺ｦ縲阪碁壼ｸｸ繝｡繝九Η繝ｼ縲阪後♀遏･繧峨○蟆ら畑繝｡繝九Η繝ｼ縲阪�繝輔ぅ繝ｫ繧ｿ繝ｼ繧ｿ繝悶→繧る｣蜍輔＠縲√�繝ｼ繧ｸ繧√￥繧翫ｂ鬮倬溘�霆ｽ蠢ｫ縺ｫ蜍穂ｽ懊＠縺ｾ縺吶�</p>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- 9. 管理者向けLINE通知設定 -->
+                <!-- 9. 邂｡逅��髄縺銑INE騾夂衍險ｭ螳� -->
                 <section class="manual-section" id="sec-admin-notify">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #e0f2fe; color: #0284c7;">
                             <i class="fa-solid fa-bell"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>9. 管理者向けLINE通知機能（講師・スタッフへのプッシュ通知）</h2>
-                            <p>受講生からの予約やお困りごと相談をスタッフの個人LINEへ即時配信</p>
+                            <h2>9. 邂｡逅��髄縺銑INE騾夂衍讖溯��郁ｬ帛ｸｫ繝ｻ繧ｹ繧ｿ繝�ヵ縺ｸ縺ｮ繝励ャ繧ｷ繝･騾夂衍��</h2>
+                            <p>蜿苓ｬ帷函縺九ｉ縺ｮ莠育ｴ�ｄ縺雁峅繧翫＃縺ｨ逶ｸ隲�ｒ繧ｹ繧ｿ繝�ヵ縺ｮ蛟倶ｺｺLINE縺ｸ蜊ｳ譎る�菫｡</p>
                         </div>
                     </div>
 
-                    <p>受講生からのレッスン予約やお困りごと相談、新規連携、朝の定期リマインド結果などを、<strong>講師・スタッフの個人LINEアカウント宛てにプッシュ通知</strong>する機能です。教室外にいても受講生の連絡を即座にキャッチできます。</p>
+                    <p>蜿苓ｬ帷函縺九ｉ縺ｮ繝ｬ繝�せ繝ｳ莠育ｴ�ｄ縺雁峅繧翫＃縺ｨ逶ｸ隲�∵眠隕城｣謳ｺ縲∵悃縺ｮ螳壽悄繝ｪ繝槭う繝ｳ繝臥ｵ先棡縺ｪ縺ｩ繧偵�<strong>隰帛ｸｫ繝ｻ繧ｹ繧ｿ繝�ヵ縺ｮ蛟倶ｺｺLINE繧｢繧ｫ繧ｦ繝ｳ繝亥ｮ帙※縺ｫ繝励ャ繧ｷ繝･騾夂衍</strong>縺吶ｋ讖溯�縺ｧ縺吶よ蕗螳､螟悶↓縺�※繧ょ女隰帷函縺ｮ騾｣邨｡繧貞叉蠎ｧ縺ｫ繧ｭ繝｣繝�メ縺ｧ縺阪∪縺吶�</p>
 
                     <div class="step-flow">
                         <div class="step-card">
                             <div class="step-number">1</div>
                             <div class="step-body">
-                                <h4>通知を受信する管理者のLINE User ID（UID）を登録</h4>
-                                <p>管理画面右上の「<strong><i class="fa-solid fa-bell"></i> 管理者LINE通知</strong>」ボタンをクリックし、通知を受け取りたいスタッフのLINE User ID（<code>U</code>から始まる33桁の英数字）を登録します（改行で複数名登録可能）。受講生一覧テーブルのUID横にある「通知先に登録」アイコンからもワンタップで追加できます。</p>
+                                <h4>騾夂衍繧貞女菫｡縺吶ｋ邂｡逅���LINE User ID��ID�峨ｒ逋ｻ骭ｲ</h4>
+                                <p>邂｡逅�判髱｢蜿ｳ荳翫�縲�<strong><i class="fa-solid fa-bell"></i> 邂｡逅��INE騾夂衍</strong>縲阪�繧ｿ繝ｳ繧偵け繝ｪ繝�け縺励�夂衍繧貞女縺大叙繧翫◆縺�せ繧ｿ繝�ヵ縺ｮLINE User ID��<code>U</code>縺九ｉ蟋九∪繧�33譯√�闍ｱ謨ｰ蟄暦ｼ峨ｒ逋ｻ骭ｲ縺励∪縺呻ｼ域隼陦後〒隍�焚蜷咲匳骭ｲ蜿ｯ閭ｽ�峨ょ女隰帷函荳隕ｧ繝��繝悶Ν縺ｮUID讓ｪ縺ｫ縺ゅｋ縲碁夂衍蜈医↓逋ｻ骭ｲ縲阪い繧､繧ｳ繝ｳ縺九ｉ繧ゅΡ繝ｳ繧ｿ繝��縺ｧ霑ｽ蜉�縺ｧ縺阪∪縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">2</div>
                             <div class="step-body">
-                                <h4>テスト送信と設定保存</h4>
-                                <p>「テスト送信」ボタンでスタッフのLINEに通知が届くことを確認し、「設定を保存する」をクリックします。</p>
+                                <h4>繝�せ繝磯∽ｿ｡縺ｨ險ｭ螳壻ｿ晏ｭ�</h4>
+                                <p>縲後ユ繧ｹ繝磯∽ｿ｡縲阪�繧ｿ繝ｳ縺ｧ繧ｹ繧ｿ繝�ヵ縺ｮLINE縺ｫ騾夂衍縺悟ｱ翫￥縺薙→繧堤｢ｺ隱阪＠縲√瑚ｨｭ螳壹ｒ菫晏ｭ倥☆繧九阪ｒ繧ｯ繝ｪ繝�け縺励∪縺吶�</p>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- 10. シニア向けお役立ち情報 配信スタジオ -->
+                <!-- 10. 繧ｷ繝九い蜷代￠縺雁ｽｹ遶九■諠��ｱ 驟堺ｿ｡繧ｹ繧ｿ繧ｸ繧ｪ -->
                 <section class="manual-section" id="sec-knowledge-broadcast">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #fffbeb; color: #d97706;">
                             <i class="fa-solid fa-lightbulb"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>10. シニア向けお役立ち情報 配信スタジオ（リッチメッセージ配信）</h2>
-                            <p>シニアに優しい大文字カード（LINE Flex Message）でスマホ・パソコンの豆知識や偽警告対策を配信</p>
+                            <h2>10. 繧ｷ繝九い蜷代￠縺雁ｽｹ遶九■諠��ｱ 驟堺ｿ｡繧ｹ繧ｿ繧ｸ繧ｪ�医Μ繝�メ繝｡繝�そ繝ｼ繧ｸ驟堺ｿ｡��</h2>
+                            <p>繧ｷ繝九い縺ｫ蜆ｪ縺励＞螟ｧ譁�ｭ励き繝ｼ繝会ｼ�INE Flex Message�峨〒繧ｹ繝槭�繝ｻ繝代た繧ｳ繝ｳ縺ｮ雎�衍隴倥ｄ蛛ｽ隴ｦ蜻雁ｯｾ遲悶ｒ驟堺ｿ｡</p>
                         </div>
                     </div>
 
-                    <p>文字が小さく見落とされがちな通常のテキスト配信や画像配信とは異なり、<strong>シニア受講生の視認性に配慮した特大フォント・明瞭な枠線・「お役立ち情報をお送りします！」の見出し・3点要約ボックス</strong>で構成された高品質なリッチカードメッセージ（LINE Flex Message）を配信できる機能です。<br>
-                    受講生からの信頼向上はもちろん、メッセージ末尾に「<strong>次回のレッスンを予約する</strong>」ボタンや「<strong>LINEで先生に相談する</strong>」ボタンが標準装備されているため、自然なレッスン予約・相談への誘導が可能です。</p>
+                    <p>譁�ｭ励′蟆上＆縺剰ｦ玖誠縺ｨ縺輔ｌ縺後■縺ｪ騾壼ｸｸ縺ｮ繝�く繧ｹ繝磯�菫｡繧�判蜒城�菫｡縺ｨ縺ｯ逡ｰ縺ｪ繧翫�<strong>繧ｷ繝九い蜿苓ｬ帷函縺ｮ隕冶ｪ肴ｧ縺ｫ驟肴�縺励◆迚ｹ螟ｧ繝輔か繝ｳ繝医�譏守椚縺ｪ譫�邱壹�縲後♀蠖ｹ遶九■諠��ｱ繧偵♀騾√ｊ縺励∪縺呻ｼ√阪�隕句�縺励�3轤ｹ隕∫ｴ��繝�け繧ｹ</strong>縺ｧ讒区�縺輔ｌ縺滄ｫ伜刀雉ｪ縺ｪ繝ｪ繝�メ繧ｫ繝ｼ繝峨Γ繝�そ繝ｼ繧ｸ��INE Flex Message�峨ｒ驟堺ｿ｡縺ｧ縺阪ｋ讖溯�縺ｧ縺吶�<br>
+                    蜿苓ｬ帷函縺九ｉ縺ｮ菫｡鬆ｼ蜷台ｸ翫�繧ゅ■繧阪ｓ縲√Γ繝�そ繝ｼ繧ｸ譛ｫ蟆ｾ縺ｫ縲�<strong>谺｡蝗槭�繝ｬ繝�せ繝ｳ繧剃ｺ育ｴ�☆繧�</strong>縲阪�繧ｿ繝ｳ繧��<strong>LINE縺ｧ蜈育函縺ｫ逶ｸ隲�☆繧�</strong>縲阪�繧ｿ繝ｳ縺梧ｨ呎ｺ冶｣�ｙ縺輔ｌ縺ｦ縺�ｋ縺溘ａ縲∬�辟ｶ縺ｪ繝ｬ繝�せ繝ｳ莠育ｴ��逶ｸ隲�∈縺ｮ隱伜ｰ弱′蜿ｯ閭ｽ縺ｧ縺吶�</p>
 
                     <div class="step-flow">
                         <div class="step-card">
                             <div class="step-number">1</div>
                             <div class="step-body">
-                                <h4>配信スタジオの開き方</h4>
-                                <p><strong>・友だち全員へ一斉配信する場合</strong>：管理画面上部ヘッダーの「<strong><i class="fa-solid fa-bullhorn"></i> お役立ち情報配信</strong>」ボタンをクリックします。<br>
-                                <strong>・特定の受講生へ個別送信する場合</strong>：受講生一覧テーブルの操作列にある「<strong><i class="fa-solid fa-paper-plane"></i> お役立ち配信</strong>」ボタンをクリックすると、その受講生が指定された状態でモーダルが開きます。</p>
+                                <h4>驟堺ｿ｡繧ｹ繧ｿ繧ｸ繧ｪ縺ｮ髢九″譁ｹ</h4>
+                                <p><strong>繝ｻ蜿九□縺｡蜈ｨ蜩｡縺ｸ荳譁蛾�菫｡縺吶ｋ蝣ｴ蜷�</strong>�夂ｮ｡逅�判髱｢荳企Κ繝倥ャ繝繝ｼ縺ｮ縲�<strong><i class="fa-solid fa-bullhorn"></i> 縺雁ｽｹ遶九■諠��ｱ驟堺ｿ｡</strong>縲阪�繧ｿ繝ｳ繧偵け繝ｪ繝�け縺励∪縺吶�<br>
+                                <strong>繝ｻ迚ｹ螳壹�蜿苓ｬ帷函縺ｸ蛟句挨騾∽ｿ｡縺吶ｋ蝣ｴ蜷�</strong>�壼女隰帷函荳隕ｧ繝��繝悶Ν縺ｮ謫堺ｽ懷�縺ｫ縺ゅｋ縲�<strong><i class="fa-solid fa-paper-plane"></i> 縺雁ｽｹ遶九■驟堺ｿ｡</strong>縲阪�繧ｿ繝ｳ繧偵け繝ｪ繝�け縺吶ｋ縺ｨ縲√◎縺ｮ蜿苓ｬ帷函縺梧欠螳壹＆繧後◆迥ｶ諷九〒繝｢繝ｼ繝繝ｫ縺碁幕縺阪∪縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">2</div>
                             <div class="step-body">
-                                <h4>厳選20種プリセットからワンクリック選択（全20テーマ完備）</h4>
-                                <p>シニア受講生が日常生活で直面しやすく、教室で最も相談が多いテーマを厳選した<strong>全20テーマの専用テンプレート</strong>を標準装備しています：</p>
+                                <h4>蜴ｳ驕ｸ20遞ｮ繝励Μ繧ｻ繝�ヨ縺九ｉ繝ｯ繝ｳ繧ｯ繝ｪ繝�け驕ｸ謚橸ｼ亥�20繝��繝槫ｮ悟ｙ��</h4>
+                                <p>繧ｷ繝九い蜿苓ｬ帷函縺梧律蟶ｸ逕滓ｴｻ縺ｧ逶ｴ髱｢縺励ｄ縺吶￥縲∵蕗螳､縺ｧ譛繧ら嶌隲�′螟壹＞繝��繝槭ｒ蜴ｳ驕ｸ縺励◆<strong>蜈ｨ20繝��繝槭�蟆ら畑繝�Φ繝励Ξ繝ｼ繝�</strong>繧呈ｨ呎ｺ冶｣�ｙ縺励※縺�∪縺呻ｼ�</p>
                                 
                                 <div style="margin-top: 8px; margin-bottom: 8px; padding: 10px; background: #fff1f2; border: 1px solid #fecdd3; border-radius: var(--radius-md);">
-                                    <strong style="color: #9f1239; font-size: 13px;"><i class="fa-solid fa-shield-halved"></i> 🚨【防犯・トラブル・緊急対策編】（全10選）</strong><br>
-                                    <span class="badge" style="background:#e11d48;color:#fff;margin:2px;">🚨 パソコン偽警告詐欺対策</span>
-                                    <span class="badge" style="background:#ea580c;color:#fff;margin:2px;">⚠️ 偽不在SMS・フィッシング</span>
-                                    <span class="badge" style="background:#e11d48;color:#fff;margin:2px;">📄 偽PDFアプリ詐欺の悪影響</span>
-                                    <span class="badge" style="background:#dc2626;color:#fff;margin:2px;">📞 偽サポート電話・遠隔操作の罠</span>
-                                    <span class="badge" style="background:#e11d48;color:#fff;margin:2px;">👤 友人からのLINE乗っ取り詐欺</span>
-                                    <span class="badge" style="background:#ea580c;color:#fff;margin:2px;">📶 街や病院の無料Wi-Fi注意点</span>
-                                    <span class="badge" style="background:#d97706;color:#fff;margin:2px;">🔢 数字が打てないNumLockの謎</span>
-                                    <span class="badge" style="background:#0284c7;color:#fff;margin:2px;">💻 画面フリーズ時の安全強制終了</span>
-                                    <span class="badge" style="background:#059669;color:#fff;margin:2px;">🧹 PCホコリ掃除と異音対策</span>
-                                    <span class="badge" style="background:#7c3aed;color:#fff;margin:2px;">💬 LINE誤送信・24時間送信取消</span>
+                                    <strong style="color: #9f1239; font-size: 13px;"><i class="fa-solid fa-shield-halved"></i> �圷縲宣亟迥ｯ繝ｻ繝医Λ繝悶Ν繝ｻ邱頑･蟇ｾ遲也ｷｨ縲托ｼ亥�10驕ｸ��</strong><br>
+                                    <span class="badge" style="background:#e11d48;color:#fff;margin:2px;">�圷 繝代た繧ｳ繝ｳ蛛ｽ隴ｦ蜻願ｩ先ｬｺ蟇ｾ遲�</span>
+                                    <span class="badge" style="background:#ea580c;color:#fff;margin:2px;">笞��� 蛛ｽ荳榊惠SMS繝ｻ繝輔ぅ繝�す繝ｳ繧ｰ</span>
+                                    <span class="badge" style="background:#e11d48;color:#fff;margin:2px;">�塘 蛛ｽPDF繧｢繝励Μ隧先ｬｺ縺ｮ謔ｪ蠖ｱ髻ｿ</span>
+                                    <span class="badge" style="background:#dc2626;color:#fff;margin:2px;">�到 蛛ｽ繧ｵ繝昴�繝磯崕隧ｱ繝ｻ驕�髫疲桃菴懊�鄂�</span>
+                                    <span class="badge" style="background:#e11d48;color:#fff;margin:2px;">�側 蜿倶ｺｺ縺九ｉ縺ｮLINE荵励▲蜿悶ｊ隧先ｬｺ</span>
+                                    <span class="badge" style="background:#ea580c;color:#fff;margin:2px;">�童 陦励ｄ逞�劼縺ｮ辟｡譁儻i-Fi豕ｨ諢冗せ</span>
+                                    <span class="badge" style="background:#d97706;color:#fff;margin:2px;">�箸 謨ｰ蟄励′謇薙※縺ｪ縺НumLock縺ｮ隰�</span>
+                                    <span class="badge" style="background:#0284c7;color:#fff;margin:2px;">�捗 逕ｻ髱｢繝輔Μ繝ｼ繧ｺ譎ゅ�螳牙�蠑ｷ蛻ｶ邨ゆｺ�</span>
+                                    <span class="badge" style="background:#059669;color:#fff;margin:2px;">�ｧｹ PC繝帙さ繝ｪ謗�勁縺ｨ逡ｰ髻ｳ蟇ｾ遲�</span>
+                                    <span class="badge" style="background:#7c3aed;color:#fff;margin:2px;">�町 LINE隱､騾∽ｿ｡繝ｻ24譎る俣騾∽ｿ｡蜿匁ｶ�</span>
                                 </div>
 
                                 <div style="margin-top: 8px; margin-bottom: 8px; padding: 10px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: var(--radius-md);">
-                                    <strong style="color: #0369a1; font-size: 13px;"><i class="fa-solid fa-mobile-screen-button"></i> 📱💻【スマホ・PC快適便利ワザ編】（全10選）</strong><br>
-                                    <span class="badge" style="background:#0284c7;color:#fff;margin:2px;">📱 スマホ文字を大きくする設定</span>
-                                    <span class="badge" style="background:#7c3aed;color:#fff;margin:2px;">💬 LINE文字サイズの特大化</span>
-                                    <span class="badge" style="background:#0284c7;color:#fff;margin:2px;">🗣️ 話すだけ！らくらく音声入力術</span>
-                                    <span class="badge" style="background:#059669;color:#fff;margin:2px;">🔍 画面拡大Ctrl+マウス車輪の神ワザ</span>
-                                    <span class="badge" style="background:#0284c7;color:#fff;margin:2px;">🔋 バッテリー長持ち3つの習慣</span>
-                                    <span class="badge" style="background:#0284c7;color:#fff;margin:2px;">📸 たまった写真の簡単整理術</span>
-                                    <span class="badge" style="background:#059669;color:#fff;margin:2px;">⚡ PC不調時の魔法「再起動」</span>
-                                    <span class="badge" style="background:#059669;color:#fff;margin:2px;">⌨️ 3大魔法のショートカットキー</span>
-                                    <span class="badge" style="background:#059669;color:#fff;margin:2px;">🔤 勝手に大文字？Caps Lock解除</span>
-                                    <span class="badge" style="background:#d97706;color:#fff;margin:2px;">🏥 スマホ防災速報・ハザードマップ</span>
+                                    <strong style="color: #0369a1; font-size: 13px;"><i class="fa-solid fa-mobile-screen-button"></i> �導�捗縲舌せ繝槭�繝ｻPC蠢ｫ驕ｩ萓ｿ蛻ｩ繝ｯ繧ｶ邱ｨ縲托ｼ亥�10驕ｸ��</strong><br>
+                                    <span class="badge" style="background:#0284c7;color:#fff;margin:2px;">�導 繧ｹ繝槭�譁�ｭ励ｒ螟ｧ縺阪￥縺吶ｋ險ｭ螳�</span>
+                                    <span class="badge" style="background:#7c3aed;color:#fff;margin:2px;">�町 LINE譁�ｭ励し繧､繧ｺ縺ｮ迚ｹ螟ｧ蛹�</span>
+                                    <span class="badge" style="background:#0284c7;color:#fff;margin:2px;">�離�� 隧ｱ縺吶□縺托ｼ√ｉ縺上ｉ縺城浹螢ｰ蜈･蜉幄｡�</span>
+                                    <span class="badge" style="background:#059669;color:#fff;margin:2px;">�剥 逕ｻ髱｢諡｡螟ｧCtrl+繝槭え繧ｹ霆願ｼｪ縺ｮ逾槭Ρ繧ｶ</span>
+                                    <span class="badge" style="background:#0284c7;color:#fff;margin:2px;">�萩 繝舌ャ繝�Μ繝ｼ髟ｷ謖√■3縺､縺ｮ鄙呈�</span>
+                                    <span class="badge" style="background:#0284c7;color:#fff;margin:2px;">�萄 縺溘∪縺｣縺溷�逵溘�邁｡蜊俶紛逅�｡�</span>
+                                    <span class="badge" style="background:#059669;color:#fff;margin:2px;">笞｡ PC荳崎ｪｿ譎ゅ�鬲疲ｳ輔悟�襍ｷ蜍輔�</span>
+                                    <span class="badge" style="background:#059669;color:#fff;margin:2px;">竚ｨ�� 3螟ｧ鬲疲ｳ輔�繧ｷ繝ｧ繝ｼ繝医き繝�ヨ繧ｭ繝ｼ</span>
+                                    <span class="badge" style="background:#059669;color:#fff;margin:2px;">�筈 蜍晄焔縺ｫ螟ｧ譁�ｭ暦ｼ櫃aps Lock隗｣髯､</span>
+                                    <span class="badge" style="background:#d97706;color:#fff;margin:2px;">�唱 繧ｹ繝槭�髦ｲ轣ｽ騾溷�ｱ繝ｻ繝上じ繝ｼ繝峨�繝��</span>
                                 </div>
 
-                                <p>配信スタジオ内のチップをクリックするだけで、タイトル・カテゴリ・重要ポイント3点・先生のアドバイス欄に自動入力されます。</p>
+                                <p>驟堺ｿ｡繧ｹ繧ｿ繧ｸ繧ｪ蜀��繝√ャ繝励ｒ繧ｯ繝ｪ繝�け縺吶ｋ縺�縺代〒縲√ち繧､繝医Ν繝ｻ繧ｫ繝�ざ繝ｪ繝ｻ驥崎ｦ√�繧､繝ｳ繝�3轤ｹ繝ｻ蜈育函縺ｮ繧｢繝峨ヰ繧､繧ｹ谺�↓閾ｪ蜍募�蜉帙＆繧後∪縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">3</div>
                             <div class="step-body">
-                                <h4>リアルタイム・スマホ画面プレビュー & 親しみやすい見出し</h4>
-                                <p>Flex Messageカードの最上部には、<strong>「📢 お役立ち情報をお送りします！」</strong>という見出しが自動付与され、受講生がメッセージを開いた瞬間に教室からのお役立ち配信であることが一目で伝わります。<br>
-                                また、スマホのプッシュ通知やLINEトーク一覧でも<strong>「お役立ち情報をお送りします！【タイトル】」</strong>と表示されるため開封率が向上します。モーダル右側のスマホプレビュー画面で実際の見え方を1文字単位でリアルタイム確認できます。</p>
+                                <h4>繝ｪ繧｢繝ｫ繧ｿ繧､繝�繝ｻ繧ｹ繝槭�逕ｻ髱｢繝励Ξ繝薙Η繝ｼ & 隕ｪ縺励∩繧�☆縺�ｦ句�縺�</h4>
+                                <p>Flex Message繧ｫ繝ｼ繝峨�譛荳企Κ縺ｫ縺ｯ縲�<strong>縲交沒｢ 縺雁ｽｹ遶九■諠��ｱ繧偵♀騾√ｊ縺励∪縺呻ｼ√�</strong>縺ｨ縺�≧隕句�縺励′閾ｪ蜍穂ｻ倅ｸ弱＆繧後∝女隰帷函縺後Γ繝�そ繝ｼ繧ｸ繧帝幕縺�◆迸ｬ髢薙↓謨吝ｮ､縺九ｉ縺ｮ縺雁ｽｹ遶九■驟堺ｿ｡縺ｧ縺ゅｋ縺薙→縺御ｸ逶ｮ縺ｧ莨昴ｏ繧翫∪縺吶�<br>
+                                縺ｾ縺溘√せ繝槭�縺ｮ繝励ャ繧ｷ繝･騾夂衍繧ЛINE繝医�繧ｯ荳隕ｧ縺ｧ繧�<strong>縲後♀蠖ｹ遶九■諠��ｱ繧偵♀騾√ｊ縺励∪縺呻ｼ√舌ち繧､繝医Ν縲代�</strong>縺ｨ陦ｨ遉ｺ縺輔ｌ繧九◆繧�幕蟆∫紫縺悟髄荳翫＠縺ｾ縺吶ゅΔ繝ｼ繝繝ｫ蜿ｳ蛛ｴ縺ｮ繧ｹ繝槭�繝励Ξ繝薙Η繝ｼ逕ｻ髱｢縺ｧ螳滄圀縺ｮ隕九∴譁ｹ繧�1譁�ｭ怜腰菴阪〒繝ｪ繧｢繝ｫ繧ｿ繧､繝�遒ｺ隱阪〒縺阪∪縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">4</div>
                             <div class="step-body">
-                                <h4>レッスン予約 & その他のお役立ち情報ボタンの連携</h4>
-                                <p>メッセージ末尾には、受講生が迷わず次のアクションを起こせる3つのボタンが自動配置されます：</p>
+                                <h4>繝ｬ繝�せ繝ｳ莠育ｴ� & 縺昴�莉悶�縺雁ｽｹ遶九■諠��ｱ繝懊ち繝ｳ縺ｮ騾｣謳ｺ</h4>
+                                <p>繝｡繝�そ繝ｼ繧ｸ譛ｫ蟆ｾ縺ｫ縺ｯ縲∝女隰帷函縺瑚ｿｷ繧上★谺｡縺ｮ繧｢繧ｯ繧ｷ繝ｧ繝ｳ繧定ｵｷ縺薙○繧�3縺､縺ｮ繝懊ち繝ｳ縺瑚�蜍暮�鄂ｮ縺輔ｌ縺ｾ縺呻ｼ�</p>
                                 <ul>
-                                    <li><strong>📅 教室で相談・予約（メインボタン）</strong>: 教室の受講生個別自動ログイン対応レッスン予約URL（<code>https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1</code>）が最初からセットされています。</li>
-                                    <li><strong>📚 その他のお役立ち情報</strong>: 読み終わった受講生がタップすると、全20テーマの2連カルーセルメニューとクイックリプライが届き、別の記事へスムーズに移動できます（サイレント送信）。</li>
-                                    <li><strong>💬 LINEで質問・相談する</strong>: 受講生が気になった点を教室へ気軽に問い合わせるための窓口カードを返信します。</li>
+                                    <li><strong>�套 謨吝ｮ､縺ｧ逶ｸ隲��莠育ｴ�ｼ医Γ繧､繝ｳ繝懊ち繝ｳ��</strong>: 謨吝ｮ､縺ｮ蜿苓ｬ帷函蛟句挨閾ｪ蜍輔Ο繧ｰ繧､繝ｳ蟇ｾ蠢懊Ξ繝�せ繝ｳ莠育ｴФRL��<code>https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1</code>�峨′譛蛻昴°繧峨そ繝�ヨ縺輔ｌ縺ｦ縺�∪縺吶�</li>
+                                    <li><strong>�答 縺昴�莉悶�縺雁ｽｹ遶九■諠��ｱ</strong>: 隱ｭ縺ｿ邨ゅｏ縺｣縺溷女隰帷函縺後ち繝��縺吶ｋ縺ｨ縲∝�20繝��繝槭�2騾｣繧ｫ繝ｫ繝ｼ繧ｻ繝ｫ繝｡繝九Η繝ｼ縺ｨ繧ｯ繧､繝�け繝ｪ繝励Λ繧､縺悟ｱ翫″縲∝挨縺ｮ險倅ｺ九∈繧ｹ繝�繝ｼ繧ｺ縺ｫ遘ｻ蜍輔〒縺阪∪縺呻ｼ医し繧､繝ｬ繝ｳ繝磯∽ｿ｡�峨�</li>
+                                    <li><strong>�町 LINE縺ｧ雉ｪ蝠上�逶ｸ隲�☆繧�</strong>: 蜿苓ｬ帷函縺梧ｰ励↓縺ｪ縺｣縺溽せ繧呈蕗螳､縺ｸ豌苓ｻｽ縺ｫ蝠上＞蜷医ｏ縺帙ｋ縺溘ａ縺ｮ遯灘哨繧ｫ繝ｼ繝峨ｒ霑比ｿ｡縺励∪縺吶�</li>
                                 </ul>
                             </div>
                         </div>
@@ -926,226 +926,226 @@
                         <div class="step-card">
                             <div class="step-number">5</div>
                             <div class="step-body">
-                                <h4>安全な確認ダイアログを経て配信</h4>
-                                <p>「配信する」ボタンを押すと、一斉配信の場合は送信対象人数（友だち全員）の確認ダイアログが表示されます。「OK」を押すとLINE公式アカウント経由で瞬時にカードメッセージが届けられます。</p>
+                                <h4>螳牙�縺ｪ遒ｺ隱阪ム繧､繧｢繝ｭ繧ｰ繧堤ｵ後※驟堺ｿ｡</h4>
+                                <p>縲碁�菫｡縺吶ｋ縲阪�繧ｿ繝ｳ繧呈款縺吶→縲∽ｸ譁蛾�菫｡縺ｮ蝣ｴ蜷医�騾∽ｿ｡蟇ｾ雎｡莠ｺ謨ｰ�亥暑縺�縺｡蜈ｨ蜩｡�峨�遒ｺ隱阪ム繧､繧｢繝ｭ繧ｰ縺瑚｡ｨ遉ｺ縺輔ｌ縺ｾ縺吶ゅ薫K縲阪ｒ謚ｼ縺吶→LINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝育ｵ檎罰縺ｧ迸ｬ譎ゅ↓繧ｫ繝ｼ繝峨Γ繝�そ繝ｼ繧ｸ縺悟ｱ翫￠繧峨ｌ縺ｾ縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">6</div>
                             <div class="step-body">
-                                <h4>受講生画面での「2連カルーセル」と「常時クイックリプライ」（新仕様）</h4>
-                                <p>受講生側のLINEトーク画面では、以下のように視覚的・操作的に最高に探しやすい設計となっています：<br>
-                                <strong>1. 全20テーマの2連カルーセル一覧</strong>：リッチメニューやお役立ちカードの「その他のお役立ち情報」を押すと、<strong>🚨防犯・トラブル対策編（10選）</strong>と<strong>📱💻スマホ・PC快適便利ワザ編（10選）</strong>の2通の横スクロールカルーセルが届き、見出し・要点2点・「詳しく読む」ボタンを見比べながらスムーズに探せます。<br>
-                                <strong>2. 常時表示される丸角クイックリプライ</strong>：画面最下部に人気の11テーマ＋「💬教室に質問・相談」＋「📚全20テーマ一覧」が常時表示され、受講生がタップするだけで次々と知識を深められます（管理者への通知音を鳴らさないサイレント送信仕様）。<br>
-                                <strong>3. 自動応答キーワード</strong>：受講生がトーク画面で「お役立ち」「豆知識」「PDF」「パソコン」「スマホ」などと入力した場合も、自動的にお役立ち案内が返信されます。</p>
+                                <h4>蜿苓ｬ帷函逕ｻ髱｢縺ｧ縺ｮ縲�2騾｣繧ｫ繝ｫ繝ｼ繧ｻ繝ｫ縲阪→縲悟ｸｸ譎ゅけ繧､繝�け繝ｪ繝励Λ繧､縲搾ｼ域眠莉墓ｧ假ｼ�</h4>
+                                <p>蜿苓ｬ帷函蛛ｴ縺ｮLINE繝医�繧ｯ逕ｻ髱｢縺ｧ縺ｯ縲∽ｻ･荳九�繧医≧縺ｫ隕冶ｦ夂噪繝ｻ謫堺ｽ懃噪縺ｫ譛鬮倥↓謗｢縺励ｄ縺吶＞險ｭ險医→縺ｪ縺｣縺ｦ縺�∪縺呻ｼ�<br>
+                                <strong>1. 蜈ｨ20繝��繝槭�2騾｣繧ｫ繝ｫ繝ｼ繧ｻ繝ｫ荳隕ｧ</strong>�壹Μ繝�メ繝｡繝九Η繝ｼ繧�♀蠖ｹ遶九■繧ｫ繝ｼ繝峨�縲後◎縺ｮ莉悶�縺雁ｽｹ遶九■諠��ｱ縲阪ｒ謚ｼ縺吶→縲�<strong>�圷髦ｲ迥ｯ繝ｻ繝医Λ繝悶Ν蟇ｾ遲也ｷｨ��10驕ｸ��</strong>縺ｨ<strong>�導�捗繧ｹ繝槭�繝ｻPC蠢ｫ驕ｩ萓ｿ蛻ｩ繝ｯ繧ｶ邱ｨ��10驕ｸ��</strong>縺ｮ2騾壹�讓ｪ繧ｹ繧ｯ繝ｭ繝ｼ繝ｫ繧ｫ繝ｫ繝ｼ繧ｻ繝ｫ縺悟ｱ翫″縲∬ｦ句�縺励�隕∫せ2轤ｹ繝ｻ縲瑚ｩｳ縺励￥隱ｭ繧縲阪�繧ｿ繝ｳ繧定ｦ区ｯ斐∋縺ｪ縺後ｉ繧ｹ繝�繝ｼ繧ｺ縺ｫ謗｢縺帙∪縺吶�<br>
+                                <strong>2. 蟶ｸ譎り｡ｨ遉ｺ縺輔ｌ繧倶ｸｸ隗偵け繧､繝�け繝ｪ繝励Λ繧､</strong>�夂判髱｢譛荳矩Κ縺ｫ莠ｺ豌励�11繝��繝橸ｼ九交汳ｬ謨吝ｮ､縺ｫ雉ｪ蝠上�逶ｸ隲�搾ｼ九交沒壼�20繝��繝樔ｸ隕ｧ縲阪′蟶ｸ譎り｡ｨ遉ｺ縺輔ｌ縲∝女隰帷函縺後ち繝��縺吶ｋ縺�縺代〒谺｡縲�→遏･隴倥ｒ豺ｱ繧√ｉ繧後∪縺呻ｼ育ｮ｡逅��∈縺ｮ騾夂衍髻ｳ繧帝ｳｴ繧峨＆縺ｪ縺�し繧､繝ｬ繝ｳ繝磯∽ｿ｡莉墓ｧ假ｼ峨�<br>
+                                <strong>3. 閾ｪ蜍募ｿ懃ｭ斐く繝ｼ繝ｯ繝ｼ繝�</strong>�壼女隰帷函縺後ヨ繝ｼ繧ｯ逕ｻ髱｢縺ｧ縲後♀蠖ｹ遶九■縲阪瑚ｱ�衍隴倥阪訓DF縲阪後ヱ繧ｽ繧ｳ繝ｳ縲阪後せ繝槭�縲阪↑縺ｩ縺ｨ蜈･蜉帙＠縺溷�ｴ蜷医ｂ縲∬�蜍慕噪縺ｫ縺雁ｽｹ遶九■譯亥�縺瑚ｿ比ｿ｡縺輔ｌ縺ｾ縺吶�</p>
                                 <div class="tip-box" style="margin-top:12px;background:#fdf4ff;border-left:4px solid #c026d3;padding:10px 14px;border-radius: var(--radius-xs);">
-                                    <strong style="color:#86198f;">🎠 横スワイプで見渡せる「2連カルーセル一覧表示」機能:</strong><br>
-                                    「📚 全20テーマ一覧」ボタンを押した際や「お役立ち」と送信した際は、<strong>🚨 防犯・トラブル対策編（10選）</strong>と<strong>📱💻 スマホ・PC快適便利ワザ編（10選）</strong>の2連カルーセルで届きます。LINEのカルーセル上限（1通12バブル）を美しくカテゴリ分割してクリアし、シニアの方でも指で左右にスワイプしながら各テーマのポイント要約を見比べ、「📖 詳しく読む」ボタンから瞬時に大文字解説カードを開くことができます。
+                                    <strong style="color:#86198f;">�滋 讓ｪ繧ｹ繝ｯ繧､繝励〒隕区ｸ｡縺帙ｋ縲�2騾｣繧ｫ繝ｫ繝ｼ繧ｻ繝ｫ荳隕ｧ陦ｨ遉ｺ縲肴ｩ溯�:</strong><br>
+                                    縲交沒� 蜈ｨ20繝��繝樔ｸ隕ｧ縲阪�繧ｿ繝ｳ繧呈款縺励◆髫帙ｄ縲後♀蠖ｹ遶九■縲阪→騾∽ｿ｡縺励◆髫帙�縲�<strong>�圷 髦ｲ迥ｯ繝ｻ繝医Λ繝悶Ν蟇ｾ遲也ｷｨ��10驕ｸ��</strong>縺ｨ<strong>�導�捗 繧ｹ繝槭�繝ｻPC蠢ｫ驕ｩ萓ｿ蛻ｩ繝ｯ繧ｶ邱ｨ��10驕ｸ��</strong>縺ｮ2騾｣繧ｫ繝ｫ繝ｼ繧ｻ繝ｫ縺ｧ螻翫″縺ｾ縺吶�INE縺ｮ繧ｫ繝ｫ繝ｼ繧ｻ繝ｫ荳企剞��1騾�12繝舌ヶ繝ｫ�峨ｒ鄒弱＠縺上き繝�ざ繝ｪ蛻�牡縺励※繧ｯ繝ｪ繧｢縺励√す繝九い縺ｮ譁ｹ縺ｧ繧よ欠縺ｧ蟾ｦ蜿ｳ縺ｫ繧ｹ繝ｯ繧､繝励＠縺ｪ縺後ｉ蜷�ユ繝ｼ繝槭�繝昴う繝ｳ繝郁ｦ∫ｴ�ｒ隕区ｯ斐∋縲√交沒� 隧ｳ縺励￥隱ｭ繧縲阪�繧ｿ繝ｳ縺九ｉ迸ｬ譎ゅ↓螟ｧ譁�ｭ苓ｧ｣隱ｬ繧ｫ繝ｼ繝峨ｒ髢九￥縺薙→縺後〒縺阪∪縺吶�
                                 </div>
                                 <div class="tip-box" style="margin-top:8px;background:#f0fdf4;border-left:4px solid #10b981;padding:10px 14px;border-radius: var(--radius-xs);">
-                                    <strong style="color:#065f46;">🔇 管理者側通知音を防止するサイレント設計:</strong><br>
-                                    クイックリプライボタンやカルーセル内の「詳しく読む」ボタンは、タップしても受講生がトーク画面で発言（テキスト送信）した扱いにならない<strong>サイレントPostback（裏側通信）仕様</strong>となっています。そのため、受講生が記事をどんどん読んでも管理者にピコンと着信通知音が鳴り続ける心配はありません。
+                                    <strong style="color:#065f46;">�這 邂｡逅���騾夂衍髻ｳ繧帝亟豁｢縺吶ｋ繧ｵ繧､繝ｬ繝ｳ繝郁ｨｭ險�:</strong><br>
+                                    繧ｯ繧､繝�け繝ｪ繝励Λ繧､繝懊ち繝ｳ繧�き繝ｫ繝ｼ繧ｻ繝ｫ蜀��縲瑚ｩｳ縺励￥隱ｭ繧縲阪�繧ｿ繝ｳ縺ｯ縲√ち繝��縺励※繧ょ女隰帷函縺後ヨ繝ｼ繧ｯ逕ｻ髱｢縺ｧ逋ｺ險�医ユ繧ｭ繧ｹ繝磯∽ｿ｡�峨＠縺滓桶縺�↓縺ｪ繧峨↑縺�<strong>繧ｵ繧､繝ｬ繝ｳ繝�ostback�郁｣丞�騾壻ｿ｡�我ｻ墓ｧ�</strong>縺ｨ縺ｪ縺｣縺ｦ縺�∪縺吶ゅ◎縺ｮ縺溘ａ縲∝女隰帷函縺瑚ｨ倅ｺ九ｒ縺ｩ繧薙←繧楢ｪｭ繧薙〒繧らｮ｡逅��↓繝斐さ繝ｳ縺ｨ逹菫｡騾夂衍髻ｳ縺碁ｳｴ繧顔ｶ壹￠繧句ｿ��縺ｯ縺ゅｊ縺ｾ縺帙ｓ縲�
                                 </div>
                                 <div class="tip-box" style="margin-top:8px;background:#eff6ff;border-left:4px solid #3b82f6;padding:10px 14px;border-radius: var(--radius-xs);">
-                                    <strong style="color:#1e40af;">🌟 応答後も消えない「常時表示」安心仕様:</strong><br>
-                                    LINEの標準仕様では新しいメッセージを受信するとクイックリプライが消えてしまいますが、本システムでは<strong>ボットからのすべての返信応答（質問受付、カルテ案内、お役立ちカード等）の末尾にクイックリプライを自動補完・再生成</strong>しています。そのため、受講生が何通やり取りしてもボタンが消えず、常に画面最下部から次のテーマをワンタップで読み進められます。
+                                    <strong style="color:#1e40af;">�検 蠢懃ｭ泌ｾ後ｂ豸医∴縺ｪ縺�悟ｸｸ譎り｡ｨ遉ｺ縲榊ｮ牙ｿ�ｻ墓ｧ�:</strong><br>
+                                    LINE縺ｮ讓呎ｺ紋ｻ墓ｧ倥〒縺ｯ譁ｰ縺励＞繝｡繝�そ繝ｼ繧ｸ繧貞女菫｡縺吶ｋ縺ｨ繧ｯ繧､繝�け繝ｪ繝励Λ繧､縺梧ｶ医∴縺ｦ縺励∪縺�∪縺吶′縲∵悽繧ｷ繧ｹ繝�Β縺ｧ縺ｯ<strong>繝懊ャ繝医°繧峨�縺吶∋縺ｦ縺ｮ霑比ｿ｡蠢懃ｭ費ｼ郁ｳｪ蝠丞女莉倥√き繝ｫ繝�｡亥�縲√♀蠖ｹ遶九■繧ｫ繝ｼ繝臥ｭ会ｼ峨�譛ｫ蟆ｾ縺ｫ繧ｯ繧､繝�け繝ｪ繝励Λ繧､繧定�蜍戊｣懷ｮ後�蜀咲函謌�</strong>縺励※縺�∪縺吶ゅ◎縺ｮ縺溘ａ縲∝女隰帷函縺御ｽ暮壹ｄ繧雁叙繧翫＠縺ｦ繧ゅ�繧ｿ繝ｳ縺梧ｶ医∴縺壹∝ｸｸ縺ｫ逕ｻ髱｢譛荳矩Κ縺九ｉ谺｡縺ｮ繝��繝槭ｒ繝ｯ繝ｳ繧ｿ繝��縺ｧ隱ｭ縺ｿ騾ｲ繧√ｉ繧後∪縺吶�
                                 </div>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- 11. 複数LINE公式アカウントの切り替え・運用 -->
+                <!-- 11. 隍�焚LINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医�蛻�ｊ譖ｿ縺医�驕狗畑 -->
                 <section class="manual-section" id="sec-multi-account">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #e0e7ff; color: #4338ca;">
                             <i class="fa-solid fa-arrows-rotate"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>11. 複数LINE公式アカウントの切り替え・運用</h2>
-                            <p>シニアパソコン教室・アップファーレン店舗など、複数アカウントを1つの管理システムで統合運用</p>
+                            <h2>11. 隍�焚LINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医�蛻�ｊ譖ｿ縺医�驕狗畑</h2>
+                            <p>繧ｷ繝九い繝代た繧ｳ繝ｳ謨吝ｮ､繝ｻ繧｢繝��繝輔ぃ繝ｼ繝ｬ繝ｳ蠎苓�縺ｪ縺ｩ縲∬､�焚繧｢繧ｫ繧ｦ繝ｳ繝医ｒ1縺､縺ｮ邂｡逅�す繧ｹ繝�Β縺ｧ邨ｱ蜷磯°逕ｨ</p>
                         </div>
                     </div>
 
                     <div class="step-flow">
-                        <!-- ステップ1: 画面上部のアカウントスイッチャー -->
+                        <!-- 繧ｹ繝�ャ繝�1: 逕ｻ髱｢荳企Κ縺ｮ繧｢繧ｫ繧ｦ繝ｳ繝医せ繧､繝�メ繝｣繝ｼ -->
                         <div class="step-card">
                             <div class="step-number">1</div>
                             <div class="step-body">
-                                <h4>ヘッダーの「アカウント切替」からワンクリックで切り替え</h4>
-                                <p>管理画面（受講生カルテ）、リッチメニュー管理、操作マニュアルの画面上部ヘッダーに配置された<strong>「アカウント切替」ドロップダウン</strong>から、操作対象のLINE公式アカウント（例: シニア向けパソコン教室、アップファーレン等）をいつでも瞬時に切り替えることができます。<br>
-                                切り替えると、顧客一覧・リッチメニュー・店舗ロゴ・タイトルバッジが連動してそのアカウント専用のものに自動更新されます。選択したアカウントはブラウザに自動記憶され、次回ログイン時も直近のアカウントが維持されます。</p>
+                                <h4>繝倥ャ繝繝ｼ縺ｮ縲後い繧ｫ繧ｦ繝ｳ繝亥�譖ｿ縲阪°繧峨Ρ繝ｳ繧ｯ繝ｪ繝�け縺ｧ蛻�ｊ譖ｿ縺�</h4>
+                                <p>邂｡逅�判髱｢�亥女隰帷函繧ｫ繝ｫ繝�ｼ峨√Μ繝�メ繝｡繝九Η繝ｼ邂｡逅�∵桃菴懊�繝九Η繧｢繝ｫ縺ｮ逕ｻ髱｢荳企Κ繝倥ャ繝繝ｼ縺ｫ驟咲ｽｮ縺輔ｌ縺�<strong>縲後い繧ｫ繧ｦ繝ｳ繝亥�譖ｿ縲阪ラ繝ｭ繝��繝繧ｦ繝ｳ</strong>縺九ｉ縲∵桃菴懷ｯｾ雎｡縺ｮLINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝茨ｼ井ｾ�: 繧ｷ繝九い蜷代￠繝代た繧ｳ繝ｳ謨吝ｮ､縲√い繝��繝輔ぃ繝ｼ繝ｬ繝ｳ遲会ｼ峨ｒ縺�▽縺ｧ繧ら椪譎ゅ↓蛻�ｊ譖ｿ縺医ｋ縺薙→縺後〒縺阪∪縺吶�<br>
+                                蛻�ｊ譖ｿ縺医ｋ縺ｨ縲�｡ｧ螳｢荳隕ｧ繝ｻ繝ｪ繝�メ繝｡繝九Η繝ｼ繝ｻ蠎苓�繝ｭ繧ｴ繝ｻ繧ｿ繧､繝医Ν繝舌ャ繧ｸ縺碁｣蜍輔＠縺ｦ縺昴�繧｢繧ｫ繧ｦ繝ｳ繝亥ｰら畑縺ｮ繧ゅ�縺ｫ閾ｪ蜍墓峩譁ｰ縺輔ｌ縺ｾ縺吶る∈謚槭＠縺溘い繧ｫ繧ｦ繝ｳ繝医�繝悶Λ繧ｦ繧ｶ縺ｫ閾ｪ蜍戊ｨ俶�縺輔ｌ縲∵ｬ｡蝗槭Ο繧ｰ繧､繝ｳ譎ゅｂ逶ｴ霑代�繧｢繧ｫ繧ｦ繝ｳ繝医′邯ｭ謖√＆繧後∪縺吶�</p>
                                 <div class="tip-box" style="margin-top:8px;background:#eff6ff;border-left:4px solid #3b82f6;padding:10px 14px;border-radius: var(--radius-xs);">
-                                    <strong style="color:#1e40af;">💡 画面リロード不要のスマート同期:</strong><br>
-                                    アカウントを切り替えると、ページ全体を再読み込みすることなく、内部通信が自動的に対象アカウントへ切り替わり、該当アカウントの最新データが即時再読み込みされます。
+                                    <strong style="color:#1e40af;">�庁 逕ｻ髱｢繝ｪ繝ｭ繝ｼ繝我ｸ崎ｦ√�繧ｹ繝槭�繝亥酔譛�:</strong><br>
+                                    繧｢繧ｫ繧ｦ繝ｳ繝医ｒ蛻�ｊ譖ｿ縺医ｋ縺ｨ縲√�繝ｼ繧ｸ蜈ｨ菴薙ｒ蜀崎ｪｭ縺ｿ霎ｼ縺ｿ縺吶ｋ縺薙→縺ｪ縺上∝�驛ｨ騾壻ｿ｡縺瑚�蜍慕噪縺ｫ蟇ｾ雎｡繧｢繧ｫ繧ｦ繝ｳ繝医∈蛻�ｊ譖ｿ繧上ｊ縲∬ｩｲ蠖薙い繧ｫ繧ｦ繝ｳ繝医�譛譁ｰ繝��繧ｿ縺悟叉譎ょ�隱ｭ縺ｿ霎ｼ縺ｿ縺輔ｌ縺ｾ縺吶�
                                 </div>
                             </div>
                         </div>
 
-                        <!-- ステップ2: データベース完全分離の安全仕様 -->
+                        <!-- 繧ｹ繝�ャ繝�2: 繝��繧ｿ繝吶�繧ｹ螳悟�蛻�屬縺ｮ螳牙�莉墓ｧ� -->
                         <div class="step-card">
                             <div class="step-number">2</div>
                             <div class="step-body">
-                                <h4>データベース（DB）完全分離による安全設計</h4>
-                                <p>本システムは、アカウントごとに<strong>専用のSQLiteデータベースファイル</strong>（例: <code>kureba-senior-system.db</code>、<code>kureba_kaisya_dx.db</code> など）を完全に分離して管理しています。<br>
-                                これにより、顧客カルテや受講履歴、作成したリッチメニュー、配信履歴などが別のアカウントと混ざってしまう危険（データの交差汚染）を根本から防止しています。</p>
+                                <h4>繝��繧ｿ繝吶�繧ｹ��B�牙ｮ悟�蛻�屬縺ｫ繧医ｋ螳牙�險ｭ險�</h4>
+                                <p>譛ｬ繧ｷ繧ｹ繝�Β縺ｯ縲√い繧ｫ繧ｦ繝ｳ繝医＃縺ｨ縺ｫ<strong>蟆ら畑縺ｮSQLite繝��繧ｿ繝吶�繧ｹ繝輔ぃ繧､繝ｫ</strong>�井ｾ�: <code>kureba-senior-system.db</code>縲�<code>kureba_kaisya_dx.db</code> 縺ｪ縺ｩ�峨ｒ螳悟�縺ｫ蛻�屬縺励※邂｡逅�＠縺ｦ縺�∪縺吶�<br>
+                                縺薙ｌ縺ｫ繧医ｊ縲�｡ｧ螳｢繧ｫ繝ｫ繝�ｄ蜿苓ｬ帛ｱ･豁ｴ縲∽ｽ懈�縺励◆繝ｪ繝�メ繝｡繝九Η繝ｼ縲��菫｡螻･豁ｴ縺ｪ縺ｩ縺悟挨縺ｮ繧｢繧ｫ繧ｦ繝ｳ繝医→豺ｷ縺悶▲縺ｦ縺励∪縺�些髯ｺ�医ョ繝ｼ繧ｿ縺ｮ莠､蟾ｮ豎壽沒�峨ｒ譬ｹ譛ｬ縺九ｉ髦ｲ豁｢縺励※縺�∪縺吶�</p>
                             </div>
                         </div>
 
-                        <!-- ステップ3: LINE Developers での Webhook URL 設定 -->
+                        <!-- 繧ｹ繝�ャ繝�3: LINE Developers 縺ｧ縺ｮ Webhook URL 險ｭ螳� -->
                         <div class="step-card">
                             <div class="step-number">3</div>
                             <div class="step-body">
-                                <h4>各LINE公式アカウントの Webhook URL 設定</h4>
-                                <p>LINE公式アカウントごとに、LINE Developers コンソールの「Messaging API」設定内にある <strong>Webhook URL</strong> に以下のようにパラメータ（<code>?account=アカウントキー</code>）を付与して登録します：</p>
+                                <h4>蜷ЛINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医� Webhook URL 險ｭ螳�</h4>
+                                <p>LINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医＃縺ｨ縺ｫ縲´INE Developers 繧ｳ繝ｳ繧ｽ繝ｼ繝ｫ縺ｮ縲勲essaging API縲崎ｨｭ螳壼�縺ｫ縺ゅｋ <strong>Webhook URL</strong> 縺ｫ莉･荳九�繧医≧縺ｫ繝代Λ繝｡繝ｼ繧ｿ��<code>?account=繧｢繧ｫ繧ｦ繝ｳ繝医く繝ｼ</code>�峨ｒ莉倅ｸ弱＠縺ｦ逋ｻ骭ｲ縺励∪縺呻ｼ�</p>
                                 <ul style="margin: 8px 0 8px 20px; font-size: 13.5px; line-height: 1.8;">
-                                    <li><strong>シニア向けパソコン教室（デフォルト）:</strong><br><code>https://あなたのドメイン/webhook.php?account=senior</code>（または末尾なしの <code>webhook.php</code>）</li>
-                                    <li><strong>会社DX・公式アカウント（kaisya_dx）:</strong><br><code>https://あなたのドメイン/webhook.php?account=kaisya_dx</code></li>
-                                    <li><strong>アップファーレン（車両点検・店舗）:</strong><br><code>https://あなたのドメイン/webhook.php?account=upfahren</code></li>
+                                    <li><strong>繧ｷ繝九い蜷代￠繝代た繧ｳ繝ｳ謨吝ｮ､�医ョ繝輔か繝ｫ繝茨ｼ�:</strong><br><code>https://縺ゅ↑縺溘�繝峨Γ繧､繝ｳ/webhook.php?account=senior</code>�医∪縺溘�譛ｫ蟆ｾ縺ｪ縺励� <code>webhook.php</code>��</li>
+                                    <li><strong>莨夂､ｾDX繝ｻ蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝茨ｼ�aisya_dx��:</strong><br><code>https://縺ゅ↑縺溘�繝峨Γ繧､繝ｳ/webhook.php?account=kaisya_dx</code></li>
+                                    <li><strong>繧｢繝��繝輔ぃ繝ｼ繝ｬ繝ｳ�郁ｻ贋ｸ｡轤ｹ讀懊�蠎苓���:</strong><br><code>https://縺ゅ↑縺溘�繝峨Γ繧､繝ｳ/webhook.php?account=upfahren</code></li>
                                 </ul>
-                                <p>※登録後、LINE Developers の「検証」ボタンをクリックして「成功」と表示されることを確認し、「Webhookの利用」を必ずオン（有効）にしてください。<br>
-                                ブラウザで <code>https://あなたのドメイン/webhook.php</code> を直接開くと、登録されている全アカウントのWebhook URL設定一覧と現在の稼働状況をいつでも確認・コピーできます。</p>
+                                <p>窶ｻ逋ｻ骭ｲ蠕後´INE Developers 縺ｮ縲梧､懆ｨｼ縲阪�繧ｿ繝ｳ繧偵け繝ｪ繝�け縺励※縲梧�蜉溘阪→陦ｨ遉ｺ縺輔ｌ繧九％縺ｨ繧堤｢ｺ隱阪＠縲√係ebhook縺ｮ蛻ｩ逕ｨ縲阪ｒ蠢�★繧ｪ繝ｳ�域怏蜉ｹ�峨↓縺励※縺上□縺輔＞縲�<br>
+                                繝悶Λ繧ｦ繧ｶ縺ｧ <code>https://縺ゅ↑縺溘�繝峨Γ繧､繝ｳ/webhook.php</code> 繧堤峩謗･髢九￥縺ｨ縲∫匳骭ｲ縺輔ｌ縺ｦ縺�ｋ蜈ｨ繧｢繧ｫ繧ｦ繝ｳ繝医�Webhook URL險ｭ螳壻ｸ隕ｧ縺ｨ迴ｾ蝨ｨ縺ｮ遞ｼ蜒咲憾豕√ｒ縺�▽縺ｧ繧ら｢ｺ隱阪�繧ｳ繝斐�縺ｧ縺阪∪縺吶�</p>
                             </div>
                         </div>
 
-                        <!-- ステップ4: 管理画面からのアカウント追加 & 業種別項目カスタマイズ -->
+                        <!-- 繧ｹ繝�ャ繝�4: 邂｡逅�判髱｢縺九ｉ縺ｮ繧｢繧ｫ繧ｦ繝ｳ繝郁ｿｽ蜉� & 讌ｭ遞ｮ蛻･鬆�岼繧ｫ繧ｹ繧ｿ繝槭う繧ｺ -->
                         <div class="step-card">
                             <div class="step-number">4</div>
                             <div class="step-body">
-                                <h4>管理画面からのアカウント追加 & 業種別項目カスタマイズ（全業種対応）</h4>
-                                <p>管理画面右上の「<i class="fa-solid fa-gear"></i> アカウント管理」ボタンを押すことで、<strong>プログラムの編集不要で画面上から直感的に新しいLINE公式アカウントを追加・編集</strong>できます。</p>
+                                <h4>邂｡逅�判髱｢縺九ｉ縺ｮ繧｢繧ｫ繧ｦ繝ｳ繝郁ｿｽ蜉� & 讌ｭ遞ｮ蛻･鬆�岼繧ｫ繧ｹ繧ｿ繝槭う繧ｺ�亥�讌ｭ遞ｮ蟇ｾ蠢懶ｼ�</h4>
+                                <p>邂｡逅�判髱｢蜿ｳ荳翫�縲�<i class="fa-solid fa-gear"></i> 繧｢繧ｫ繧ｦ繝ｳ繝育ｮ｡逅�阪�繧ｿ繝ｳ繧呈款縺吶％縺ｨ縺ｧ縲�<strong>繝励Ο繧ｰ繝ｩ繝�縺ｮ邱ｨ髮�ｸ崎ｦ√〒逕ｻ髱｢荳翫°繧臥峩諢溽噪縺ｫ譁ｰ縺励＞LINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医ｒ霑ｽ蜉�繝ｻ邱ｨ髮�</strong>縺ｧ縺阪∪縺吶�</p>
                                 <div style="margin: 10px 0; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); padding: 12px;">
-                                    <strong style="color: #0f172a; font-size: 13.5px;"><i class="fa-solid fa-shapes" style="color: #10b981;"></i> 業種別プリセットと項目マッピング:</strong>
-                                    <p style="font-size: 12.5px; color: #475569; margin: 4px 0 10px;">あらゆる業種に合わせて、カルテ項目名（項目1・項目2）や期日名（期日1・期日2・期日3）を自由に設定・変更できます：</p>
+                                    <strong style="color: #0f172a; font-size: 13.5px;"><i class="fa-solid fa-shapes" style="color: #10b981;"></i> 讌ｭ遞ｮ蛻･繝励Μ繧ｻ繝�ヨ縺ｨ鬆�岼繝槭ャ繝斐Φ繧ｰ:</strong>
+                                    <p style="font-size: 12.5px; color: #475569; margin: 4px 0 10px;">縺ゅｉ繧�ｋ讌ｭ遞ｮ縺ｫ蜷医ｏ縺帙※縲√き繝ｫ繝���岼蜷搾ｼ磯��岼1繝ｻ鬆�岼2�峨ｄ譛滓律蜷搾ｼ域悄譌･1繝ｻ譛滓律2繝ｻ譛滓律3�峨ｒ閾ｪ逕ｱ縺ｫ險ｭ螳壹�螟画峩縺ｧ縺阪∪縺呻ｼ�</p>
                                     <table style="width: 100%; border-collapse: collapse; font-size: 12px; background: #ffffff;">
                                         <thead>
                                             <tr style="background: #f1f5f9; color: #334155; border-bottom: 2px solid #cbd5e1;">
-                                                <th style="padding: 6px 8px; text-align: left;">業種プリセット</th>
-                                                <th style="padding: 6px 8px; text-align: left;">カルテ項目1 / 項目2</th>
-                                                <th style="padding: 6px 8px; text-align: left;">期日1 / 期日2 / 期日3</th>
+                                                <th style="padding: 6px 8px; text-align: left;">讌ｭ遞ｮ繝励Μ繧ｻ繝�ヨ</th>
+                                                <th style="padding: 6px 8px; text-align: left;">繧ｫ繝ｫ繝���岼1 / 鬆�岼2</th>
+                                                <th style="padding: 6px 8px; text-align: left;">譛滓律1 / 譛滓律2 / 譛滓律3</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <tr style="border-bottom: 1px solid #e2e8f0;">
-                                                <td style="padding: 6px 8px; font-weight: bold; color: #0284c7;">パソコン教室・シニア向け</td>
-                                                <td style="padding: 6px 8px;">受講コース / 使用機器・PC環境</td>
-                                                <td style="padding: 6px 8px;">次回レッスン / PC健康診断 / 会員・月謝更新</td>
+                                                <td style="padding: 6px 8px; font-weight: bold; color: #0284c7;">繝代た繧ｳ繝ｳ謨吝ｮ､繝ｻ繧ｷ繝九い蜷代￠</td>
+                                                <td style="padding: 6px 8px;">蜿苓ｬ帙さ繝ｼ繧ｹ / 菴ｿ逕ｨ讖溷勣繝ｻPC迺ｰ蠅�</td>
+                                                <td style="padding: 6px 8px;">谺｡蝗槭Ξ繝�せ繝ｳ / PC蛛･蠎ｷ險ｺ譁ｭ / 莨壼藤繝ｻ譛郁ｬ晄峩譁ｰ</td>
                                             </tr>
                                             <tr style="border-bottom: 1px solid #e2e8f0;">
-                                                <td style="padding: 6px 8px; font-weight: bold; color: #ea580c;">自動車販売・整備工場</td>
-                                                <td style="padding: 6px 8px;">車種名 / 車両ナンバー</td>
-                                                <td style="padding: 6px 8px;">次回オイル交換 / 12ヶ月定期点検 / 車検満了日</td>
+                                                <td style="padding: 6px 8px; font-weight: bold; color: #ea580c;">閾ｪ蜍戊ｻ願ｲｩ螢ｲ繝ｻ謨ｴ蛯吝ｷ･蝣ｴ</td>
+                                                <td style="padding: 6px 8px;">霆顔ｨｮ蜷� / 霆贋ｸ｡繝翫Φ繝舌�</td>
+                                                <td style="padding: 6px 8px;">谺｡蝗槭が繧､繝ｫ莠､謠� / 12繝ｶ譛亥ｮ壽悄轤ｹ讀� / 霆頑､懈ｺ莠�律</td>
                                             </tr>
                                             <tr style="border-bottom: 1px solid #e2e8f0;">
-                                                <td style="padding: 6px 8px; font-weight: bold; color: #db2777;">サロン・エステ・整体院</td>
-                                                <td style="padding: 6px 8px;">施術メニュー / カルテ番号・担当者</td>
-                                                <td style="padding: 6px 8px;">次回施術予約 / 定期メンテナンス / 回数券・会員期限</td>
+                                                <td style="padding: 6px 8px; font-weight: bold; color: #db2777;">繧ｵ繝ｭ繝ｳ繝ｻ繧ｨ繧ｹ繝��謨ｴ菴馴劼</td>
+                                                <td style="padding: 6px 8px;">譁ｽ陦薙Γ繝九Η繝ｼ / 繧ｫ繝ｫ繝�分蜿ｷ繝ｻ諡�ｽ楢�</td>
+                                                <td style="padding: 6px 8px;">谺｡蝗樊命陦謎ｺ育ｴ� / 螳壽悄繝｡繝ｳ繝�リ繝ｳ繧ｹ / 蝗樊焚蛻ｸ繝ｻ莨壼藤譛滄剞</td>
                                             </tr>
                                             <tr style="border-bottom: 1px solid #e2e8f0;">
-                                                <td style="padding: 6px 8px; font-weight: bold; color: #16a34a;">スクール・学習塾・習い事</td>
-                                                <td style="padding: 6px 8px;">受講クラス・学年 / 生徒番号・所属</td>
-                                                <td style="padding: 6px 8px;">次回授業・レッスン / 定期面談・検定日 / 月謝・年会費更新</td>
+                                                <td style="padding: 6px 8px; font-weight: bold; color: #16a34a;">繧ｹ繧ｯ繝ｼ繝ｫ繝ｻ蟄ｦ鄙貞｡ｾ繝ｻ鄙偵＞莠�</td>
+                                                <td style="padding: 6px 8px;">蜿苓ｬ帙け繝ｩ繧ｹ繝ｻ蟄ｦ蟷ｴ / 逕溷ｾ堤分蜿ｷ繝ｻ謇螻�</td>
+                                                <td style="padding: 6px 8px;">谺｡蝗樊肢讌ｭ繝ｻ繝ｬ繝�せ繝ｳ / 螳壽悄髱｢隲��讀懷ｮ壽律 / 譛郁ｬ昴�蟷ｴ莨夊ｲｻ譖ｴ譁ｰ</td>
                                             </tr>
                                             <tr style="border-bottom: 1px solid #e2e8f0;">
-                                                <td style="padding: 6px 8px; font-weight: bold; color: #4f46e5;">ジム・フィットネス</td>
-                                                <td style="padding: 6px 8px;">会員プラン / 会員番号・ロッカー</td>
-                                                <td style="padding: 6px 8px;">次回トレーニング予約 / 定期測定 / 会費更新日</td>
+                                                <td style="padding: 6px 8px; font-weight: bold; color: #4f46e5;">繧ｸ繝�繝ｻ繝輔ぅ繝�ヨ繝阪せ</td>
+                                                <td style="padding: 6px 8px;">莨壼藤繝励Λ繝ｳ / 莨壼藤逡ｪ蜿ｷ繝ｻ繝ｭ繝�き繝ｼ</td>
+                                                <td style="padding: 6px 8px;">谺｡蝗槭ヨ繝ｬ繝ｼ繝九Φ繧ｰ莠育ｴ� / 螳壽悄貂ｬ螳� / 莨夊ｲｻ譖ｴ譁ｰ譌･</td>
                                             </tr>
                                             <tr style="border-bottom: 1px solid #e2e8f0;">
-                                                <td style="padding: 6px 8px; font-weight: bold; color: #475569;">士業・コンサル・B2B</td>
-                                                <td style="padding: 6px 8px;">契約プラン / 企業ID・担当者名</td>
-                                                <td style="padding: 6px 8px;">次回定期面談 / 進捗レビュー日 / 年間契約更新日</td>
+                                                <td style="padding: 6px 8px; font-weight: bold; color: #475569;">螢ｫ讌ｭ繝ｻ繧ｳ繝ｳ繧ｵ繝ｫ繝ｻB2B</td>
+                                                <td style="padding: 6px 8px;">螂醍ｴ��繝ｩ繝ｳ / 莨∵･ｭID繝ｻ諡�ｽ楢�錐</td>
+                                                <td style="padding: 6px 8px;">谺｡蝗槫ｮ壽悄髱｢隲� / 騾ｲ謐励Ξ繝薙Η繝ｼ譌･ / 蟷ｴ髢灘･醍ｴ�峩譁ｰ譌･</td>
                                             </tr>
                                             <tr>
-                                                <td style="padding: 6px 8px; font-weight: bold; color: #9333ea;">自由設定（カスタム）</td>
-                                                <td style="padding: 6px 8px;">自由入力（例: 注文番号 / 配送先等）</td>
-                                                <td style="padding: 6px 8px;">自由入力（例: 発送予定日 / 支払期日等）</td>
+                                                <td style="padding: 6px 8px; font-weight: bold; color: #9333ea;">閾ｪ逕ｱ險ｭ螳夲ｼ医き繧ｹ繧ｿ繝���</td>
+                                                <td style="padding: 6px 8px;">閾ｪ逕ｱ蜈･蜉幢ｼ井ｾ�: 豕ｨ譁�分蜿ｷ / 驟埼∝�遲会ｼ�</td>
+                                                <td style="padding: 6px 8px;">閾ｪ逕ｱ蜈･蜉幢ｼ井ｾ�: 逋ｺ騾∽ｺ亥ｮ壽律 / 謾ｯ謇墓悄譌･遲会ｼ�</td>
                                             </tr>
                                         </tbody>
                                     </table>
                                 </div>
-                                <p>業種プリセットを選択すると、管理画面のテーブルヘッダー、検索フィルター、統計カード、顧客カルテ編集モーダル、リッチメニュー帯の文言がすべて自動的にその業種の表記に切り替わります。</p>
+                                <p>讌ｭ遞ｮ繝励Μ繧ｻ繝�ヨ繧帝∈謚槭☆繧九→縲∫ｮ｡逅�判髱｢縺ｮ繝��繝悶Ν繝倥ャ繝繝ｼ縲∵､懃ｴ｢繝輔ぅ繝ｫ繧ｿ繝ｼ縲∫ｵｱ險医き繝ｼ繝峨�｡ｧ螳｢繧ｫ繝ｫ繝�ｷｨ髮�Δ繝ｼ繝繝ｫ縲√Μ繝�メ繝｡繝九Η繝ｼ蟶ｯ縺ｮ譁�ｨ縺後☆縺ｹ縺ｦ閾ｪ蜍慕噪縺ｫ縺昴�讌ｭ遞ｮ縺ｮ陦ｨ險倥↓蛻�ｊ譖ｿ繧上ｊ縺ｾ縺吶�</p>
                                 
                                 <div style="margin: 12px 0; background: #eef2ff; border: 1.5px solid #c7d2fe; border-radius: var(--radius-sm); padding: 12px 14px;">
-                                    <strong style="color: #3730a3; font-size: 13.5px;"><i class="fa-solid fa-pen-to-square" style="color: #4f46e5;"></i> 期日名・項目名はどこで変更できる？（2通りのカンタン変更方法）:</strong>
+                                    <strong style="color: #3730a3; font-size: 13.5px;"><i class="fa-solid fa-pen-to-square" style="color: #4f46e5;"></i> 譛滓律蜷阪�鬆�岼蜷阪�縺ｩ縺薙〒螟画峩縺ｧ縺阪ｋ�滂ｼ�2騾壹ｊ縺ｮ繧ｫ繝ｳ繧ｿ繝ｳ螟画峩譁ｹ豕包ｼ�:</strong>
                                     <div style="margin-top: 8px; font-size: 12.5px; color: #334155; line-height: 1.6;">
                                         <div style="margin-bottom: 8px; padding: 6px 10px; background: #ffffff; border-radius: 4px; border: 1px solid #e0e7ff;">
-                                            <strong style="color: #4338ca;"><i class="fa-solid fa-bolt"></i> 方法1（一番カンタン）: 画面右上の「表示項目（表示カラム設定）」から変更</strong><br>
-                                            顧客一覧の検索バー右横にある「<span class="badge-feature badge-indigo"><i class="fa-solid fa-table-columns"></i> 表示項目</span>」ボタンをクリックし、ドロップダウン内の「<strong><i class="fa-solid fa-pen-to-square"></i> 項目名・期日名を変更</strong>」または各項目の横にある「<i class="fa-solid fa-pen"></i>」ボタンを押すと、専用のポップアップ画面が開き、その場ですぐに名前の変更・保存ができます。
+                                            <strong style="color: #4338ca;"><i class="fa-solid fa-bolt"></i> 譁ｹ豕�1�井ｸ逡ｪ繧ｫ繝ｳ繧ｿ繝ｳ��: 逕ｻ髱｢蜿ｳ荳翫�縲瑚｡ｨ遉ｺ鬆�岼�郁｡ｨ遉ｺ繧ｫ繝ｩ繝�險ｭ螳夲ｼ峨阪°繧牙､画峩</strong><br>
+                                            鬘ｧ螳｢荳隕ｧ縺ｮ讀懃ｴ｢繝舌�蜿ｳ讓ｪ縺ｫ縺ゅｋ縲�<span class="badge-feature badge-indigo"><i class="fa-solid fa-table-columns"></i> 陦ｨ遉ｺ鬆�岼</span>縲阪�繧ｿ繝ｳ繧偵け繝ｪ繝�け縺励√ラ繝ｭ繝��繝繧ｦ繝ｳ蜀��縲�<strong><i class="fa-solid fa-pen-to-square"></i> 鬆�岼蜷阪�譛滓律蜷阪ｒ螟画峩</strong>縲阪∪縺溘�蜷���岼縺ｮ讓ｪ縺ｫ縺ゅｋ縲�<i class="fa-solid fa-pen"></i>縲阪�繧ｿ繝ｳ繧呈款縺吶→縲∝ｰら畑縺ｮ繝昴ャ繝励い繝��逕ｻ髱｢縺碁幕縺阪√◎縺ｮ蝣ｴ縺ｧ縺吶＄縺ｫ蜷榊燕縺ｮ螟画峩繝ｻ菫晏ｭ倥′縺ｧ縺阪∪縺吶�
                                         </div>
                                         <div style="padding: 6px 10px; background: #ffffff; border-radius: 4px; border: 1px solid #e0e7ff;">
-                                            <strong style="color: #4338ca;"><i class="fa-solid fa-gear"></i> 方法2: 「アカウント管理」画面から変更</strong><br>
-                                            画面右上の「<i class="fa-solid fa-gear"></i> アカウント管理」＞「編集」を開き、「業種プリセット & カルテ項目名・期日名のカスタマイズ」欄で変更して「この設定で保存する」を押すことで変更できます。
+                                            <strong style="color: #4338ca;"><i class="fa-solid fa-gear"></i> 譁ｹ豕�2: 縲後い繧ｫ繧ｦ繝ｳ繝育ｮ｡逅�咲判髱｢縺九ｉ螟画峩</strong><br>
+                                            逕ｻ髱｢蜿ｳ荳翫�縲�<i class="fa-solid fa-gear"></i> 繧｢繧ｫ繧ｦ繝ｳ繝育ｮ｡逅�搾ｼ槭檎ｷｨ髮�阪ｒ髢九″縲√梧･ｭ遞ｮ繝励Μ繧ｻ繝�ヨ & 繧ｫ繝ｫ繝���岼蜷阪�譛滓律蜷阪�繧ｫ繧ｹ繧ｿ繝槭う繧ｺ縲肴ｬ�〒螟画峩縺励※縲後％縺ｮ險ｭ螳壹〒菫晏ｭ倥☆繧九阪ｒ謚ｼ縺吶％縺ｨ縺ｧ螟画峩縺ｧ縺阪∪縺吶�
                                         </div>
                                     </div>
                                 </div>
 
                                 <div class="tip-box" style="margin-top:8px;background:#f0fdf4;border-left:4px solid #16a34a;padding:10px 14px;border-radius: var(--radius-xs);">
-                                    <strong style="color:#166534;"><i class="fa-solid fa-shield-halved"></i> セキュア認証通信（パスワード漏洩防止仕様）:</strong><br>
-                                    管理画面とAPI間の認証通信は、URLパラメータではなくHTTPリクエストヘッダー（<code>X-Admin-Password</code> / <code>Authorization Bearer</code>）で保護されて送信されます。ブラウザの開発者ツールやWebサーバーのアクセスログにパスワードが露出しない安全設計となっています。
+                                    <strong style="color:#166534;"><i class="fa-solid fa-shield-halved"></i> 繧ｻ繧ｭ繝･繧｢隱崎ｨｼ騾壻ｿ｡�医ヱ繧ｹ繝ｯ繝ｼ繝画ｼ乗ｴｩ髦ｲ豁｢莉墓ｧ假ｼ�:</strong><br>
+                                    邂｡逅�判髱｢縺ｨAPI髢薙�隱崎ｨｼ騾壻ｿ｡縺ｯ縲ゞRL繝代Λ繝｡繝ｼ繧ｿ縺ｧ縺ｯ縺ｪ縺秋TTP繝ｪ繧ｯ繧ｨ繧ｹ繝医�繝�ム繝ｼ��<code>X-Admin-Password</code> / <code>Authorization Bearer</code>�峨〒菫晁ｭｷ縺輔ｌ縺ｦ騾∽ｿ｡縺輔ｌ縺ｾ縺吶ゅヶ繝ｩ繧ｦ繧ｶ縺ｮ髢狗匱閠�ヤ繝ｼ繝ｫ繧Цeb繧ｵ繝ｼ繝舌�縺ｮ繧｢繧ｯ繧ｻ繧ｹ繝ｭ繧ｰ縺ｫ繝代せ繝ｯ繝ｼ繝峨′髴ｲ蜃ｺ縺励↑縺�ｮ牙�險ｭ險医→縺ｪ縺｣縺ｦ縺�∪縺吶�
                                 </div>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- 12. 個別LINEチャット・メッセージ返信 -->
+                <!-- 12. 蛟句挨LINE繝√Ε繝�ヨ繝ｻ繝｡繝�そ繝ｼ繧ｸ霑比ｿ｡ -->
                 <section class="manual-section" id="sec-line-chat">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #f0fdf4; color: #16a34a;">
                             <i class="fa-solid fa-comments"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>12. 個別LINEチャット・メッセージ返信</h2>
-                            <p>受講生との1対1トーク履歴確認・直接Pushメッセージ返信機能の使い方</p>
+                            <h2>12. 蛟句挨LINE繝√Ε繝�ヨ繝ｻ繝｡繝�そ繝ｼ繧ｸ霑比ｿ｡</h2>
+                            <p>蜿苓ｬ帷函縺ｨ縺ｮ1蟇ｾ1繝医�繧ｯ螻･豁ｴ遒ｺ隱阪�逶ｴ謗･Push繝｡繝�そ繝ｼ繧ｸ霑比ｿ｡讖溯�縺ｮ菴ｿ縺�婿</p>
                         </div>
                     </div>
 
-                    <p>受講生からLINE公式アカウントへ届いたメッセージを管理画面上でリアルタイムに閲覧し、スタッフから受講生のLINEトーク画面へ直接返信メッセージを送信できる機能です。<br>
-                    プロラインの自動応答やステップ配信と一切競合せず、管理画面からいつでもスムーズな受講生サポートが可能です。</p>
+                    <p>蜿苓ｬ帷函縺九ｉLINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医∈螻翫＞縺溘Γ繝�そ繝ｼ繧ｸ繧堤ｮ｡逅�判髱｢荳翫〒繝ｪ繧｢繝ｫ繧ｿ繧､繝�縺ｫ髢ｲ隕ｧ縺励√せ繧ｿ繝�ヵ縺九ｉ蜿苓ｬ帷函縺ｮLINE繝医�繧ｯ逕ｻ髱｢縺ｸ逶ｴ謗･霑比ｿ｡繝｡繝�そ繝ｼ繧ｸ繧帝∽ｿ｡縺ｧ縺阪ｋ讖溯�縺ｧ縺吶�<br>
+                    繝励Ο繝ｩ繧､繝ｳ縺ｮ閾ｪ蜍募ｿ懃ｭ斐ｄ繧ｹ繝�ャ繝鈴�菫｡縺ｨ荳蛻�ｫｶ蜷医○縺壹∫ｮ｡逅�判髱｢縺九ｉ縺�▽縺ｧ繧ゅせ繝�繝ｼ繧ｺ縺ｪ蜿苓ｬ帷函繧ｵ繝昴�繝医′蜿ｯ閭ｽ縺ｧ縺吶�</p>
 
                     <div class="step-flow">
                         <div class="step-card">
                             <div class="step-number">1</div>
                             <div class="step-body">
-                                <h4>新着メッセージの確認と未読バッジ</h4>
-                                <p>受講生からメッセージが届くと、受講生一覧テーブルの受講生名横および「💬 チャット」ボタンに赤色の<strong>未読バッジ（件数）</strong>が表示されます。<br>
-                                「最終やり取り」カラムにもメッセージ内容のプレビューと受信日時が自動反映されます。</p>
+                                <h4>譁ｰ逹繝｡繝�そ繝ｼ繧ｸ縺ｮ遒ｺ隱阪→譛ｪ隱ｭ繝舌ャ繧ｸ</h4>
+                                <p>蜿苓ｬ帷函縺九ｉ繝｡繝�そ繝ｼ繧ｸ縺悟ｱ翫￥縺ｨ縲∝女隰帷函荳隕ｧ繝��繝悶Ν縺ｮ蜿苓ｬ帷函蜷肴ｨｪ縺翫ｈ縺ｳ縲交汳ｬ 繝√Ε繝�ヨ縲阪�繧ｿ繝ｳ縺ｫ襍､濶ｲ縺ｮ<strong>譛ｪ隱ｭ繝舌ャ繧ｸ�井ｻｶ謨ｰ��</strong>縺瑚｡ｨ遉ｺ縺輔ｌ縺ｾ縺吶�<br>
+                                縲梧怙邨ゅｄ繧雁叙繧翫阪き繝ｩ繝�縺ｫ繧ゅΓ繝�そ繝ｼ繧ｸ蜀�ｮｹ縺ｮ繝励Ξ繝薙Η繝ｼ縺ｨ蜿嶺ｿ｡譌･譎ゅ′閾ｪ蜍募渚譏�縺輔ｌ縺ｾ縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">2</div>
                             <div class="step-body">
-                                <h4>チャット画面の起動と会話履歴の確認</h4>
-                                <p>対象受講生の行にある「💬 チャット」ボタンをクリックすると、LINE風のチャットモーダルが開きます。<br>
-                                ・受講生のメッセージは左側（白吹き出し）、スタッフからの返信は右側（緑吹き出し）に時系列で表示されます。<br>
-                                ・画像やスタンプメッセージも分かりやすく表示され、画像をクリックすると拡大表示できます。<br>
-                                ・チャット画面を開いた時点で未読フラグは自動的に既読として処理されます。<br>
-                                ・チャットモーダルを開いている間は10秒ごとに自動更新（ポーリング）され、受講生からの最新メッセージが即座に反映されます。</p>
+                                <h4>繝√Ε繝�ヨ逕ｻ髱｢縺ｮ襍ｷ蜍輔→莨夊ｩｱ螻･豁ｴ縺ｮ遒ｺ隱�</h4>
+                                <p>蟇ｾ雎｡蜿苓ｬ帷函縺ｮ陦後↓縺ゅｋ縲交汳ｬ 繝√Ε繝�ヨ縲阪�繧ｿ繝ｳ繧偵け繝ｪ繝�け縺吶ｋ縺ｨ縲´INE鬚ｨ縺ｮ繝√Ε繝�ヨ繝｢繝ｼ繝繝ｫ縺碁幕縺阪∪縺吶�<br>
+                                繝ｻ蜿苓ｬ帷函縺ｮ繝｡繝�そ繝ｼ繧ｸ縺ｯ蟾ｦ蛛ｴ�育區蜷ｹ縺榊�縺暦ｼ峨√せ繧ｿ繝�ヵ縺九ｉ縺ｮ霑比ｿ｡縺ｯ蜿ｳ蛛ｴ�育ｷ大聖縺榊�縺暦ｼ峨↓譎らｳｻ蛻励〒陦ｨ遉ｺ縺輔ｌ縺ｾ縺吶�<br>
+                                繝ｻ逕ｻ蜒上ｄ繧ｹ繧ｿ繝ｳ繝励Γ繝�そ繝ｼ繧ｸ繧ょ�縺九ｊ繧�☆縺剰｡ｨ遉ｺ縺輔ｌ縲∫判蜒上ｒ繧ｯ繝ｪ繝�け縺吶ｋ縺ｨ諡｡螟ｧ陦ｨ遉ｺ縺ｧ縺阪∪縺吶�<br>
+                                繝ｻ繝√Ε繝�ヨ逕ｻ髱｢繧帝幕縺�◆譎らせ縺ｧ譛ｪ隱ｭ繝輔Λ繧ｰ縺ｯ閾ｪ蜍慕噪縺ｫ譌｢隱ｭ縺ｨ縺励※蜃ｦ逅�＆繧後∪縺吶�<br>
+                                繝ｻ繝√Ε繝�ヨ繝｢繝ｼ繝繝ｫ繧帝幕縺�※縺�ｋ髢薙�10遘偵＃縺ｨ縺ｫ閾ｪ蜍墓峩譁ｰ�医�繝ｼ繝ｪ繝ｳ繧ｰ�峨＆繧後∝女隰帷函縺九ｉ縺ｮ譛譁ｰ繝｡繝�そ繝ｼ繧ｸ縺悟叉蠎ｧ縺ｫ蜿肴丐縺輔ｌ縺ｾ縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">3</div>
                             <div class="step-body">
-                                <h4>メッセージの送信とクイック定型文</h4>
-                                <p>画面下のテキストエリアにメッセージを入力し、<strong>紙飛行機ボタン</strong>をクリックするか、キーボードの <code>Ctrl + Enter</code>（Macは <code>Cmd + Enter</code>）を押すと受講生のLINEトーク画面へプッシュ送信されます。<br>
-                                <strong>便利な定型文チップ</strong>（「挨拶」「確認中」「予約確認」「フォロー」）をクリックすると、ワンタップでよく使う返信文面を入力欄に自動挿入できます。</p>
+                                <h4>繝｡繝�そ繝ｼ繧ｸ縺ｮ騾∽ｿ｡縺ｨ繧ｯ繧､繝�け螳壼梛譁�</h4>
+                                <p>逕ｻ髱｢荳九�繝�く繧ｹ繝医お繝ｪ繧｢縺ｫ繝｡繝�そ繝ｼ繧ｸ繧貞�蜉帙＠縲�<strong>邏咎｣幄｡梧ｩ溘�繧ｿ繝ｳ</strong>繧偵け繝ｪ繝�け縺吶ｋ縺九√く繝ｼ繝懊�繝峨� <code>Ctrl + Enter</code>��ac縺ｯ <code>Cmd + Enter</code>�峨ｒ謚ｼ縺吶→蜿苓ｬ帷函縺ｮLINE繝医�繧ｯ逕ｻ髱｢縺ｸ繝励ャ繧ｷ繝･騾∽ｿ｡縺輔ｌ縺ｾ縺吶�<br>
+                                <strong>萓ｿ蛻ｩ縺ｪ螳壼梛譁�メ繝��</strong>�医梧肩諡ｶ縲阪檎｢ｺ隱堺ｸｭ縲阪御ｺ育ｴ�｢ｺ隱阪阪後ヵ繧ｩ繝ｭ繝ｼ縲搾ｼ峨ｒ繧ｯ繝ｪ繝�け縺吶ｋ縺ｨ縲√Ρ繝ｳ繧ｿ繝��縺ｧ繧医￥菴ｿ縺�ｿ比ｿ｡譁�擇繧貞�蜉帶ｬ�↓閾ｪ蜍墓諺蜈･縺ｧ縺阪∪縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card" style="border: 2px solid #6366f1; background: #eef2ff;">
                             <div class="step-number" style="background: #4f46e5; color: #fff;">4</div>
                             <div class="step-body">
-                                <h4><span class="badge" style="background: #4f46e5; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-right: 6px;">NEW</span>送信者名（担当者名）の指定と「from」の非表示対応</h4>
-                                <p>チャット入力欄の上部にある「<strong><i class="fa-solid fa-user-tag"></i> 送信者名</strong>」欄により、受講生のLINE画面での送信者名（Sender）表示を柔軟にコントロールできます。</p>
+                                <h4><span class="badge" style="background: #4f46e5; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-right: 6px;">NEW</span>騾∽ｿ｡閠�錐�域球蠖楢�錐�峨�謖�ｮ壹→縲掲rom縲阪�髱櫁｡ｨ遉ｺ蟇ｾ蠢�</h4>
+                                <p>繝√Ε繝�ヨ蜈･蜉帶ｬ��荳企Κ縺ｫ縺ゅｋ縲�<strong><i class="fa-solid fa-user-tag"></i> 騾∽ｿ｡閠�錐</strong>縲肴ｬ�↓繧医ｊ縲∝女隰帷函縺ｮLINE逕ｻ髱｢縺ｧ縺ｮ騾∽ｿ｡閠�錐��ender�芽｡ｨ遉ｺ繧呈沐霆溘↓繧ｳ繝ｳ繝医Ο繝ｼ繝ｫ縺ｧ縺阪∪縺吶�</p>
                                 <ul style="padding-left: 20px; margin: 8px 0; line-height: 1.7; font-size: 13.5px;">
-                                    <li><strong>1. 空欄または「🚫 なし」チップ（from非表示・公式アカウント名そのまま）</strong>: 送信者名を空欄にするか「🚫 なし (from非表示)」チップを押すと、「from ~~~」という表示を一切出さず、通常のLINE公式アカウントからのすっきりとした吹き出しとして送信されます。</li>
-                                    <li><strong>2. 名前を入力（「川合」「教室スタッフ」など）</strong>: 入力した担当者名がLINEアプリ上の吹き出しに「from 川合」として小さく表示されます。クイックチップ（「川合」「教室スタッフ」「サポート担当」）を押すだけでワンタッチ入力も可能です。</li>
-                                    <li><strong>3. 前回の送信者名を自動記憶（localStorage）</strong>: 設定した送信者名はブラウザに自動保存され、次回チャットを開いた際も前回の設定がそのまま維持されます。</li>
-                                    <li><strong>4. 管理画面チャット履歴への記録</strong>: 管理画面の吹き出し下部にも送信担当者名が記録・表示され、スタッフ間で誰が返信対応を行ったかが一目で把握できます。</li>
+                                    <li><strong>1. 遨ｺ谺�∪縺溘�縲交泅ｫ 縺ｪ縺励阪メ繝����rom髱櫁｡ｨ遉ｺ繝ｻ蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝亥錐縺昴�縺ｾ縺ｾ��</strong>: 騾∽ｿ｡閠�錐繧堤ｩｺ谺�↓縺吶ｋ縺九交泅ｫ 縺ｪ縺� (from髱櫁｡ｨ遉ｺ)縲阪メ繝��繧呈款縺吶→縲√掲rom ~~~縲阪→縺�≧陦ｨ遉ｺ繧剃ｸ蛻��縺輔★縲�壼ｸｸ縺ｮLINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医°繧峨�縺吶▲縺阪ｊ縺ｨ縺励◆蜷ｹ縺榊�縺励→縺励※騾∽ｿ｡縺輔ｌ縺ｾ縺吶�</li>
+                                    <li><strong>2. 蜷榊燕繧貞�蜉幢ｼ医悟ｷ晏粋縲阪梧蕗螳､繧ｹ繧ｿ繝�ヵ縲阪↑縺ｩ��</strong>: 蜈･蜉帙＠縺滓球蠖楢�錐縺鍬INE繧｢繝励Μ荳翫�蜷ｹ縺榊�縺励↓縲掲rom 蟾晏粋縲阪→縺励※蟆上＆縺剰｡ｨ遉ｺ縺輔ｌ縺ｾ縺吶ゅけ繧､繝�け繝√ャ繝暦ｼ医悟ｷ晏粋縲阪梧蕗螳､繧ｹ繧ｿ繝�ヵ縲阪後し繝昴�繝域球蠖薙搾ｼ峨ｒ謚ｼ縺吶□縺代〒繝ｯ繝ｳ繧ｿ繝�メ蜈･蜉帙ｂ蜿ｯ閭ｽ縺ｧ縺吶�</li>
+                                    <li><strong>3. 蜑榊屓縺ｮ騾∽ｿ｡閠�錐繧定�蜍戊ｨ俶���ocalStorage��</strong>: 險ｭ螳壹＠縺滄∽ｿ｡閠�錐縺ｯ繝悶Λ繧ｦ繧ｶ縺ｫ閾ｪ蜍穂ｿ晏ｭ倥＆繧後∵ｬ｡蝗槭メ繝｣繝�ヨ繧帝幕縺�◆髫帙ｂ蜑榊屓縺ｮ險ｭ螳壹′縺昴�縺ｾ縺ｾ邯ｭ謖√＆繧後∪縺吶�</li>
+                                    <li><strong>4. 邂｡逅�判髱｢繝√Ε繝�ヨ螻･豁ｴ縺ｸ縺ｮ險倬鹸</strong>: 邂｡逅�判髱｢縺ｮ蜷ｹ縺榊�縺嶺ｸ矩Κ縺ｫ繧る∽ｿ｡諡�ｽ楢�錐縺瑚ｨ倬鹸繝ｻ陦ｨ遉ｺ縺輔ｌ縲√せ繧ｿ繝�ヵ髢薙〒隱ｰ縺瑚ｿ比ｿ｡蟇ｾ蠢懊ｒ陦後▲縺溘°縺御ｸ逶ｮ縺ｧ謚頑升縺ｧ縺阪∪縺吶�</li>
                                 </ul>
                             </div>
                         </div>
@@ -1154,54 +1154,54 @@
                     <div class="manual-alert-box info" style="margin-top: 16px;">
                         <i class="fa-solid fa-circle-info"></i>
                         <div>
-                            <strong>プロライン共存の仕組み</strong><br>
-                            本機能は、LINE Messaging APIのPush Messageを使用しています。受講生からのメッセージ受信時にもReplyTokenを消費しないため、プロラインの自動返信・ステップ配信・予約シナリオの動作を一切妨げません。
+                            <strong>繝励Ο繝ｩ繧､繝ｳ蜈ｱ蟄倥�莉慕ｵ�∩</strong><br>
+                            譛ｬ讖溯�縺ｯ縲´INE Messaging API縺ｮPush Message繧剃ｽｿ逕ｨ縺励※縺�∪縺吶ょ女隰帷函縺九ｉ縺ｮ繝｡繝�そ繝ｼ繧ｸ蜿嶺ｿ｡譎ゅ↓繧３eplyToken繧呈ｶ郁ｲｻ縺励↑縺�◆繧√√�繝ｭ繝ｩ繧､繝ｳ縺ｮ閾ｪ蜍戊ｿ比ｿ｡繝ｻ繧ｹ繝�ャ繝鈴�菫｡繝ｻ莠育ｴ�す繝翫Μ繧ｪ縺ｮ蜍穂ｽ懊ｒ荳蛻�ｦｨ縺偵∪縺帙ｓ縲�
                         </div>
                     </div>
                 </section>
 
-                <!-- 13. Discord通知設定 -->
+                <!-- 13. Discord騾夂衍險ｭ螳� -->
                 <section class="manual-section" id="sec-discord-notify">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #eef2ff; color: #5865F2;">
                             <i class="fa-brands fa-discord"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>13. Discord通知設定</h2>
-                            <p>LINEメッセージ受信や友だち追加、予約相談をDiscordチャンネルへリアルタイム通知</p>
+                            <h2>13. Discord騾夂衍險ｭ螳�</h2>
+                            <p>LINE繝｡繝�そ繝ｼ繧ｸ蜿嶺ｿ｡繧�暑縺�縺｡霑ｽ蜉�縲∽ｺ育ｴ�嶌隲�ｒDiscord繝√Ε繝ｳ繝阪Ν縺ｸ繝ｪ繧｢繝ｫ繧ｿ繧､繝�騾夂衍</p>
                         </div>
                     </div>
 
-                    <p>受講生からの新着メッセージや新規友だち追加、予約相談リクエストを、教室スタッフが使用しているDiscordサーバーの指定チャンネルへ即座にリッチ通知します。<br>
-                    通知内には対象受講生のチャット返信直リンクが含まれており、Discordの通知をクリックするだけで管理画面のチャット画面へジャンプして即座に返信できます。</p>
+                    <p>蜿苓ｬ帷函縺九ｉ縺ｮ譁ｰ逹繝｡繝�そ繝ｼ繧ｸ繧�眠隕丞暑縺�縺｡霑ｽ蜉�縲∽ｺ育ｴ�嶌隲�Μ繧ｯ繧ｨ繧ｹ繝医ｒ縲∵蕗螳､繧ｹ繧ｿ繝�ヵ縺御ｽｿ逕ｨ縺励※縺�ｋDiscord繧ｵ繝ｼ繝舌�縺ｮ謖�ｮ壹メ繝｣繝ｳ繝阪Ν縺ｸ蜊ｳ蠎ｧ縺ｫ繝ｪ繝�メ騾夂衍縺励∪縺吶�<br>
+                    騾夂衍蜀�↓縺ｯ蟇ｾ雎｡蜿苓ｬ帷函縺ｮ繝√Ε繝�ヨ霑比ｿ｡逶ｴ繝ｪ繝ｳ繧ｯ縺悟性縺ｾ繧後※縺翫ｊ縲．iscord縺ｮ騾夂衍繧偵け繝ｪ繝�け縺吶ｋ縺�縺代〒邂｡逅�判髱｢縺ｮ繝√Ε繝�ヨ逕ｻ髱｢縺ｸ繧ｸ繝｣繝ｳ繝励＠縺ｦ蜊ｳ蠎ｧ縺ｫ霑比ｿ｡縺ｧ縺阪∪縺吶�</p>
 
                     <div class="step-flow">
                         <div class="step-card">
                             <div class="step-number">1</div>
                             <div class="step-body">
-                                <h4>Discord Webhook URLの取得</h4>
-                                <p>1. 通知を受信したいDiscordサーバーの通知先チャンネルの「⚙ チャンネル設定」を開きます。<br>
-                                2. 左メニュー「連携」→「ウェブフック」を選択し、「新しいウェブフック」を作成します。<br>
-                                3. お好みの名前（例: 「教室LINE通知Bot」）を設定し、「ウェブフックURLをコピー」をクリックします。</p>
+                                <h4>Discord Webhook URL縺ｮ蜿門ｾ�</h4>
+                                <p>1. 騾夂衍繧貞女菫｡縺励◆縺Дiscord繧ｵ繝ｼ繝舌�縺ｮ騾夂衍蜈医メ繝｣繝ｳ繝阪Ν縺ｮ縲娯囮 繝√Ε繝ｳ繝阪Ν險ｭ螳壹阪ｒ髢九″縺ｾ縺吶�<br>
+                                2. 蟾ｦ繝｡繝九Η繝ｼ縲碁｣謳ｺ縲坂�縲後え繧ｧ繝悶ヵ繝�け縲阪ｒ驕ｸ謚槭＠縲√梧眠縺励＞繧ｦ繧ｧ繝悶ヵ繝�け縲阪ｒ菴懈�縺励∪縺吶�<br>
+                                3. 縺雁･ｽ縺ｿ縺ｮ蜷榊燕�井ｾ�: 縲梧蕗螳､LINE騾夂衍Bot縲搾ｼ峨ｒ險ｭ螳壹＠縲√後え繧ｧ繝悶ヵ繝�けURL繧偵さ繝斐�縲阪ｒ繧ｯ繝ｪ繝�け縺励∪縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">2</div>
                             <div class="step-body">
-                                <h4>管理画面でのWebhook登録と通知イベント選択</h4>
-                                <p>1. 管理画面上段のツールバーにある「<span style="color: #5865F2; font-weight: bold;"><i class="fa-brands fa-discord"></i> Discord通知</span>」ボタンをクリックします。<br>
-                                2. コピーしたDiscord Webhook URLを貼り付けます。<br>
-                                3. 通知したいイベント（新着LINEメッセージ、新規友だち追加、予約・個別相談）のON/OFFチェックボックスを選択します。</p>
+                                <h4>邂｡逅�判髱｢縺ｧ縺ｮWebhook逋ｻ骭ｲ縺ｨ騾夂衍繧､繝吶Φ繝磯∈謚�</h4>
+                                <p>1. 邂｡逅�判髱｢荳頑ｮｵ縺ｮ繝��繝ｫ繝舌�縺ｫ縺ゅｋ縲�<span style="color: #5865F2; font-weight: bold;"><i class="fa-brands fa-discord"></i> Discord騾夂衍</span>縲阪�繧ｿ繝ｳ繧偵け繝ｪ繝�け縺励∪縺吶�<br>
+                                2. 繧ｳ繝斐�縺励◆Discord Webhook URL繧定ｲｼ繧贋ｻ倥￠縺ｾ縺吶�<br>
+                                3. 騾夂衍縺励◆縺�う繝吶Φ繝茨ｼ域眠逹LINE繝｡繝�そ繝ｼ繧ｸ縲∵眠隕丞暑縺�縺｡霑ｽ蜉�縲∽ｺ育ｴ��蛟句挨逶ｸ隲�ｼ峨�ON/OFF繝√ぉ繝�け繝懊ャ繧ｯ繧ｹ繧帝∈謚槭＠縺ｾ縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">3</div>
                             <div class="step-body">
-                                <h4>テスト通知送信と設定保存</h4>
-                                <p>「テスト通知を送信」ボタンをクリックすると、Discordチャンネルへ即座にテストEmbedメッセージが送信されます。<br>
-                                Discord上にメッセージが届いたことを確認したら、「設定を保存」ボタンをクリックして完了です。</p>
+                                <h4>繝�せ繝磯夂衍騾∽ｿ｡縺ｨ險ｭ螳壻ｿ晏ｭ�</h4>
+                                <p>縲後ユ繧ｹ繝磯夂衍繧帝∽ｿ｡縲阪�繧ｿ繝ｳ繧偵け繝ｪ繝�け縺吶ｋ縺ｨ縲．iscord繝√Ε繝ｳ繝阪Ν縺ｸ蜊ｳ蠎ｧ縺ｫ繝�せ繝�mbed繝｡繝�そ繝ｼ繧ｸ縺碁∽ｿ｡縺輔ｌ縺ｾ縺吶�<br>
+                                Discord荳翫↓繝｡繝�そ繝ｼ繧ｸ縺悟ｱ翫＞縺溘％縺ｨ繧堤｢ｺ隱阪＠縺溘ｉ縲√瑚ｨｭ螳壹ｒ菫晏ｭ倥阪�繧ｿ繝ｳ繧偵け繝ｪ繝�け縺励※螳御ｺ�〒縺吶�</p>
                             </div>
                         </div>
                     </div>
@@ -1209,54 +1209,54 @@
                     <div class="manual-alert-box tip" style="margin-top: 16px;">
                         <i class="fa-solid fa-lightbulb"></i>
                         <div>
-                            <strong>ワンクリック返信機能</strong><br>
-                            Discordに届いた通知の「💬 管理画面でチャットを開く」リンクをクリックすると、ブラウザで管理画面が開き、対象の受講生とのチャットモーダルが自動的にポップアップします。急ぎのお問い合わせにも1クリックで対応できます。
+                            <strong>繝ｯ繝ｳ繧ｯ繝ｪ繝�け霑比ｿ｡讖溯�</strong><br>
+                            Discord縺ｫ螻翫＞縺滄夂衍縺ｮ縲交汳ｬ 邂｡逅�判髱｢縺ｧ繝√Ε繝�ヨ繧帝幕縺上阪Μ繝ｳ繧ｯ繧偵け繝ｪ繝�け縺吶ｋ縺ｨ縲√ヶ繝ｩ繧ｦ繧ｶ縺ｧ邂｡逅�判髱｢縺碁幕縺阪∝ｯｾ雎｡縺ｮ蜿苓ｬ帷函縺ｨ縺ｮ繝√Ε繝�ヨ繝｢繝ｼ繝繝ｫ縺瑚�蜍慕噪縺ｫ繝昴ャ繝励い繝��縺励∪縺吶よ･縺弱�縺雁撫縺�粋繧上○縺ｫ繧�1繧ｯ繝ｪ繝�け縺ｧ蟇ｾ蠢懊〒縺阪∪縺吶�
                         </div>
                     </div>
                 </section>
 
-                <!-- 14. Slack通知設定（Incoming Webhook連携） -->
+                <!-- 14. Slack騾夂衍險ｭ螳夲ｼ�ncoming Webhook騾｣謳ｺ�� -->
                 <section class="manual-section" id="sec-slack-notify">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #fdf4ff; color: #4A154B;">
                             <i class="fa-brands fa-slack"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>14. Slack通知設定（Incoming Webhook連携）</h2>
-                            <p>LINEメッセージ受信や友だち追加、予約リクエストをSlackチャンネルへリアルタイム通知</p>
+                            <h2>14. Slack騾夂衍險ｭ螳夲ｼ�ncoming Webhook騾｣謳ｺ��</h2>
+                            <p>LINE繝｡繝�そ繝ｼ繧ｸ蜿嶺ｿ｡繧�暑縺�縺｡霑ｽ蜉�縲∽ｺ育ｴ�Μ繧ｯ繧ｨ繧ｹ繝医ｒSlack繝√Ε繝ｳ繝阪Ν縺ｸ繝ｪ繧｢繝ｫ繧ｿ繧､繝�騾夂衍</p>
                         </div>
                     </div>
 
-                    <p>受講生からの新着LINEメッセージや新規友だち追加、予約・個別相談リクエストを、教室スタッフが使用しているSlackワークスペースの指定チャンネルへ即座にリッチカード（Block Kit形式）で通知します。<br>
-                    通知カード内には対象受講生の受講生名・送信者ID・受信日時・メッセージ本文引用と合わせて、「<strong>管理画面カルテを開く</strong>」直通ボタンが含まれており、Slackからワンクリックで該当受講生のカルテやチャット画面へジャンプできます。</p>
+                    <p>蜿苓ｬ帷函縺九ｉ縺ｮ譁ｰ逹LINE繝｡繝�そ繝ｼ繧ｸ繧�眠隕丞暑縺�縺｡霑ｽ蜉�縲∽ｺ育ｴ��蛟句挨逶ｸ隲�Μ繧ｯ繧ｨ繧ｹ繝医ｒ縲∵蕗螳､繧ｹ繧ｿ繝�ヵ縺御ｽｿ逕ｨ縺励※縺�ｋSlack繝ｯ繝ｼ繧ｯ繧ｹ繝壹�繧ｹ縺ｮ謖�ｮ壹メ繝｣繝ｳ繝阪Ν縺ｸ蜊ｳ蠎ｧ縺ｫ繝ｪ繝�メ繧ｫ繝ｼ繝会ｼ�lock Kit蠖｢蠑擾ｼ峨〒騾夂衍縺励∪縺吶�<br>
+                    騾夂衍繧ｫ繝ｼ繝牙�縺ｫ縺ｯ蟇ｾ雎｡蜿苓ｬ帷函縺ｮ蜿苓ｬ帷函蜷阪�騾∽ｿ｡閠�D繝ｻ蜿嶺ｿ｡譌･譎ゅ�繝｡繝�そ繝ｼ繧ｸ譛ｬ譁�ｼ慕畑縺ｨ蜷医ｏ縺帙※縲√�<strong>邂｡逅�判髱｢繧ｫ繝ｫ繝�ｒ髢九￥</strong>縲咲峩騾壹�繧ｿ繝ｳ縺悟性縺ｾ繧後※縺翫ｊ縲ヾlack縺九ｉ繝ｯ繝ｳ繧ｯ繝ｪ繝�け縺ｧ隧ｲ蠖灘女隰帷函縺ｮ繧ｫ繝ｫ繝�ｄ繝√Ε繝�ヨ逕ｻ髱｢縺ｸ繧ｸ繝｣繝ｳ繝励〒縺阪∪縺吶�</p>
 
                     <div class="step-flow">
                         <div class="step-card">
                             <div class="step-number">1</div>
                             <div class="step-body">
-                                <h4>Slack Incoming Webhook URLの取得</h4>
-                                <p>1. SlackのAppディレクトリ（またはSlack API Apps管理画面）で「<strong>Incoming WebHooks</strong>」アプリを開きます。<br>
-                                2. 「Slackに追加」をクリックし、通知を受信したいチャンネル（例: <code>#line-notify</code> 等）を選択します。<br>
-                                3. 発行された「<strong>Webhook URL</strong>（<code>https://hooks.slack.com/services/...</code>）」をコピーします。</p>
+                                <h4>Slack Incoming Webhook URL縺ｮ蜿門ｾ�</h4>
+                                <p>1. Slack縺ｮApp繝�ぅ繝ｬ繧ｯ繝医Μ�医∪縺溘�Slack API Apps邂｡逅�判髱｢�峨〒縲�<strong>Incoming WebHooks</strong>縲阪い繝励Μ繧帝幕縺阪∪縺吶�<br>
+                                2. 縲郡lack縺ｫ霑ｽ蜉�縲阪ｒ繧ｯ繝ｪ繝�け縺励�夂衍繧貞女菫｡縺励◆縺�メ繝｣繝ｳ繝阪Ν�井ｾ�: <code>#line-notify</code> 遲会ｼ峨ｒ驕ｸ謚槭＠縺ｾ縺吶�<br>
+                                3. 逋ｺ陦後＆繧後◆縲�<strong>Webhook URL</strong>��<code>https://hooks.slack.com/services/...</code>�峨阪ｒ繧ｳ繝斐�縺励∪縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">2</div>
                             <div class="step-body">
-                                <h4>管理画面でのWebhook登録と通知イベント選択</h4>
-                                <p>1. 管理画面上段のツールバーにある「<span style="color: #ECB22E; font-weight: bold;"><i class="fa-brands fa-slack"></i> Slack通知</span>」ボタンをクリックします。<br>
-                                2. コピーしたSlack Incoming Webhook URLを入力欄に貼り付けます。<br>
-                                3. 通知したいイベント（新着LINEメッセージ、新規友だち追加、予約・個別相談）のON/OFFチェックボックスを選択します。</p>
+                                <h4>邂｡逅�判髱｢縺ｧ縺ｮWebhook逋ｻ骭ｲ縺ｨ騾夂衍繧､繝吶Φ繝磯∈謚�</h4>
+                                <p>1. 邂｡逅�判髱｢荳頑ｮｵ縺ｮ繝��繝ｫ繝舌�縺ｫ縺ゅｋ縲�<span style="color: #ECB22E; font-weight: bold;"><i class="fa-brands fa-slack"></i> Slack騾夂衍</span>縲阪�繧ｿ繝ｳ繧偵け繝ｪ繝�け縺励∪縺吶�<br>
+                                2. 繧ｳ繝斐�縺励◆Slack Incoming Webhook URL繧貞�蜉帶ｬ�↓雋ｼ繧贋ｻ倥￠縺ｾ縺吶�<br>
+                                3. 騾夂衍縺励◆縺�う繝吶Φ繝茨ｼ域眠逹LINE繝｡繝�そ繝ｼ繧ｸ縲∵眠隕丞暑縺�縺｡霑ｽ蜉�縲∽ｺ育ｴ��蛟句挨逶ｸ隲�ｼ峨�ON/OFF繝√ぉ繝�け繝懊ャ繧ｯ繧ｹ繧帝∈謚槭＠縺ｾ縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">3</div>
                             <div class="step-body">
-                                <h4>テスト通知送信と設定保存</h4>
-                                <p>「テスト通知を送信」ボタンをクリックすると、Slackチャンネルへ即座にテストカードメッセージが送信されます。<br>
-                                Slack上にメッセージが届いたことを確認したら、「設定を保存」ボタンをクリックして完了です。</p>
+                                <h4>繝�せ繝磯夂衍騾∽ｿ｡縺ｨ險ｭ螳壻ｿ晏ｭ�</h4>
+                                <p>縲後ユ繧ｹ繝磯夂衍繧帝∽ｿ｡縲阪�繧ｿ繝ｳ繧偵け繝ｪ繝�け縺吶ｋ縺ｨ縲ヾlack繝√Ε繝ｳ繝阪Ν縺ｸ蜊ｳ蠎ｧ縺ｫ繝�せ繝医き繝ｼ繝峨Γ繝�そ繝ｼ繧ｸ縺碁∽ｿ｡縺輔ｌ縺ｾ縺吶�<br>
+                                Slack荳翫↓繝｡繝�そ繝ｼ繧ｸ縺悟ｱ翫＞縺溘％縺ｨ繧堤｢ｺ隱阪＠縺溘ｉ縲√瑚ｨｭ螳壹ｒ菫晏ｭ倥阪�繧ｿ繝ｳ繧偵け繝ｪ繝�け縺励※螳御ｺ�〒縺吶�</p>
                             </div>
                         </div>
                     </div>
@@ -1264,21 +1264,21 @@
                     <div class="manual-alert-box tip" style="margin-top: 16px;">
                         <i class="fa-solid fa-lightbulb"></i>
                         <div>
-                            <strong>Discord通知との併用も可能</strong><br>
-                            本システムでは、Discord通知とSlack通知をそれぞれ独立して設定できます。スタッフによってDiscordを使うチーム・Slackを使うチームに分かれている場合でも、双方に同時にリアルタイム通知を届けることが可能です。
+                            <strong>Discord騾夂衍縺ｨ縺ｮ菴ｵ逕ｨ繧ょ庄閭ｽ</strong><br>
+                            譛ｬ繧ｷ繧ｹ繝�Β縺ｧ縺ｯ縲．iscord騾夂衍縺ｨSlack騾夂衍繧偵◎繧後◇繧檎峡遶九＠縺ｦ險ｭ螳壹〒縺阪∪縺吶ゅせ繧ｿ繝�ヵ縺ｫ繧医▲縺ｦDiscord繧剃ｽｿ縺�メ繝ｼ繝�繝ｻSlack繧剃ｽｿ縺�メ繝ｼ繝�縺ｫ蛻�°繧後※縺�ｋ蝣ｴ蜷医〒繧ゅ∝曙譁ｹ縺ｫ蜷梧凾縺ｫ繝ｪ繧｢繝ｫ繧ｿ繧､繝�騾夂衍繧貞ｱ翫￠繧九％縺ｨ縺悟庄閭ｽ縺ｧ縺吶�
                         </div>
                     </div>
                 </section>
 
-                <!-- 15. 会社DX 関心度アンケート配信・自動ヒアリング機能 -->
+                <!-- 15. 莨夂､ｾDX 髢｢蠢�ｺｦ繧｢繝ｳ繧ｱ繝ｼ繝磯�菫｡繝ｻ閾ｪ蜍輔ヲ繧｢繝ｪ繝ｳ繧ｰ讖溯� -->
                 <section class="manual-section" id="sec-dx-survey">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #eff6ff; color: #2563eb;">
                             <i class="fa-solid fa-clipboard-question"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>15. 会社DX 関心度アンケート配信・自動ヒアリング機能</h2>
-                            <p>LINEトーク画面上でワンタップ回答できる対話式アンケートと自動カルテ連携</p>
+                            <h2>15. 莨夂､ｾDX 髢｢蠢�ｺｦ繧｢繝ｳ繧ｱ繝ｼ繝磯�菫｡繝ｻ閾ｪ蜍輔ヲ繧｢繝ｪ繝ｳ繧ｰ讖溯�</h2>
+                            <p>LINE繝医�繧ｯ逕ｻ髱｢荳翫〒繝ｯ繝ｳ繧ｿ繝��蝗樒ｭ斐〒縺阪ｋ蟇ｾ隧ｱ蠑上い繝ｳ繧ｱ繝ｼ繝医→閾ｪ蜍輔き繝ｫ繝�｣謳ｺ</p>
                         </div>
                     </div>
 
@@ -1286,19 +1286,19 @@
                         <div class="step-card">
                             <div class="step-number">1</div>
                             <div class="step-body">
-                                <h4>機能の概要と目的</h4>
-                                <p>「会社DX」アカウントのLINE友だちに対し、企業のDX（デジタル化・業務効率化）への関心度や、具体的に興味のある分野を2ステップで手軽にヒアリングできる対話式アンケート機能です。LINEのリッチカード（Flex Message）を活用し、友だちが画面上の選択肢をタップするだけで回答が完了します。</p>
+                                <h4>讖溯�縺ｮ讎りｦ√→逶ｮ逧�</h4>
+                                <p>縲御ｼ夂､ｾDX縲阪い繧ｫ繧ｦ繝ｳ繝医�LINE蜿九□縺｡縺ｫ蟇ｾ縺励∽ｼ∵･ｭ縺ｮDX�医ョ繧ｸ繧ｿ繝ｫ蛹悶�讌ｭ蜍吝柑邇�喧�峨∈縺ｮ髢｢蠢�ｺｦ繧�∝�菴鍋噪縺ｫ闊亥袖縺ｮ縺ゅｋ蛻�㍽繧�2繧ｹ繝�ャ繝励〒謇玖ｻｽ縺ｫ繝偵い繝ｪ繝ｳ繧ｰ縺ｧ縺阪ｋ蟇ｾ隧ｱ蠑上い繝ｳ繧ｱ繝ｼ繝域ｩ溯�縺ｧ縺吶�INE縺ｮ繝ｪ繝�メ繧ｫ繝ｼ繝会ｼ�lex Message�峨ｒ豢ｻ逕ｨ縺励∝暑縺�縺｡縺檎判髱｢荳翫�驕ｸ謚櫁い繧偵ち繝��縺吶ｋ縺�縺代〒蝗樒ｭ斐′螳御ｺ�＠縺ｾ縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">2</div>
                             <div class="step-body">
-                                <h4>2ステップ対話アンケートの流れ（自動応答）</h4>
-                                <p>友だちのLINEトーク画面上で以下のようにスムーズに進行します：</p>
+                                <h4>2繧ｹ繝�ャ繝怜ｯｾ隧ｱ繧｢繝ｳ繧ｱ繝ｼ繝医�豬√ｌ�郁�蜍募ｿ懃ｭ費ｼ�</h4>
+                                <p>蜿九□縺｡縺ｮLINE繝医�繧ｯ逕ｻ髱｢荳翫〒莉･荳九�繧医≧縺ｫ繧ｹ繝�繝ｼ繧ｺ縺ｫ騾ｲ陦後＠縺ｾ縺呻ｼ�</p>
                                 <ul style="margin: 6px 0 0 16px; line-height: 1.7; font-size: 13px;">
-                                    <li><strong>【Q1: DX関心度】</strong>: 「🔥 大いにある（すぐにでも取り組みたい）」「💡 少しある（情報収集中・事例を知りたい）」「☕ 今はまだない（状況を見守り中）」の3択から選択。</li>
-                                    <li><strong>【Q2: 関心のあるテーマ・課題】</strong>: Q1で「大いにある」または「少しある」と答えた友だちに自動で表示。「💻 ペーパーレス化」「🤖 生成AI社内活用」「📱 LINE集客自動化」「📊 クラウド一元管理」「🤝 無料相談・他社事例」「✏️ その他」の中から興味のあるテーマをタップ。</li>
+                                    <li><strong>縲寝1: DX髢｢蠢�ｺｦ縲�</strong>: 縲交沐･ 螟ｧ縺�↓縺ゅｋ�医☆縺舌↓縺ｧ繧ょ叙繧顔ｵ�∩縺溘＞�峨阪交汳｡ 蟆代＠縺ゅｋ�域ュ蝣ｱ蜿朱寔荳ｭ繝ｻ莠倶ｾ九ｒ遏･繧翫◆縺�ｼ峨阪娯� 莉翫�縺ｾ縺�縺ｪ縺�ｼ育憾豕√ｒ隕句ｮ医ｊ荳ｭ�峨阪�3謚槭°繧蛾∈謚槭�</li>
+                                    <li><strong>縲寝2: 髢｢蠢��縺ゅｋ繝��繝槭�隱ｲ鬘後�</strong>: Q1縺ｧ縲悟､ｧ縺�↓縺ゅｋ縲阪∪縺溘�縲悟ｰ代＠縺ゅｋ縲阪→遲斐∴縺溷暑縺�縺｡縺ｫ閾ｪ蜍輔〒陦ｨ遉ｺ縲ゅ交汳ｻ 繝壹�繝代�繝ｬ繧ｹ蛹悶阪交洟� 逕滓�AI遉ｾ蜀�ｴｻ逕ｨ縲阪交沒ｱ LINE髮�ｮ｢閾ｪ蜍募喧縲阪交沒� 繧ｯ繝ｩ繧ｦ繝我ｸ蜈�ｮ｡逅�阪交洟� 辟｡譁咏嶌隲��莉也､ｾ莠倶ｾ九阪娯恟�� 縺昴�莉悶阪�荳ｭ縺九ｉ闊亥袖縺ｮ縺ゅｋ繝��繝槭ｒ繧ｿ繝��縲�</li>
                                 </ul>
                             </div>
                         </div>
@@ -1306,12 +1306,12 @@
                         <div class="step-card">
                             <div class="step-number">3</div>
                             <div class="step-body">
-                                <h4>管理画面からの配信手順（一斉配信 / 個別送信）</h4>
+                                <h4>邂｡逅�判髱｢縺九ｉ縺ｮ驟堺ｿ｡謇矩��ｼ井ｸ譁蛾�菫｡ / 蛟句挨騾∽ｿ｡��</h4>
                                 <ol style="margin: 6px 0 0 16px; line-height: 1.7; font-size: 13px;">
-                                    <li>画面上部のアカウント切り替えで<strong>「会社DX」</strong>を選択します。</li>
-                                    <li>ヘッダーの<strong>「📋 DXアンケート配信」</strong>ボタンをクリックすると配信スタジオが起動します。</li>
-                                    <li><strong>「友だち全員に一斉配信」</strong>または<strong>「特定の顧客・担当者に個別送信」</strong>を選択します。顧客一覧の各行にある<strong>「📋 DXアンケート」</strong>ボタンから直接個別指定して送信することも可能です。</li>
-                                    <li>「このアンケートをLINE配信する」をクリックすると、確認ダイアログののち即座に対象者のトーク画面へFlex Messageが送信されます。</li>
+                                    <li>逕ｻ髱｢荳企Κ縺ｮ繧｢繧ｫ繧ｦ繝ｳ繝亥�繧頑崛縺医〒<strong>縲御ｼ夂､ｾDX縲�</strong>繧帝∈謚槭＠縺ｾ縺吶�</li>
+                                    <li>繝倥ャ繝繝ｼ縺ｮ<strong>縲交沒� DX繧｢繝ｳ繧ｱ繝ｼ繝磯�菫｡縲�</strong>繝懊ち繝ｳ繧偵け繝ｪ繝�け縺吶ｋ縺ｨ驟堺ｿ｡繧ｹ繧ｿ繧ｸ繧ｪ縺瑚ｵｷ蜍輔＠縺ｾ縺吶�</li>
+                                    <li><strong>縲悟暑縺�縺｡蜈ｨ蜩｡縺ｫ荳譁蛾�菫｡縲�</strong>縺ｾ縺溘�<strong>縲檎音螳壹�鬘ｧ螳｢繝ｻ諡�ｽ楢�↓蛟句挨騾∽ｿ｡縲�</strong>繧帝∈謚槭＠縺ｾ縺吶る｡ｧ螳｢荳隕ｧ縺ｮ蜷�｡後↓縺ゅｋ<strong>縲交沒� DX繧｢繝ｳ繧ｱ繝ｼ繝医�</strong>繝懊ち繝ｳ縺九ｉ逶ｴ謗･蛟句挨謖�ｮ壹＠縺ｦ騾∽ｿ｡縺吶ｋ縺薙→繧ょ庄閭ｽ縺ｧ縺吶�</li>
+                                    <li>縲後％縺ｮ繧｢繝ｳ繧ｱ繝ｼ繝医ｒLINE驟堺ｿ｡縺吶ｋ縲阪ｒ繧ｯ繝ｪ繝�け縺吶ｋ縺ｨ縲∫｢ｺ隱阪ム繧､繧｢繝ｭ繧ｰ縺ｮ縺ｮ縺｡蜊ｳ蠎ｧ縺ｫ蟇ｾ雎｡閠��繝医�繧ｯ逕ｻ髱｢縺ｸFlex Message縺碁∽ｿ｡縺輔ｌ縺ｾ縺吶�</li>
                                 </ol>
                             </div>
                         </div>
@@ -1319,11 +1319,11 @@
                         <div class="step-card">
                             <div class="step-number">4</div>
                             <div class="step-body">
-                                <h4>回答結果の自動保存・即時通知</h4>
+                                <h4>蝗樒ｭ皮ｵ先棡縺ｮ閾ｪ蜍穂ｿ晏ｭ倥�蜊ｳ譎る夂衍</h4>
                                 <ul style="margin: 6px 0 0 16px; line-height: 1.7; font-size: 13px;">
-                                    <li><strong>カルテ自動保存</strong>: 回答された内容は、顧客カルテの<strong>メモ欄（staff_memo）</strong>および<strong>最新やり取り（last_interaction）</strong>に「【会社DXアンケート回答】関心度: 大いにある / 関心テーマ: 生成AI社内活用」として自動追記・タイムスタンプ保存されます。</li>
-                                    <li><strong>一覧テーブルでの回答済バッジ</strong>: アンケート回答済みの顧客には、一覧のメモ列に青い「📋 DXアンケート回答済」バッジが表示され、ひと目で未回答・回答済を判別できます。</li>
-                                    <li><strong>管理者LINE & Discord & Slack速報通知</strong>: 友だちが回答した瞬間に、管理者の個人LINE、DiscordおよびSlackへ「🏢 会社DX アンケート回答速報」が即時プッシュ通知されます。熱度の高い見込み客に対して即座に個別チャット等でアプローチできます。</li>
+                                    <li><strong>繧ｫ繝ｫ繝��蜍穂ｿ晏ｭ�</strong>: 蝗樒ｭ斐＆繧後◆蜀�ｮｹ縺ｯ縲�｡ｧ螳｢繧ｫ繝ｫ繝��<strong>繝｡繝｢谺�ｼ�taff_memo��</strong>縺翫ｈ縺ｳ<strong>譛譁ｰ繧�ｊ蜿悶ｊ��ast_interaction��</strong>縺ｫ縲後蝉ｼ夂､ｾDX繧｢繝ｳ繧ｱ繝ｼ繝亥屓遲斐鷹未蠢�ｺｦ: 螟ｧ縺�↓縺ゅｋ / 髢｢蠢�ユ繝ｼ繝�: 逕滓�AI遉ｾ蜀�ｴｻ逕ｨ縲阪→縺励※閾ｪ蜍戊ｿｽ險倥�繧ｿ繧､繝�繧ｹ繧ｿ繝ｳ繝嶺ｿ晏ｭ倥＆繧後∪縺吶�</li>
+                                    <li><strong>荳隕ｧ繝��繝悶Ν縺ｧ縺ｮ蝗樒ｭ疲ｸ医ヰ繝�ず</strong>: 繧｢繝ｳ繧ｱ繝ｼ繝亥屓遲疲ｸ医∩縺ｮ鬘ｧ螳｢縺ｫ縺ｯ縲∽ｸ隕ｧ縺ｮ繝｡繝｢蛻励↓髱偵＞縲交沒� DX繧｢繝ｳ繧ｱ繝ｼ繝亥屓遲疲ｸ医阪ヰ繝�ず縺瑚｡ｨ遉ｺ縺輔ｌ縲√�縺ｨ逶ｮ縺ｧ譛ｪ蝗樒ｭ斐�蝗樒ｭ疲ｸ医ｒ蛻､蛻･縺ｧ縺阪∪縺吶�</li>
+                                    <li><strong>邂｡逅��INE & Discord & Slack騾溷�ｱ騾夂衍</strong>: 蜿九□縺｡縺悟屓遲斐＠縺溽椪髢薙↓縲∫ｮ｡逅���蛟倶ｺｺLINE縲．iscord縺翫ｈ縺ｳSlack縺ｸ縲交沛｢ 莨夂､ｾDX 繧｢繝ｳ繧ｱ繝ｼ繝亥屓遲秘溷�ｱ縲阪′蜊ｳ譎ゅ�繝�す繝･騾夂衍縺輔ｌ縺ｾ縺吶ら�蠎ｦ縺ｮ鬮倥＞隕玖ｾｼ縺ｿ螳｢縺ｫ蟇ｾ縺励※蜊ｳ蠎ｧ縺ｫ蛟句挨繝√Ε繝�ヨ遲峨〒繧｢繝励Ο繝ｼ繝√〒縺阪∪縺吶�</li>
                                 </ul>
                             </div>
                         </div>
@@ -1332,21 +1332,21 @@
                     <div class="manual-alert-box tip" style="margin-top: 16px;">
                         <i class="fa-solid fa-lightbulb"></i>
                         <div>
-                            <strong>キーワード自動応答にも対応</strong><br>
-                            友だちがトーク画面で「アンケート」「dxアンケート」「DX相談」「効率化」などと入力した際にも、システムが自動的にこのQ1アンケートカードを返信します。配信を受け取っていなくても、興味を持った顧客がいつでも能動的にアンケートを回答できます。
+                            <strong>繧ｭ繝ｼ繝ｯ繝ｼ繝芽�蜍募ｿ懃ｭ斐↓繧ょｯｾ蠢�</strong><br>
+                            蜿九□縺｡縺後ヨ繝ｼ繧ｯ逕ｻ髱｢縺ｧ縲後い繝ｳ繧ｱ繝ｼ繝医阪慧x繧｢繝ｳ繧ｱ繝ｼ繝医阪轡X逶ｸ隲�阪悟柑邇�喧縲阪↑縺ｩ縺ｨ蜈･蜉帙＠縺滄圀縺ｫ繧ゅ√す繧ｹ繝�Β縺瑚�蜍慕噪縺ｫ縺薙�Q1繧｢繝ｳ繧ｱ繝ｼ繝医き繝ｼ繝峨ｒ霑比ｿ｡縺励∪縺吶る�菫｡繧貞女縺大叙縺｣縺ｦ縺�↑縺上※繧ゅ∬�蜻ｳ繧呈戟縺｣縺滄｡ｧ螳｢縺後＞縺､縺ｧ繧り�蜍慕噪縺ｫ繧｢繝ｳ繧ｱ繝ｼ繝医ｒ蝗樒ｭ斐〒縺阪∪縺吶�
                         </div>
                     </div>
                 </section>
 
-                <!-- 16. メール二段階認証（2FA / セキュリティ） -->
+                <!-- 16. 繝｡繝ｼ繝ｫ莠梧ｮｵ髫手ｪ崎ｨｼ��2FA / 繧ｻ繧ｭ繝･繝ｪ繝�ぅ�� -->
                 <section class="manual-section" id="sec-2fa">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #e0f2fe; color: #0284c7;">
                             <i class="fa-solid fa-shield-halved"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>16. メール二段階認証（2FA / セキュリティ）</h2>
-                            <p>管理者アカウントの不正ログイン防止・メールワンタイムパスワード</p>
+                            <h2>16. 繝｡繝ｼ繝ｫ莠梧ｮｵ髫手ｪ崎ｨｼ��2FA / 繧ｻ繧ｭ繝･繝ｪ繝�ぅ��</h2>
+                            <p>邂｡逅��い繧ｫ繧ｦ繝ｳ繝医�荳肴ｭ｣繝ｭ繧ｰ繧､繝ｳ髦ｲ豁｢繝ｻ繝｡繝ｼ繝ｫ繝ｯ繝ｳ繧ｿ繧､繝�繝代せ繝ｯ繝ｼ繝�</p>
                         </div>
                     </div>
 
@@ -1354,125 +1354,125 @@
                         <div class="step-card">
                             <div class="step-number">1</div>
                             <div class="step-body">
-                                <h4>二段階認証のログイン手順</h4>
-                                <p>管理画面（受講生カルテ、リッチメニュー管理、操作マニュアル）へのログイン時、2段階の認証フローで安全に保護されます：<br>
-                                <strong>Step 1（管理者パスワード入力）</strong>：初期パスワード（<code>1020143</code>）を入力して「ログイン」をクリックします。<br>
-                                <strong>Step 2（メール認証コード入力）</strong>：パスワードが一致すると、自動的に登録メールアドレス（<code>kawai@kureba.co.jp</code>）宛てに<strong>6桁のワンタイム認証コード</strong>が送信されます。<br>
-                                <strong>Step 3（認証完了 & ログイン）</strong>：メールに届いた6桁コードを入力して「認証してログイン」をクリックすると、管理画面に入室できます。</p>
+                                <h4>莠梧ｮｵ髫手ｪ崎ｨｼ縺ｮ繝ｭ繧ｰ繧､繝ｳ謇矩��</h4>
+                                <p>邂｡逅�判髱｢�亥女隰帷函繧ｫ繝ｫ繝�√Μ繝�メ繝｡繝九Η繝ｼ邂｡逅�∵桃菴懊�繝九Η繧｢繝ｫ�峨∈縺ｮ繝ｭ繧ｰ繧､繝ｳ譎ゅ�2谿ｵ髫弱�隱崎ｨｼ繝輔Ο繝ｼ縺ｧ螳牙�縺ｫ菫晁ｭｷ縺輔ｌ縺ｾ縺呻ｼ�<br>
+                                <strong>Step 1�育ｮ｡逅��ヱ繧ｹ繝ｯ繝ｼ繝牙�蜉幢ｼ�</strong>�壼�譛溘ヱ繧ｹ繝ｯ繝ｼ繝会ｼ�<code>1020143</code>�峨ｒ蜈･蜉帙＠縺ｦ縲後Ο繧ｰ繧､繝ｳ縲阪ｒ繧ｯ繝ｪ繝�け縺励∪縺吶�<br>
+                                <strong>Step 2�医Γ繝ｼ繝ｫ隱崎ｨｼ繧ｳ繝ｼ繝牙�蜉幢ｼ�</strong>�壹ヱ繧ｹ繝ｯ繝ｼ繝峨′荳閾ｴ縺吶ｋ縺ｨ縲∬�蜍慕噪縺ｫ逋ｻ骭ｲ繝｡繝ｼ繝ｫ繧｢繝峨Ξ繧ｹ��<code>kawai@kureba.co.jp</code>�牙ｮ帙※縺ｫ<strong>6譯√�繝ｯ繝ｳ繧ｿ繧､繝�隱崎ｨｼ繧ｳ繝ｼ繝�</strong>縺碁∽ｿ｡縺輔ｌ縺ｾ縺吶�<br>
+                                <strong>Step 3�郁ｪ崎ｨｼ螳御ｺ� & 繝ｭ繧ｰ繧､繝ｳ��</strong>�壹Γ繝ｼ繝ｫ縺ｫ螻翫＞縺�6譯√さ繝ｼ繝峨ｒ蜈･蜉帙＠縺ｦ縲瑚ｪ崎ｨｼ縺励※繝ｭ繧ｰ繧､繝ｳ縲阪ｒ繧ｯ繝ｪ繝�け縺吶ｋ縺ｨ縲∫ｮ｡逅�判髱｢縺ｫ蜈･螳､縺ｧ縺阪∪縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">2</div>
                             <div class="step-body">
-                                <h4>有効期限・セキュリティ仕様</h4>
-                                <p>・<strong>認証コード有効期限</strong>：発行から<strong>10分間</strong>有効です。期限が切れた場合は「コード再送信」または最初からやり直してください。<br>
-                                ・<strong>再送信タイマー</strong>：連続送信によるサーバー負荷や誤送信を防ぐため、<strong>60秒間のクールダウンタイマー</strong>が動作します。<br>
-                                ・<strong>試行回数制限（ブルートフォース対策）</strong>：コードを<strong>5回連続で誤入力</strong>すると、セキュリティ保護のため認証セッションが自動失効します。<br>
-                                ・<strong>ログイン状態の維持</strong>：認証に成功すると、ブラウザにセキュアな認証トークンが保持され、同一ブラウザで30日間安全に操作を継続できます。右上のログアウトボタンを押すことで即座に認証を取り消せます。</p>
+                                <h4>譛牙柑譛滄剞繝ｻ繧ｻ繧ｭ繝･繝ｪ繝�ぅ莉墓ｧ�</h4>
+                                <p>繝ｻ<strong>隱崎ｨｼ繧ｳ繝ｼ繝画怏蜉ｹ譛滄剞</strong>�夂匱陦後°繧�<strong>10蛻�俣</strong>譛牙柑縺ｧ縺吶よ悄髯舌′蛻�ｌ縺溷�ｴ蜷医�縲後さ繝ｼ繝牙�騾∽ｿ｡縲阪∪縺溘�譛蛻昴°繧峨ｄ繧顔峩縺励※縺上□縺輔＞縲�<br>
+                                繝ｻ<strong>蜀埼∽ｿ｡繧ｿ繧､繝槭�</strong>�夐｣邯夐∽ｿ｡縺ｫ繧医ｋ繧ｵ繝ｼ繝舌�雋�闕ｷ繧�ｪ､騾∽ｿ｡繧帝亟縺舌◆繧√�<strong>60遘帝俣縺ｮ繧ｯ繝ｼ繝ｫ繝繧ｦ繝ｳ繧ｿ繧､繝槭�</strong>縺悟虚菴懊＠縺ｾ縺吶�<br>
+                                繝ｻ<strong>隧ｦ陦悟屓謨ｰ蛻ｶ髯撰ｼ医ヶ繝ｫ繝ｼ繝医ヵ繧ｩ繝ｼ繧ｹ蟇ｾ遲厄ｼ�</strong>�壹さ繝ｼ繝峨ｒ<strong>5蝗樣｣邯壹〒隱､蜈･蜉�</strong>縺吶ｋ縺ｨ縲√そ繧ｭ繝･繝ｪ繝�ぅ菫晁ｭｷ縺ｮ縺溘ａ隱崎ｨｼ繧ｻ繝�す繝ｧ繝ｳ縺瑚�蜍募､ｱ蜉ｹ縺励∪縺吶�<br>
+                                繝ｻ<strong>繝ｭ繧ｰ繧､繝ｳ迥ｶ諷九�邯ｭ謖�</strong>�夊ｪ崎ｨｼ縺ｫ謌仙粥縺吶ｋ縺ｨ縲√ヶ繝ｩ繧ｦ繧ｶ縺ｫ繧ｻ繧ｭ繝･繧｢縺ｪ隱崎ｨｼ繝医�繧ｯ繝ｳ縺御ｿ晄戟縺輔ｌ縲∝酔荳繝悶Λ繧ｦ繧ｶ縺ｧ30譌･髢灘ｮ牙�縺ｫ謫堺ｽ懊ｒ邯咏ｶ壹〒縺阪∪縺吶ょ承荳翫�繝ｭ繧ｰ繧｢繧ｦ繝医�繧ｿ繝ｳ繧呈款縺吶％縺ｨ縺ｧ蜊ｳ蠎ｧ縺ｫ隱崎ｨｼ繧貞叙繧頑ｶ医○縺ｾ縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">3</div>
                             <div class="step-body">
-                                <h4>送信先メールアドレスの変更・設定</h4>
-                                <p>認証コードの送信先メールアドレスや有効期限の設定は、<code>public_html/config.php</code> 内で簡単にカスタマイズできます：<br>
-                                <code>define('ADMIN_2FA_EMAIL', 'kawai@kureba.co.jp'); // 送信先メールアドレス</code><br>
-                                <code>define('ADMIN_2FA_CODE_LIFETIME_MINUTES', 10); // 有効期限（分）</code><br>
-                                <code>define('ENABLE_ADMIN_2FA', true); // 二段階認証の有効/無効トグル</code></p>
+                                <h4>騾∽ｿ｡蜈医Γ繝ｼ繝ｫ繧｢繝峨Ξ繧ｹ縺ｮ螟画峩繝ｻ險ｭ螳�</h4>
+                                <p>隱崎ｨｼ繧ｳ繝ｼ繝峨�騾∽ｿ｡蜈医Γ繝ｼ繝ｫ繧｢繝峨Ξ繧ｹ繧�怏蜉ｹ譛滄剞縺ｮ險ｭ螳壹�縲�<code>public_html/config.php</code> 蜀�〒邁｡蜊倥↓繧ｫ繧ｹ繧ｿ繝槭う繧ｺ縺ｧ縺阪∪縺呻ｼ�<br>
+                                <code>define('ADMIN_2FA_EMAIL', 'kawai@kureba.co.jp'); // 騾∽ｿ｡蜈医Γ繝ｼ繝ｫ繧｢繝峨Ξ繧ｹ</code><br>
+                                <code>define('ADMIN_2FA_CODE_LIFETIME_MINUTES', 10); // 譛牙柑譛滄剞�亥���</code><br>
+                                <code>define('ENABLE_ADMIN_2FA', true); // 莠梧ｮｵ髫手ｪ崎ｨｼ縺ｮ譛牙柑/辟｡蜉ｹ繝医げ繝ｫ</code></p>
                             </div>
                         </div>
                     </div>
 
                     <div class="tips-box">
-                        <div class="tips-box-title"><i class="fa-solid fa-lightbulb"></i> ワンポイントTips: 全画面での認証共有</div>
+                        <div class="tips-box-title"><i class="fa-solid fa-lightbulb"></i> 繝ｯ繝ｳ繝昴う繝ｳ繝�ips: 蜈ｨ逕ｻ髱｢縺ｧ縺ｮ隱崎ｨｼ蜈ｱ譛�</div>
                         <div class="tips-box-content">
-                            カルテ管理画面（<code>index.html</code>）、リッチメニュー管理（<code>richmenu.html</code>）、操作マニュアル（<code>manual.html</code>）のいずれかで一度二段階認証を完了すると、同一ブラウザ内であれば別画面へ移動した際も自動的に認証が引き継がれます。画面を切り替えるたびに毎回コードを入力する必要はありません。
+                            繧ｫ繝ｫ繝�ｮ｡逅�判髱｢��<code>index.html</code>�峨√Μ繝�メ繝｡繝九Η繝ｼ邂｡逅�ｼ�<code>richmenu.html</code>�峨∵桃菴懊�繝九Η繧｢繝ｫ��<code>manual.html</code>�峨�縺�★繧後°縺ｧ荳蠎ｦ莠梧ｮｵ髫手ｪ崎ｨｼ繧貞ｮ御ｺ�☆繧九→縲∝酔荳繝悶Λ繧ｦ繧ｶ蜀�〒縺ゅｌ縺ｰ蛻･逕ｻ髱｢縺ｸ遘ｻ蜍輔＠縺滄圀繧り�蜍慕噪縺ｫ隱崎ｨｼ縺悟ｼ輔″邯吶′繧後∪縺吶ら判髱｢繧貞�繧頑崛縺医ｋ縺溘�縺ｫ豈主屓繧ｳ繝ｼ繝峨ｒ蜈･蜉帙☆繧句ｿ�ｦ√�縺ゅｊ縺ｾ縺帙ｓ縲�
                         </div>
                     </div>
                 </section>
 
-                <!-- 17. 他社・別レンタルサーバー移行＆初期セットアップ -->
+                <!-- 17. 莉也､ｾ繝ｻ蛻･繝ｬ繝ｳ繧ｿ繝ｫ繧ｵ繝ｼ繝舌�遘ｻ陦鯉ｼ��譛溘そ繝�ヨ繧｢繝�� -->
                 <section class="manual-section" id="sec-server-setup">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #ecfdf5; color: #10b981;">
                             <i class="fa-solid fa-server"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>17. 他社・別レンタルサーバー移行＆初期セットアップ</h2>
-                            <p>自社レンタルサーバーへの導入手順・環境診断ウィザード・個人情報ゼロのクリーンセットアップ</p>
+                            <h2>17. 莉也､ｾ繝ｻ蛻･繝ｬ繝ｳ繧ｿ繝ｫ繧ｵ繝ｼ繝舌�遘ｻ陦鯉ｼ��譛溘そ繝�ヨ繧｢繝��</h2>
+                            <p>閾ｪ遉ｾ繝ｬ繝ｳ繧ｿ繝ｫ繧ｵ繝ｼ繝舌�縺ｸ縺ｮ蟆主�謇矩���迺ｰ蠅�ｨｺ譁ｭ繧ｦ繧｣繧ｶ繝ｼ繝峨�蛟倶ｺｺ諠��ｱ繧ｼ繝ｭ縺ｮ繧ｯ繝ｪ繝ｼ繝ｳ繧ｻ繝�ヨ繧｢繝��</p>
                         </div>
                     </div>
 
-                    <p>本システムを他社やクライアントのレンタルサーバー（エックスサーバー、ロリポップ！、さくらインターネット、ConoHa WING等）へ新規導入・移行する際の手順です。<br>
-                    <strong>配布用パッケージには過去の顧客データやチャット履歴が一切含まれておらず</strong>、ブラウザから <code>setup.php</code> を開くだけでサーバー要件の自動診断と初期設定が完了します。</p>
+                    <p>譛ｬ繧ｷ繧ｹ繝�Β繧剃ｻ也､ｾ繧�け繝ｩ繧､繧｢繝ｳ繝医�繝ｬ繝ｳ繧ｿ繝ｫ繧ｵ繝ｼ繝舌��医お繝�け繧ｹ繧ｵ繝ｼ繝舌�縲√Ο繝ｪ繝昴ャ繝暦ｼ√√＆縺上ｉ繧､繝ｳ繧ｿ繝ｼ繝阪ャ繝医，onoHa WING遲会ｼ峨∈譁ｰ隕丞ｰ主�繝ｻ遘ｻ陦後☆繧矩圀縺ｮ謇矩��〒縺吶�<br>
+                    <strong>驟榊ｸ�畑繝代ャ繧ｱ繝ｼ繧ｸ縺ｫ縺ｯ驕主悉縺ｮ鬘ｧ螳｢繝��繧ｿ繧�メ繝｣繝�ヨ螻･豁ｴ縺御ｸ蛻�性縺ｾ繧後※縺翫ｉ縺�</strong>縲√ヶ繝ｩ繧ｦ繧ｶ縺九ｉ <code>setup.php</code> 繧帝幕縺上□縺代〒繧ｵ繝ｼ繝舌�隕∽ｻｶ縺ｮ閾ｪ蜍戊ｨｺ譁ｭ縺ｨ蛻晄悄險ｭ螳壹′螳御ｺ�＠縺ｾ縺吶�</p>
 
                     <div class="step-flow">
-                        <!-- ステップ1: ファイルアップロード -->
+                        <!-- 繧ｹ繝�ャ繝�1: 繝輔ぃ繧､繝ｫ繧｢繝��繝ｭ繝ｼ繝� -->
                         <div class="step-card">
                             <div class="step-number">1</div>
                             <div class="step-body">
-                                <h4>レンタルサーバーへファイルをアップロード</h4>
-                                <p>FTPソフト（FileZilla等）またはサーバー管理画面のファイルマネージャーを使い、公開フォルダ（<code>public_html</code> 等）にZIPを解凍してアップロードします。<br>
-                                以下のフォルダに書き込み権限（パーミッション <code>755</code> または <code>777</code>）が付与されていることを確認します：<br>
-                                ・<code>public_html/data/</code>（アカウント情報保存）<br>
-                                ・<code>public_html/uploads/</code>（リッチメニュー画像保存）<br>
-                                ・<code>batch/</code>（定期リマインドバッチおよびSQLiteデータベース保存）</p>
+                                <h4>繝ｬ繝ｳ繧ｿ繝ｫ繧ｵ繝ｼ繝舌�縺ｸ繝輔ぃ繧､繝ｫ繧偵い繝��繝ｭ繝ｼ繝�</h4>
+                                <p>FTP繧ｽ繝輔ヨ��ileZilla遲会ｼ峨∪縺溘�繧ｵ繝ｼ繝舌�邂｡逅�判髱｢縺ｮ繝輔ぃ繧､繝ｫ繝槭ロ繝ｼ繧ｸ繝｣繝ｼ繧剃ｽｿ縺�∝�髢九ヵ繧ｩ繝ｫ繝��<code>public_html</code> 遲会ｼ峨↓ZIP繧定ｧ｣蜃阪＠縺ｦ繧｢繝��繝ｭ繝ｼ繝峨＠縺ｾ縺吶�<br>
+                                莉･荳九�繝輔か繝ｫ繝縺ｫ譖ｸ縺崎ｾｼ縺ｿ讓ｩ髯撰ｼ医ヱ繝ｼ繝溘ャ繧ｷ繝ｧ繝ｳ <code>755</code> 縺ｾ縺溘� <code>777</code>�峨′莉倅ｸ弱＆繧後※縺�ｋ縺薙→繧堤｢ｺ隱阪＠縺ｾ縺呻ｼ�<br>
+                                繝ｻ<code>public_html/data/</code>�医い繧ｫ繧ｦ繝ｳ繝域ュ蝣ｱ菫晏ｭ假ｼ�<br>
+                                繝ｻ<code>public_html/uploads/</code>�医Μ繝�メ繝｡繝九Η繝ｼ逕ｻ蜒丈ｿ晏ｭ假ｼ�<br>
+                                繝ｻ<code>batch/</code>�亥ｮ壽悄繝ｪ繝槭う繝ｳ繝峨ヰ繝�メ縺翫ｈ縺ｳSQLite繝��繧ｿ繝吶�繧ｹ菫晏ｭ假ｼ�</p>
                             </div>
                         </div>
 
-                        <!-- ステップ2: 初期セットアップウィザード -->
+                        <!-- 繧ｹ繝�ャ繝�2: 蛻晄悄繧ｻ繝�ヨ繧｢繝��繧ｦ繧｣繧ｶ繝ｼ繝� -->
                         <div class="step-card">
                             <div class="step-number">2</div>
                             <div class="step-body">
-                                <h4>ブラウザで環境診断＆セットアップウィザードを実行</h4>
-                                <p>ブラウザで <code>https://あなたのドメイン/setup.php</code> にアクセスします：<br>
-                                <strong>1. サーバー環境診断</strong>: PHP 8.0以上、PDO SQLite、cURL、GD、mbstring、フォルダ権限が自動検証され、すべて緑色の「正常 (OK)」が表示されます。<br>
-                                <strong>2. アカウント情報入力</strong>: 店舗名・教室名、LINE Messaging API チャネルアクセストークン（長期）、チャネルシークレット、LIFF ID、管理者ログインパスワードを入力します。<br>
-                                <strong>3. LINE API 疎通テスト</strong>: 「LINE API 疎通テスト」ボタンを押し、公式アカウント名が正しく取得できることを確認します。<br>
-                                <strong>4. 初期化実行</strong>: 「設定を保存してシステムを初期化する」を押すと、SQLiteデータベースと全テーブルがクリーンな状態で自動生成されます。</p>
+                                <h4>繝悶Λ繧ｦ繧ｶ縺ｧ迺ｰ蠅�ｨｺ譁ｭ��そ繝�ヨ繧｢繝��繧ｦ繧｣繧ｶ繝ｼ繝峨ｒ螳溯｡�</h4>
+                                <p>繝悶Λ繧ｦ繧ｶ縺ｧ <code>https://縺ゅ↑縺溘�繝峨Γ繧､繝ｳ/setup.php</code> 縺ｫ繧｢繧ｯ繧ｻ繧ｹ縺励∪縺呻ｼ�<br>
+                                <strong>1. 繧ｵ繝ｼ繝舌�迺ｰ蠅�ｨｺ譁ｭ</strong>: PHP 8.0莉･荳翫￣DO SQLite縲…URL縲；D縲［bstring縲√ヵ繧ｩ繝ｫ繝讓ｩ髯舌′閾ｪ蜍墓､懆ｨｼ縺輔ｌ縲√☆縺ｹ縺ｦ邱題牡縺ｮ縲梧ｭ｣蟶ｸ (OK)縲阪′陦ｨ遉ｺ縺輔ｌ縺ｾ縺吶�<br>
+                                <strong>2. 繧｢繧ｫ繧ｦ繝ｳ繝域ュ蝣ｱ蜈･蜉�</strong>: 蠎苓�蜷阪�謨吝ｮ､蜷阪´INE Messaging API 繝√Ε繝阪Ν繧｢繧ｯ繧ｻ繧ｹ繝医�繧ｯ繝ｳ�磯聞譛滂ｼ峨√メ繝｣繝阪Ν繧ｷ繝ｼ繧ｯ繝ｬ繝�ヨ縲´IFF ID縲∫ｮ｡逅��Ο繧ｰ繧､繝ｳ繝代せ繝ｯ繝ｼ繝峨ｒ蜈･蜉帙＠縺ｾ縺吶�<br>
+                                <strong>3. LINE API 逍朱壹ユ繧ｹ繝�</strong>: 縲鍬INE API 逍朱壹ユ繧ｹ繝医阪�繧ｿ繝ｳ繧呈款縺励∝�蠑上い繧ｫ繧ｦ繝ｳ繝亥錐縺梧ｭ｣縺励￥蜿門ｾ励〒縺阪ｋ縺薙→繧堤｢ｺ隱阪＠縺ｾ縺吶�<br>
+                                <strong>4. 蛻晄悄蛹門ｮ溯｡�</strong>: 縲瑚ｨｭ螳壹ｒ菫晏ｭ倥＠縺ｦ繧ｷ繧ｹ繝�Β繧貞�譛溷喧縺吶ｋ縲阪ｒ謚ｼ縺吶→縲ヾQLite繝��繧ｿ繝吶�繧ｹ縺ｨ蜈ｨ繝��繝悶Ν縺後け繝ｪ繝ｼ繝ｳ縺ｪ迥ｶ諷九〒閾ｪ蜍慕函謌舌＆繧後∪縺吶�</p>
                             </div>
                         </div>
 
-                        <!-- ステップ3: Webhook設定 -->
+                        <!-- 繧ｹ繝�ャ繝�3: Webhook險ｭ螳� -->
                         <div class="step-card">
                             <div class="step-number">3</div>
                             <div class="step-body">
-                                <h4>LINE Developers での Webhook URL 設定</h4>
-                                <p><a href="https://developers.line.biz/console/" target="_blank" style="color: #2563eb; text-decoration: underline;">LINE Developers コンソール</a> を開き、Messaging API設定の「Webhook URL」に以下を登録します：<br>
-                                <code>https://あなたのドメイン/webhook.php</code><br>
-                                「検証」ボタンを押して「成功」を確認後、「Webhookの利用」を <strong>オン（有効）</strong> に設定します。</p>
+                                <h4>LINE Developers 縺ｧ縺ｮ Webhook URL 險ｭ螳�</h4>
+                                <p><a href="https://developers.line.biz/console/" target="_blank" style="color: #2563eb; text-decoration: underline;">LINE Developers 繧ｳ繝ｳ繧ｽ繝ｼ繝ｫ</a> 繧帝幕縺阪｀essaging API險ｭ螳壹�縲係ebhook URL縲阪↓莉･荳九ｒ逋ｻ骭ｲ縺励∪縺呻ｼ�<br>
+                                <code>https://縺ゅ↑縺溘�繝峨Γ繧､繝ｳ/webhook.php</code><br>
+                                縲梧､懆ｨｼ縲阪�繧ｿ繝ｳ繧呈款縺励※縲梧�蜉溘阪ｒ遒ｺ隱榊ｾ後√係ebhook縺ｮ蛻ｩ逕ｨ縲阪ｒ <strong>繧ｪ繝ｳ�域怏蜉ｹ��</strong> 縺ｫ險ｭ螳壹＠縺ｾ縺吶�</p>
                             </div>
                         </div>
 
-                        <!-- ステップ4: Cron設定 -->
+                        <!-- 繧ｹ繝�ャ繝�4: Cron險ｭ螳� -->
                         <div class="step-card">
                             <div class="step-number">4</div>
                             <div class="step-body">
-                                <h4>毎朝の定期リマインドCron設定</h4>
-                                <p>サーバーのCRON管理画面に、毎日朝8:00実行（<code>0 8 * * *</code>）としてバッチスクリプトを登録します：<br>
-                                <code>/usr/bin/php /home/あなたのサーバーID/ドメイン名/batch/reminder.php</code><br>
-                                これにより、次回レッスン・PC健康診断・会員更新のリマインドLINEが毎朝自動プッシュ配信されます。</p>
+                                <h4>豈取悃縺ｮ螳壽悄繝ｪ繝槭う繝ｳ繝韻ron險ｭ螳�</h4>
+                                <p>繧ｵ繝ｼ繝舌�縺ｮCRON邂｡逅�判髱｢縺ｫ縲∵ｯ取律譛�8:00螳溯｡鯉ｼ�<code>0 8 * * *</code>�峨→縺励※繝舌ャ繝√せ繧ｯ繝ｪ繝励ヨ繧堤匳骭ｲ縺励∪縺呻ｼ�<br>
+                                <code>/usr/bin/php /home/縺ゅ↑縺溘�繧ｵ繝ｼ繝舌�ID/繝峨Γ繧､繝ｳ蜷�/batch/reminder.php</code><br>
+                                縺薙ｌ縺ｫ繧医ｊ縲∵ｬ｡蝗槭Ξ繝�せ繝ｳ繝ｻPC蛛･蠎ｷ險ｺ譁ｭ繝ｻ莨壼藤譖ｴ譁ｰ縺ｮ繝ｪ繝槭う繝ｳ繝鵜INE縺梧ｯ取悃閾ｪ蜍輔�繝�す繝･驟堺ｿ｡縺輔ｌ縺ｾ縺吶�</p>
                             </div>
                         </div>
                     </div>
 
                     <div class="tip-box" style="margin-top:12px;background:#f0fdf4;border-left:4px solid #10b981;padding:10px 14px;border-radius: var(--radius-xs);">
-                        <strong style="color:#065f46;"><i class="fa-solid fa-shield-halved"></i> 既存データの完全非含有仕様:</strong><br>
-                        当システムはSQLite3（ファイル型DB）を採用しているため、MySQLの作成やSQLのインポートは一切不要です。初期配布パッケージには過去のお友達データやチャット履歴は一切含まれず、他社へ安心してシステムを提供できます。
+                        <strong style="color:#065f46;"><i class="fa-solid fa-shield-halved"></i> 譌｢蟄倥ョ繝ｼ繧ｿ縺ｮ螳悟�髱槫性譛我ｻ墓ｧ�:</strong><br>
+                        蠖薙す繧ｹ繝�Β縺ｯSQLite3�医ヵ繧｡繧､繝ｫ蝙汽B�峨ｒ謗｡逕ｨ縺励※縺�ｋ縺溘ａ縲｀ySQL縺ｮ菴懈�繧ТQL縺ｮ繧､繝ｳ繝昴�繝医�荳蛻�ｸ崎ｦ√〒縺吶ょ�譛滄�蟶�ヱ繝�こ繝ｼ繧ｸ縺ｫ縺ｯ驕主悉縺ｮ縺雁暑驕斐ョ繝ｼ繧ｿ繧�メ繝｣繝�ヨ螻･豁ｴ縺ｯ荳蛻�性縺ｾ繧後★縲∽ｻ也､ｾ縺ｸ螳牙ｿ�＠縺ｦ繧ｷ繧ｹ繝�Β繧呈署萓帙〒縺阪∪縺吶�
                     </div>
                 </section>
 
-                <!-- 18. よくある質問・トラブルシューティング -->
+                <!-- 18. 繧医￥縺ゅｋ雉ｪ蝠上�繝医Λ繝悶Ν繧ｷ繝･繝ｼ繝�ぅ繝ｳ繧ｰ -->
                 <section class="manual-section" id="sec-faq">
                     <div class="section-header">
                         <div class="section-header-icon" style="background: #fef2f2; color: #ef4444;">
                             <i class="fa-solid fa-circle-question"></i>
                         </div>
                         <div class="section-header-text">
-                            <h2>18. よくある質問・トラブルシューティング</h2>
-                            <p>困ったときの解決方法</p>
+                            <h2>18. 繧医￥縺ゅｋ雉ｪ蝠上�繝医Λ繝悶Ν繧ｷ繝･繝ｼ繝�ぅ繝ｳ繧ｰ</h2>
+                            <p>蝗ｰ縺｣縺溘→縺阪�隗｣豎ｺ譁ｹ豕�</p>
                         </div>
                     </div>
 
@@ -1480,147 +1480,147 @@
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
-                                <h4>二段階認証のメールが届かない場合は？</h4>
-                                <p>以下の点をご確認ください：<br>
-                                1. <strong>迷惑メールフォルダの確認</strong>：お使いのメールソフトの「迷惑メール」「プロモーション」「ゴミ箱」フォルダに振り分けられていないかご確認ください（件名: <code>【シニア向けパソコン教室】管理画面ログイン認証コード</code>）。<br>
-                                2. <strong>コード再送信の利用</strong>：画面上の「コード再送信」ボタン（60秒経過後に有効化）を押して再送信をお試しください。<br>
-                                3. <strong>サーバーのメール送信（sendmail / PHP mail）環境</strong>：サーバー側のメール送信制限やSPF/DKIM設定の影響を受けていないかご確認ください。</p>
+                                <h4>莠梧ｮｵ髫手ｪ崎ｨｼ縺ｮ繝｡繝ｼ繝ｫ縺悟ｱ翫°縺ｪ縺��ｴ蜷医���</h4>
+                                <p>莉･荳九�轤ｹ繧偵＃遒ｺ隱阪￥縺�縺輔＞��<br>
+                                1. <strong>霑ｷ諠代Γ繝ｼ繝ｫ繝輔か繝ｫ繝縺ｮ遒ｺ隱�</strong>�壹♀菴ｿ縺��繝｡繝ｼ繝ｫ繧ｽ繝輔ヨ縺ｮ縲瑚ｿｷ諠代Γ繝ｼ繝ｫ縲阪後�繝ｭ繝｢繝ｼ繧ｷ繝ｧ繝ｳ縲阪後ざ繝溽ｮｱ縲阪ヵ繧ｩ繝ｫ繝縺ｫ謖ｯ繧雁�縺代ｉ繧後※縺�↑縺�°縺皮｢ｺ隱阪￥縺�縺輔＞�井ｻｶ蜷�: <code>縲舌す繝九い蜷代￠繝代た繧ｳ繝ｳ謨吝ｮ､縲醍ｮ｡逅�判髱｢繝ｭ繧ｰ繧､繝ｳ隱崎ｨｼ繧ｳ繝ｼ繝�</code>�峨�<br>
+                                2. <strong>繧ｳ繝ｼ繝牙�騾∽ｿ｡縺ｮ蛻ｩ逕ｨ</strong>�夂判髱｢荳翫�縲後さ繝ｼ繝牙�騾∽ｿ｡縲阪�繧ｿ繝ｳ��60遘堤ｵ碁℃蠕後↓譛牙柑蛹厄ｼ峨ｒ謚ｼ縺励※蜀埼∽ｿ｡繧偵♀隧ｦ縺励￥縺�縺輔＞縲�<br>
+                                3. <strong>繧ｵ繝ｼ繝舌�縺ｮ繝｡繝ｼ繝ｫ騾∽ｿ｡��endmail / PHP mail�臥腸蠅�</strong>�壹し繝ｼ繝舌�蛛ｴ縺ｮ繝｡繝ｼ繝ｫ騾∽ｿ｡蛻ｶ髯舌ｄSPF/DKIM險ｭ螳壹�蠖ｱ髻ｿ繧貞女縺代※縺�↑縺�°縺皮｢ｺ隱阪￥縺�縺輔＞縲�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
-                                <h4>リッチメニューに設定する「予約」と「マイカルテ」のURLは何を指定すれば良いですか？</h4>
-                                <p>リッチメニュー管理エディタ（<code>richmenu.html</code>）のチップからワンクリックで設定できます：<br>
-                                <strong>・レッスン予約・日程変更ボタン</strong>: <code>https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1</code>（チップ「📅 レッスン予約・日程変更」をクリック）<br>
-                                <strong>・マイカルテボタン</strong>: <code>https://liff.line.me/2000276344-YL1wXh0h</code>（チップ「💻 受講生マイカルテ・相談」をクリック）<br>
-                                この2つのURLを設定するだけで、受講生個別の予約・日程変更カレンダーと本システムの受講生マイカルテの両方がLINE上で完璧に動作します。</p>
+                                <h4>繝ｪ繝�メ繝｡繝九Η繝ｼ縺ｫ險ｭ螳壹☆繧九御ｺ育ｴ�阪→縲後�繧､繧ｫ繝ｫ繝�阪�URL縺ｯ菴輔ｒ謖�ｮ壹☆繧後�濶ｯ縺�〒縺吶°��</h4>
+                                <p>繝ｪ繝�メ繝｡繝九Η繝ｼ邂｡逅�お繝�ぅ繧ｿ��<code>richmenu.html</code>�峨�繝√ャ繝励°繧峨Ρ繝ｳ繧ｯ繝ｪ繝�け縺ｧ險ｭ螳壹〒縺阪∪縺呻ｼ�<br>
+                                <strong>繝ｻ繝ｬ繝�せ繝ｳ莠育ｴ��譌･遞句､画峩繝懊ち繝ｳ</strong>: <code>https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1</code>�医メ繝��縲交沒� 繝ｬ繝�せ繝ｳ莠育ｴ��譌･遞句､画峩縲阪ｒ繧ｯ繝ｪ繝�け��<br>
+                                <strong>繝ｻ繝槭う繧ｫ繝ｫ繝��繧ｿ繝ｳ</strong>: <code>https://liff.line.me/2000276344-YL1wXh0h</code>�医メ繝��縲交汳ｻ 蜿苓ｬ帷函繝槭う繧ｫ繝ｫ繝��逶ｸ隲�阪ｒ繧ｯ繝ｪ繝�け��<br>
+                                縺薙�2縺､縺ｮURL繧定ｨｭ螳壹☆繧九□縺代〒縲∝女隰帷函蛟句挨縺ｮ莠育ｴ��譌･遞句､画峩繧ｫ繝ｬ繝ｳ繝繝ｼ縺ｨ譛ｬ繧ｷ繧ｹ繝�Β縺ｮ蜿苓ｬ帷函繝槭う繧ｫ繝ｫ繝��荳｡譁ｹ縺鍬INE荳翫〒螳檎挑縺ｫ蜍穂ｽ懊＠縺ｾ縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
-                                <h4>プロライン側でメッセージが届かない、またはステップ配信が動かない時は？</h4>
-                                <p>以下の3点をご確認ください：<br>
-                                1. 管理画面右上の「プロライン連携」モーダルを開き、「プロライン転送を有効にする」にチェックが入っているか確認してください。<br>
-                                2. 「疎通テスト送信」を実行し、HTTPステータス200が返るか確認してください。<br>
-                                3. ブラウザで <code>https://あなたのドメイン/webhook.php</code> を開き、プロライン転送ログを確認してください（転送失敗時はエラーコードが表示されます）。</p>
+                                <h4>繝励Ο繝ｩ繧､繝ｳ蛛ｴ縺ｧ繝｡繝�そ繝ｼ繧ｸ縺悟ｱ翫°縺ｪ縺�√∪縺溘�繧ｹ繝�ャ繝鈴�菫｡縺悟虚縺九↑縺�凾縺ｯ��</h4>
+                                <p>莉･荳九�3轤ｹ繧偵＃遒ｺ隱阪￥縺�縺輔＞��<br>
+                                1. 邂｡逅�判髱｢蜿ｳ荳翫�縲後�繝ｭ繝ｩ繧､繝ｳ騾｣謳ｺ縲阪Δ繝ｼ繝繝ｫ繧帝幕縺阪√後�繝ｭ繝ｩ繧､繝ｳ霆｢騾√ｒ譛牙柑縺ｫ縺吶ｋ縲阪↓繝√ぉ繝�け縺悟�縺｣縺ｦ縺�ｋ縺狗｢ｺ隱阪＠縺ｦ縺上□縺輔＞縲�<br>
+                                2. 縲檎鮪騾壹ユ繧ｹ繝磯∽ｿ｡縲阪ｒ螳溯｡後＠縲？TTP繧ｹ繝��繧ｿ繧ｹ200縺瑚ｿ斐ｋ縺狗｢ｺ隱阪＠縺ｦ縺上□縺輔＞縲�<br>
+                                3. 繝悶Λ繧ｦ繧ｶ縺ｧ <code>https://縺ゅ↑縺溘�繝峨Γ繧､繝ｳ/webhook.php</code> 繧帝幕縺阪√�繝ｭ繝ｩ繧､繝ｳ霆｢騾√Ο繧ｰ繧堤｢ｺ隱阪＠縺ｦ縺上□縺輔＞�郁ｻ｢騾∝､ｱ謨玲凾縺ｯ繧ｨ繝ｩ繝ｼ繧ｳ繝ｼ繝峨′陦ｨ遉ｺ縺輔ｌ縺ｾ縺呻ｼ峨�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
-                                <h4>プロラインと本システムで自動返信が競合することはありませんか？</h4>
-                                <p>競合しません。本システムの「プロライン転送」が有効な場合、受講生からのテキストメッセージに対する自動応答（ReplyTokenの消費）は完全に抑止され、プロライン側へ委ねられます。本システム側はカルテへの同期とプッシュ配信・リッチメニュー表示のみを行います。</p>
+                                <h4>繝励Ο繝ｩ繧､繝ｳ縺ｨ譛ｬ繧ｷ繧ｹ繝�Β縺ｧ閾ｪ蜍戊ｿ比ｿ｡縺檎ｫｶ蜷医☆繧九％縺ｨ縺ｯ縺ゅｊ縺ｾ縺帙ｓ縺具ｼ�</h4>
+                                <p>遶ｶ蜷医＠縺ｾ縺帙ｓ縲よ悽繧ｷ繧ｹ繝�Β縺ｮ縲後�繝ｭ繝ｩ繧､繝ｳ霆｢騾√阪′譛牙柑縺ｪ蝣ｴ蜷医∝女隰帷函縺九ｉ縺ｮ繝�く繧ｹ繝医Γ繝�そ繝ｼ繧ｸ縺ｫ蟇ｾ縺吶ｋ閾ｪ蜍募ｿ懃ｭ費ｼ�eplyToken縺ｮ豸郁ｲｻ�峨�螳悟�縺ｫ謚第ｭ｢縺輔ｌ縲√�繝ｭ繝ｩ繧､繝ｳ蛛ｴ縺ｸ蟋斐�繧峨ｌ縺ｾ縺吶よ悽繧ｷ繧ｹ繝�Β蛛ｴ縺ｯ繧ｫ繝ｫ繝�∈縺ｮ蜷梧悄縺ｨ繝励ャ繧ｷ繝･驟堺ｿ｡繝ｻ繝ｪ繝�メ繝｡繝九Η繝ｼ陦ｨ遉ｺ縺ｮ縺ｿ繧定｡後＞縺ｾ縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
-                                <h4>メニュー設定を変更したのに受講生のLINE画面が変わりません</h4>
-                                <p>LINEアプリの仕様上、トーク画面を開いたままの場合は画像キャッシュが残ることがあります。一度別のトーク画面やホーム画面に戻ってから、再度教室の公式アカウントトーク画面を開き直すと最新のメニューに即時更新されます。</p>
+                                <h4>繝｡繝九Η繝ｼ險ｭ螳壹ｒ螟画峩縺励◆縺ｮ縺ｫ蜿苓ｬ帷函縺ｮLINE逕ｻ髱｢縺悟､峨ｏ繧翫∪縺帙ｓ</h4>
+                                <p>LINE繧｢繝励Μ縺ｮ莉墓ｧ倅ｸ翫√ヨ繝ｼ繧ｯ逕ｻ髱｢繧帝幕縺�◆縺ｾ縺ｾ縺ｮ蝣ｴ蜷医�逕ｻ蜒上く繝｣繝�す繝･縺梧ｮ九ｋ縺薙→縺後≠繧翫∪縺吶ゆｸ蠎ｦ蛻･縺ｮ繝医�繧ｯ逕ｻ髱｢繧��繝ｼ繝�逕ｻ髱｢縺ｫ謌ｻ縺｣縺ｦ縺九ｉ縲∝�蠎ｦ謨吝ｮ､縺ｮ蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医ヨ繝ｼ繧ｯ逕ｻ髱｢繧帝幕縺咲峩縺吶→譛譁ｰ縺ｮ繝｡繝九Η繝ｼ縺ｫ蜊ｳ譎よ峩譁ｰ縺輔ｌ縺ｾ縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
-                                <h4>お役立ち情報配信で「送信失敗」と表示される場合はどうすればいいですか？</h4>
-                                <p>以下の点をご確認ください：<br>
-                                <strong>1. LINE公式アカウントの月間配信通数上限</strong>：LINE公式アカウント（無料プラン等）で月間の無料メッセージ通数枠（例: 月200通など）を超過している場合、LINEサーバーから配信制限エラーが返されます。その場合はLINE Official Account Managerより配信可能残数をご確認ください。<br>
-                                <strong>2. LINE未連携の受講生への個別送信</strong>：手動登録などでLINEと未連携（UIDが<code>MANUAL_</code>から始まる）の受講生には個別プッシュ送信ができません。「LINE友だち全員へ一斉配信」を利用するか、受講生に友だち登録およびマイカルテ連携をご案内ください。<br>
-                                <strong>3. エラー詳細の確認</strong>：送信失敗時には、LINEサーバーから返された具体的なエラー内容がダイアログに明示されます。内容をご確認のうえご対応ください。</p>
+                                <h4>縺雁ｽｹ遶九■諠��ｱ驟堺ｿ｡縺ｧ縲碁∽ｿ｡螟ｱ謨励阪→陦ｨ遉ｺ縺輔ｌ繧句�ｴ蜷医�縺ｩ縺�☆繧後�縺�＞縺ｧ縺吶°��</h4>
+                                <p>莉･荳九�轤ｹ繧偵＃遒ｺ隱阪￥縺�縺輔＞��<br>
+                                <strong>1. LINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医�譛磯俣驟堺ｿ｡騾壽焚荳企剞</strong>�哭INE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝茨ｼ育┌譁吶�繝ｩ繝ｳ遲会ｼ峨〒譛磯俣縺ｮ辟｡譁吶Γ繝�そ繝ｼ繧ｸ騾壽焚譫��井ｾ�: 譛�200騾壹↑縺ｩ�峨ｒ雜�℃縺励※縺�ｋ蝣ｴ蜷医´INE繧ｵ繝ｼ繝舌�縺九ｉ驟堺ｿ｡蛻ｶ髯舌お繝ｩ繝ｼ縺瑚ｿ斐＆繧後∪縺吶ゅ◎縺ｮ蝣ｴ蜷医�LINE Official Account Manager繧医ｊ驟堺ｿ｡蜿ｯ閭ｽ谿区焚繧偵＃遒ｺ隱阪￥縺�縺輔＞縲�<br>
+                                <strong>2. LINE譛ｪ騾｣謳ｺ縺ｮ蜿苓ｬ帷函縺ｸ縺ｮ蛟句挨騾∽ｿ｡</strong>�壽焔蜍慕匳骭ｲ縺ｪ縺ｩ縺ｧLINE縺ｨ譛ｪ騾｣謳ｺ��ID縺�<code>MANUAL_</code>縺九ｉ蟋九∪繧具ｼ峨�蜿苓ｬ帷函縺ｫ縺ｯ蛟句挨繝励ャ繧ｷ繝･騾∽ｿ｡縺後〒縺阪∪縺帙ｓ縲ゅ鍬INE蜿九□縺｡蜈ｨ蜩｡縺ｸ荳譁蛾�菫｡縲阪ｒ蛻ｩ逕ｨ縺吶ｋ縺九∝女隰帷函縺ｫ蜿九□縺｡逋ｻ骭ｲ縺翫ｈ縺ｳ繝槭う繧ｫ繝ｫ繝�｣謳ｺ繧偵＃譯亥�縺上□縺輔＞縲�<br>
+                                <strong>3. 繧ｨ繝ｩ繝ｼ隧ｳ邏ｰ縺ｮ遒ｺ隱�</strong>�夐∽ｿ｡螟ｱ謨玲凾縺ｫ縺ｯ縲´INE繧ｵ繝ｼ繝舌�縺九ｉ霑斐＆繧後◆蜈ｷ菴鍋噪縺ｪ繧ｨ繝ｩ繝ｼ蜀�ｮｹ縺後ム繧､繧｢繝ｭ繧ｰ縺ｫ譏守､ｺ縺輔ｌ縺ｾ縺吶ょ�螳ｹ繧偵＃遒ｺ隱阪�縺�∴縺泌ｯｾ蠢懊￥縺�縺輔＞縲�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
-                                <h4>手動登録した受講生にチャットで返信できません</h4>
-                                <p>受講生一覧で「新規受講生登録」から手動作成された受講生は、LINEのユーザーID（<code>U...</code>）が未連携の状態です。受講生に教室のLINE公式アカウントを友だち追加していただき、マイカルテを開いてもらうか、メッセージを送信してもらうと自動的にLINE連携が完了し、チャット送受信が可能になります。</p>
+                                <h4>謇句虚逋ｻ骭ｲ縺励◆蜿苓ｬ帷函縺ｫ繝√Ε繝�ヨ縺ｧ霑比ｿ｡縺ｧ縺阪∪縺帙ｓ</h4>
+                                <p>蜿苓ｬ帷函荳隕ｧ縺ｧ縲梧眠隕丞女隰帷函逋ｻ骭ｲ縲阪°繧画焔蜍穂ｽ懈�縺輔ｌ縺溷女隰帷函縺ｯ縲´INE縺ｮ繝ｦ繝ｼ繧ｶ繝ｼID��<code>U...</code>�峨′譛ｪ騾｣謳ｺ縺ｮ迥ｶ諷九〒縺吶ょ女隰帷函縺ｫ謨吝ｮ､縺ｮLINE蜈ｬ蠑上い繧ｫ繧ｦ繝ｳ繝医ｒ蜿九□縺｡霑ｽ蜉�縺励※縺�◆縺�縺阪√�繧､繧ｫ繝ｫ繝�ｒ髢九＞縺ｦ繧ゅｉ縺�°縲√Γ繝�そ繝ｼ繧ｸ繧帝∽ｿ｡縺励※繧ゅｉ縺�→閾ｪ蜍慕噪縺ｫLINE騾｣謳ｺ縺悟ｮ御ｺ�＠縲√メ繝｣繝�ヨ騾∝女菫｡縺悟庄閭ｽ縺ｫ縺ｪ繧翫∪縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
-                                <h4>Discord通知が届かない場合は？</h4>
-                                <p>以下の項目をご確認ください：<br>
-                                1. 管理画面上部の「Discord通知」設定モーダルを開き、Webhook URLが正しく入力されているか確認してください。<br>
-                                2. 「テスト通知を送信」ボタンを押し、緑色の成功バナーが出るか確認してください（Discord側でWebhookが削除されたり権限が変更されている場合はエラーが表示されます）。<br>
-                                3. 送信したいイベントのチェックボックスがONになっているか確認してください。</p>
+                                <h4>Discord騾夂衍縺悟ｱ翫°縺ｪ縺��ｴ蜷医���</h4>
+                                <p>莉･荳九�鬆�岼繧偵＃遒ｺ隱阪￥縺�縺輔＞��<br>
+                                1. 邂｡逅�判髱｢荳企Κ縺ｮ縲轡iscord騾夂衍縲崎ｨｭ螳壹Δ繝ｼ繝繝ｫ繧帝幕縺阪仝ebhook URL縺梧ｭ｣縺励￥蜈･蜉帙＆繧後※縺�ｋ縺狗｢ｺ隱阪＠縺ｦ縺上□縺輔＞縲�<br>
+                                2. 縲後ユ繧ｹ繝磯夂衍繧帝∽ｿ｡縲阪�繧ｿ繝ｳ繧呈款縺励∫ｷ題牡縺ｮ謌仙粥繝舌リ繝ｼ縺悟�繧九°遒ｺ隱阪＠縺ｦ縺上□縺輔＞��iscord蛛ｴ縺ｧWebhook縺悟炎髯､縺輔ｌ縺溘ｊ讓ｩ髯舌′螟画峩縺輔ｌ縺ｦ縺�ｋ蝣ｴ蜷医�繧ｨ繝ｩ繝ｼ縺瑚｡ｨ遉ｺ縺輔ｌ縺ｾ縺呻ｼ峨�<br>
+                                3. 騾∽ｿ｡縺励◆縺�う繝吶Φ繝医�繝√ぉ繝�け繝懊ャ繧ｯ繧ｹ縺薫N縺ｫ縺ｪ縺｣縺ｦ縺�ｋ縺狗｢ｺ隱阪＠縺ｦ縺上□縺輔＞縲�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
-                                <h4>Slack通知が届かない場合は？</h4>
-                                <p>以下の項目をご確認ください：<br>
-                                1. 管理画面上部の「Slack通知」設定モーダルを開き、Incoming Webhook URL（<code>https://hooks.slack.com/services/...</code>）が正しく入力されているか確認してください。<br>
-                                2. 「テスト通知を送信」ボタンを押し、緑色の成功バナーが出るか確認してください（Slack側でWebhookが無効化されていたりアプリがアンインストールされている場合はエラーが表示されます）。<br>
-                                3. 送信したいイベント（メッセージ、友だち追加、予約相談）のチェックボックスがONになっているか確認してください。</p>
+                                <h4>Slack騾夂衍縺悟ｱ翫°縺ｪ縺��ｴ蜷医���</h4>
+                                <p>莉･荳九�鬆�岼繧偵＃遒ｺ隱阪￥縺�縺輔＞��<br>
+                                1. 邂｡逅�判髱｢荳企Κ縺ｮ縲郡lack騾夂衍縲崎ｨｭ螳壹Δ繝ｼ繝繝ｫ繧帝幕縺阪！ncoming Webhook URL��<code>https://hooks.slack.com/services/...</code>�峨′豁｣縺励￥蜈･蜉帙＆繧後※縺�ｋ縺狗｢ｺ隱阪＠縺ｦ縺上□縺輔＞縲�<br>
+                                2. 縲後ユ繧ｹ繝磯夂衍繧帝∽ｿ｡縲阪�繧ｿ繝ｳ繧呈款縺励∫ｷ題牡縺ｮ謌仙粥繝舌リ繝ｼ縺悟�繧九°遒ｺ隱阪＠縺ｦ縺上□縺輔＞��lack蛛ｴ縺ｧWebhook縺檎┌蜉ｹ蛹悶＆繧後※縺�◆繧翫い繝励Μ縺後い繝ｳ繧､繝ｳ繧ｹ繝医�繝ｫ縺輔ｌ縺ｦ縺�ｋ蝣ｴ蜷医�繧ｨ繝ｩ繝ｼ縺瑚｡ｨ遉ｺ縺輔ｌ縺ｾ縺呻ｼ峨�<br>
+                                3. 騾∽ｿ｡縺励◆縺�う繝吶Φ繝茨ｼ医Γ繝�そ繝ｼ繧ｸ縲∝暑縺�縺｡霑ｽ蜉�縲∽ｺ育ｴ�嶌隲�ｼ峨�繝√ぉ繝�け繝懊ャ繧ｯ繧ｹ縺薫N縺ｫ縺ｪ縺｣縺ｦ縺�ｋ縺狗｢ｺ隱阪＠縺ｦ縺上□縺輔＞縲�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
-                                <h4>日時の表示がずれていることはありませんか？</h4>
-                                <p>当システムはWebサーバー設定（`.htaccess`, `.user.ini`）、PHPスクリプト、データベース（SQLite）のすべてで<strong>日本標準時（JST / Asia/Tokyo）</strong>に統一されています。受講生のLINE操作やチャット送受信、リマインド送信など、すべて日本時間で正確に記録・配信されます。</p>
+                                <h4>譌･譎ゅ�陦ｨ遉ｺ縺後★繧後※縺�ｋ縺薙→縺ｯ縺ゅｊ縺ｾ縺帙ｓ縺具ｼ�</h4>
+                                <p>蠖薙す繧ｹ繝�Β縺ｯWeb繧ｵ繝ｼ繝舌�險ｭ螳夲ｼ�.htaccess`, `.user.ini`�峨￣HP繧ｹ繧ｯ繝ｪ繝励ヨ縲√ョ繝ｼ繧ｿ繝吶�繧ｹ��QLite�峨�縺吶∋縺ｦ縺ｧ<strong>譌･譛ｬ讓呎ｺ匁凾��ST / Asia/Tokyo��</strong>縺ｫ邨ｱ荳縺輔ｌ縺ｦ縺�∪縺吶ょ女隰帷函縺ｮLINE謫堺ｽ懊ｄ繝√Ε繝�ヨ騾∝女菫｡縲√Μ繝槭う繝ｳ繝蛾∽ｿ｡縺ｪ縺ｩ縲√☆縺ｹ縺ｦ譌･譛ｬ譎る俣縺ｧ豁｣遒ｺ縺ｫ險倬鹸繝ｻ驟堺ｿ｡縺輔ｌ縺ｾ縺吶�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
-                                <h4>管理画面のパスワードログインができない・エラーになる場合は？</h4>
-                                <p>以下の点をご確認ください：<br>
-                                <strong>1. 管理者パスワードの入力確認</strong>：デフォルトパスワードは <code>1020143</code> に設定されています（変更は <code>public_html/config.php</code> の <code>ADMIN_PASSWORD</code> で行えます）。前後に余分なスペースが入っていないかご確認ください。<br>
-                                <strong>2. サーバーのHTTPヘッダー転送環境</strong>：当システムはXserverなどの共有ホスティング環境（Apache + FastCGI / PHP-FPM）に対応するため、<code>.htaccess</code> によるヘッダー転送、Bearerトークン、URLパラメータ、セッションCookieによる多重認証に対応しています。最新のコードがサーバーに反映されていることをご確認ください。<br>
-                                <strong>3. ブラウザのCookie・ストレージ設定</strong>：ログイン状態の保持のためブラウザのCookieおよびセッションストレージ（sessionStorage）を使用します。シークレットモードやCookieブロック設定を行っている場合は許可してください。</p>
+                                <h4>邂｡逅�判髱｢縺ｮ繝代せ繝ｯ繝ｼ繝峨Ο繧ｰ繧､繝ｳ縺後〒縺阪↑縺��繧ｨ繝ｩ繝ｼ縺ｫ縺ｪ繧句�ｴ蜷医���</h4>
+                                <p>莉･荳九�轤ｹ繧偵＃遒ｺ隱阪￥縺�縺輔＞��<br>
+                                <strong>1. 邂｡逅��ヱ繧ｹ繝ｯ繝ｼ繝峨�蜈･蜉帷｢ｺ隱�</strong>�壹ョ繝輔か繝ｫ繝医ヱ繧ｹ繝ｯ繝ｼ繝峨� <code>1020143</code> 縺ｫ險ｭ螳壹＆繧後※縺�∪縺呻ｼ亥､画峩縺ｯ <code>public_html/config.php</code> 縺ｮ <code>ADMIN_PASSWORD</code> 縺ｧ陦後∴縺ｾ縺呻ｼ峨ょ燕蠕後↓菴吝�縺ｪ繧ｹ繝壹�繧ｹ縺悟�縺｣縺ｦ縺�↑縺�°縺皮｢ｺ隱阪￥縺�縺輔＞縲�<br>
+                                <strong>2. 繧ｵ繝ｼ繝舌�縺ｮHTTP繝倥ャ繝繝ｼ霆｢騾∫腸蠅�</strong>�壼ｽ薙す繧ｹ繝�Β縺ｯXserver縺ｪ縺ｩ縺ｮ蜈ｱ譛峨�繧ｹ繝�ぅ繝ｳ繧ｰ迺ｰ蠅�ｼ�pache + FastCGI / PHP-FPM�峨↓蟇ｾ蠢懊☆繧九◆繧√�<code>.htaccess</code> 縺ｫ繧医ｋ繝倥ャ繝繝ｼ霆｢騾√。earer繝医�繧ｯ繝ｳ縲ゞRL繝代Λ繝｡繝ｼ繧ｿ縲√そ繝�す繝ｧ繝ｳCookie縺ｫ繧医ｋ螟夐㍾隱崎ｨｼ縺ｫ蟇ｾ蠢懊＠縺ｦ縺�∪縺吶よ怙譁ｰ縺ｮ繧ｳ繝ｼ繝峨′繧ｵ繝ｼ繝舌�縺ｫ蜿肴丐縺輔ｌ縺ｦ縺�ｋ縺薙→繧偵＃遒ｺ隱阪￥縺�縺輔＞縲�<br>
+                                <strong>3. 繝悶Λ繧ｦ繧ｶ縺ｮCookie繝ｻ繧ｹ繝医Ξ繝ｼ繧ｸ險ｭ螳�</strong>�壹Ο繧ｰ繧､繝ｳ迥ｶ諷九�菫晄戟縺ｮ縺溘ａ繝悶Λ繧ｦ繧ｶ縺ｮCookie縺翫ｈ縺ｳ繧ｻ繝�す繝ｧ繝ｳ繧ｹ繝医Ξ繝ｼ繧ｸ��essionStorage�峨ｒ菴ｿ逕ｨ縺励∪縺吶ゅす繝ｼ繧ｯ繝ｬ繝�ヨ繝｢繝ｼ繝峨ｄCookie繝悶Ο繝�け險ｭ螳壹ｒ陦後▲縺ｦ縺�ｋ蝣ｴ蜷医�險ｱ蜿ｯ縺励※縺上□縺輔＞縲�</p>
                             </div>
                         </div>
 
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
-                                <h4>管理画面の角丸（デザインシステム）や画面幅はどのように設計されていますか？</h4>
-                                <p><strong>画面幅のフルワイド表示</strong>：受講生カルテテーブルや統計情報、リッチメニュー管理をストレスなく一覧できるよう、左右の余白（1200px制限）を撤廃し、画面幅いっぱい（100%フルワイド）に広がるモダンレイアウトを採用しています。ワイドモニターでも情報を広々と快適に操作できます。<br>
-                                <strong>角丸トークン（デザインシステム）</strong>：CSSデザインシステムトークン（<code>--radius-xs: 4px</code>, <code>--radius-sm: 8px</code>, <code>--radius-md: 12px</code>, <code>--radius-lg: 16px</code>, <code>--radius-xl: 20px</code>, <code>--radius-full: 9999px</code>）を全画面（受講生カルテ、個別チャット、Discord設定、リッチメニュー作成、操作マニュアル）に完全標準化し、統一感ある美しいUIを提供します。</p>
+                                <h4>邂｡逅�判髱｢縺ｮ隗剃ｸｸ�医ョ繧ｶ繧､繝ｳ繧ｷ繧ｹ繝�Β�峨ｄ逕ｻ髱｢蟷��縺ｩ縺ｮ繧医≧縺ｫ險ｭ險医＆繧後※縺�∪縺吶°��</h4>
+                                <p><strong>逕ｻ髱｢蟷��繝輔Ν繝ｯ繧､繝芽｡ｨ遉ｺ</strong>�壼女隰帷函繧ｫ繝ｫ繝�ユ繝ｼ繝悶Ν繧�ｵｱ險域ュ蝣ｱ縲√Μ繝�メ繝｡繝九Η繝ｼ邂｡逅�ｒ繧ｹ繝医Ξ繧ｹ縺ｪ縺丈ｸ隕ｧ縺ｧ縺阪ｋ繧医≧縲∝ｷｦ蜿ｳ縺ｮ菴咏區��1200px蛻ｶ髯撰ｼ峨ｒ謦､蟒�＠縲∫判髱｢蟷�＞縺｣縺ｱ縺�ｼ�100%繝輔Ν繝ｯ繧､繝会ｼ峨↓蠎�′繧九Δ繝繝ｳ繝ｬ繧､繧｢繧ｦ繝医ｒ謗｡逕ｨ縺励※縺�∪縺吶ゅΡ繧､繝峨Δ繝九ち繝ｼ縺ｧ繧よュ蝣ｱ繧貞ｺ��→蠢ｫ驕ｩ縺ｫ謫堺ｽ懊〒縺阪∪縺吶�<br>
+                                <strong>隗剃ｸｸ繝医�繧ｯ繝ｳ�医ョ繧ｶ繧､繝ｳ繧ｷ繧ｹ繝�Β��</strong>�咾SS繝�じ繧､繝ｳ繧ｷ繧ｹ繝�Β繝医�繧ｯ繝ｳ��<code>--radius-xs: 4px</code>, <code>--radius-sm: 8px</code>, <code>--radius-md: 12px</code>, <code>--radius-lg: 16px</code>, <code>--radius-xl: 20px</code>, <code>--radius-full: 9999px</code>�峨ｒ蜈ｨ逕ｻ髱｢�亥女隰帷函繧ｫ繝ｫ繝�∝句挨繝√Ε繝�ヨ縲．iscord險ｭ螳壹√Μ繝�メ繝｡繝九Η繝ｼ菴懈�縲∵桃菴懊�繝九Η繧｢繝ｫ�峨↓螳悟�讓呎ｺ門喧縺励∫ｵｱ荳諢溘≠繧狗ｾ弱＠縺ФI繧呈署萓帙＠縺ｾ縺吶�</p>
                             </div>
                         </div>
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
-                                <h4>受講生数が1,000名近くなっても管理画面が重く・フリーズしない理由は？</h4>
-                                <p><strong>スマートページネーション & イベント委譲</strong>：大量の受講生データ（900名超）を一括で描画するとブラウザのメモリやCPUを圧迫するため、当システムでは1ページあたり50件に分割描画するページネーションを搭載しています。また、ボタンごとの個別イベントバインドを廃止し、テーブル親コンテナでのイベント委譲処理を行うことで、極めて軽快な動作を実現しています。<br>
-                                <strong>検索デバウンス処理</strong>：検索ボックス入力時に過剰な再描画が発生しないよう、キー入力のタイピング完了を自動待機（250ms）してから絞り込みを実行するため、日本語入力中でもスムーズに検索できます。</p>
+                                <h4>蜿苓ｬ帷函謨ｰ縺�1,000蜷崎ｿ代￥縺ｪ縺｣縺ｦ繧らｮ｡逅�判髱｢縺碁㍾縺上�繝輔Μ繝ｼ繧ｺ縺励↑縺�炊逕ｱ縺ｯ��</h4>
+                                <p><strong>繧ｹ繝槭�繝医�繝ｼ繧ｸ繝阪�繧ｷ繝ｧ繝ｳ & 繧､繝吶Φ繝亥ｧ碑ｭｲ</strong>�壼､ｧ驥上�蜿苓ｬ帷函繝��繧ｿ��900蜷崎ｶ�ｼ峨ｒ荳諡ｬ縺ｧ謠冗判縺吶ｋ縺ｨ繝悶Λ繧ｦ繧ｶ縺ｮ繝｡繝｢繝ｪ繧ГPU繧貞悸霑ｫ縺吶ｋ縺溘ａ縲∝ｽ薙す繧ｹ繝�Β縺ｧ縺ｯ1繝壹�繧ｸ縺ゅ◆繧�50莉ｶ縺ｫ蛻�牡謠冗判縺吶ｋ繝壹�繧ｸ繝阪�繧ｷ繝ｧ繝ｳ繧呈政霈峨＠縺ｦ縺�∪縺吶ゅ∪縺溘√�繧ｿ繝ｳ縺斐→縺ｮ蛟句挨繧､繝吶Φ繝医ヰ繧､繝ｳ繝峨ｒ蟒�ｭ｢縺励√ユ繝ｼ繝悶Ν隕ｪ繧ｳ繝ｳ繝�リ縺ｧ縺ｮ繧､繝吶Φ繝亥ｧ碑ｭｲ蜃ｦ逅�ｒ陦後≧縺薙→縺ｧ縲∵･ｵ繧√※霆ｽ蠢ｫ縺ｪ蜍穂ｽ懊ｒ螳溽樟縺励※縺�∪縺吶�<br>
+                                <strong>讀懃ｴ｢繝�ヰ繧ｦ繝ｳ繧ｹ蜃ｦ逅�</strong>�壽､懃ｴ｢繝懊ャ繧ｯ繧ｹ蜈･蜉帶凾縺ｫ驕主臆縺ｪ蜀肴緒逕ｻ縺檎匱逕溘＠縺ｪ縺�ｈ縺�√く繝ｼ蜈･蜉帙�繧ｿ繧､繝斐Φ繧ｰ螳御ｺ�ｒ閾ｪ蜍募ｾ�ｩ滂ｼ�250ms�峨＠縺ｦ縺九ｉ邨槭ｊ霎ｼ縺ｿ繧貞ｮ溯｡後☆繧九◆繧√∵律譛ｬ隱槫�蜉帑ｸｭ縺ｧ繧ゅせ繝�繝ｼ繧ｺ縺ｫ讀懃ｴ｢縺ｧ縺阪∪縺吶�</p>
                             </div>
                         </div>
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
-                                <h4>URLから「/public_html/」を外して運用するには？</h4>
-                                <p><strong>1. レンタルサーバー公開ディレクトリへの配置（推奨）</strong>：エックスサーバーやロリポップ！等の公開フォルダ（<code>public_html/</code> や <code>htdocs/</code>）の「中身」に、パッケージの <code>public_html/</code> フォルダ内の各ファイル・フォルダ（<code>admin/</code>, <code>liff/</code>, <code>webhook.php</code>, <code>setup.php</code> 等）を直接配置します。これにより <code>https://あなたのドメイン/admin/</code> や <code>https://あなたのドメイン/setup.php</code> で直接アクセスできます。<br>
-                                <strong>2. ルート .htaccess による自動消去・内部転送</strong>：プロジェクトフォルダごと丸ごとアップロードした場合でも、同梱のルート <code>.htaccess</code> により、<code>/public_html/</code> 付きのアクセスは自動的に <code>/</code> へ301リダイレクトされ、URLから <code>/public_html/</code> が完全自動消去されます。</p>
+                                <h4>URL縺九ｉ縲�/public_html/縲阪ｒ螟悶＠縺ｦ驕狗畑縺吶ｋ縺ｫ縺ｯ��</h4>
+                                <p><strong>1. 繝ｬ繝ｳ繧ｿ繝ｫ繧ｵ繝ｼ繝舌�蜈ｬ髢九ョ繧｣繝ｬ繧ｯ繝医Μ縺ｸ縺ｮ驟咲ｽｮ�域耳螂ｨ��</strong>�壹お繝�け繧ｹ繧ｵ繝ｼ繝舌�繧�Ο繝ｪ繝昴ャ繝暦ｼ∫ｭ峨�蜈ｬ髢九ヵ繧ｩ繝ｫ繝��<code>public_html/</code> 繧� <code>htdocs/</code>�峨�縲御ｸｭ霄ｫ縲阪↓縲√ヱ繝�こ繝ｼ繧ｸ縺ｮ <code>public_html/</code> 繝輔か繝ｫ繝蜀��蜷�ヵ繧｡繧､繝ｫ繝ｻ繝輔か繝ｫ繝��<code>admin/</code>, <code>liff/</code>, <code>webhook.php</code>, <code>setup.php</code> 遲会ｼ峨ｒ逶ｴ謗･驟咲ｽｮ縺励∪縺吶ゅ％繧後↓繧医ｊ <code>https://縺ゅ↑縺溘�繝峨Γ繧､繝ｳ/admin/</code> 繧� <code>https://縺ゅ↑縺溘�繝峨Γ繧､繝ｳ/setup.php</code> 縺ｧ逶ｴ謗･繧｢繧ｯ繧ｻ繧ｹ縺ｧ縺阪∪縺吶�<br>
+                                <strong>2. 繝ｫ繝ｼ繝� .htaccess 縺ｫ繧医ｋ閾ｪ蜍墓ｶ亥悉繝ｻ蜀�Κ霆｢騾�</strong>�壹�繝ｭ繧ｸ繧ｧ繧ｯ繝医ヵ繧ｩ繝ｫ繝縺斐→荳ｸ縺斐→繧｢繝��繝ｭ繝ｼ繝峨＠縺溷�ｴ蜷医〒繧ゅ∝酔譴ｱ縺ｮ繝ｫ繝ｼ繝� <code>.htaccess</code> 縺ｫ繧医ｊ縲�<code>/public_html/</code> 莉倥″縺ｮ繧｢繧ｯ繧ｻ繧ｹ縺ｯ閾ｪ蜍慕噪縺ｫ <code>/</code> 縺ｸ301繝ｪ繝繧､繝ｬ繧ｯ繝医＆繧後ゞRL縺九ｉ <code>/public_html/</code> 縺悟ｮ悟�閾ｪ蜍墓ｶ亥悉縺輔ｌ縺ｾ縺吶�</p>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- フッター -->
+                <!-- 繝輔ャ繧ｿ繝ｼ -->
                 <footer class="manual-footer">
-                    &copy; 2026 シニア向けパソコン教室 LINE受講生・カルテ管理システム
+                    &copy; 2026 繧ｷ繝九い蜷代￠繝代た繧ｳ繝ｳ謨吝ｮ､ LINE蜿苓ｬ帷函繝ｻ繧ｫ繝ｫ繝�ｮ｡逅�す繧ｹ繝�Β
                 </footer>
             </main>
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_toolbar_layout_v1"></script>
+    <script src="manual.js?v=20260921_fix_unblock_sync"></script>
 </body>
 </html>

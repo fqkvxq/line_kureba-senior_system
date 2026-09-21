@@ -1913,9 +1913,10 @@ try {
             $nowJst = date('Y-m-d H:i:s');
 
             foreach ($batchIds as $uid) {
+                $uid = trim((string)$uid);
                 if (empty($uid) || !str_starts_with($uid, 'U')) continue;
 
-                $checkStmt = $db->prepare("SELECT id, user_name, picture_url FROM customer_cars WHERE user_id = :uid LIMIT 1");
+                $checkStmt = $db->prepare("SELECT id, user_name, picture_url FROM customer_cars WHERE TRIM(user_id) = :uid LIMIT 1");
                 $checkStmt->execute([':uid' => $uid]);
                 $existing = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -1957,6 +1958,7 @@ try {
                     $currentName = $isPlaceholderName ? $displayName : $existing['user_name'];
                     $currentPic = !empty($pictureUrl) ? $pictureUrl : ($existing['picture_url'] ?? '');
 
+                    // 同一UIDの全レコードを確実に is_blocked = 0 に更新
                     $db->prepare("
                         UPDATE customer_cars SET
                             user_name = :uname,
@@ -1964,12 +1966,12 @@ try {
                             is_blocked = 0,
                             blocked_at = NULL,
                             updated_at = :updated_at
-                        WHERE id = :id
+                        WHERE TRIM(user_id) = :uid
                     ")->execute([
                         ':uname' => $currentName,
                         ':pic' => $currentPic,
                         ':updated_at' => $nowJst,
-                        ':id' => $existing['id']
+                        ':uid' => $uid
                     ]);
                     $updatedCount++;
                 }
@@ -2005,26 +2007,29 @@ try {
             $blockedCount = 0;
 
             if (is_array($activeUserIds) && !empty($activeUserIds)) {
-                // 有効なフォロワー一覧に存在するものは is_blocked = 0
-                $chunks = array_chunk($activeUserIds, 500);
+                $cleanActive = array_values(array_filter(array_map('trim', $activeUserIds)));
+
+                // 1. 有効なフォロワー一覧に存在するものは is_blocked = 0, blocked_at = NULL
+                $chunks = array_chunk($cleanActive, 300);
                 foreach ($chunks as $c) {
                     $inSql = implode(',', array_fill(0, count($c), '?'));
-                    $db->prepare("UPDATE customer_cars SET is_blocked = 0, blocked_at = NULL WHERE user_id IN ($inSql)")->execute($c);
+                    $db->prepare("UPDATE customer_cars SET is_blocked = 0, blocked_at = NULL WHERE TRIM(user_id) IN ($inSql)")->execute($c);
                 }
 
-                // 有効なフォロワー一覧に含まれない既存のLINE友だち（user_id LIKE 'U%'）を is_blocked = 1（ブロック中）に同期
-                $dbUserIds = $db->query("SELECT DISTINCT user_id FROM customer_cars WHERE user_id LIKE 'U%'")->fetchAll(PDO::FETCH_COLUMN);
-                $activeLookup = array_flip($activeUserIds);
+                // 2. 有効なフォロワー一覧に含まれない既存のLINE友だち（user_id LIKE 'U%'）を is_blocked = 1（ブロック中）に同期
+                $dbUserIds = $db->query("SELECT DISTINCT TRIM(user_id) as uid FROM customer_cars WHERE user_id LIKE 'U%'")->fetchAll(PDO::FETCH_COLUMN);
+                $activeLookup = array_flip($cleanActive);
                 $toBlock = [];
 
                 foreach ($dbUserIds as $dUid) {
-                    if (!isset($activeLookup[$dUid])) {
+                    $dUid = trim((string)$dUid);
+                    if (!empty($dUid) && str_starts_with($dUid, 'U') && !isset($activeLookup[$dUid])) {
                         $toBlock[] = $dUid;
                     }
                 }
 
                 if (!empty($toBlock)) {
-                    $blockChunks = array_chunk($toBlock, 500);
+                    $blockChunks = array_chunk($toBlock, 300);
                     foreach ($blockChunks as $bChunk) {
                         $inSql = implode(',', array_fill(0, count($bChunk), '?'));
                         $stmt = $db->prepare("
@@ -2034,7 +2039,7 @@ try {
                                 last_interaction_type = CASE WHEN is_blocked = 0 THEN 'unfollow' ELSE last_interaction_type END,
                                 last_interaction_preview = CASE WHEN is_blocked = 0 THEN '🚫 ブロック' ELSE last_interaction_preview END,
                                 updated_at = '{$nowJst}'
-                            WHERE user_id IN ($inSql)
+                            WHERE TRIM(user_id) IN ($inSql)
                         ");
                         $stmt->execute($bChunk);
                         $blockedCount += count($bChunk);
@@ -2202,41 +2207,62 @@ try {
                 break;
             }
 
+            // もし $userId が空で $carId がある場合は、user_id を取得
+            if (empty($userId) && $carId) {
+                $cStmt = $db->prepare("SELECT user_id FROM customer_cars WHERE id = :id LIMIT 1");
+                $cStmt->execute([':id' => $carId]);
+                $cRow = $cStmt->fetch(PDO::FETCH_ASSOC);
+                $userId = trim((string)($cRow['user_id'] ?? ''));
+            }
+
             $nowJst = date('Y-m-d H:i:s');
-            if ($setBlocked) {
-                // ブロック設定
-                $sql = "UPDATE customer_cars SET
-                            is_blocked = 1,
-                            blocked_at = COALESCE(blocked_at, :now),
-                            last_interaction_type = 'unfollow',
-                            last_interaction_preview = '🚫 ブロック（手動）',
-                            last_interaction_at = :now2,
-                            updated_at = :now3
-                        WHERE ";
-            } else {
-                // ブロック解除
-                $sql = "UPDATE customer_cars SET
-                            is_blocked = 0,
-                            blocked_at = NULL,
-                            last_interaction_type = 'follow',
-                            last_interaction_preview = '✅ ブロック解除（手動）',
-                            last_interaction_at = :now2,
-                            updated_at = :now3
-                        WHERE ";
-            }
+            $preview = $setBlocked ? '🚫 ブロック（手動）' : '✅ ブロック解除（手動）';
+            $lType = $setBlocked ? 'unfollow' : 'follow';
+            $blockedAt = $setBlocked ? $nowJst : null;
 
-            $params = [':now' => $nowJst, ':now2' => $nowJst, ':now3' => $nowJst];
-            if ($carId) {
-                $sql .= "id = :id";
-                $params[':id'] = $carId;
+            if (!empty($userId) && str_starts_with($userId, 'U')) {
+                $stmt = $db->prepare("
+                    UPDATE customer_cars SET
+                        is_blocked = :blocked,
+                        blocked_at = :blocked_at,
+                        last_interaction_type = :ltype,
+                        last_interaction_preview = :preview,
+                        last_interaction_at = :now1,
+                        updated_at = :now2
+                    WHERE TRIM(user_id) = :uid
+                ");
+                $stmt->execute([
+                    ':blocked' => $setBlocked,
+                    ':blocked_at' => $blockedAt,
+                    ':ltype' => $lType,
+                    ':preview' => $preview,
+                    ':now1' => $nowJst,
+                    ':now2' => $nowJst,
+                    ':uid' => $userId
+                ]);
+                $affected = $stmt->rowCount();
             } else {
-                $sql .= "user_id = :uid";
-                $params[':uid'] = $userId;
+                $stmt = $db->prepare("
+                    UPDATE customer_cars SET
+                        is_blocked = :blocked,
+                        blocked_at = :blocked_at,
+                        last_interaction_type = :ltype,
+                        last_interaction_preview = :preview,
+                        last_interaction_at = :now1,
+                        updated_at = :now2
+                    WHERE id = :id
+                ");
+                $stmt->execute([
+                    ':blocked' => $setBlocked,
+                    ':blocked_at' => $blockedAt,
+                    ':ltype' => $lType,
+                    ':preview' => $preview,
+                    ':now1' => $nowJst,
+                    ':now2' => $nowJst,
+                    ':id' => $carId
+                ]);
+                $affected = $stmt->rowCount();
             }
-
-            $stmt = $db->prepare($sql);
-            $stmt->execute($params);
-            $affected = $stmt->rowCount();
 
             echo json_encode([
                 'success'    => true,
