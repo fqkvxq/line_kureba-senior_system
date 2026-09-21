@@ -282,6 +282,8 @@ const elements = {
     testAdminLineNotificationBtn: document.getElementById('testAdminLineNotificationBtn'),
     adminLineUidsInput: document.getElementById('adminLineUidsInput'),
     adminLineSaveStatus: document.getElementById('adminLineSaveStatus'),
+    notifyChatCheck: document.getElementById('notifyChatCheck'),
+    notifyFollowCheck: document.getElementById('notifyFollowCheck'),
     notifyInquiryCheck: document.getElementById('notifyInquiryCheck'),
     notifyBookingCheck: document.getElementById('notifyBookingCheck'),
     notifyNewCustomerCheck: document.getElementById('notifyNewCustomerCheck'),
@@ -1438,6 +1440,7 @@ function initEventListeners() {
             state.authToken = '';
             state.twoFactorSessionToken = '';
             if (state.resendTimerInterval) clearInterval(state.resendTimerInterval);
+            if (globalDashboardPollTimer) clearInterval(globalDashboardPollTimer);
             if (elements.adminApp) elements.adminApp.style.display = 'none';
             if (elements.loginModal) elements.loginModal.style.display = 'flex';
             if (elements.loginStep1Wrap) elements.loginStep1Wrap.style.display = 'block';
@@ -2120,9 +2123,21 @@ async function attemptResend2FA() {
     }
 }
 
+let globalDashboardPollTimer = null;
+
+function startDashboardPolling() {
+    if (globalDashboardPollTimer) clearInterval(globalDashboardPollTimer);
+    globalDashboardPollTimer = setInterval(() => {
+        if ((state.password || state.authToken) && !elements.chatModal?.classList.contains('active')) {
+            loadUnreadChatCounts();
+        }
+    }, 20000);
+}
+
 async function loadDashboard() {
     elements.loginModal.style.display = 'none';
     elements.adminApp.style.display = 'block';
+    startDashboardPolling();
     await Promise.all([fetchCustomers(), loadRichMenus()]);
 }
 
@@ -2596,6 +2611,17 @@ function renderTable() {
                         <button class="btn-edit" data-action="edit" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" title="受講生情報を編集">
                             <i class="fa-solid fa-pen"></i> 編集
                         </button>
+                        ${userId && userId.startsWith('U') ? `
+                        <button class="btn-toggle-block ${isBlocked ? 'is-blocked' : 'is-active'}"
+                            data-action="toggle-block"
+                            data-idx="${globalIdx}"
+                            data-uid="${escapeHtml(userId)}"
+                            data-car-id="${c.id || ''}"
+                            data-blocked="${isBlocked ? '1' : '0'}"
+                            title="${isBlocked ? 'ブロック解除（友だちに戻す）' : 'ブロック中に設定'}">
+                            <i class="fa-solid ${isBlocked ? 'fa-user-check' : 'fa-user-slash'}"></i>
+                            ${isBlocked ? '解除' : 'ブロック'}
+                        </button>` : ''}
 
                         <!-- 行2: 各種リマインド & 削除 -->
                         <button class="btn-remind-oil" data-action="remind-oil" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" title="${escapeHtml(labels.date1 || '期日1')}リマインドをLINE送信">
@@ -2782,6 +2808,8 @@ function initCustomerTableEvents() {
                 openEditModal(cust);
             } else if (action === 'delete') {
                 deleteCarRecord(cust);
+            } else if (action === 'toggle-block') {
+                toggleBlockStatus(cust, btn);
             }
         });
     }
@@ -2894,6 +2922,82 @@ async function deleteCarRecord(cust) {
         }
     } catch (e) {
         alert('⚠️ 通信エラーが発生しました');
+    }
+}
+
+/**
+ * ブロック状態の即時切り替え（楽観的UI更新）
+ * @param {Object} cust - 顧客オブジェクト
+ * @param {HTMLElement} btn - クリックされたボタン要素
+ */
+async function toggleBlockStatus(cust, btn) {
+    if (!cust || !cust.user_id || !cust.user_id.startsWith('U')) {
+        alert('LINE未連携の顧客はブロック操作できません。');
+        return;
+    }
+
+    const currentlyBlocked = (cust.is_blocked == 1);
+    const newBlocked = !currentlyBlocked;
+    const name = cust.user_name || '友だち';
+
+    const confirmMsg = newBlocked
+        ? `【${name}】さんを「ブロック中」に設定しますか？\n（同期なしで即時反映されます）`
+        : `【${name}】さんのブロックを解除して「友だち」に戻しますか？`;
+
+    if (!confirm(confirmMsg)) return;
+
+    // ── 楽観的UI更新: 先にstateとUIを更新 ──
+    const custIdx = state.allCustomers.findIndex(c =>
+        (c.user_id && c.user_id === cust.user_id) || String(c.id) === String(cust.id)
+    );
+    if (custIdx >= 0) {
+        state.allCustomers[custIdx].is_blocked = newBlocked ? 1 : 0;
+        state.allCustomers[custIdx].last_interaction_type = newBlocked ? 'unfollow' : 'follow';
+        state.allCustomers[custIdx].last_interaction_preview = newBlocked ? '🚫 ブロック（手動）' : '✅ ブロック解除（手動）';
+    }
+
+    // UIを即時再描画
+    renderTable();
+    updateStats();
+
+    // トースト通知
+    showToast(newBlocked
+        ? `🚫 ${name} さんをブロック中に設定しました`
+        : `✅ ${name} さんのブロックを解除しました`
+    );
+
+    // ── バックグラウンドでAPIに保存 ──
+    try {
+        const res = await fetch(`../api.php?action=admin_toggle_block&account=${encodeURIComponent(state.activeAccount)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                car_id: cust.id || null,
+                uid: cust.user_id || '',
+                is_blocked: newBlocked ? 1 : 0
+            })
+        });
+        const data = await res.json();
+        if (!data.success) {
+            // 失敗したらロールバック
+            console.warn('[toggleBlock] API error:', data.error);
+            if (custIdx >= 0) {
+                state.allCustomers[custIdx].is_blocked = currentlyBlocked ? 1 : 0;
+                state.allCustomers[custIdx].last_interaction_type = currentlyBlocked ? 'unfollow' : 'follow';
+            }
+            renderTable();
+            updateStats();
+            alert('⚠️ ブロック状態の保存に失敗しました: ' + (data.error || '通信エラー'));
+        }
+    } catch (e) {
+        // 通信エラー時もロールバック
+        console.error('[toggleBlock] Fetch error:', e);
+        if (custIdx >= 0) {
+            state.allCustomers[custIdx].is_blocked = currentlyBlocked ? 1 : 0;
+        }
+        renderTable();
+        updateStats();
+        alert('⚠️ 通信エラーが発生しました。ブロック状態が保存されていない可能性があります。');
     }
 }
 
@@ -4314,6 +4418,8 @@ async function openAdminLineSettingsModal() {
                 const uids = Array.isArray(rawArr) ? rawArr : [];
                 elements.adminLineUidsInput.value = uids.join('\n');
             }
+            if (elements.notifyChatCheck) elements.notifyChatCheck.checked = (s.notify_chat !== false && s.notify_chat !== 0);
+            if (elements.notifyFollowCheck) elements.notifyFollowCheck.checked = (s.notify_follow !== false && s.notify_follow !== 0);
             if (elements.notifyInquiryCheck) elements.notifyInquiryCheck.checked = Boolean(s.notify_inquiry);
             if (elements.notifyBookingCheck) elements.notifyBookingCheck.checked = Boolean(s.notify_booking);
             if (elements.notifyNewCustomerCheck) elements.notifyNewCustomerCheck.checked = Boolean(s.notify_new_customer);
@@ -4361,6 +4467,8 @@ async function saveAdminLineSettings() {
     const formData = new FormData();
     formData.append('password', state.password);
     formData.append('admin_line_uids', rawUids);
+    formData.append('notify_chat', elements.notifyChatCheck && elements.notifyChatCheck.checked ? '1' : '0');
+    formData.append('notify_follow', elements.notifyFollowCheck && elements.notifyFollowCheck.checked ? '1' : '0');
     formData.append('notify_inquiry', elements.notifyInquiryCheck && elements.notifyInquiryCheck.checked ? '1' : '0');
     formData.append('notify_booking', elements.notifyBookingCheck && elements.notifyBookingCheck.checked ? '1' : '0');
     formData.append('notify_new_customer', elements.notifyNewCustomerCheck && elements.notifyNewCustomerCheck.checked ? '1' : '0');

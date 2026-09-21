@@ -2178,8 +2178,77 @@ try {
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
+        // --- 8-5. 店舗管理者用: ブロック状態の手動切替 (即時反映) ---
+        case 'admin_toggle_block':
+            $authPass = getAdminAuthPassword();
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗']);
+                exit;
+            }
+
+            $input = json_decode(file_get_contents('php://input'), true) ?: [];
+            $carId  = !empty($input['car_id'])    ? (int)$input['car_id']         : (!empty($_POST['car_id']) ? (int)$_POST['car_id'] : null);
+            $userId = trim($input['uid']        ?? $_POST['uid']        ?? '');
+            $setBlocked = isset($input['is_blocked']) ? (int)(bool)$input['is_blocked']
+                        : (isset($_POST['is_blocked'])  ? (int)(bool)$_POST['is_blocked'] : null);
+
+            if ($setBlocked === null) {
+                echo json_encode(['success' => false, 'error' => 'is_blocked パラメータが必要です']);
+                break;
+            }
+            if (!$carId && empty($userId)) {
+                echo json_encode(['success' => false, 'error' => 'car_id または uid が必要です']);
+                break;
+            }
+
+            $nowJst = date('Y-m-d H:i:s');
+            if ($setBlocked) {
+                // ブロック設定
+                $sql = "UPDATE customer_cars SET
+                            is_blocked = 1,
+                            blocked_at = COALESCE(blocked_at, :now),
+                            last_interaction_type = 'unfollow',
+                            last_interaction_preview = '🚫 ブロック（手動）',
+                            last_interaction_at = :now2,
+                            updated_at = :now3
+                        WHERE ";
+            } else {
+                // ブロック解除
+                $sql = "UPDATE customer_cars SET
+                            is_blocked = 0,
+                            blocked_at = NULL,
+                            last_interaction_type = 'follow',
+                            last_interaction_preview = '✅ ブロック解除（手動）',
+                            last_interaction_at = :now2,
+                            updated_at = :now3
+                        WHERE ";
+            }
+
+            $params = [':now' => $nowJst, ':now2' => $nowJst, ':now3' => $nowJst];
+            if ($carId) {
+                $sql .= "id = :id";
+                $params[':id'] = $carId;
+            } else {
+                $sql .= "user_id = :uid";
+                $params[':uid'] = $userId;
+            }
+
+            $stmt = $db->prepare($sql);
+            $stmt->execute($params);
+            $affected = $stmt->rowCount();
+
+            echo json_encode([
+                'success'    => true,
+                'is_blocked' => $setBlocked,
+                'affected'   => $affected,
+                'message'    => $setBlocked ? 'ブロック中に設定しました' : 'ブロック解除しました'
+            ], JSON_UNESCAPED_UNICODE);
+            break;
+
         // --- 9. 店舗管理者用: 顧客・車両削除 ---
         case 'admin_delete_customer':
+
             $authPass = getAdminAuthPassword();
             if ($authPass !== ADMIN_PASSWORD) {
                 http_response_code(401);
@@ -4337,6 +4406,8 @@ try {
 
             $settingsToSave = [
                 'admin_uids' => $uids,
+                'notify_chat' => isset($_POST['notify_chat']) ? filter_var($_POST['notify_chat'], FILTER_VALIDATE_BOOLEAN) : true,
+                'notify_follow' => isset($_POST['notify_follow']) ? filter_var($_POST['notify_follow'], FILTER_VALIDATE_BOOLEAN) : true,
                 'notify_inquiry' => isset($_POST['notify_inquiry']) ? filter_var($_POST['notify_inquiry'], FILTER_VALIDATE_BOOLEAN) : true,
                 'notify_booking' => isset($_POST['notify_booking']) ? filter_var($_POST['notify_booking'], FILTER_VALIDATE_BOOLEAN) : true,
                 'notify_new_customer' => isset($_POST['notify_new_customer']) ? filter_var($_POST['notify_new_customer'], FILTER_VALIDATE_BOOLEAN) : true,

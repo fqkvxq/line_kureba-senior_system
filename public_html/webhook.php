@@ -157,9 +157,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
     writeDebugLog("外部ツール中継実行", $prolineRelayResult);
 
     // 署名検証 (Channel Secretが設定されている場合)
-    if (!empty($channelSecret) && $channelSecret !== 'YOUR_CHANNEL_SECRET_HERE' && !empty($_SERVER['HTTP_X_LINE_SIGNATURE'])) {
+    if (!empty($channelSecret) && $channelSecret !== 'YOUR_CHANNEL_SECRET_HERE' && !empty($lineSignature)) {
         $hash = base64_encode(hash_hmac('sha256', $rawInput, $channelSecret, true));
-        if (!hash_equals($hash, $_SERVER['HTTP_X_LINE_SIGNATURE'])) {
+        if (!hash_equals($hash, trim($lineSignature))) {
             writeDebugLog("署名検証エラー (Signature mismatch)", ['account' => $activeAccount]);
             http_response_code(403);
             echo 'Invalid signature';
@@ -210,7 +210,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
                     $db->prepare("UPDATE customer_cars SET user_name = :uname, picture_url = :pic, is_blocked = 0, blocked_at = NULL, updated_at = :now WHERE user_id = :uid")
                         ->execute([':uname' => $uName, ':pic' => $pUrl, ':now' => date('Y-m-d H:i:s'), ':uid' => $userId]);
 
-                    // 各種通知
+                    // 1. 管理者向けLINEプッシュ通知
+                    if (function_exists('sendAdminLineFollowNotification')) {
+                        sendAdminLineFollowNotification($userId, $uName, $db);
+                    }
+
+                    // 2. Slack通知
                     sendSlackFollowNotification([
                         'user_id' => $userId,
                         'user_name' => $uName,
@@ -218,8 +223,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
                         'event_text' => '新しいユーザーが友だち追加（またはブロック解除）しました！'
                     ], $prof, $db);
 
+                    // 3. Discord通知
                     if (function_exists('sendDiscordNotification')) {
                         sendDiscordNotification($db, "✨【LINE】友だち追加・ブロック解除", "受講生: {$uName} 様\nLINE UID: {$userId}\n日時: " . date('Y-m-d H:i:s'), '#10b981');
+                    }
+
+                    // 4. プロライン非稼働時は本システムのあいさつ返信を実行
+                    if (!$isProlineActive && !empty($replyToken)) {
+                        handleFollow($replyToken, $userId);
                     }
                 } catch (Throwable $sEx) {
                     writeDebugLog("フォロー通知エラー", ['error' => $sEx->getMessage()]);
@@ -316,7 +327,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
                 // 2. 顧客カルテの最終やり取り更新
                 recordCustomerInteraction($db, $userId, 'user_message', $preview);
 
-                // 3. Discord & Slack Webhook通知送信
+                // 3. 管理者LINE通知 & Discord & Slack Webhook通知送信
                 try {
                     $cStmt = $db->prepare("SELECT user_name, picture_url FROM customer_cars WHERE user_id = :uid LIMIT 1");
                     $cStmt->execute([':uid' => $userId]);
@@ -325,7 +336,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
                     $picUrl = $cRow['picture_url'] ?? '';
 
                     $userProfile = null;
-                    if (empty($userName) || empty($picUrl) || $userName === '受講生' || $userName === '新規顧客') {
+                    if (empty($userName) || empty($picUrl) || $userName === '受講生' || $userName === '新規顧客' || $userName === 'LINE友だち') {
                         $userProfile = getLineUserProfile($userId);
                         if (!empty($userProfile['displayName'])) {
                             $userName = $userProfile['displayName'];
@@ -346,6 +357,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
                         'message_type' => $msgType
                     ];
 
+                    // 管理者LINE Push通知
+                    if (function_exists('sendAdminLineChatMessageNotification')) {
+                        sendAdminLineChatMessageNotification($msgDataPayload, $userProfile, $db);
+                    }
+
+                    // Discord & Slack 通知
                     sendDiscordChatMessageNotification($msgDataPayload, $userProfile, $db);
                     sendSlackChatMessageNotification($msgDataPayload, $userProfile, $db);
                 } catch (Throwable $disEx) {
@@ -385,10 +402,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
                 recordCustomerInteraction($db, $userId, 'user_action', $actionLabel);
 
                 handlePostback($db, $replyToken, $postbackData, $userId, $event['postback']['params'] ?? []);
-            } elseif ($type === 'follow') {
-                writeDebugLog("友だち追加イベント", ['userId' => $userId]);
-                recordCustomerInteraction($db, $userId, 'follow', '✨ 友だち追加');
-                handleFollow($replyToken, $userId);
             }
         } catch (Throwable $e) {
             writeDebugLog("イベント処理例外エラー", [

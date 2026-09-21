@@ -3275,6 +3275,8 @@ function getAdminLineSettings(?PDO $pdo = null): array {
     }
     $defaults = [
         'admin_uids' => [],
+        'notify_chat' => true,
+        'notify_follow' => true,
         'notify_inquiry' => true,
         'notify_booking' => true,
         'notify_new_customer' => true,
@@ -3331,6 +3333,8 @@ function saveAdminLineSettings(array $settings, ?PDO $pdo = null): array {
         }
         $dataToSave = [
             'admin_uids' => $cleanUids,
+            'notify_chat' => isset($settings['notify_chat']) ? (bool)$settings['notify_chat'] : true,
+            'notify_follow' => isset($settings['notify_follow']) ? (bool)$settings['notify_follow'] : true,
             'notify_inquiry' => isset($settings['notify_inquiry']) ? (bool)$settings['notify_inquiry'] : true,
             'notify_booking' => isset($settings['notify_booking']) ? (bool)$settings['notify_booking'] : true,
             'notify_new_customer' => isset($settings['notify_new_customer']) ? (bool)$settings['notify_new_customer'] : true,
@@ -3392,6 +3396,64 @@ function sendAdminLineBroadcast(array $messages, ?PDO $pdo = null): array {
         'total' => count($adminUids),
         'results' => $results
     ];
+}
+
+/**
+ * LINEチャット新着メッセージ受信時の管理者LINE通知
+ */
+function sendAdminLineChatMessageNotification(array $msgData, ?array $userProfile = null, ?PDO $pdo = null): array {
+    $settings = getAdminLineSettings($pdo);
+    if (empty($settings['notify_chat'])) {
+        return ['success' => false, 'reason' => '通知OFF'];
+    }
+
+    $userName = $msgData['user_name'] ?? 'LINE受講生';
+    $msgText = $msgData['message_text'] ?? 'メッセージを受信しました';
+    $msgType = $msgData['message_type'] ?? 'text';
+    $userId = $msgData['user_id'] ?? '';
+    $time = date('H:i');
+
+    $typeIcon = ($msgType === 'image') ? '📷 [画像]' : (($msgType === 'sticker') ? '🎨 [スタンプ]' : '💬');
+
+    $textMsg = "💬【新着LINEメッセージ】({$time})\n"
+             . "━━━━━━━━━━━━━━\n"
+             . "👤 送信者: {$userName} 様\n"
+             . "📝 内容:\n{$msgText}\n"
+             . "━━━━━━━━━━━━━━\n"
+             . "※管理画面のLINEチャットより返信・確認が可能です。";
+
+    $messages = [
+        ['type' => 'text', 'text' => $textMsg]
+    ];
+
+    return sendAdminLineBroadcast($messages, $pdo);
+}
+
+/**
+ * 新規友だち追加・ブロック解除時の管理者LINE通知
+ */
+function sendAdminLineFollowNotification(string $userId, string $userName, ?PDO $pdo = null): array {
+    $settings = getAdminLineSettings($pdo);
+    if (empty($settings['notify_follow'])) {
+        return ['success' => false, 'reason' => '通知OFF'];
+    }
+
+    $displayName = $userName ?: '受講生';
+    $time = date('Y/m/d H:i');
+
+    $textMsg = "✨【新規友だち追加・ブロック解除】\n"
+             . "━━━━━━━━━━━━━━\n"
+             . "👤 受講生: {$displayName} 様\n"
+             . "🆔 LINE UID: {$userId}\n"
+             . "📅 日時: {$time}\n"
+             . "━━━━━━━━━━━━━━\n"
+             . "受講生カルテへ自動登録・名前同期が完了しました。";
+
+    $messages = [
+        ['type' => 'text', 'text' => $textMsg]
+    ];
+
+    return sendAdminLineBroadcast($messages, $pdo);
 }
 
 /**

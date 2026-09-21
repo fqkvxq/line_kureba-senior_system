@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260921_toolbar_layout_v1">
+    <link rel="stylesheet" href="admin.css?v=20260921_fix_sync_notify">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -788,12 +788,20 @@
                     </label>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                         <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); cursor: pointer; font-size: 12px;">
+                            <input type="checkbox" id="notifyChatCheck" checked style="accent-color: #0284c7; width: 16px; height: 16px;">
+                            <span>💬 <strong>新着LINEメッセージ</strong><br><small style="color: #64748b;">個別チャット受信時</small></span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); cursor: pointer; font-size: 12px;">
+                            <input type="checkbox" id="notifyFollowCheck" checked style="accent-color: #0284c7; width: 16px; height: 16px;">
+                            <span>✨ <strong>新規友だち追加</strong><br><small style="color: #64748b;">追加・ブロック解除時</small></span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); cursor: pointer; font-size: 12px;">
                             <input type="checkbox" id="notifyInquiryCheck" checked style="accent-color: #0284c7; width: 16px; height: 16px;">
-                            <span>🚗 <strong>車両問い合わせ</strong><br><small style="color: #64748b;">在庫確認・見積依頼など</small></span>
+                            <span>🚗 <strong>問い合わせ・相談</strong><br><small style="color: #64748b;">在庫確認・見積依頼など</small></span>
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); cursor: pointer; font-size: 12px;">
                             <input type="checkbox" id="notifyBookingCheck" checked style="accent-color: #0284c7; width: 16px; height: 16px;">
-                            <span>🛠️ <strong>来店・点検予約</strong><br><small style="color: #64748b;">オイル交換・車検予約など</small></span>
+                            <span>🛠️ <strong>来店・点検予約</strong><br><small style="color: #64748b;">レッスン・点検予約など</small></span>
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); cursor: pointer; font-size: 12px;">
                             <input type="checkbox" id="notifyNewCustomerCheck" checked style="accent-color: #0284c7; width: 16px; height: 16px;">
@@ -805,7 +813,7 @@
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); cursor: pointer; font-size: 12px; grid-column: span 2;">
                             <input type="checkbox" id="notifyNewCarsCheck" style="accent-color: #0284c7; width: 16px; height: 16px;">
-                            <span>✨ <strong>新着在庫車両の入荷検知</strong><br><small style="color: #64748b;">グーネット掲載の新着車検知時に管理者へ通知</small></span>
+                            <span>✨ <strong>新着在庫の入荷検知</strong><br><small style="color: #64748b;">新着掲載検知時に管理者へ通知</small></span>
                         </label>
                     </div>
                 </div>
@@ -1927,6 +1935,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260921_toolbar_layout_v1"></script>
+    <script src="admin.js?v=20260921_fix_sync_notify"></script>
 </body>
 </html>
