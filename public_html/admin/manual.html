@@ -40,7 +40,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260921_chat_sender_v1">
+    <link rel="stylesheet" href="manual.css?v=20260921_chat_sender_v2">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -1046,12 +1046,13 @@
                         <div class="step-card" style="border: 2px solid #6366f1; background: #eef2ff;">
                             <div class="step-number" style="background: #4f46e5; color: #fff;">4</div>
                             <div class="step-body">
-                                <h4><span class="badge" style="background: #4f46e5; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-right: 6px;">NEW</span>送信者名（担当者名）の自由変更とLINE画面への反映</h4>
-                                <p>チャット入力欄の上部にある「<strong><i class="fa-solid fa-user-tag"></i> 送信者名</strong>」欄にて、メッセージ送信時の担当者名・表示名を自由に変更できます。</p>
+                                <h4><span class="badge" style="background: #4f46e5; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-right: 6px;">NEW</span>送信者名（担当者名）の変更と表示スタイル選択（「from」の非表示対応）</h4>
+                                <p>チャット入力欄の上部にある「<strong><i class="fa-solid fa-user-tag"></i> 送信者名</strong>」欄と「<strong>表示スタイル</strong>」ドロップダウンにより、受講生のLINE画面での見え方を完全にコントロールできます。</p>
                                 <ul style="padding-left: 20px; margin: 8px 0; line-height: 1.7; font-size: 13.5px;">
-                                    <li><strong>受講生のLINEトーク画面に即時反映</strong>: LINE Messaging APIのSender機能に対応しており、受講生側のLINEトーク画面に送信者名（例: 「川合」「サポート担当」「教室スタッフ」など、最大20文字）が明記されて届きます。</li>
-                                    <li><strong>ワンタップ切替チップ</strong>: 「教室スタッフ」「川合」「サポート担当」「講師」などのクイックチップをクリックするだけで瞬時に送信者名を切り替えられます。もちろん直接タイピングしてお好みの名前を入力することも可能です。</li>
-                                    <li><strong>前回の送信者名を自動記憶（localStorage）</strong>: 一度変更した送信者名はブラウザに自動保存されるため、次回チャットを開いた際も前回の担当者名が自動的にセットされます。</li>
+                                    <li><strong>1. 🚫 なし（from非表示・公式アカウント名そのまま）</strong>: 「from ~~~」という表示を一切出さず、通常のLINE公式アカウントからのすっきりとした吹き出しとして送信します。（「🚫 なし (from非表示)」チップを押すか空欄にするだけで即時適用）</li>
+                                    <li><strong>2. 💬 本文先頭に署名（【川合】など）</strong>: LINE側の英語「from」を出さずに、メッセージ本文の先頭に「【担当：川合】」や「【教室スタッフ】」と日本語で自然に担当者名を添えて送信します。最もおすすめの送信スタイルです。</li>
+                                    <li><strong>3. 🏷️ LINE Sender（from 名前）</strong>: LINE公式のSender機能を使い、受講生のLINE吹き出しの上に「from 川合」と小さく送信者名を表示します。</li>
+                                    <li><strong>前回の設定を自動記憶（localStorage）</strong>: 設定した送信者名と表示スタイルはブラウザに自動記憶され、次回以降もそのまま引き継がれます。</li>
                                     <li><strong>管理画面チャット履歴への記録</strong>: 各吹き出しの下部にも送信担当者名が記録・表示され、誰が返信したかが一目で分かります。</li>
                                 </ul>
                             </div>
@@ -1449,6 +1450,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_chat_sender_v1"></script>
+    <script src="manual.js?v=20260921_chat_sender_v2"></script>
 </body>
 </html>
