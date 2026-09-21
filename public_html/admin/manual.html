@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260921_tag_system_v1">
+    <link rel="stylesheet" href="manual.css?v=20260921_chat_image_v2">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -1094,10 +1094,11 @@
                         <div class="step-card">
                             <div class="step-number">2</div>
                             <div class="step-body">
-                                <h4>チャット画面の起動と会話履歴の確認</h4>
+                                <h4>チャット画面の起動と会話履歴の確認（画像・メディア完全対応）</h4>
                                 <p>対象受講生の行にある「💬 チャット」ボタンをクリックすると、LINE風のチャットモーダルが開きます。<br>
                                 ・受講生のメッセージは左側（白吹き出し）、スタッフからの返信は右側（緑吹き出し）に時系列で表示されます。<br>
-                                ・画像やスタンプメッセージも分かりやすく表示され、画像をクリックすると拡大表示できます。<br>
+                                ・<strong>📷 画像・写真メッセージ</strong>：受講生から送信された写真やスクリーンショットは、LINE APIより自動ダウンロードされてチャット内にサムネイル表示されます。画像をクリックすると新しいタブで原寸大の鮮明な写真を確認・保存できます。<br>
+                                ・<strong>🎬 動画 / 🎵 音声 / 😊 スタンプ</strong>：各種メディアもチャット画面上で直接再生・確認できます。<br>
                                 ・チャット画面を開いた時点で未読フラグは自動的に既読として処理されます。<br>
                                 ・チャットモーダルを開いている間は10秒ごとに自動更新（ポーリング）され、受講生からの最新メッセージが即座に反映されます。</p>
                             </div>
@@ -1112,8 +1113,21 @@
                             </div>
                         </div>
 
+                        <div class="step-card" style="border: 2px solid #06C755; background: #f0fdf4;">
+                            <div class="step-number" style="background: #06C755; color: #fff;">4</div>
+                            <div class="step-body">
+                                <h4><span class="badge" style="background: #06C755; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-right: 6px;">連携</span>画像受信時のマルチ通知（管理者LINE・Discord・Slack）</h4>
+                                <p>受講生から画像のみが送信された場合でも、システムが自動的に画像メッセージ（<code>📷 画像を受信しました</code>）として検知し、スタッフへ即座に通知します。</p>
+                                <ul style="padding-left: 20px; margin: 8px 0; line-height: 1.7; font-size: 13.5px;">
+                                    <li><strong>管理者LINE通知</strong>: 送信者名・受信日時に加え、画像の直通URLおよび画像メッセージが管理者のLINEへ即座にプッシュ配信されます。</li>
+                                    <li><strong>Discord通知</strong>: Discord通知メッセージ内に受信画像が埋め込み（Embed Image）表示され、Discord上で瞬時に写真の内容を確認できます。</li>
+                                    <li><strong>Slack通知</strong>: 受信メッセージ内容とともに画像が通知され、管理画面への直通リンクから1クリックで返信できます。</li>
+                                </ul>
+                            </div>
+                        </div>
+
                         <div class="step-card" style="border: 2px solid #6366f1; background: #eef2ff;">
-                            <div class="step-number" style="background: #4f46e5; color: #fff;">4</div>
+                            <div class="step-number" style="background: #4f46e5; color: #fff;">5</div>
                             <div class="step-body">
                                 <h4><span class="badge" style="background: #4f46e5; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-right: 6px;">NEW</span>送信者名（担当者名）の指定と「from」の非表示対応</h4>
                                 <p>チャット入力欄の上部にある「<strong><i class="fa-solid fa-user-tag"></i> 送信者名</strong>」欄により、受講生のLINE画面での送信者名（Sender）表示を柔軟にコントロールできます。</p>
@@ -1597,6 +1611,15 @@
                         <div class="step-card">
                             <div class="step-number">Q</div>
                             <div class="step-body">
+                                <h4>受講生からチャットで画像だけが届いた場合、通知や管理画面への反映はどうなりますか？</h4>
+                                <p><strong>・リアルタイム通知</strong>：受講生からテキストがなく画像のみが届いた場合でも、システムが自動的に画像メッセージ（<code>📷 画像を受信しました</code>）として検知し、管理者LINE通知・Discord通知・Slack通知が即座に送信されます（Discord通知では画像自体がリッチ表示されます）。<br>
+                                <strong>・画像データの自動保存と高解像度プレビュー</strong>：LINE Messaging APIから画像データがサーバーへ自動保存され、管理画面のチャットモーダルにサムネイルが表示されます。クリックすると別タブで原寸大の鮮明な写真を確認・保存できます。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">Q</div>
+                            <div class="step-body">
                                 <h4>手動登録した受講生にチャットで返信できません</h4>
                                 <p>受講生一覧で「新規受講生登録」から手動作成された受講生は、LINEのユーザーID（<code>U...</code>）が未連携の状態です。受講生に教室のLINE公式アカウントを友だち追加していただき、マイカルテを開いてもらうか、メッセージを送信してもらうと自動的にLINE連携が完了し、チャット送受信が可能になります。</p>
                             </div>
@@ -1678,6 +1701,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_tag_system_v1"></script>
+    <script src="manual.js?v=20260921_chat_image_v2"></script>
 </body>
 </html>

@@ -1384,6 +1384,94 @@ function sendLinePushMessage(string $userId, array $messages, ?string $accountKe
 }
 
 /**
+ * LINEメッセージコンテンツ(画像・音声・動画・ファイル等)を取得してローカルに保存
+ * 
+ * @param string $messageId LINEメッセージID
+ * @param string|null $accountKey アカウントキー
+ * @return array ['success' => bool, 'url' => string, 'file_path' => string, 'content_type' => string, 'error' => string]
+ */
+function downloadLineMessageContent(string $messageId, ?string $accountKey = null): array {
+    $token = getLineAccessToken($accountKey);
+    if (empty($messageId) || empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
+        return ['success' => false, 'error' => 'Token or messageId missing'];
+    }
+
+    $url = "https://api-data.line.me/v2/bot/message/{$messageId}/content";
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 15,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . $token
+        ],
+        CURLOPT_FOLLOWLOCATION => true
+    ]);
+    $binaryData = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    if ($httpCode !== 200 || empty($binaryData)) {
+        writeDebugLog("LINEコンテンツダウンロード失敗", [
+            'messageId' => $messageId,
+            'httpCode' => $httpCode,
+            'error' => $curlErr ?: 'HTTP Code not 200'
+        ]);
+        return ['success' => false, 'error' => $curlErr ?: "HTTP {$httpCode}"];
+    }
+
+    // 拡張子の判定
+    $ext = 'jpg';
+    if (is_string($contentType)) {
+        if (str_contains($contentType, 'image/png')) {
+            $ext = 'png';
+        } elseif (str_contains($contentType, 'image/gif')) {
+            $ext = 'gif';
+        } elseif (str_contains($contentType, 'image/webp')) {
+            $ext = 'webp';
+        } elseif (str_contains($contentType, 'video/mp4')) {
+            $ext = 'mp4';
+        } elseif (str_contains($contentType, 'audio/')) {
+            $ext = 'm4a';
+        }
+    }
+
+    // 保存ディレクトリ作成
+    $uploadDir = __DIR__ . '/uploads/chat';
+    if (!is_dir($uploadDir)) {
+        @mkdir($uploadDir, 0755, true);
+    }
+
+    $fileName = 'line_msg_' . preg_replace('/[^a-zA-Z0-9_-]/', '', $messageId) . '_' . date('YmdHis') . '.' . $ext;
+    $filePath = $uploadDir . '/' . $fileName;
+
+    if (file_put_contents($filePath, $binaryData) === false) {
+        writeDebugLog("LINEコンテンツ保存失敗 (file_put_contents error)", ['filePath' => $filePath]);
+        return ['success' => false, 'error' => 'ファイル保存に失敗しました'];
+    }
+
+    $publicUrl = getBaseUrl() . '/uploads/chat/' . $fileName;
+
+    writeDebugLog("LINEコンテンツ取得保存成功", [
+        'messageId' => $messageId,
+        'fileName' => $fileName,
+        'url' => $publicUrl,
+        'size' => strlen($binaryData)
+    ]);
+
+    return [
+        'success' => true,
+        'file_name' => $fileName,
+        'file_path' => $filePath,
+        'url' => $publicUrl,
+        'content_type' => $contentType,
+        'size' => strlen($binaryData)
+    ];
+}
+
+/**
  * LINE公式アカウントの友だち全員へメッセージを一斉送信 (Broadcast API)
  */
 function sendLineBroadcastMessage(array $messages, ?string $accountKey = null): array {
@@ -2406,6 +2494,7 @@ function sendDiscordChatMessageNotification(array $msgData, ?array $userProfile 
     $userId = $msgData['user_id'] ?? '';
     $msgText = $msgData['message_text'] ?? '';
     $msgType = $msgData['message_type'] ?? 'text';
+    $imageUrl = $msgData['image_url'] ?? '';
     $userName = $msgData['user_name'] ?? '受講生';
     $userAvatar = $msgData['picture_url'] ?? ($userProfile['pictureUrl'] ?? null);
 
@@ -2459,6 +2548,10 @@ function sendDiscordChatMessageNotification(array $msgData, ?array $userProfile 
             'name' => $userName,
             'icon_url' => $userAvatar
         ];
+    }
+
+    if (!empty($imageUrl)) {
+        $embed['image'] = ['url' => $imageUrl];
     }
 
     $payload = [
@@ -3819,6 +3912,7 @@ function sendAdminLineChatMessageNotification(array $msgData, ?array $userProfil
     $msgText = $msgData['message_text'] ?? 'メッセージを受信しました';
     $msgType = $msgData['message_type'] ?? 'text';
     $userId = $msgData['user_id'] ?? '';
+    $imageUrl = $msgData['image_url'] ?? '';
     $time = date('H:i');
 
     $typeIcon = ($msgType === 'image') ? '📷 [画像]' : (($msgType === 'sticker') ? '🎨 [スタンプ]' : '💬');
@@ -3826,13 +3920,26 @@ function sendAdminLineChatMessageNotification(array $msgData, ?array $userProfil
     $textMsg = "💬【新着LINEメッセージ】({$time})\n"
              . "━━━━━━━━━━━━━━\n"
              . "👤 送信者: {$userName} 様\n"
-             . "📝 内容:\n{$msgText}\n"
-             . "━━━━━━━━━━━━━━\n"
+             . "📝 内容:\n{$msgText}\n";
+
+    if (!empty($imageUrl)) {
+        $textMsg .= "🖼️ 画像URL: {$imageUrl}\n";
+    }
+
+    $textMsg .= "━━━━━━━━━━━━━━\n"
              . "※管理画面のLINEチャットより返信・確認が可能です。";
 
     $messages = [
         ['type' => 'text', 'text' => $textMsg]
     ];
+
+    if (!empty($imageUrl) && str_starts_with($imageUrl, 'https://')) {
+        $messages[] = [
+            'type' => 'image',
+            'originalContentUrl' => $imageUrl,
+            'previewImageUrl' => $imageUrl
+        ];
+    }
 
     return sendAdminLineBroadcast($messages, $pdo);
 }

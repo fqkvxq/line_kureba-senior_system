@@ -277,9 +277,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             } elseif ($type === 'message') {
                 $msgType = $event['message']['type'] ?? 'text';
+                $messageId = $event['message']['id'] ?? '';
                 $userText = '';
                 $preview = '';
-                $payloadJson = json_encode($event['message'] ?? [], JSON_UNESCAPED_UNICODE);
+                $imageUrl = '';
+                $rawPayload = $event['message'] ?? [];
 
                 if ($msgType === 'text') {
                     $userText = trim($event['message']['text'] ?? '');
@@ -292,12 +294,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } elseif ($msgType === 'image') {
                     $userText = '📷 画像を受信しました';
                     $preview = '📷 画像を受信';
-                    writeDebugLog("画像受信", ['userId' => $userId]);
+                    writeDebugLog("画像受信", ['userId' => $userId, 'messageId' => $messageId]);
+
+                    // LINE Messaging APIから画像バイナリをダウンロードして保存
+                    if (!empty($messageId) && function_exists('downloadLineMessageContent')) {
+                        $dlRes = downloadLineMessageContent($messageId, $activeAccount);
+                        if (!empty($dlRes['success']) && !empty($dlRes['url'])) {
+                            $imageUrl = $dlRes['url'];
+                            $rawPayload['url'] = $imageUrl;
+                            $rawPayload['file_name'] = $dlRes['file_name'] ?? '';
+                            $rawPayload['file_path'] = $dlRes['file_path'] ?? '';
+                            writeDebugLog("画像ダウンロード＆保存成功", ['url' => $imageUrl, 'size' => $dlRes['size'] ?? 0]);
+                        } else {
+                            writeDebugLog("画像ダウンロード失敗", ['error' => $dlRes['error'] ?? '不明']);
+                        }
+                    }
+                } elseif ($msgType === 'video' || $msgType === 'audio' || $msgType === 'file') {
+                    $mediaLabel = ($msgType === 'video' ? '🎬 動画' : ($msgType === 'audio' ? '🎵 音声' : '📎 ファイル'));
+                    $userText = "{$mediaLabel}を受信しました";
+                    $preview = "📎 {$msgType}を受信";
+                    if (!empty($messageId) && function_exists('downloadLineMessageContent')) {
+                        $dlRes = downloadLineMessageContent($messageId, $activeAccount);
+                        if (!empty($dlRes['success']) && !empty($dlRes['url'])) {
+                            $imageUrl = $dlRes['url'];
+                            $rawPayload['url'] = $imageUrl;
+                        }
+                    }
                 } else {
                     $userText = '📎 メッセージを受信しました';
                     $preview = '📎 メッセージを受信';
                     writeDebugLog("その他メッセージ受信", ['msgType' => $msgType, 'userId' => $userId]);
                 }
+
+                $payloadJson = json_encode($rawPayload, JSON_UNESCAPED_UNICODE);
 
                 // 1. チャットメッセージ履歴テーブルへ保存
                 try {
@@ -337,7 +366,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     $userProfile = null;
                     if (empty($userName) || empty($picUrl) || $userName === '受講生' || $userName === '新規顧客' || $userName === 'LINE友だち') {
-                        $userProfile = getLineUserProfile($userId);
+                        $userProfile = getLineUserProfile($userId, $activeAccount);
                         if (!empty($userProfile['displayName'])) {
                             $userName = $userProfile['displayName'];
                         }
@@ -354,7 +383,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'user_name' => $userName,
                         'picture_url' => $picUrl,
                         'message_text' => $userText,
-                        'message_type' => $msgType
+                        'message_type' => $msgType,
+                        'image_url' => $imageUrl
                     ];
 
                     // 管理者LINE Push通知

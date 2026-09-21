@@ -6099,16 +6099,47 @@ function renderChatMessages(messages) {
         if (msg.message_type === 'image') {
             let previewUrl = '';
             try {
-                const payloadObj = typeof msg.payload === 'string' ? JSON.parse(msg.payload || '{}') : (msg.payload || {});
-                previewUrl = payloadObj.url || '';
+                let pObj = msg.payload;
+                if (!pObj && msg.payload_json) {
+                    pObj = typeof msg.payload_json === 'string' ? JSON.parse(msg.payload_json) : msg.payload_json;
+                } else if (typeof pObj === 'string') {
+                    pObj = JSON.parse(pObj);
+                }
+                previewUrl = (pObj && (pObj.url || pObj.imageUrl || pObj.originalContentUrl)) || '';
             } catch {
                 previewUrl = '';
             }
+
             bubbleContent = previewUrl
-                ? `<img class="chat-image-preview" src="${escapeHtml(previewUrl)}" alt="送信画像" onclick="window.open('${escapeHtml(previewUrl)}')">`
-                : `<i class="fa-regular fa-image"></i> [画像メッセージ]`;
+                ? `<div class="chat-image-wrap">
+                    <img class="chat-image-preview" src="${escapeHtml(previewUrl)}" alt="受信画像" loading="lazy" onclick="window.open('${escapeHtml(previewUrl)}', '_blank')">
+                    <div style="font-size:10px; margin-top:4px; opacity:0.8; text-align:right;"><i class="fa-solid fa-up-right-from-square"></i> クリックで原寸表示</div>
+                   </div>`
+                : `<div style="display:flex; align-items:center; gap:6px;"><i class="fa-solid fa-image" style="font-size:18px;"></i> <span>[📷 画像メッセージ]</span></div>`;
+        } else if (msg.message_type === 'video') {
+            let videoUrl = '';
+            try {
+                let pObj = msg.payload || (msg.payload_json ? (typeof msg.payload_json === 'string' ? JSON.parse(msg.payload_json) : msg.payload_json) : {});
+                videoUrl = (pObj && pObj.url) || '';
+            } catch {}
+            bubbleContent = videoUrl
+                ? `<div class="chat-video-wrap">
+                    <video src="${escapeHtml(videoUrl)}" controls style="max-width:240px; border-radius:8px; display:block;"></video>
+                   </div>`
+                : `<div style="display:flex; align-items:center; gap:6px;"><i class="fa-solid fa-video"></i> <span>[🎬 動画メッセージ]</span></div>`;
+        } else if (msg.message_type === 'audio') {
+            let audioUrl = '';
+            try {
+                let pObj = msg.payload || (msg.payload_json ? (typeof msg.payload_json === 'string' ? JSON.parse(msg.payload_json) : msg.payload_json) : {});
+                audioUrl = (pObj && pObj.url) || '';
+            } catch {}
+            bubbleContent = audioUrl
+                ? `<div class="chat-audio-wrap">
+                    <audio src="${escapeHtml(audioUrl)}" controls style="max-width:220px; display:block;"></audio>
+                   </div>`
+                : `<div style="display:flex; align-items:center; gap:6px;"><i class="fa-solid fa-microphone"></i> <span>[🎵 音声メッセージ]</span></div>`;
         } else if (msg.message_type === 'sticker') {
-            bubbleContent = `<div style="font-size: 24px;">😊</div><div style="font-size: 11px; opacity: 0.8;">[スタンプ]</div>`;
+            bubbleContent = `<div style="font-size: 24px; text-align:center;">😊</div><div style="font-size: 11px; opacity: 0.85; text-align:center;">[スタンプ]</div>`;
         } else {
             // テキストメッセージ
             bubbleContent = formatChatMessageText(msg.message_text || '');

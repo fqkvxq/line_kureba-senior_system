@@ -513,6 +513,11 @@ try {
             $msgStmt->execute([':uid' => $uid]);
             $messages = $msgStmt->fetchAll(PDO::FETCH_ASSOC);
 
+            foreach ($messages as &$m) {
+                $m['payload'] = !empty($m['payload_json']) ? json_decode($m['payload_json'], true) : [];
+            }
+            unset($m);
+
             // 未読メッセージを既読に更新
             $updateRead = $db->prepare("UPDATE chat_messages SET is_read = 1 WHERE TRIM(user_id) = :uid AND direction = 'incoming' AND is_read = 0");
             $updateRead->execute([':uid' => $uid]);
