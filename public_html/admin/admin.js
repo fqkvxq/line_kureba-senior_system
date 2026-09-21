@@ -8180,13 +8180,22 @@ async function openLineDiagnosticsModal() {
         alert('診断モーダル要素が見つかりませんでした。ページを再読み込みしてください。');
         return;
     }
-    modal.style.display = 'flex';
+    modal.classList.add('active');
+    modal.style.setProperty('display', 'flex', 'important');
+    modal.style.setProperty('opacity', '1', 'important');
+    modal.style.setProperty('visibility', 'visible', 'important');
+    modal.style.setProperty('z-index', '99999', 'important');
     await loadLineDiagnosticsData();
 }
 
 function closeLineDiagnosticsModal() {
     const modal = document.getElementById('lineDiagnosticsModal');
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.setProperty('display', 'none', 'important');
+        modal.style.setProperty('opacity', '0', 'important');
+        modal.style.setProperty('visibility', 'hidden', 'important');
+    }
 }
 
 async function loadLineDiagnosticsData() {
