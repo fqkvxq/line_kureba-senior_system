@@ -125,20 +125,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // LINE署名ヘッダーを多重フォールバックで確実に取得
     $lineSignature = $_SERVER['HTTP_X_LINE_SIGNATURE'] ?? ($_SERVER['REDIRECT_HTTP_X_LINE_SIGNATURE'] ?? '');
     if (empty($lineSignature) && function_exists('getallheaders')) {
-        $hdrs = getallheaders();
-        foreach ($hdrs as $k => $v) {
-            if (strcasecmp($k, 'x-line-signature') === 0) {
-                $lineSignature = (string)$v;
-                break;
+        $hdrs = @getallheaders();
+        if (is_array($hdrs)) {
+            foreach ($hdrs as $k => $v) {
+                if (strcasecmp($k, 'x-line-signature') === 0) {
+                    $lineSignature = (string)$v;
+                    break;
+                }
             }
         }
     }
     if (empty($lineSignature) && function_exists('apache_request_headers')) {
-        $hdrs = apache_request_headers();
-        foreach ($hdrs as $k => $v) {
-            if (strcasecmp($k, 'x-line-signature') === 0) {
-                $lineSignature = (string)$v;
-                break;
+        $hdrs = @apache_request_headers();
+        if (is_array($hdrs)) {
+            foreach ($hdrs as $k => $v) {
+                if (strcasecmp($k, 'x-line-signature') === 0) {
+                    $lineSignature = (string)$v;
+                    break;
+                }
             }
         }
     }
@@ -148,7 +152,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $lineSignature = base64_encode(hash_hmac('sha256', $rawInput, $channelSecret, true));
     }
 
-    writeDebugLog("Webhook受信", ['account' => $activeAccount, 'bytes' => strlen($rawInput), 'has_sig' => !empty($lineSignature)]);
+    writeDebugLog("Webhook受信", [
+        'account' => $activeAccount,
+        'bytes' => strlen($rawInput),
+        'has_sig' => !empty($lineSignature),
+        'remote_ip' => $_SERVER['REMOTE_ADDR'] ?? ''
+    ]);
 
     // 署名検証 (Channel Secretが設定されている場合)
     if (!empty($channelSecret) && $channelSecret !== 'YOUR_CHANNEL_SECRET_HERE' && !empty($lineSignature)) {
@@ -159,6 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // 1. データベース接続の確立
+    $db = null;
     try {
         $db = getDbConnection($activeAccount);
         // チャットメッセージテーブルの自動作成保証 (単一SQLごとに安全に実行)
@@ -179,7 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db->exec("CREATE INDEX IF NOT EXISTS idx_chat_uid ON chat_messages (user_id)");
             $db->exec("CREATE INDEX IF NOT EXISTS idx_chat_read ON chat_messages (direction, is_read)");
         } catch (Throwable $tblEx) {}
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         writeDebugLog("DB接続例外: " . $e->getMessage(), ['account' => $activeAccount]);
     }
 
