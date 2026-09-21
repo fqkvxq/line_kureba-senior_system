@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260921_gear_fix_v1">
+    <link rel="stylesheet" href="admin.css?v=20260921_toolbar_layout_v1">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -181,88 +181,107 @@
 
             <!-- 検索 & フィルターバー -->
             <div class="toolbar-card">
-                <div class="search-box">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="adminSearchInput" placeholder="顧客名、コース/車種名、管理番号、メモで検索...">
-                </div>
-                <div class="filter-tabs">
-                    <button class="tab-btn active" data-filter="all"><span id="lblTabAll">すべて</span> (<span id="tabCountAll">0</span>)</button>
-                    <button class="tab-btn" data-filter="active"><i class="fa-solid fa-user-check" style="color:#16a34a; font-size:11px;"></i> 友だち中 (<span id="tabCountActive">0</span>)</button>
-                    <button class="tab-btn" data-filter="blocked"><i class="fa-solid fa-user-slash" style="color:#ef4444; font-size:11px;"></i> ブロック中 (<span id="tabCountBlocked">0</span>)</button>
-                    <button class="tab-btn" data-filter="oil_soon"><span id="lblTabOil">期日1</span> (<span id="tabCountOil">0</span>)</button>
-                    <button class="tab-btn" data-filter="periodic_soon"><span id="lblTabPeriodic">期日2</span> (<span id="tabCountPeriodic">0</span>)</button>
-                    <button class="tab-btn" data-filter="inspection_soon"><span id="lblTabInsp">期日3</span> (<span id="tabCountInsp">0</span>)</button>
-                </div>
-                <div class="sort-box">
-                    <label for="adminSortSelect">
-                        <i class="fa-solid fa-arrow-down-wide-short"></i> 並び替え:
-                    </label>
-                    <select id="adminSortSelect" class="form-select sort-select">
-                        <option value="last_interaction" selected>💬 最終チャット・やり取り順</option>
-                        <option value="oil_soon" id="optSortOil">期日1が近い順</option>
-                        <option value="periodic_soon" id="optSortPeriodic">期日2が近い順</option>
-                        <option value="insp_soon" id="optSortInsp">期日3が近い順</option>
-                        <option value="name_asc">👤 お名前順 (五十音)</option>
-                        <option value="created_desc">🆕 友だち登録が新しい順</option>
-                    </select>
-                </div>
-                <!-- 表示カラム選択ドロップダウン -->
-                <div class="col-picker-container" id="colPickerContainer">
-                    <button type="button" class="btn-col-picker-toggle" id="btnToggleColPicker" title="表示する列をカスタマイズ">
-                        <i class="fa-solid fa-table-columns"></i>
-                        <span>表示項目</span>
-                        <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i>
-                    </button>
-                    <div class="col-picker-menu" id="colPickerMenu" style="display: none;">
-                        <div class="col-picker-header">
-                            <span><i class="fa-solid fa-sliders" style="color: #4f46e5;"></i> 表示カラム設定</span>
-                            <button type="button" class="btn-col-reset" id="btnResetColPicker" title="すべての列を表示に戻す">初期化</button>
+                <!-- 上段: 検索バー & フィルタータブ -->
+                <div class="toolbar-row toolbar-main-row">
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="adminSearchInput" placeholder="顧客名、コース/車種名、管理番号、メモで検索...">
+                        <button type="button" id="btnClearSearch" class="btn-clear-search" style="display: none;" title="検索入力をクリア">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <div class="filter-tabs-wrapper">
+                        <div class="filter-tabs">
+                            <button class="tab-btn active" data-filter="all"><span id="lblTabAll">すべて</span> (<span id="tabCountAll">0</span>)</button>
+                            <button class="tab-btn" data-filter="active"><i class="fa-solid fa-user-check" style="color:#16a34a; font-size:11px;"></i> 友だち中 (<span id="tabCountActive">0</span>)</button>
+                            <button class="tab-btn" data-filter="blocked"><i class="fa-solid fa-user-slash" style="color:#ef4444; font-size:11px;"></i> ブロック中 (<span id="tabCountBlocked">0</span>)</button>
+                            <button class="tab-btn" data-filter="oil_soon"><span id="lblTabOil">期日1</span> (<span id="tabCountOil">0</span>)</button>
+                            <button class="tab-btn" data-filter="periodic_soon"><span id="lblTabPeriodic">期日2</span> (<span id="tabCountPeriodic">0</span>)</button>
+                            <button class="tab-btn" data-filter="inspection_soon"><span id="lblTabInsp">期日3</span> (<span id="tabCountInsp">0</span>)</button>
                         </div>
-                        <div class="col-picker-body">
-                            <label class="col-picker-item is-fixed" title="お名前列は固定表示です">
-                                <input type="checkbox" checked disabled>
-                                <span><i class="fa-solid fa-user"></i> お名前 (固定)</span>
+                    </div>
+                </div>
+
+                <!-- 下段: 該当件数サマリー & 並び替え・表示項目設定 -->
+                <div class="toolbar-row toolbar-sub-row">
+                    <div class="toolbar-status-summary">
+                        <span class="status-summary-badge" id="adminCustomerCountBadge">
+                            <i class="fa-solid fa-users"></i> 該当: <strong id="filterMatchedCount">0</strong>件
+                        </span>
+                    </div>
+                    <div class="toolbar-tools-group">
+                        <div class="sort-box">
+                            <label for="adminSortSelect">
+                                <i class="fa-solid fa-arrow-down-wide-short"></i> 並び替え:
                             </label>
-                            <label class="col-picker-item">
-                                <input type="checkbox" class="col-toggle-cb" data-col="course" checked>
-                                <span id="colPickerLabelCourse"><i class="fa-solid fa-tag"></i> コース・使用機器</span>
-                                <button type="button" class="btn-col-quick-edit" data-target="course" title="項目1・項目2の名前を変更"><i class="fa-solid fa-pen"></i></button>
-                            </label>
-                            <label class="col-picker-item">
-                                <input type="checkbox" class="col-toggle-cb" data-col="oil" checked>
-                                <span id="colPickerLabelOil"><i class="fa-solid fa-calendar-day"></i> 期日1</span>
-                                <button type="button" class="btn-col-quick-edit" data-target="date1" title="期日1の名前を変更"><i class="fa-solid fa-pen"></i></button>
-                            </label>
-                            <label class="col-picker-item">
-                                <input type="checkbox" class="col-toggle-cb" data-col="periodic" checked>
-                                <span id="colPickerLabelPeriodic"><i class="fa-solid fa-calendar-check"></i> 期日2</span>
-                                <button type="button" class="btn-col-quick-edit" data-target="date2" title="期日2の名前を変更"><i class="fa-solid fa-pen"></i></button>
-                            </label>
-                            <label class="col-picker-item">
-                                <input type="checkbox" class="col-toggle-cb" data-col="insp" checked>
-                                <span id="colPickerLabelInsp"><i class="fa-solid fa-calendar-days"></i> 期日3</span>
-                                <button type="button" class="btn-col-quick-edit" data-target="date3" title="期日3の名前を変更"><i class="fa-solid fa-pen"></i></button>
-                            </label>
-                            <label class="col-picker-item">
-                                <input type="checkbox" class="col-toggle-cb" data-col="interaction" checked>
-                                <span><i class="fa-regular fa-comment-dots"></i> 最終やり取り</span>
-                            </label>
-                            <label class="col-picker-item">
-                                <input type="checkbox" class="col-toggle-cb" data-col="memo" checked>
-                                <span><i class="fa-solid fa-clipboard-list"></i> カルテ・特記事項</span>
-                            </label>
-                            <label class="col-picker-item is-fixed" title="操作ボタン列は固定表示です">
-                                <input type="checkbox" checked disabled>
-                                <span><i class="fa-solid fa-bolt"></i> 操作 (固定)</span>
-                            </label>
+                            <select id="adminSortSelect" class="form-select sort-select">
+                                <option value="last_interaction" selected>💬 最終チャット・やり取り順</option>
+                                <option value="oil_soon" id="optSortOil">期日1が近い順</option>
+                                <option value="periodic_soon" id="optSortPeriodic">期日2が近い順</option>
+                                <option value="insp_soon" id="optSortInsp">期日3が近い順</option>
+                                <option value="name_asc">👤 お名前順 (五十音)</option>
+                                <option value="created_desc">🆕 友だち登録が新しい順</option>
+                            </select>
                         </div>
-                        <div class="col-picker-footer" style="display: flex; justify-content: space-between; align-items: center;">
-                            <span id="colPickerCountText">表示中: 8 / 8 列</span>
-                        </div>
-                        <div class="col-picker-rename-box" style="padding: 8px 10px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
-                            <button type="button" class="btn-quick-rename-labels" id="btnOpenQuickLabelModal" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; font-size: 11.5px; font-weight: 700; color: #4338ca; background: #eef2ff; border: 1px solid #c7d2fe; border-radius: var(--radius-xs); cursor: pointer; transition: all 0.15s ease;">
-                                <i class="fa-solid fa-pen-to-square"></i> 項目名・期日名を変更
+                        <!-- 表示カラム選択ドロップダウン -->
+                        <div class="col-picker-container" id="colPickerContainer">
+                            <button type="button" class="btn-col-picker-toggle" id="btnToggleColPicker" title="表示する列をカスタマイズ">
+                                <i class="fa-solid fa-table-columns"></i>
+                                <span>表示項目</span>
+                                <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i>
                             </button>
+                            <div class="col-picker-menu" id="colPickerMenu" style="display: none;">
+                                <div class="col-picker-header">
+                                    <span><i class="fa-solid fa-sliders" style="color: #4f46e5;"></i> 表示カラム設定</span>
+                                    <button type="button" class="btn-col-reset" id="btnResetColPicker" title="すべての列を表示に戻す">初期化</button>
+                                </div>
+                                <div class="col-picker-body">
+                                    <label class="col-picker-item is-fixed" title="お名前列は固定表示です">
+                                        <input type="checkbox" checked disabled>
+                                        <span><i class="fa-solid fa-user"></i> お名前 (固定)</span>
+                                    </label>
+                                    <label class="col-picker-item">
+                                        <input type="checkbox" class="col-toggle-cb" data-col="course" checked>
+                                        <span id="colPickerLabelCourse"><i class="fa-solid fa-tag"></i> コース・使用機器</span>
+                                        <button type="button" class="btn-col-quick-edit" data-target="course" title="項目1・項目2の名前を変更"><i class="fa-solid fa-pen"></i></button>
+                                    </label>
+                                    <label class="col-picker-item">
+                                        <input type="checkbox" class="col-toggle-cb" data-col="oil" checked>
+                                        <span id="colPickerLabelOil"><i class="fa-solid fa-calendar-day"></i> 期日1</span>
+                                        <button type="button" class="btn-col-quick-edit" data-target="date1" title="期日1の名前を変更"><i class="fa-solid fa-pen"></i></button>
+                                    </label>
+                                    <label class="col-picker-item">
+                                        <input type="checkbox" class="col-toggle-cb" data-col="periodic" checked>
+                                        <span id="colPickerLabelPeriodic"><i class="fa-solid fa-calendar-check"></i> 期日2</span>
+                                        <button type="button" class="btn-col-quick-edit" data-target="date2" title="期日2の名前を変更"><i class="fa-solid fa-pen"></i></button>
+                                    </label>
+                                    <label class="col-picker-item">
+                                        <input type="checkbox" class="col-toggle-cb" data-col="insp" checked>
+                                        <span id="colPickerLabelInsp"><i class="fa-solid fa-calendar-days"></i> 期日3</span>
+                                        <button type="button" class="btn-col-quick-edit" data-target="date3" title="期日3の名前を変更"><i class="fa-solid fa-pen"></i></button>
+                                    </label>
+                                    <label class="col-picker-item">
+                                        <input type="checkbox" class="col-toggle-cb" data-col="interaction" checked>
+                                        <span><i class="fa-regular fa-comment-dots"></i> 最終やり取り</span>
+                                    </label>
+                                    <label class="col-picker-item">
+                                        <input type="checkbox" class="col-toggle-cb" data-col="memo" checked>
+                                        <span><i class="fa-solid fa-clipboard-list"></i> カルテ・特記事項</span>
+                                    </label>
+                                    <label class="col-picker-item is-fixed" title="操作ボタン列は固定表示です">
+                                        <input type="checkbox" checked disabled>
+                                        <span><i class="fa-solid fa-bolt"></i> 操作 (固定)</span>
+                                    </label>
+                                </div>
+                                <div class="col-picker-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span id="colPickerCountText">表示中: 8 / 8 列</span>
+                                </div>
+                                <div class="col-picker-rename-box" style="padding: 8px 10px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
+                                    <button type="button" class="btn-quick-rename-labels" id="btnOpenQuickLabelModal" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; font-size: 11.5px; font-weight: 700; color: #4338ca; background: #eef2ff; border: 1px solid #c7d2fe; border-radius: var(--radius-xs); cursor: pointer; transition: all 0.15s ease;">
+                                        <i class="fa-solid fa-pen-to-square"></i> 項目名・期日名を変更
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1908,6 +1927,6 @@
     <!-- トースト -->
     <div class="toast" id="adminToast"></div>
 
-    <script src="admin.js?v=20260921_render_fix_v3"></script>
+    <script src="admin.js?v=20260921_toolbar_layout_v1"></script>
 </body>
 </html>

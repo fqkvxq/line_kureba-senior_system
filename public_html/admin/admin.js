@@ -169,6 +169,8 @@ const elements = {
 
     // ツールバー
     adminSearchInput: document.getElementById('adminSearchInput'),
+    btnClearSearch: document.getElementById('btnClearSearch'),
+    filterMatchedCount: document.getElementById('filterMatchedCount'),
     adminSortSelect: document.getElementById('adminSortSelect'),
     tabBtns: document.querySelectorAll('.tab-btn'),
     tabCountAll: document.getElementById('tabCountAll'),
@@ -1448,15 +1450,33 @@ function initEventListeners() {
         });
     }
 
-    // 検索入力 (デバウンス250msで入力中のブラウザ固まりを完全に防止)
+    // 検索入力 (デバウンス250msで入力中のブラウザ固まりを完全に防止 & クリアボタン連動)
     if (elements.adminSearchInput) {
         elements.adminSearchInput.addEventListener('input', (e) => {
+            const query = e.target.value;
+            if (elements.btnClearSearch) {
+                elements.btnClearSearch.style.display = query ? 'flex' : 'none';
+            }
             clearTimeout(state.searchDebounceTimer);
             state.searchDebounceTimer = setTimeout(() => {
-                state.searchQuery = e.target.value.trim().toLowerCase();
+                state.searchQuery = query.trim().toLowerCase();
                 state.currentPage = 1; // 検索時は1ページ目へ
                 renderTable();
             }, 250);
+        });
+    }
+
+    // 検索クリアボタン
+    if (elements.btnClearSearch) {
+        elements.btnClearSearch.addEventListener('click', () => {
+            if (elements.adminSearchInput) {
+                elements.adminSearchInput.value = '';
+                elements.adminSearchInput.focus();
+            }
+            elements.btnClearSearch.style.display = 'none';
+            state.searchQuery = '';
+            state.currentPage = 1;
+            renderTable();
         });
     }
 
@@ -1825,12 +1845,27 @@ function initColumnPicker() {
 
     if (!btnToggle || !menu) return;
 
-    // ドロップダウン開閉トグル
+    // ドロップダウン開閉トグル (画面端はみ出し防止のスマートポジショニング付き)
     btnToggle.addEventListener('click', (e) => {
         e.stopPropagation();
         const isOpen = (menu.style.display !== 'none');
-        menu.style.display = isOpen ? 'none' : 'block';
-        btnToggle.classList.toggle('active', !isOpen);
+        if (!isOpen) {
+            menu.style.display = 'block';
+            btnToggle.classList.add('active');
+            requestAnimationFrame(() => {
+                const rect = menu.getBoundingClientRect();
+                if (rect.left < 8) {
+                    menu.style.left = '0';
+                    menu.style.right = 'auto';
+                } else if (rect.right > window.innerWidth - 8) {
+                    menu.style.right = '0';
+                    menu.style.left = 'auto';
+                }
+            });
+        } else {
+            menu.style.display = 'none';
+            btnToggle.classList.remove('active');
+        }
     });
 
     // カラムチェックボックス変更イベント
@@ -2386,6 +2421,11 @@ function renderTable() {
 
     state.currentFilteredList = filtered;
     const totalFiltered = filtered.length;
+
+    // 該当件数バッジの更新
+    if (elements.filterMatchedCount) {
+        elements.filterMatchedCount.textContent = totalFiltered.toLocaleString();
+    }
 
     if (totalFiltered === 0) {
         elements.customerTableBody.innerHTML = '';

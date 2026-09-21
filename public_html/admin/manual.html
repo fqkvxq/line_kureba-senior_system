@@ -40,7 +40,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260921_gear_fix_v1">
+    <link rel="stylesheet" href="manual.css?v=20260921_toolbar_layout_v1">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -538,11 +538,13 @@
                         <div class="step-card">
                             <div class="step-number">3</div>
                             <div class="step-body">
-                                <h4>ページネーション（ページ分割表示）と高速検索</h4>
+                                <h4>ツールバー（2段構造）・高速検索・フィルタータブ</h4>
                                 <ul>
-                                    <li><strong>ページ分割表示</strong>: 受講生が1,000名規模に増えてもブラウザが重くならず快適に動作するよう、1ページあたり50件ずつのスマート分割表示を採用しています。</li>
-                                    <li><strong>表示件数の切り替え</strong>: テーブル下部のセレクターから「25件」「50件」「100件」「全件」をいつでもワンクリックで変更できます。</li>
-                                    <li><strong>高速デバウンス検索</strong>: 検索ボックスに受講生名やコース名を入力する際、入力確定を自動検知して高速フィルタリングを行い、ブラウザのフリーズを防ぎます。</li>
+                                    <li><strong>扱いやすい2段構造レイアウト</strong>: 上段に「検索バー」と「フィルタータブ（すべて・友だち中・ブロック中・各期日）」、下段に「該当件数サマリー」と「並び替え」「表示項目設定」が整理配置され、画面幅に応じたカラム落ちやメニュー切れを完全に防止します。</li>
+                                    <li><strong>ワンクリック検索クリア</strong>: 検索ボックスに文字を入力すると右端に「<i class="fa-solid fa-xmark"></i>」クリアボタンが自動出現し、1クリックで瞬時に検索リセットできます。</li>
+                                    <li><strong>リアルタイム該当件数表示</strong>: 検索やタブフィルター適用時、現在該当している受講生数が「該当: ◯件」バッジで即座に表示されます。</li>
+                                    <li><strong>スマート並び替え</strong>: 「💬 最終チャット・やり取り順」「期日1/2/3が近い順」「五十音順」「登録が新しい順」をいつでもワンタッチで切り替え可能です。</li>
+                                    <li><strong>ページネーション（スマート分割）</strong>: 1ページあたり50件ずつの分割表示で大量の受講生データも快適に操作できます（25件・50件・100件・全件の切り替えも可能）。</li>
                                 </ul>
                             </div>
                         </div>
@@ -550,11 +552,12 @@
                         <div class="step-card">
                             <div class="step-number">4</div>
                             <div class="step-body">
-                                <h4>表示カラムの選択（表示・非表示のカスタマイズ）</h4>
+                                <h4>表示項目の選択（カラムカスタマイズ＆項目名の即時変更）</h4>
                                 <ul>
-                                    <li><strong>表示項目の自由切替</strong>: ツールバーの「<i class="fa-solid fa-table-columns"></i> 表示項目」ボタンから、テーブルに表示したい列をチェックボックスでいつでも自由に切り替えられます。</li>
-                                    <li><strong>用途に合わせたスリム化</strong>: 例えば「チャット対応のみを行いたいときは期日列を隠す」「ノートPCなど画面幅が狭いときはメモ列を隠す」など、状況に応じた最適な表示レイアウトが作れます。</li>
-                                    <li><strong>設定の自動保存</strong>: 選択した表示設定はブラウザ（localStorage）に自動保存され、次回アクセス時やページ切り替え時も常に維持されます。「初期化」を押すといつでも全表示に戻せます。</li>
+                                    <li><strong>表示項目の自由切替</strong>: ツールバー右側の「<i class="fa-solid fa-table-columns"></i> 表示項目」ボタンから、テーブルに表示したい列をチェックボックスでいつでも自由に切り替えられます。</li>
+                                    <li><strong>画面外はみ出し防止（安全設計）</strong>: ドロップダウンメニューは画面端のスペースを自動検知して常に画面内に収まるスマートポジショニング設計です。</li>
+                                    <li><strong>ワンクリック項目名変更</strong>: メニュー内の各列にある「✏️ 編集」アイコンや下部の「項目名・期日名を変更」ボタンから、項目名（コース名・使用機器・期日1〜3）をモーダルで即座に変更・反映できます。</li>
+                                    <li><strong>設定の自動保存</strong>: 選択した表示設定はブラウザ（localStorage）に自動保存され、次回アクセス時も維持されます。「初期化」を押すといつでも全表示に戻せます。</li>
                                 </ul>
                             </div>
                         </div>
@@ -1583,6 +1586,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_custom_labels_v2"></script>
+    <script src="manual.js?v=20260921_toolbar_layout_v1"></script>
 </body>
 </html>
