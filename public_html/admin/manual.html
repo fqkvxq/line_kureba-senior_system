@@ -40,7 +40,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260921_sync_progress_v1">
+    <link rel="stylesheet" href="manual.css?v=20260921_proline_webhook_v1">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -389,6 +389,38 @@
                                         受講生カルテ画面の「個別リッチメニュー設定」で「📅 レッスン予約・日程変更を開く」を指定すると、次回レッスン日のメッセージ帯をタップした際にもこの予約カレンダーが自動起動します。</li>
                                     <li><strong>受講生マイカルテ（<code>mycar.html</code>）からの連動予約</strong>:<br>
                                         受講生マイカルテ画面内の「📅 レッスン予約カレンダーで日時を選ぶ」ボタンを押した場合も、この公式予約URLへ自動直結されます。</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="step-card" style="border: 2px solid #3b82f6; background: #eff6ff;">
+                            <div class="step-number" style="background: #2563eb; color: #fff;">6</div>
+                            <div class="step-body">
+                                <h4><span class="badge" style="background: #2563eb; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-right: 6px;">NEW</span>プロライン「登録発生時に外部システムにデータを送信する」連携（フォーム回答・レッスン予約の自動カルテ反映＆スタッフ通知）</h4>
+                                <p>プロライン側で受講生が<strong>アンケートフォームを送信</strong>したり、<strong>カレンダーからレッスン予約・日程変更</strong>を行った際に、本システムへリアルタイムにWebhookデータを自動送信させ、カルテへの記録とスタッフ通知を即座に連動させる設定です。</p>
+                                
+                                <div style="background: #ffffff; border: 1px solid #bfdbfe; border-radius: var(--radius-sm); padding: 12px; margin: 10px 0;">
+                                    <strong style="color: #1e40af;"><i class="fa-solid fa-link"></i> 設定するWebhook URLの確認方法:</strong><br>
+                                    受講生カルテ画面（<code>index.html</code>）またはリッチメニュー画面（<code>richmenu.html</code>）のヘッダーにあるアカウント名「⚙️ アカウント設定」をクリックし、<br>
+                                    青色枠の「<strong>プロライン『登録発生時送信』Webhook URL</strong>」を「コピー」ボタンで取得します。<br>
+                                    <code style="font-size: 12px; color: #1e40af; background: #f0fdf4; padding: 2px 6px; border-radius: 4px;">https://あなたのドメイン/proline_webhook.php?account=senior</code>
+                                </div>
+
+                                <strong style="color: #0f172a;">【プロライン管理画面での設定手順】</strong>
+                                <ol style="padding-left: 20px; margin: 8px 0; line-height: 1.7; font-size: 13.5px;">
+                                    <li>プロラインフリー管理画面（PCブラウザ）にログインします。</li>
+                                    <li>左メニューの「<strong>外部連携・API</strong>」または「<strong>フォーム作成</strong>」「<strong>イベント予約</strong>」の設定を開きます。</li>
+                                    <li>「<strong>登録発生時に外部システムにデータを送信する</strong>」または「<strong>外部システム連携 (Webhook POST送信)</strong>」の入力欄に、上記でコピーしたURL（<code>https://あなたのドメイン/proline_webhook.php?account=senior</code>）を貼り付けます。</li>
+                                    <li>「保存」または「更新」をクリックして設定を完了します。</li>
+                                </ol>
+
+                                <strong style="color: #0f172a;">【自動反映される機能】</strong>
+                                <ul style="padding-left: 20px; margin: 8px 0; line-height: 1.7; font-size: 13.5px;">
+                                    <li><strong>カルテの指導メモ（memo）へ自動追記</strong>: フォーム名、回答日時、各設問に対する回答内容が受講生カルテの「特記事項・指導メモ」へ自動的に整形されて追記保存されます。</li>
+                                    <li><strong>レッスン予約日の自動反映</strong>: 予約イベントを受信した場合、次回レッスン日（<code>oil_next_date</code>）へ予約日時が自動セットされます。</li>
+                                    <li><strong>最終やり取り日時・プレビューの更新</strong>: 受講生一覧テーブルの「最終やり取り」列に最新のフォーム送信・予約イベントが即時反映されます。</li>
+                                    <li><strong>スタッフ宛てリアルタイム通知</strong>: 管理者個人LINE、Discord、Slackへ「【フォーム回答】〇〇様がアンケートを送信しました」「【レッスン予約】〇〇様が予約を登録しました」と回答内容付きで即座にプッシュ通知されます。</li>
+                                    <li><strong>受講生カルテの自動新規作成</strong>: まだカルテに未登録の受講生であっても、プロラインの登録情報（LINE表示名、UID、お電話番号など）を元に自動で新規カルテが作成されるため、対応の抜け漏れが一切起きません。</li>
                                 </ul>
                             </div>
                         </div>
@@ -1403,6 +1435,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_sync_progress_v1"></script>
+    <script src="manual.js?v=20260921_proline_webhook_v1"></script>
 </body>
 </html>

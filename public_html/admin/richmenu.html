@@ -833,7 +833,7 @@
                         </div>
 
                         <!-- このアカウント専用のWebhook URL表示 -->
-                        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md); padding: 10px 14px; margin-bottom: 12px;">
+                        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md); padding: 10px 14px; margin-bottom: 8px;">
                             <div style="font-weight: bold; font-size: 11px; color: #166534; margin-bottom: 4px;">
                                 <i class="fa-brands fa-line"></i> LINE Developers への登録Webhook URL:
                             </div>
@@ -843,6 +843,22 @@
                                     <i class="fa-regular fa-copy"></i> コピー
                                 </button>
                             </div>
+                        </div>
+
+                        <!-- プロライン フォーム・予約外部送信先 Webhook URL 表示 -->
+                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-md); padding: 10px 14px; margin-bottom: 12px;">
+                            <div style="font-weight: bold; font-size: 11px; color: #1e40af; margin-bottom: 4px;">
+                                <i class="fa-solid fa-bolt" style="color: #2563eb;"></i> プロライン「登録発生時送信」Webhook URL (フォーム・予約自動反映):
+                            </div>
+                            <div style="display: flex; gap: 6px; align-items: center;">
+                                <input type="text" id="accFormDisplayProlineEventUrl" readonly style="flex: 1; padding: 6px 8px; font-family: monospace; font-size: 11px; border: 1px solid #93c5fd; border-radius: var(--radius-sm); background: #ffffff; color: #1e40af; user-select: all;">
+                                <button type="button" id="btnCopyAccProlineEventUrl" class="btn-secondary" style="font-size: 11px; padding: 6px 10px; white-space: nowrap; height: auto;">
+                                    <i class="fa-regular fa-copy"></i> コピー
+                                </button>
+                            </div>
+                            <small style="display: block; font-size: 10.5px; color: #3b82f6; margin-top: 4px;">
+                                ※プロラインの「登録発生時に外部システムにデータを送信する」に登録すると、フォーム回答やレッスン予約がカルテに自動反映されます。
+                            </small>
                         </div>
 
                         <div id="accSaveStatusMsg" style="margin-bottom: 10px; font-size: 12px; font-weight: bold;"></div>
@@ -872,6 +888,6 @@
     <!-- トースト通知 -->
     <div class="toast-notification" id="adminToast"></div>
 
-    <script src="richmenu.js?v=20260921_pagination_v1"></script>
+    <script src="richmenu.js?v=20260921_proline_webhook_v1"></script>
 </body>
 </html>

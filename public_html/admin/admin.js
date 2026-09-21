@@ -573,6 +573,22 @@ function initAccountManagement() {
         });
     }
 
+    const btnCopyProlineEvent = document.getElementById('btnCopyAccProlineEventUrl');
+    if (btnCopyProlineEvent) {
+        btnCopyProlineEvent.addEventListener('click', () => {
+            const urlField = document.getElementById('accFormDisplayProlineEventUrl');
+            if (urlField && urlField.value) {
+                navigator.clipboard.writeText(urlField.value).then(() => {
+                    showToast('プロライン連携用 Webhook URLをコピーしました！');
+                }).catch(() => {
+                    urlField.select();
+                    document.execCommand('copy');
+                    showToast('プロライン連携用 Webhook URLをコピーしました！');
+                });
+            }
+        });
+    }
+
     if (btnTestLine) {
         btnTestLine.addEventListener('click', async () => {
             const token = document.getElementById('accFormAccessToken').value.trim();
@@ -811,12 +827,18 @@ async function openAccountEditForm(accountId) {
 
 function updateDisplayWebhookUrl(accId, isDefault = false) {
     const displayField = document.getElementById('accFormDisplayWebhookUrl');
-    if (!displayField) return;
+    const displayProlineField = document.getElementById('accFormDisplayProlineEventUrl');
     const host = window.location.host;
     const path = window.location.pathname.replace(/\/admin\/.*$/, '');
     const cleanId = (accId || '').toLowerCase().replace(/[^a-z0-9_\-]/g, '');
     const query = (isDefault || cleanId === 'senior') ? '' : `?account=${cleanId || 'your_id'}`;
-    displayField.value = `${window.location.protocol}//${host}${path}/webhook.php${query}`;
+    
+    if (displayField) {
+        displayField.value = `${window.location.protocol}//${host}${path}/webhook.php${query}`;
+    }
+    if (displayProlineField) {
+        displayProlineField.value = `${window.location.protocol}//${host}${path}/proline_webhook.php${query}`;
+    }
 }
 
 async function submitAccountForm() {

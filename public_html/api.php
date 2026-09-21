@@ -4403,6 +4403,11 @@ try {
                 exit;
             }
 
+        // --- 19. プロライン フォーム・予約 Webhook 受信 (APIフォールバック) ---
+        case 'proline_event_webhook':
+            require __DIR__ . '/proline_webhook.php';
+            exit;
+
         default:
             http_response_code(400);
             echo json_encode(['success' => false, 'error' => '無効なアクションです。']);
