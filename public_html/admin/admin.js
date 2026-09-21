@@ -6260,22 +6260,34 @@ let lastTotalUnreadCount = -1;
 const notifiedMsgIds = new Set();
 let globalChatUnreadTimer = null;
 
-// AudioContext を安全に自動アンロック
+// AudioContext をユーザー操作時に安全に初期化
 let sharedAudioCtx = null;
-function getSharedAudioContext() {
+let userGestureOccurred = false;
+
+function initAudioContextOnGesture() {
+    if (userGestureOccurred) return;
+    userGestureOccurred = true;
     try {
-        if (!sharedAudioCtx) {
-            const AudioCtx = window.AudioContext || window.webkitAudioContext;
-            if (AudioCtx) sharedAudioCtx = new AudioCtx();
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx && !sharedAudioCtx) {
+            sharedAudioCtx = new AudioCtx();
         }
         if (sharedAudioCtx && sharedAudioCtx.state === 'suspended') {
             sharedAudioCtx.resume().catch(() => {});
         }
     } catch(e) {}
+}
+
+document.addEventListener('click', initAudioContextOnGesture, { once: true, passive: true });
+document.addEventListener('keydown', initAudioContextOnGesture, { once: true, passive: true });
+document.addEventListener('touchstart', initAudioContextOnGesture, { once: true, passive: true });
+
+function getSharedAudioContext() {
+    if (!sharedAudioCtx && userGestureOccurred) {
+        initAudioContextOnGesture();
+    }
     return sharedAudioCtx;
 }
-document.addEventListener('click', () => { getSharedAudioContext(); }, { once: true });
-document.addEventListener('keydown', () => { getSharedAudioContext(); }, { once: true });
 
 // Web Audio APIによる優しいチャイム音再生 (880Hz -> 1320Hz サイン波)
 function playNotificationSound() {
@@ -8215,7 +8227,7 @@ async function loadLineDiagnosticsData() {
 
     try {
         const targetAcc = (state && state.activeAccount) ? state.activeAccount : 'senior';
-        const res = await fetch(`api.php?action=get_webhook_diagnostics&account=${encodeURIComponent(targetAcc)}`);
+        const res = await fetch(`../api.php?action=get_webhook_diagnostics&account=${encodeURIComponent(targetAcc)}`);
         const data = await res.json();
         if (!data.success) {
             throw new Error(data.error || '診断データの取得に失敗しました');
@@ -8283,7 +8295,7 @@ async function runSimulateChatMessage() {
         formData.append('user_name', 'テスト受講生（田中 一郎）');
         formData.append('message_text', `こんにちは！点検・受講の予約について相談したいです。(テスト送信: ${new Date().toLocaleTimeString()})`);
 
-        const res = await fetch('api.php', {
+        const res = await fetch('../api.php', {
             method: 'POST',
             body: formData
         });
@@ -8307,8 +8319,8 @@ async function runSimulateChatMessage() {
         if (typeof pollUnreadChatCount === 'function') {
             await pollUnreadChatCount();
         }
-        if (typeof loadCustomers === 'function') {
-            await loadCustomers();
+        if (typeof fetchCustomers === 'function') {
+            await fetchCustomers();
         }
 
         // ログを再取得
