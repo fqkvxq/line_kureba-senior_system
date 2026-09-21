@@ -4873,7 +4873,9 @@ function openChatModal(cust) {
 
     const userNameEl = elements.chatModalUserName || document.getElementById('chatModalUserName');
     if (userNameEl) {
-        userNameEl.innerHTML = `${escapeHtml(name)} <span id="chatModalUidTag" style="font-size: 11px; font-weight: normal; color: #64748b; font-family: monospace;">(${escapeHtml(uid || '未連携')})</span>`;
+        const safeName = (typeof escapeHtml === 'function') ? escapeHtml(name) : name;
+        const safeUid = (typeof escapeHtml === 'function') ? escapeHtml(uid || '未連携') : (uid || '未連携');
+        userNameEl.innerHTML = `${safeName} <span id="chatModalUidTag" style="font-size: 11px; font-weight: normal; color: #64748b; font-family: monospace;">(${safeUid})</span>`;
     }
 
     const courseInfoEl = elements.chatModalCourseInfo || document.getElementById('chatModalCourseInfo');
@@ -4884,19 +4886,20 @@ function openChatModal(cust) {
         inputArea.value = '';
     }
 
-    // 未読数をローカルで即時クリア
+    // 未読数をローカルでクリア（テーブル再描画は行わずバッジのみ非表示）
     if (uid && state.unreadChatCounts && state.unreadChatCounts[uid]) {
         delete state.unreadChatCounts[uid];
-        renderTable();
+        const badges = document.querySelectorAll(`.badge-chat-unread[data-uid="${uid}"]`);
+        badges.forEach(b => b.style.display = 'none');
     }
 
     const modal = elements.chatModal || document.getElementById('chatModal');
     if (modal) {
-        modal.style.display = 'flex';
+        modal.style.setProperty('display', 'flex', 'important');
+        modal.style.setProperty('opacity', '1', 'important');
+        modal.style.setProperty('visibility', 'visible', 'important');
+        modal.style.setProperty('z-index', '99999', 'important');
         modal.classList.add('active');
-        // トランジションが不完全な環境でも確実に前面表示
-        modal.style.opacity = '1';
-        modal.style.visibility = 'visible';
     }
 
     loadChatMessages(uid);
@@ -4915,9 +4918,10 @@ function closeChatModal() {
     const modal = elements.chatModal || document.getElementById('chatModal');
     if (modal) {
         modal.classList.remove('active');
-        modal.style.opacity = '';
-        modal.style.visibility = '';
-        modal.style.display = '';
+        modal.style.removeProperty('display');
+        modal.style.removeProperty('opacity');
+        modal.style.removeProperty('visibility');
+        modal.style.removeProperty('z-index');
     }
     if (state.chatPollTimer) {
         clearInterval(state.chatPollTimer);
