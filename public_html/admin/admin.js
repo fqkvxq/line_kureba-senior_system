@@ -2344,6 +2344,7 @@ function updateStats() {
 }
 
 function renderTable() {
+    const labels = state.customLabels || normalizeCustomLabels(null);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const in30Days = new Date();
