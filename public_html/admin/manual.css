@@ -326,6 +326,41 @@ body {
     box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
 }
 
+.btn-account-manage {
+    background: #f1f5f9;
+    border: 1.5px solid #cbd5e1;
+    color: #4f46e5;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-account-manage i {
+    color: #4f46e5;
+    font-size: 14px;
+    transition: transform 0.25s ease;
+}
+
+.btn-account-manage:hover {
+    background: #e0e7ff;
+    border-color: #818cf8;
+    color: #3730a3;
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.2);
+}
+
+.btn-account-manage:hover i {
+    color: #3730a3;
+    transform: rotate(45deg);
+}
+
 .admin-header-actions {
     display: flex;
     align-items: center;
