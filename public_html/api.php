@@ -51,10 +51,14 @@ function getAdminAuthPassword(?PDO $db = null): string {
 
     if (!empty($token)) {
         if ($db === null) {
-            try { $db = getDbConnection(); } catch (Exception $e) {}
+            try { $db = getDbConnection(); } catch (Throwable $e) {}
         }
-        if ($db && isValidAdminAuthToken($db, trim($token))) {
-            return ADMIN_PASSWORD; // 認証トークンが有効な場合、ADMIN_PASSWORDと一致したとみなす
+        if ($db) {
+            try {
+                if (isValidAdminAuthToken($db, trim($token))) {
+                    return ADMIN_PASSWORD; // 認証トークンが有効な場合、ADMIN_PASSWORDと一致したとみなす
+                }
+            } catch (Throwable $e) {}
         }
     }
 
@@ -615,7 +619,7 @@ try {
 
         // --- 0-6. チャット履歴取得 (個別受講生とのやり取り) ---
         case 'get_chat_messages':
-            $authPass = getAdminAuthPassword();
+            $authPass = getAdminAuthPassword($db);
             if ($authPass !== ADMIN_PASSWORD) {
                 echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
                 exit;
@@ -627,7 +631,7 @@ try {
                 exit;
             }
 
-            // テーブル存在保証
+            // テーブル存在保証 (単一SQLごとに安全に実行)
             try {
                 $db->exec("
                     CREATE TABLE IF NOT EXISTS chat_messages (
@@ -640,75 +644,80 @@ try {
                         is_read INTEGER NOT NULL DEFAULT 0,
                         sent_by TEXT DEFAULT '',
                         created_at DATETIME NOT NULL
-                    );
-                    CREATE INDEX IF NOT EXISTS idx_chat_uid ON chat_messages (user_id);
-                    CREATE INDEX IF NOT EXISTS idx_chat_read ON chat_messages (direction, is_read);
+                    )
                 ");
+                $db->exec("CREATE INDEX IF NOT EXISTS idx_chat_uid ON chat_messages (user_id)");
+                $db->exec("CREATE INDEX IF NOT EXISTS idx_chat_read ON chat_messages (direction, is_read)");
             } catch (Throwable $t) {}
 
-            // 受講生情報を取得 (未登録なら自動生成・同期)
-            $cStmt = $db->prepare("SELECT id, user_id, user_name, picture_url, car_model, car_number, is_blocked FROM customer_cars WHERE TRIM(user_id) = :uid LIMIT 1");
-            $cStmt->execute([':uid' => $uid]);
-            $customer = $cStmt->fetch(PDO::FETCH_ASSOC);
+            $customer = null;
+            $messages = [];
 
-            if (!$customer && str_starts_with($uid, 'U')) {
-                $customer = ensureCustomerExists($db, $uid, $activeAccountKey);
-            }
+            try {
+                // 受講生情報を取得 (未登録なら自動生成・同期)
+                $cStmt = $db->prepare("SELECT id, user_id, user_name, picture_url, car_model, car_number, is_blocked FROM customer_cars WHERE TRIM(user_id) = :uid LIMIT 1");
+                $cStmt->execute([':uid' => $uid]);
+                $customer = $cStmt->fetch(PDO::FETCH_ASSOC);
 
-            // チャット履歴一覧を取得 (古い順)
-            $msgStmt = $db->prepare("
-                SELECT id, user_id, direction, message_type, message_text, payload_json, is_read, sent_by, created_at 
-                FROM chat_messages 
-                WHERE TRIM(user_id) = :uid 
-                ORDER BY id ASC 
-                LIMIT 200
-            ");
-            $msgStmt->execute([':uid' => $uid]);
-            $messages = $msgStmt->fetchAll(PDO::FETCH_ASSOC);
-
-            // もし現在のアカウントDBにメッセージが無く、別アカウントDBに保存されている可能性がある場合、横断検索してマージ
-            if (empty($messages) && function_exists('getAccountList')) {
-                foreach (getAccountList() as $otherAcc) {
-                    if ($otherAcc['id'] === $activeAccountKey) continue;
-                    try {
-                        $otherDb = getDbConnection($otherAcc['id']);
-                        $oStmt = $otherDb->prepare("SELECT id, user_id, direction, message_type, message_text, payload_json, is_read, sent_by, created_at FROM chat_messages WHERE TRIM(user_id) = :uid ORDER BY id ASC LIMIT 200");
-                        $oStmt->execute([':uid' => $uid]);
-                        $otherMsgs = $oStmt->fetchAll(PDO::FETCH_ASSOC);
-                        if (!empty($otherMsgs)) {
-                            // 現在のDBへ同期コピー
-                            $insStmt = $db->prepare("INSERT INTO chat_messages (user_id, direction, message_type, message_text, payload_json, is_read, sent_by, created_at) VALUES (:uid, :dir, :mtype, :mtext, :payload, :is_read, :sent_by, :created_at)");
-                            foreach ($otherMsgs as $om) {
-                                try {
-                                    $insStmt->execute([
-                                        ':uid' => $om['user_id'],
-                                        ':dir' => $om['direction'],
-                                        ':mtype' => $om['message_type'],
-                                        ':mtext' => $om['message_text'],
-                                        ':payload' => $om['payload_json'],
-                                        ':is_read' => $om['is_read'],
-                                        ':sent_by' => $om['sent_by'] ?? '',
-                                        ':created_at' => $om['created_at']
-                                    ]);
-                                } catch (Throwable $exx) {}
-                            }
-                            // 改めて再取得
-                            $msgStmt->execute([':uid' => $uid]);
-                            $messages = $msgStmt->fetchAll(PDO::FETCH_ASSOC);
-                            break;
-                        }
-                    } catch (Throwable $e) {}
+                if (!$customer && str_starts_with($uid, 'U')) {
+                    $customer = ensureCustomerExists($db, $uid, $activeAccountKey);
                 }
-            }
 
-            foreach ($messages as &$m) {
-                $m['payload'] = !empty($m['payload_json']) ? json_decode($m['payload_json'], true) : [];
-            }
-            unset($m);
+                // チャット履歴一覧を取得 (古い順)
+                $msgStmt = $db->prepare("
+                    SELECT id, user_id, direction, message_type, message_text, payload_json, is_read, sent_by, created_at 
+                    FROM chat_messages 
+                    WHERE TRIM(user_id) = :uid 
+                    ORDER BY id ASC 
+                    LIMIT 200
+                ");
+                $msgStmt->execute([':uid' => $uid]);
+                $messages = $msgStmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // 未読メッセージを既読に更新
-            $updateRead = $db->prepare("UPDATE chat_messages SET is_read = 1 WHERE TRIM(user_id) = :uid AND direction = 'incoming' AND is_read = 0");
-            $updateRead->execute([':uid' => $uid]);
+                // もし現在のアカウントDBにメッセージが無く、別アカウントDBに保存されている可能性がある場合、横断検索してマージ
+                if (empty($messages) && function_exists('getAccountList')) {
+                    foreach (getAccountList() as $otherAcc) {
+                        if ($otherAcc['id'] === $activeAccountKey) continue;
+                        try {
+                            $otherDb = getDbConnection($otherAcc['id']);
+                            $oStmt = $otherDb->prepare("SELECT id, user_id, direction, message_type, message_text, payload_json, is_read, sent_by, created_at FROM chat_messages WHERE TRIM(user_id) = :uid ORDER BY id ASC LIMIT 200");
+                            $oStmt->execute([':uid' => $uid]);
+                            $otherMsgs = $oStmt->fetchAll(PDO::FETCH_ASSOC);
+                            if (!empty($otherMsgs)) {
+                                $insStmt = $db->prepare("INSERT INTO chat_messages (user_id, direction, message_type, message_text, payload_json, is_read, sent_by, created_at) VALUES (:uid, :dir, :mtype, :mtext, :payload, :is_read, :sent_by, :created_at)");
+                                foreach ($otherMsgs as $om) {
+                                    try {
+                                        $insStmt->execute([
+                                            ':uid' => $om['user_id'],
+                                            ':dir' => $om['direction'],
+                                            ':mtype' => $om['message_type'],
+                                            ':mtext' => $om['message_text'],
+                                            ':payload' => $om['payload_json'],
+                                            ':is_read' => $om['is_read'],
+                                            ':sent_by' => $om['sent_by'] ?? '',
+                                            ':created_at' => $om['created_at']
+                                        ]);
+                                    } catch (Throwable $exx) {}
+                                }
+                                $msgStmt->execute([':uid' => $uid]);
+                                $messages = $msgStmt->fetchAll(PDO::FETCH_ASSOC);
+                                break;
+                            }
+                        } catch (Throwable $e) {}
+                    }
+                }
+
+                foreach ($messages as &$m) {
+                    $m['payload'] = !empty($m['payload_json']) ? json_decode($m['payload_json'], true) : [];
+                }
+                unset($m);
+
+                // 未読メッセージを既読に更新
+                $updateRead = $db->prepare("UPDATE chat_messages SET is_read = 1 WHERE TRIM(user_id) = :uid AND direction = 'incoming' AND is_read = 0");
+                $updateRead->execute([':uid' => $uid]);
+            } catch (Throwable $e) {
+                writeDebugLog("get_chat_messages 例外", ['error' => $e->getMessage()]);
+            }
 
             echo json_encode([
                 'success' => true,
@@ -719,7 +728,7 @@ try {
 
         // --- 0-7. チャットメッセージ送信 (管理画面から受講生のLINEへ返信) ---
         case 'send_chat_message':
-            $authPass = getAdminAuthPassword();
+            $authPass = getAdminAuthPassword($db);
             if ($authPass !== ADMIN_PASSWORD) {
                 echo json_encode(['success' => false, 'error' => '管理者パスワードが正しくありません']);
                 exit;
@@ -804,7 +813,7 @@ try {
         // --- 0-8. 全受講生の未読メッセージ件数一覧取得 (ブラウザ通知データ含む) ---
         case 'get_unread_chat_counts':
             try {
-                // テーブル存在保証
+                // テーブル存在保証 (単一SQLごとに安全に実行)
                 try {
                     $db->exec("
                         CREATE TABLE IF NOT EXISTS chat_messages (
@@ -817,52 +826,64 @@ try {
                             is_read INTEGER NOT NULL DEFAULT 0,
                             sent_by TEXT DEFAULT '',
                             created_at DATETIME NOT NULL
-                        );
-                        CREATE INDEX IF NOT EXISTS idx_chat_uid ON chat_messages (user_id);
-                        CREATE INDEX IF NOT EXISTS idx_chat_read ON chat_messages (direction, is_read);
+                        )
                     ");
+                    $db->exec("CREATE INDEX IF NOT EXISTS idx_chat_uid ON chat_messages (user_id)");
+                    $db->exec("CREATE INDEX IF NOT EXISTS idx_chat_read ON chat_messages (direction, is_read)");
                 } catch (Throwable $t) {}
 
-                // 1. 各ユーザーの未読数
-                $stmt = $db->query("
-                    SELECT TRIM(user_id) as user_id, COUNT(*) as unread_count 
-                    FROM chat_messages 
-                    WHERE direction = 'incoming' AND is_read = 0 
-                    GROUP BY TRIM(user_id)
-                ");
-                $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 $counts = [];
                 $totalUnread = 0;
-                foreach ($rows as $r) {
-                    $cnt = (int)$r['unread_count'];
-                    $counts[$r['user_id']] = $cnt;
-                    $totalUnread += $cnt;
-                }
+                $recentUnread = [];
 
-                // 2. 直近の未読メッセージ詳細リスト (ブラウザ通知・ポップアップ用)
-                $recentUnreadStmt = $db->query("
-                    SELECT m.id, TRIM(m.user_id) as user_id, m.message_type, m.message_text, m.created_at,
-                           COALESCE(c.user_name, 'LINE受講生') as user_name,
-                           COALESCE(c.picture_url, '') as picture_url
-                    FROM chat_messages m
-                    LEFT JOIN customer_cars c ON TRIM(c.user_id) = TRIM(m.user_id)
-                    WHERE m.direction = 'incoming' AND m.is_read = 0
-                    ORDER BY m.id DESC
-                    LIMIT 20
-                ");
-                $recentUnread = $recentUnreadStmt->fetchAll(PDO::FETCH_ASSOC);
-
-                // もしcustomer_carsに未登録のUIDがあれば自動登録修復
-                foreach ($recentUnread as &$unMsg) {
-                    if ($unMsg['user_name'] === 'LINE受講生' && str_starts_with($unMsg['user_id'], 'U')) {
-                        $synced = ensureCustomerExists($db, $unMsg['user_id'], $activeAccountKey);
-                        if ($synced) {
-                            $unMsg['user_name'] = $synced['user_name'] ?: 'LINE受講生';
-                            $unMsg['picture_url'] = $synced['picture_url'] ?: '';
+                try {
+                    // 1. 各ユーザーの未読数
+                    $stmt = $db->query("
+                        SELECT TRIM(user_id) as user_id, COUNT(*) as unread_count 
+                        FROM chat_messages 
+                        WHERE direction = 'incoming' AND is_read = 0 
+                        GROUP BY TRIM(user_id)
+                    ");
+                    if ($stmt) {
+                        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        foreach ($rows as $r) {
+                            $cnt = (int)$r['unread_count'];
+                            $counts[$r['user_id']] = $cnt;
+                            $totalUnread += $cnt;
                         }
                     }
+
+                    // 2. 直近の未読メッセージ詳細リスト (ブラウザ通知・ポップアップ用)
+                    $recentUnreadStmt = $db->query("
+                        SELECT m.id, TRIM(m.user_id) as user_id, m.message_type, m.message_text, m.created_at,
+                               COALESCE(c.user_name, 'LINE受講生') as user_name,
+                               COALESCE(c.picture_url, '') as picture_url
+                        FROM chat_messages m
+                        LEFT JOIN customer_cars c ON TRIM(c.user_id) = TRIM(m.user_id)
+                        WHERE m.direction = 'incoming' AND m.is_read = 0
+                        ORDER BY m.id DESC
+                        LIMIT 20
+                    ");
+                    if ($recentUnreadStmt) {
+                        $recentUnread = $recentUnreadStmt->fetchAll(PDO::FETCH_ASSOC);
+                    }
+
+                    // もしcustomer_carsに未登録のUIDがあれば自動登録修復
+                    foreach ($recentUnread as &$unMsg) {
+                        if ($unMsg['user_name'] === 'LINE受講生' && str_starts_with($unMsg['user_id'], 'U')) {
+                            try {
+                                $synced = ensureCustomerExists($db, $unMsg['user_id'], $activeAccountKey);
+                                if ($synced) {
+                                    $unMsg['user_name'] = $synced['user_name'] ?: 'LINE受講生';
+                                    $unMsg['picture_url'] = $synced['picture_url'] ?: '';
+                                }
+                            } catch (Throwable $sEx) {}
+                        }
+                    }
+                    unset($unMsg);
+                } catch (Throwable $qEx) {
+                    writeDebugLog("get_unread_chat_counts クエリ例外", ['error' => $qEx->getMessage()]);
                 }
-                unset($unMsg);
 
                 echo json_encode([
                     'success' => true,
@@ -871,6 +892,7 @@ try {
                     'recent_unread' => $recentUnread
                 ], JSON_UNESCAPED_UNICODE);
             } catch (Throwable $e) {
+                writeDebugLog("get_unread_chat_counts 致命的例外", ['error' => $e->getMessage()]);
                 echo json_encode(['success' => true, 'unread_counts' => [], 'total_unread' => 0, 'recent_unread' => []]);
             }
             exit;

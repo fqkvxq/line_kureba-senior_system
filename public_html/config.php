@@ -3321,22 +3321,26 @@ function createAdminAuthToken(PDO $db): string {
  */
 function isValidAdminAuthToken(PDO $db, string $token): bool {
     if (empty($token)) return false;
-    $stmt = $db->prepare("SELECT id, expires_at FROM admin_auth_tokens WHERE token = :t LIMIT 1");
-    $stmt->execute([':t' => $token]);
-    $row = $stmt->fetch();
-    if (!$row) return false;
+    try {
+        $stmt = $db->prepare("SELECT id, expires_at FROM admin_auth_tokens WHERE token = :t LIMIT 1");
+        $stmt->execute([':t' => $token]);
+        $row = $stmt->fetch();
+        if (!$row) return false;
 
-    $nowJst = date('Y-m-d H:i:s');
-    if ($nowJst > $row['expires_at']) {
+        $nowJst = date('Y-m-d H:i:s');
+        if ($nowJst > $row['expires_at']) {
+            return false;
+        }
+
+        // last_used_at を更新
+        try {
+            $db->prepare("UPDATE admin_auth_tokens SET last_used_at = :now WHERE id = :id")->execute([':now' => $nowJst, ':id' => $row['id']]);
+        } catch (Throwable $e) {}
+
+        return true;
+    } catch (Throwable $e) {
         return false;
     }
-
-    // last_used_at を更新
-    try {
-        $db->prepare("UPDATE admin_auth_tokens SET last_used_at = :now WHERE id = :id")->execute([':now' => $nowJst, ':id' => $row['id']]);
-    } catch (Exception $e) {}
-
-    return true;
 }
 
 /**
