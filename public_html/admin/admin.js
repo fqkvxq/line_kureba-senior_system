@@ -3479,7 +3479,6 @@ function updateDirectAssignSelect(preferredMenuId) {
         return;
     }
 
-    let foundMatch = false;
     // LINE実存・公開中メニューを優先ソート
     const sortedMenus = [...state.richMenus].sort((a, b) => {
         if (a.is_active && !b.is_active) return -1;
