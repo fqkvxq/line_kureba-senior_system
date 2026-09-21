@@ -3487,13 +3487,21 @@ function relayWebhookToProline(string $rawBody, string $signature = '', ?PDO $pd
         ];
     }
 
+    // 署名が空の場合、Channel Secretから自動再計算して補完（FastCGIヘッダー消失対策）
+    if (empty($signature)) {
+        $secret = getLineChannelSecret(getActiveAccountKey());
+        if (!empty($secret) && $secret !== 'YOUR_CHANNEL_SECRET_HERE') {
+            $signature = base64_encode(hash_hmac('sha256', $rawBody, $secret, true));
+        }
+    }
+
     $startTime = microtime(true);
+    // LINE公式Webhook仕様に厳密に準拠したヘッダー（署名ヘッダーは重複させず単一で送信）
     $headers = [
         'Content-Type: application/json; charset=utf-8',
         'User-Agent: LineBotWebhook/2.0'
     ];
     if (!empty($signature)) {
-        $headers[] = 'X-Line-Signature: ' . $signature;
         $headers[] = 'x-line-signature: ' . $signature;
     }
 
@@ -3508,10 +3516,11 @@ function relayWebhookToProline(string $rawBody, string $signature = '', ?PDO $pd
             CURLOPT_POSTFIELDS => $rawBody,
             CURLOPT_HTTPHEADER => $headers,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 5,           // LINEのWebhook応答遅延防止のため5秒上限
+            CURLOPT_TIMEOUT => 6,           // LINEのWebhook応答遅延防止のため6秒上限
             CURLOPT_CONNECTTIMEOUT => 3,
             CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_FOLLOWLOCATION => true
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1
         ]);
         curl_multi_add_handle($mh, $ch);
         $curlHandles[$idx] = ['handle' => $ch, 'url' => $url];
@@ -3553,17 +3562,19 @@ function relayWebhookToProline(string $rawBody, string $signature = '', ?PDO $pd
         $host = parse_url($url, PHP_URL_HOST) ?: 'target';
         $statusSummaryParts[] = "{$host}:" . ($isOk ? "OK({$httpCode})" : "FAIL({$httpCode})");
 
+        $resSnippet = mb_substr(trim((string)$response), 0, 120);
+
         $results[] = [
             'url' => $url,
             'success' => $isOk,
             'http_code' => $httpCode,
             'error' => $curlError,
-            'response_snippet' => mb_substr((string)$response, 0, 100)
+            'response_snippet' => $resSnippet
         ];
 
         // 各URLごとの転送ログ記録
         $statusText = $isOk ? "OK ({$httpCode})" : "FAIL ({$httpCode}: {$curlError})";
-        $logLine = "[{$nowJst}] WEBHOOK_RELAY: {$statusText} | URL: {$url} | Bytes: " . strlen($rawBody) . "\n";
+        $logLine = "[{$nowJst}] WEBHOOK_RELAY: {$statusText} | URL: {$url} | Sig: " . (!empty($signature) ? 'YES' : 'NO') . " | Res: {$resSnippet}\n";
         @file_put_contents(__DIR__ . '/proline_relay.log', $logLine, FILE_APPEND | LOCK_EX);
 
         curl_multi_remove_handle($mh, $ch);

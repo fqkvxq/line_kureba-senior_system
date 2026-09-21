@@ -365,11 +365,13 @@
                         <div class="step-card">
                             <div class="step-number">4</div>
                             <div class="step-body">
-                                <h4>プロライン通知が来ない場合のトラブルシューティング</h4>
+                                <h4>プロラインでチャット通知が来ない場合の確認チェックリスト</h4>
                                 <ul>
-                                    <li><strong>URLの入力誤り</strong>：プロラインの管理画面（「初期設定」や「LINE公式アカウント連携」）で表示されているWebhook URLが正しく貼り付けられているかご確認ください。</li>
-                                    <li><strong>自動中継の有効化チェック</strong>：「外部ツールへのWebhook自動中継を有効にする」のチェックボックスがONになっているかご確認ください。</li>
-                                    <li><strong>転送ログの確認</strong>：モーダル下部の「直近の転送履歴」または <code>webhook.php</code> にブラウザでアクセスして表示される「診断画面」にて、中継の実行結果（HTTPコードや所要時間）をご確認いただけます。</li>
+                                    <li><strong>1. プロライン Webhook URLの登録確認</strong>：本システムの管理画面「プロライン連携」を開き、プロライン管理画面（「初期設定」や「LINE公式アカウント連携」）で案内されるWebhook URL（例: <code>https://autosns.pro/api/webhook/...</code>）が正しく貼り付けられ、「設定を保存する」が完了しているか確認してください。</li>
+                                    <li><strong>2. 「疎通テスト実行」でOKが出るか</strong>：設定モーダルの「疎通テスト実行」ボタンを押し、<code>OK (200)</code> が返るか確認してください。もしエラーが出る場合はURLに余分な空白や改行が含まれていないかご確認ください。</li>
+                                    <li><strong>3. LINE DevelopersのWebhook利用設定</strong>：<a href="https://developers.line.biz/console/" target="_blank" style="color: #2563eb; text-decoration: underline;">LINE Developers</a> の「Messaging API設定」で、Webhook URLに本システムのURL（<code>https://あなたのドメイン/webhook.php</code>）が登録され、「Webhookの利用」が <strong>ON</strong> になっているか確認してください。</li>
+                                    <li><strong>4. プロライン側の通知設定</strong>：プロライン管理画面の「チャット設定」または「通知設定」にて、通知用LINEアカウントまたはメールアドレスへの「チャット受信時の通知」がONになっているかご確認ください。</li>
+                                    <li><strong>5. LINE公式アカウントの応答設定</strong>：LINE Official Account Manager（LINEヤフー公式管理画面）の「設定」＞「応答設定」にて、応答モードが「チャット」または「Bot」、かつWebhookが「ON」になっているかご確認ください。</li>
                                 </ul>
                             </div>
                         </div>

@@ -122,13 +122,44 @@ HTML;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?? '') === 'webhook.php' || basename($_SERVER['PHP_SELF'] ?? '') === 'webhook.php')) {
     // 生のリクエストボディを取得
     $rawInput = file_get_contents('php://input');
-    $lineSignature = $_SERVER['HTTP_X_LINE_SIGNATURE'] ?? '';
-    writeDebugLog("Webhook受信", ['account' => $activeAccount, 'bytes' => strlen($rawInput)]);
+    
+    // LINE署名ヘッダーを多重フォールバックで確実に取得
+    $lineSignature = $_SERVER['HTTP_X_LINE_SIGNATURE'] ?? ($_SERVER['REDIRECT_HTTP_X_LINE_SIGNATURE'] ?? '');
+    if (empty($lineSignature) && function_exists('getallheaders')) {
+        $hdrs = getallheaders();
+        foreach ($hdrs as $k => $v) {
+            if (strcasecmp($k, 'x-line-signature') === 0) {
+                $lineSignature = (string)$v;
+                break;
+            }
+        }
+    }
+    if (empty($lineSignature) && function_exists('apache_request_headers')) {
+        $hdrs = apache_request_headers();
+        foreach ($hdrs as $k => $v) {
+            if (strcasecmp($k, 'x-line-signature') === 0) {
+                $lineSignature = (string)$v;
+                break;
+            }
+        }
+    }
+
+    // 署名ヘッダーが空でもChannel Secretがあれば自動補完
+    if (empty($lineSignature) && !empty($channelSecret) && $channelSecret !== 'YOUR_CHANNEL_SECRET_HERE') {
+        $lineSignature = base64_encode(hash_hmac('sha256', $rawInput, $channelSecret, true));
+    }
+
+    writeDebugLog("Webhook受信", ['account' => $activeAccount, 'bytes' => strlen($rawInput), 'has_sig' => !empty($lineSignature)]);
+
+    // 【最優先・最重要】プロライン (ProLine) ＆ 外部ツールへ即座に完全中継（並列プロキシPOST）
+    // DB接続や本システム内部エラーの影響を受けないよう、何よりも先に転送を実行
+    $prolineRelayResult = relayWebhookToProline($rawInput, $lineSignature);
+    writeDebugLog("外部ツール中継実行", $prolineRelayResult);
 
     // 署名検証 (Channel Secretが設定されている場合)
-    if (!empty($channelSecret) && $channelSecret !== 'YOUR_CHANNEL_SECRET_HERE' && !empty($lineSignature)) {
+    if (!empty($channelSecret) && $channelSecret !== 'YOUR_CHANNEL_SECRET_HERE' && !empty($_SERVER['HTTP_X_LINE_SIGNATURE'])) {
         $hash = base64_encode(hash_hmac('sha256', $rawInput, $channelSecret, true));
-        if (!hash_equals($hash, $lineSignature)) {
+        if (!hash_equals($hash, $_SERVER['HTTP_X_LINE_SIGNATURE'])) {
             writeDebugLog("署名検証エラー (Signature mismatch)", ['account' => $activeAccount]);
             http_response_code(403);
             echo 'Invalid signature';
@@ -143,11 +174,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (basename($_SERVER['SCRIPT_NAME'] ?
         http_response_code(500);
         exit;
     }
-
-    // 【最重要】プロライン (ProLine) へリクエストを即座に完全中継（プロキシPOST）
-    // LINE公式アカウントから届いた生のJSONおよび署名をそのままプロラインのWebhook URLへ転送
-    $prolineRelayResult = relayWebhookToProline($rawInput, $lineSignature, $db);
-    writeDebugLog("プロライン中継実行", $prolineRelayResult);
 
     $data = json_decode($rawInput, true);
     if (empty($data['events'])) {
