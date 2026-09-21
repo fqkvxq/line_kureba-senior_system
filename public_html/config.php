@@ -1458,8 +1458,8 @@ function sendLineBroadcastMessage(array $messages, ?string $accountKey = null): 
 /**
  * LINE Messaging API: リッチメニュー作成 (メタデータ)
  */
-function lineCreateRichMenu(array $menuData): array {
-    $token = getLineAccessToken();
+function lineCreateRichMenu(array $menuData, ?string $accountKey = null): array {
+    $token = getLineAccessToken($accountKey);
     if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
     }
@@ -1494,8 +1494,8 @@ function lineCreateRichMenu(array $menuData): array {
 /**
  * LINE Messaging API: リッチメニュー画像アップロード
  */
-function lineUploadRichMenuImage(string $richMenuId, string $imageFilePath, string $contentType): array {
-    $token = getLineAccessToken();
+function lineUploadRichMenuImage(string $richMenuId, string $imageFilePath, string $contentType, ?string $accountKey = null): array {
+    $token = getLineAccessToken($accountKey);
     if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
     }
@@ -1532,8 +1532,8 @@ function lineUploadRichMenuImage(string $richMenuId, string $imageFilePath, stri
 /**
  * LINE Messaging API: デフォルトリッチメニュー設定 (友だち全員に適用)
  */
-function lineSetDefaultRichMenu(string $richMenuId): array {
-    $token = getLineAccessToken();
+function lineSetDefaultRichMenu(string $richMenuId, ?string $accountKey = null): array {
+    $token = getLineAccessToken($accountKey);
     if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
     }
@@ -1556,6 +1556,7 @@ function lineSetDefaultRichMenu(string $richMenuId): array {
     curl_close($ch);
 
     writeDebugLog("lineSetDefaultRichMenu結果", [
+        'accountKey' => $accountKey,
         'richMenuId' => $richMenuId,
         'httpCode' => $httpCode,
         'response' => $res,
@@ -1572,8 +1573,8 @@ function lineSetDefaultRichMenu(string $richMenuId): array {
 /**
  * LINE Messaging API: デフォルトリッチメニュー解除
  */
-function lineCancelDefaultRichMenu(): array {
-    $token = getLineAccessToken();
+function lineCancelDefaultRichMenu(?string $accountKey = null): array {
+    $token = getLineAccessToken($accountKey);
     if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
     }
@@ -1594,6 +1595,7 @@ function lineCancelDefaultRichMenu(): array {
     curl_close($ch);
 
     writeDebugLog("lineCancelDefaultRichMenu結果", [
+        'accountKey' => $accountKey,
         'httpCode' => $httpCode,
         'response' => $res,
         'curlErr' => $curlErr
@@ -1609,8 +1611,8 @@ function lineCancelDefaultRichMenu(): array {
 /**
  * LINE Messaging API: 現在のデフォルトリッチメニューID取得
  */
-function lineGetDefaultRichMenuId(): ?string {
-    $token = getLineAccessToken();
+function lineGetDefaultRichMenuId(?string $accountKey = null): ?string {
+    $token = getLineAccessToken($accountKey);
     if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return null;
     }
@@ -1638,8 +1640,8 @@ function lineGetDefaultRichMenuId(): ?string {
 /**
  * LINE Messaging API: リッチメニュー詳細取得 (LINEサーバー上の実データ)
  */
-function lineGetRichMenu(string $richMenuId): ?array {
-    $token = getLineAccessToken();
+function lineGetRichMenu(string $richMenuId, ?string $accountKey = null): ?array {
+    $token = getLineAccessToken($accountKey);
     if (empty($richMenuId) || empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return null;
     }
@@ -1668,8 +1670,8 @@ function lineGetRichMenu(string $richMenuId): ?array {
  * LINE Messaging API: LINEサーバー上の全リッチメニュー一覧取得
  * GET https://api.line.me/v2/bot/richmenu/list
  */
-function lineGetRichMenuList(): array {
-    $token = getLineAccessToken();
+function lineGetRichMenuList(?string $accountKey = null): array {
+    $token = getLineAccessToken($accountKey);
     if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => 'LINEアクセストークン未設定', 'richmenus' => []];
     }
@@ -1707,8 +1709,8 @@ function lineGetRichMenuList(): array {
 /**
  * LINE Messaging API: リッチメニュー削除
  */
-function lineDeleteRichMenu(string $richMenuId): array {
-    $token = getLineAccessToken();
+function lineDeleteRichMenu(string $richMenuId, ?string $accountKey = null): array {
+    $token = getLineAccessToken($accountKey);
     if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
     }
@@ -1729,6 +1731,7 @@ function lineDeleteRichMenu(string $richMenuId): array {
     curl_close($ch);
 
     writeDebugLog("lineDeleteRichMenu結果", [
+        'accountKey' => $accountKey,
         'richMenuId' => $richMenuId,
         'httpCode' => $httpCode,
         'response' => $res,
@@ -1745,8 +1748,8 @@ function lineDeleteRichMenu(string $richMenuId): array {
 /**
  * LINE Messaging API: リッチメニューエイリアス作成・更新
  */
-function lineCreateOrUpdateRichMenuAlias(string $richMenuId, string $aliasId): array {
-    $token = getLineAccessToken();
+function lineCreateOrUpdateRichMenuAlias(string $richMenuId, string $aliasId, ?string $accountKey = null): array {
+    $token = getLineAccessToken($accountKey);
     if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
     }
@@ -1807,8 +1810,8 @@ function lineCreateOrUpdateRichMenuAlias(string $richMenuId, string $aliasId): a
 /**
  * LINE Messaging API: リッチメニューエイリアス削除
  */
-function lineDeleteRichMenuAlias(string $aliasId): array {
-    $token = getLineAccessToken();
+function lineDeleteRichMenuAlias(string $aliasId, ?string $accountKey = null): array {
+    $token = getLineAccessToken($accountKey);
     if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => 'LINEアクセストークンが未設定です'];
     }
@@ -1838,8 +1841,8 @@ function lineDeleteRichMenuAlias(string $aliasId): array {
 /**
  * LINE Messaging API: リッチメニューエイリアス一覧取得
  */
-function lineGetRichMenuAliasList(): array {
-    $token = getLineAccessToken();
+function lineGetRichMenuAliasList(?string $accountKey = null): array {
+    $token = getLineAccessToken($accountKey);
     if (empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'aliases' => []];
     }
@@ -1868,8 +1871,8 @@ function lineGetRichMenuAliasList(): array {
  * LINE Messaging API: リッチメニューの画像バイナリを取得
  * GET https://api-data.line.me/v2/bot/richmenu/{richMenuId}/content
  */
-function lineGetRichMenuImage(string $richMenuId): ?string {
-    $token = getLineAccessToken();
+function lineGetRichMenuImage(string $richMenuId, ?string $accountKey = null): ?string {
+    $token = getLineAccessToken($accountKey);
     if (empty($richMenuId) || empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return null;
     }
@@ -1898,8 +1901,8 @@ function lineGetRichMenuImage(string $richMenuId): ?string {
  * GET https://api.line.me/v2/bot/user/{userId}/richmenu
  * @return string|null 個別紐付けリッチメニューID（個別紐付けなし/全体デフォルト表示中の場合はnull）
  */
-function lineGetUserRichMenu(string $userId): ?string {
-    $token = getLineAccessToken();
+function lineGetUserRichMenu(string $userId, ?string $accountKey = null): ?string {
+    $token = getLineAccessToken($accountKey);
     if (empty($userId) || empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return null;
     }
@@ -1930,8 +1933,8 @@ function lineGetUserRichMenu(string $userId): ?string {
  * LINE Messaging API: ユーザーに個別リッチメニューを紐付け
  * POST https://api.line.me/v2/bot/user/{userId}/richmenu/{richMenuId}
  */
-function lineLinkUserRichMenu(string $userId, string $richMenuId): array {
-    $token = getLineAccessToken();
+function lineLinkUserRichMenu(string $userId, string $richMenuId, ?string $accountKey = null): array {
+    $token = getLineAccessToken($accountKey);
     if (empty($userId) || empty($richMenuId) || empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => '無効なパラメータまたはアクセストークン未設定'];
     }
@@ -1954,6 +1957,7 @@ function lineLinkUserRichMenu(string $userId, string $richMenuId): array {
     curl_close($ch);
 
     writeDebugLog("lineLinkUserRichMenu結果", [
+        'accountKey' => $accountKey,
         'userId' => $userId,
         'richMenuId' => $richMenuId,
         'httpCode' => $httpCode,
@@ -1971,8 +1975,8 @@ function lineLinkUserRichMenu(string $userId, string $richMenuId): array {
  * LINE Messaging API: ユーザーの個別リッチメニュー紐付けを解除（全体デフォルトメニューに戻す）
  * DELETE https://api.line.me/v2/bot/user/{userId}/richmenu
  */
-function lineUnlinkUserRichMenu(string $userId): array {
-    $token = getLineAccessToken();
+function lineUnlinkUserRichMenu(string $userId, ?string $accountKey = null): array {
+    $token = getLineAccessToken($accountKey);
     if (empty($userId) || empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => '無効なパラメータまたはアクセストークン未設定'];
     }
@@ -1993,6 +1997,7 @@ function lineUnlinkUserRichMenu(string $userId): array {
     curl_close($ch);
 
     writeDebugLog("lineUnlinkUserRichMenu結果", [
+        'accountKey' => $accountKey,
         'userId' => $userId,
         'httpCode' => $httpCode,
         'response' => $res
@@ -2008,17 +2013,17 @@ function lineUnlinkUserRichMenu(string $userId): array {
 /**
  * データベース接続オブジェクト (PDO) を取得（getDbConnectionのエイリアス）
  */
-function getDB(): PDO {
-    return getDbConnection();
+function getDB(?string $accountKey = null): PDO {
+    return getDbConnection($accountKey);
 }
 
 /**
  * 現在有効なお知らせリッチメニューを取得
  */
-function getActiveNoticeRichMenu(?PDO $pdo = null): ?array {
+function getActiveNoticeRichMenu(?PDO $pdo = null, ?string $accountKey = null): ?array {
     try {
         if (!$pdo) {
-            $pdo = getDbConnection();
+            $pdo = getDbConnection($accountKey);
         }
         // 1. is_notice = 1 かつ is_active = 1 のメニュー（明示的アクティブ）
         $stmt = $pdo->query("SELECT * FROM rich_menus WHERE is_notice = 1 AND is_active = 1 ORDER BY id DESC LIMIT 1");

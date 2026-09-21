@@ -13,8 +13,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260921_quick_reply_fix_v2">
-    <link rel="stylesheet" href="richmenu.css?v=20260921_quick_reply_fix_v2">
+    <link rel="stylesheet" href="admin.css?v=20260921_richmenu_reset_v1">
+    <link rel="stylesheet" href="richmenu.css?v=20260921_richmenu_reset_v1">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -125,7 +125,10 @@
                 </div>
                 <div class="view-switch-right">
                     <button type="button" class="btn-secondary" id="btnSyncLineMenus" style="background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; font-weight: 700; height: 34px; padding: 0 12px; border-radius: var(--radius-sm); font-size: 12px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;" title="プロラインやLINE公式側で作成された最新リッチメニューを取り込みます">
-                        <i class="fa-solid fa-cloud-arrow-down"></i> プロラインからメニュー同期
+                        <i class="fa-solid fa-cloud-arrow-down"></i> LINEからメニュー同期
+                    </button>
+                    <button type="button" class="btn-secondary" id="btnOpenResetRichmenuModal" style="background: #fff1f2; color: #e11d48; border: 1px solid #fecdd3; font-weight: 700; height: 34px; padding: 0 12px; border-radius: var(--radius-sm); font-size: 12px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;" title="このアカウントのリッチメニューを完全初期化し、初期状態から再スタートします">
+                        <i class="fa-solid fa-broom"></i> リッチメニュー初期化
                     </button>
                     <button type="button" class="btn-quick-notice" id="btnOpenNoticeModal" title="LINEを開いた全員にお知らせを全面ポップアップ配信">
                         <i class="fa-solid fa-bullhorn"></i> 📢 お知らせ作成
@@ -1159,6 +1162,51 @@
         </div>
     </div>
 
+    <!-- リッチメニュー初期化確認モーダル -->
+    <div class="modal-overlay" id="resetRichmenuModal" style="display: none;">
+        <div class="modal-card" style="max-width: 520px;">
+            <div class="modal-header" style="background: #fff1f2; border-bottom: 1px solid #fecdd3; padding: 16px 20px;">
+                <h3 style="color: #9f1239; font-size: 16px; display: flex; align-items: center; gap: 8px; margin: 0;">
+                    <i class="fa-solid fa-triangle-exclamation" style="color: #e11d48;"></i> リッチメニューの初期化（リセット）
+                </h3>
+                <button type="button" class="btn-close" id="btnCloseResetRichmenuModal">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: var(--radius-sm); padding: 14px; margin-bottom: 16px;">
+                    <div style="font-weight: 800; font-size: 13.5px; color: #9f1239; margin-bottom: 6px;">
+                        ⚠️ 対象アカウント: <span id="resetAccountTargetName" style="text-decoration: underline;">シニア向けパソコン教室</span>
+                    </div>
+                    <div style="font-size: 12px; line-height: 1.6; color: #881337;">
+                        現在選択中のアカウントに登録されているリッチメニューの履歴・下書き・設定データをすべて削除し、<strong>初期状態（未作成）から再スタート</strong>します。
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; font-size: 13px;">
+                    <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; background: #f8fafc; padding: 10px 12px; border-radius: var(--radius-xs); border: 1px solid #e2e8f0;">
+                        <input type="checkbox" id="chkCleanLineServer" checked style="margin-top: 3px; accent-color: #e11d48;">
+                        <div>
+                            <span style="font-weight: 700; color: #1e293b;">LINEサーバー上のメニュー・エイリアスも完全削除する</span>
+                            <div style="font-size: 11.5px; color: #64748b;">LINE公式アカウントにアップロード済みの古いリッチメニュー実データをLINE側からも一括削除します。</div>
+                        </div>
+                    </label>
+                </div>
+
+                <div style="font-size: 12px; color: #64748b; background: #f1f5f9; padding: 10px 12px; border-radius: var(--radius-xs); margin-bottom: 18px;">
+                    💡 <strong>こんな時におすすめ:</strong><br>
+                    ・新しい他社公式LINEを追加し、まっさらな状態からメニューを作りたい時<br>
+                    ・他社アカウントのテストメニューを整理し直したい時
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #e2e8f0; padding-top: 14px;">
+                    <button type="button" class="btn-cancel" id="btnCancelResetRichmenuModal">キャンセル</button>
+                    <button type="button" id="btnExecuteResetRichmenus" class="btn-danger" style="background: #e11d48; border-color: #e11d48; color: #fff; font-weight: 700; padding: 8px 18px;">
+                        <i class="fa-solid fa-trash-can"></i> 初期化を実行する
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ローディングオーバーレイ -->
     <div class="loading-overlay" id="loadingOverlay" style="display: none;">
         <div class="loading-spinner"></div>
@@ -1168,6 +1216,6 @@
     <!-- トースト通知 -->
     <div class="toast-notification" id="adminToast"></div>
 
-    <script src="richmenu.js?v=20260921_quick_reply_fix_v2"></script>
+    <script src="richmenu.js?v=20260921_richmenu_reset_v1"></script>
 </body>
 </html>

@@ -3046,13 +3046,23 @@ try {
 
         // --- 11-2. リッチメニュー画像配信 & LINE自動リカバリ ---
         case 'richmenu_image':
+            $targetAccount = trim($_GET['account'] ?? ($_POST['account'] ?? ($_SERVER['HTTP_X_LINE_ACCOUNT'] ?? getActiveAccountKey())));
+            $targetDb = getDbConnection($targetAccount);
             $id = (int)($_GET['id'] ?? 0);
-            $stmt = $db->prepare("SELECT * FROM rich_menus WHERE id = :id");
+            $stmt = $targetDb->prepare("SELECT * FROM rich_menus WHERE id = :id");
             $stmt->execute([':id' => $id]);
             $menu = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$menu) {
-                http_response_code(404);
-                exit('Rich menu not found');
+                // 他アカウントのDBも探索フォールバック
+                if ($targetAccount !== 'senior') {
+                    $stmtSenior = getDbConnection('senior')->prepare("SELECT * FROM rich_menus WHERE id = :id");
+                    $stmtSenior->execute([':id' => $id]);
+                    $menu = $stmtSenior->fetch(PDO::FETCH_ASSOC);
+                }
+                if (!$menu) {
+                    http_response_code(404);
+                    exit('Rich menu not found');
+                }
             }
 
             // ローカルファイル名を取得
@@ -3075,7 +3085,7 @@ try {
 
             // 2. ローカルにない場合、LINE Messaging API から画像バイナリを自動取得・キャッシュ復元
             if (!empty($menu['line_menu_id'])) {
-                $imgBinary = lineGetRichMenuImage($menu['line_menu_id']);
+                $imgBinary = lineGetRichMenuImage($menu['line_menu_id'], $targetAccount);
                 if (!empty($imgBinary)) {
                     if (!is_dir(RICHMENU_UPLOAD_DIR)) {
                         @mkdir(RICHMENU_UPLOAD_DIR, 0777, true);
@@ -3105,14 +3115,17 @@ try {
                 exit;
             }
 
+            $targetAccount = trim($_GET['account'] ?? ($_POST['account'] ?? ($_SERVER['HTTP_X_LINE_ACCOUNT'] ?? getActiveAccountKey())));
+            $targetDb = getDbConnection($targetAccount);
+
             // LINE公式アカウントの現在のデフォルトリッチメニューIDを取得
-            $currentLineDefaultId = lineGetDefaultRichMenuId();
+            $currentLineDefaultId = lineGetDefaultRichMenuId($targetAccount);
 
             // 基本URLの定義
             $publicBase = getBaseUrl();
 
             // LINEサーバー上の全リッチメニューを自動取得し、プロライン等の未登録メニューがあれば自動インポート
-            $remoteList = lineGetRichMenuList();
+            $remoteList = lineGetRichMenuList($targetAccount);
             $validRemoteLmids = [];
             if (!empty($remoteList['success']) && !empty($remoteList['richmenus'])) {
                 foreach ($remoteList['richmenus'] as $rm) {
@@ -3121,11 +3134,11 @@ try {
                     $validRemoteLmids[$lmid] = true;
 
                     // すでにDBに登録済みかチェック
-                    $chk = $db->prepare("SELECT id FROM rich_menus WHERE line_menu_id = :lmid LIMIT 1");
+                    $chk = $targetDb->prepare("SELECT id FROM rich_menus WHERE line_menu_id = :lmid LIMIT 1");
                     $chk->execute([':lmid' => $lmid]);
                     if (!$chk->fetch()) {
                         // LINEから画像バイナリを自動取得してローカル保存
-                        $imgBin = lineGetRichMenuImage($lmid);
+                        $imgBin = lineGetRichMenuImage($lmid, $targetAccount);
                         $imgFileName = 'line_imported_' . substr(md5($lmid), 0, 10) . '.jpg';
                         $imgSaved = false;
                         if (!empty($imgBin)) {
@@ -3138,12 +3151,12 @@ try {
                         $fullImgUrl = $imgSaved ? ($publicBase . '/uploads/richmenu/' . $imgFileName) : '';
 
                         $isDef = ($lmid === $currentLineDefaultId) ? 1 : 0;
-                        $menuTitle = $rm['name'] ?? 'プロライン公式メニュー';
+                        $menuTitle = $rm['name'] ?? 'LINE公式メニュー';
                         if ($isDef) {
                             $menuTitle = '★ [現在LINE公開中] ' . $menuTitle;
                         }
 
-                        $db->prepare("
+                        $targetDb->prepare("
                             INSERT INTO rich_menus (
                                 title, line_menu_id, image_url, base_image_url,
                                 areas_json, width, height, chat_bar_text,
@@ -3169,7 +3182,7 @@ try {
             }
 
             // 履歴一覧取得
-            $stmt = $db->query("SELECT * FROM rich_menus ORDER BY id DESC");
+            $stmt = $targetDb->query("SELECT * FROM rich_menus ORDER BY id DESC");
             $menus = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // 現在のLINE設定と同期
@@ -3187,18 +3200,18 @@ try {
 
                 // DBのis_activeとLINE実状態の整合性を取る
                 if ($m['is_line_default'] && !$m['is_active']) {
-                    $db->prepare("UPDATE rich_menus SET is_active = 1 WHERE id = :id")->execute([':id' => $m['id']]);
+                    $targetDb->prepare("UPDATE rich_menus SET is_active = 1 WHERE id = :id")->execute([':id' => $m['id']]);
                     $m['is_active'] = 1;
                 } elseif (!$m['is_line_default'] && $m['is_active'] && !empty($currentLineDefaultId)) {
-                    $db->prepare("UPDATE rich_menus SET is_active = 0 WHERE id = :id")->execute([':id' => $m['id']]);
+                    $targetDb->prepare("UPDATE rich_menus SET is_active = 0 WHERE id = :id")->execute([':id' => $m['id']]);
                     $m['is_active'] = 0;
                 }
                 // エイリアス未設定の既存メニューがあれば自動生成＆同期
                 if (!empty($m['line_menu_id']) && empty($m['alias_id'])) {
                     $genAlias = 'rm_' . substr(md5($m['line_menu_id']), 0, 20);
-                    $reg = lineCreateOrUpdateRichMenuAlias($m['line_menu_id'], $genAlias);
+                    $reg = lineCreateOrUpdateRichMenuAlias($m['line_menu_id'], $genAlias, $targetAccount);
                     if ($reg['success']) {
-                        $db->prepare("UPDATE rich_menus SET alias_id = :aid WHERE id = :id")->execute([':aid' => $genAlias, ':id' => $m['id']]);
+                        $targetDb->prepare("UPDATE rich_menus SET alias_id = :aid WHERE id = :id")->execute([':aid' => $genAlias, ':id' => $m['id']]);
                         $m['alias_id'] = $genAlias;
                     }
                 }
@@ -3210,7 +3223,7 @@ try {
                 if (!empty($localFilePath) && file_exists($localFilePath) && filesize($localFilePath) > 0) {
                     $m['image_url'] = $publicBase . '/uploads/richmenu/' . $localFileName;
                 } else {
-                    $m['image_url'] = '../api.php?action=richmenu_image&id=' . $m['id'];
+                    $m['image_url'] = '../api.php?action=richmenu_image&id=' . $m['id'] . '&account=' . urlencode($targetAccount);
                 }
 
                 if (!empty($m['base_image_url'])) {
@@ -3228,11 +3241,12 @@ try {
             unset($m);
 
             // 現在有効なお知らせメニューを取得
-            $activeNotice = getActiveNoticeRichMenu($db);
+            $activeNotice = getActiveNoticeRichMenu($targetDb, $targetAccount);
             $activeNoticeId = $activeNotice ? (int)$activeNotice['id'] : null;
 
             echo json_encode([
                 'success' => true,
+                'account' => $targetAccount,
                 'menus' => $menus,
                 'rich_menus' => $menus,
                 'current_default_id' => $currentLineDefaultId,
@@ -3248,6 +3262,9 @@ try {
                 echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
                 exit;
             }
+
+            $targetAccount = trim($_POST['account'] ?? ($_GET['account'] ?? ($_SERVER['HTTP_X_LINE_ACCOUNT'] ?? getActiveAccountKey())));
+            $targetDb = getDbConnection($targetAccount);
 
             $title = trim($_POST['title'] ?? '');
             if (empty($title)) {
@@ -3475,7 +3492,7 @@ try {
             ];
 
             // 2. LINE API: リッチメニュー作成
-            $createRes = lineCreateRichMenu($lineMenuData);
+            $createRes = lineCreateRichMenu($lineMenuData, $targetAccount);
             if (!$createRes['success'] || empty($createRes['richMenuId'])) {
                 http_response_code(500);
                 echo json_encode([
@@ -3488,10 +3505,10 @@ try {
             $lineMenuId = $createRes['richMenuId'];
 
             // 3. LINE API: 画像アップロード
-            $uploadRes = lineUploadRichMenuImage($lineMenuId, $targetFilePath, $contentType);
+            $uploadRes = lineUploadRichMenuImage($lineMenuId, $targetFilePath, $contentType, $targetAccount);
             if (!$uploadRes['success']) {
                 // ロールバック: 作成したリッチメニューを削除
-                lineDeleteRichMenu($lineMenuId);
+                lineDeleteRichMenu($lineMenuId, $targetAccount);
                 http_response_code(500);
                 echo json_encode([
                     'success' => false,
@@ -3503,7 +3520,7 @@ try {
             $editId = !empty($_POST['edit_id']) ? (int)$_POST['edit_id'] : 0;
             $existingMenu = null;
             if ($editId > 0) {
-                $stmtExist = $db->prepare("SELECT * FROM rich_menus WHERE id = :id");
+                $stmtExist = $targetDb->prepare("SELECT * FROM rich_menus WHERE id = :id");
                 $stmtExist->execute([':id' => $editId]);
                 $existingMenu = $stmtExist->fetch(PDO::FETCH_ASSOC);
             }
@@ -3516,7 +3533,7 @@ try {
             } else {
                 $aliasId = 'rm_' . substr(md5($lineMenuId), 0, 20);
             }
-            lineCreateOrUpdateRichMenuAlias($lineMenuId, $aliasId);
+            lineCreateOrUpdateRichMenuAlias($lineMenuId, $aliasId, $targetAccount);
 
             // 4. LINE API: 本番適用 (publishフラグが真の場合、または既存メニューが元々本番中の場合)
             $isNotice = (!empty($_POST['is_notice']) && $_POST['is_notice'] === '1') ? 1 : ($existingMenu ? (int)$existingMenu['is_notice'] : 0);
@@ -3527,13 +3544,13 @@ try {
             $shouldApplyLive = $publish || ($existingMenu && (int)$existingMenu['is_active'] === 1 && !$isNotice);
 
             if ($shouldApplyLive) {
-                $setDefRes = lineSetDefaultRichMenu($lineMenuId);
+                $setDefRes = lineSetDefaultRichMenu($lineMenuId, $targetAccount);
                 if ($setDefRes['success']) {
                     $isActive = 1;
                     if ($isNotice) {
-                        $db->exec("UPDATE rich_menus SET is_active = 0 WHERE is_notice = 1");
+                        $targetDb->exec("UPDATE rich_menus SET is_active = 0 WHERE is_notice = 1");
                     } else {
-                        $db->exec("UPDATE rich_menus SET is_active = 0 WHERE is_notice = 0");
+                        $targetDb->exec("UPDATE rich_menus SET is_active = 0 WHERE is_notice = 0");
                     }
                 } else {
                     $applyError = $setDefRes['error'] ?? '不明なエラー';
@@ -3541,7 +3558,7 @@ try {
             } elseif ($isNotice) {
                 // お知らせ専用メニューとして保存された場合、アクティブお知らせとしてマーク
                 $isActive = 1;
-                $db->exec("UPDATE rich_menus SET is_active = 0 WHERE is_notice = 1");
+                $targetDb->exec("UPDATE rich_menus SET is_active = 0 WHERE is_notice = 1");
             }
 
             $textOverlaysJson = $_POST['text_overlays'] ?? '[]';
@@ -3550,7 +3567,7 @@ try {
 
             // 5. DBに保存 (既存更新 UPDATE or 新規登録 INSERT)
             if ($existingMenu) {
-                $stmt = $db->prepare("
+                $stmt = $targetDb->prepare("
                     UPDATE rich_menus SET
                         line_menu_id = :line_menu_id,
                         alias_id = :alias_id,
@@ -3586,7 +3603,7 @@ try {
 
                 // 古いLINEメニューIDをLINE APIから削除して整理
                 if (!empty($existingMenu['line_menu_id']) && $existingMenu['line_menu_id'] !== $lineMenuId) {
-                    lineDeleteRichMenu($existingMenu['line_menu_id']);
+                    lineDeleteRichMenu($existingMenu['line_menu_id'], $targetAccount);
                 }
 
                 $msg = 'リッチメニューを上書き保存しました！';
@@ -3596,7 +3613,7 @@ try {
                         : "リッチメニューは更新されましたが、LINE本番適用でエラーが発生しました: {$applyError}";
                 }
             } else {
-                $stmt = $db->prepare("
+                $stmt = $targetDb->prepare("
                     INSERT INTO rich_menus (
                         line_menu_id, alias_id, title, chat_bar_text, image_url, base_image_url, areas_json, text_overlays_json,
                         width, height, is_active, is_notice, created_at, updated_at
@@ -3619,7 +3636,7 @@ try {
                     ':is_active' => $isActive,
                     ':is_notice' => $isNotice
                 ]);
-                $savedId = (int)$db->lastInsertId();
+                $savedId = (int)$targetDb->lastInsertId();
 
                 $msg = 'リッチメニューを下書きとして新規保存しました！';
                 if ($publish) {
@@ -3655,8 +3672,11 @@ try {
                 exit;
             }
 
+            $targetAccount = trim($_POST['account'] ?? ($_GET['account'] ?? ($_SERVER['HTTP_X_LINE_ACCOUNT'] ?? getActiveAccountKey())));
+            $targetDb = getDbConnection($targetAccount);
+
             $id = (int)($_POST['id'] ?? ($_GET['id'] ?? 0));
-            $stmt = $db->prepare("SELECT * FROM rich_menus WHERE id = :id");
+            $stmt = $targetDb->prepare("SELECT * FROM rich_menus WHERE id = :id");
             $stmt->execute([':id' => $id]);
             $menu = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$menu) {
@@ -3666,8 +3686,8 @@ try {
             }
 
             // 他のお知らせメニューのis_activeを0にして、このメニューをis_notice=1 & is_active=1にする
-            $db->exec("UPDATE rich_menus SET is_active = 0 WHERE is_notice = 1");
-            $db->prepare("UPDATE rich_menus SET is_notice = 1, is_active = 1, updated_at = datetime('now', '+9 hours') WHERE id = :id")->execute([':id' => $id]);
+            $targetDb->exec("UPDATE rich_menus SET is_active = 0 WHERE is_notice = 1");
+            $targetDb->prepare("UPDATE rich_menus SET is_notice = 1, is_active = 1, updated_at = datetime('now', '+9 hours') WHERE id = :id")->execute([':id' => $id]);
 
             echo json_encode([
                 'success' => true,
@@ -3684,8 +3704,11 @@ try {
                 exit;
             }
 
+            $targetAccount = trim($_POST['account'] ?? ($_GET['account'] ?? ($_SERVER['HTTP_X_LINE_ACCOUNT'] ?? getActiveAccountKey())));
+            $targetDb = getDbConnection($targetAccount);
+
             $id = (int)($_POST['id'] ?? 0);
-            $stmt = $db->prepare("SELECT * FROM rich_menus WHERE id = :id");
+            $stmt = $targetDb->prepare("SELECT * FROM rich_menus WHERE id = :id");
             $stmt->execute([':id' => $id]);
             $menu = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$menu) {
@@ -3695,7 +3718,7 @@ try {
             }
 
             $targetLineMenuId = $menu['line_menu_id'] ?? '';
-            $setRes = !empty($targetLineMenuId) ? lineSetDefaultRichMenu($targetLineMenuId) : ['success' => false, 'error' => 'richmenu not found'];
+            $setRes = !empty($targetLineMenuId) ? lineSetDefaultRichMenu($targetLineMenuId, $targetAccount) : ['success' => false, 'error' => 'richmenu not found'];
 
             // LINEサーバー上でメニューが見つからない（richmenu not found）場合、自動自己修復（Auto-Recreate）
             if (!$setRes['success']) {
@@ -3741,23 +3764,23 @@ try {
                         'areas' => array_slice($lineAreas, 0, 20)
                     ];
 
-                    $recreateRes = lineCreateRichMenu($lineMenuData);
+                    $recreateRes = lineCreateRichMenu($lineMenuData, $targetAccount);
                     if (!empty($recreateRes['success']) && !empty($recreateRes['richMenuId'])) {
                         $recreatedLmid = $recreateRes['richMenuId'];
                         $uploadedOk = false;
                         if (!empty($imgFilePath) && file_exists($imgFilePath) && filesize($imgFilePath) > 0) {
                             $ext = strtolower(pathinfo($imgFilePath, PATHINFO_EXTENSION));
                             $cType = ($ext === 'png') ? 'image/png' : 'image/jpeg';
-                            $upRes = lineUploadRichMenuImage($recreatedLmid, $imgFilePath, $cType);
+                            $upRes = lineUploadRichMenuImage($recreatedLmid, $imgFilePath, $cType, $targetAccount);
                             $uploadedOk = !empty($upRes['success']);
                         }
 
                         if ($uploadedOk) {
                             $targetLineMenuId = $recreatedLmid;
-                            $db->prepare("UPDATE rich_menus SET line_menu_id = :lmid, updated_at = datetime('now', '+9 hours') WHERE id = :id")
+                            $targetDb->prepare("UPDATE rich_menus SET line_menu_id = :lmid, updated_at = datetime('now', '+9 hours') WHERE id = :id")
                                ->execute([':lmid' => $targetLineMenuId, ':id' => $id]);
                             // 再度デフォルト適用実行
-                            $setRes = lineSetDefaultRichMenu($targetLineMenuId);
+                            $setRes = lineSetDefaultRichMenu($targetLineMenuId, $targetAccount);
                         }
                     }
                 }
@@ -3773,8 +3796,8 @@ try {
             }
 
             // DB更新
-            $db->exec("UPDATE rich_menus SET is_active = 0");
-            $db->prepare("UPDATE rich_menus SET is_active = 1, updated_at = datetime('now', '+9 hours') WHERE id = :id")->execute([':id' => $id]);
+            $targetDb->exec("UPDATE rich_menus SET is_active = 0");
+            $targetDb->prepare("UPDATE rich_menus SET is_active = 1, updated_at = datetime('now', '+9 hours') WHERE id = :id")->execute([':id' => $id]);
 
             echo json_encode([
                 'success' => true,
@@ -3791,8 +3814,11 @@ try {
                 exit;
             }
 
+            $targetAccount = trim($_POST['account'] ?? ($_GET['account'] ?? ($_SERVER['HTTP_X_LINE_ACCOUNT'] ?? getActiveAccountKey())));
+            $targetDb = getDbConnection($targetAccount);
+
             $id = (int)($_POST['id'] ?? 0);
-            $stmt = $db->prepare("SELECT * FROM rich_menus WHERE id = :id");
+            $stmt = $targetDb->prepare("SELECT * FROM rich_menus WHERE id = :id");
             $stmt->execute([':id' => $id]);
             $menu = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$menu) {
@@ -3803,10 +3829,10 @@ try {
 
             // LINE側から削除
             if (!empty($menu['line_menu_id'])) {
-                lineDeleteRichMenu($menu['line_menu_id']);
+                lineDeleteRichMenu($menu['line_menu_id'], $targetAccount);
             }
             if (!empty($menu['alias_id'])) {
-                lineDeleteRichMenuAlias($menu['alias_id']);
+                lineDeleteRichMenuAlias($menu['alias_id'], $targetAccount);
             }
 
             // 画像ファイルの削除
@@ -3819,7 +3845,7 @@ try {
             }
 
             // DBから削除
-            $db->prepare("DELETE FROM rich_menus WHERE id = :id")->execute([':id' => $id]);
+            $targetDb->prepare("DELETE FROM rich_menus WHERE id = :id")->execute([':id' => $id]);
 
             echo json_encode([
                 'success' => true,
@@ -3836,6 +3862,9 @@ try {
                 exit;
             }
 
+            $targetAccount = trim($_POST['account'] ?? ($_GET['account'] ?? ($_SERVER['HTTP_X_LINE_ACCOUNT'] ?? getActiveAccountKey())));
+            $targetDb = getDbConnection($targetAccount);
+
             $id = (int)($_POST['id'] ?? 0);
             $newTitle = trim($_POST['title'] ?? '');
             if (empty($newTitle)) {
@@ -3844,7 +3873,7 @@ try {
                 exit;
             }
 
-            $stmt = $db->prepare("SELECT id, title FROM rich_menus WHERE id = :id");
+            $stmt = $targetDb->prepare("SELECT id, title FROM rich_menus WHERE id = :id");
             $stmt->execute([':id' => $id]);
             $menu = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$menu) {
@@ -3853,7 +3882,7 @@ try {
                 exit;
             }
 
-            $updateStmt = $db->prepare("UPDATE rich_menus SET title = :title, updated_at = datetime('now', '+9 hours') WHERE id = :id");
+            $updateStmt = $targetDb->prepare("UPDATE rich_menus SET title = :title, updated_at = datetime('now', '+9 hours') WHERE id = :id");
             $updateStmt->execute([
                 ':title' => $newTitle,
                 ':id' => $id
@@ -3867,6 +3896,65 @@ try {
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
+        // --- 15-2. リッチメニュー管理: 対象アカウントのリッチメニュー完全初期化 ---
+        case 'admin_reset_account_richmenus':
+            $authPass = getAdminAuthPassword();
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
+                exit;
+            }
+
+            $targetAccount = trim($_POST['account'] ?? ($_GET['account'] ?? ($_SERVER['HTTP_X_LINE_ACCOUNT'] ?? getActiveAccountKey())));
+            $targetDb = getDbConnection($targetAccount);
+
+            // 1. LINE公式アカウントのデフォルトリッチメニューを解除
+            lineCancelDefaultRichMenu($targetAccount);
+
+            // 2. LINE公式アカウント上のすべてのリッチメニュー・エイリアスを安全に削除（オプション指定時またはデフォルト）
+            $cleanLine = !empty($_POST['clean_line_server']) && ($_POST['clean_line_server'] === '1' || $_POST['clean_line_server'] === 'true' || $_POST['clean_line_server'] === 'yes');
+            $deletedLineCount = 0;
+            if ($cleanLine) {
+                $remoteList = lineGetRichMenuList($targetAccount);
+                if (!empty($remoteList['richmenus'])) {
+                    foreach ($remoteList['richmenus'] as $rm) {
+                        if (!empty($rm['richMenuId'])) {
+                            lineDeleteRichMenu($rm['richMenuId'], $targetAccount);
+                            $deletedLineCount++;
+                        }
+                    }
+                }
+                $aliasList = lineGetRichMenuAliasList($targetAccount);
+                if (!empty($aliasList['aliases'])) {
+                    foreach ($aliasList['aliases'] as $al) {
+                        if (!empty($al['richMenuAliasId'])) {
+                            lineDeleteRichMenuAlias($al['richMenuAliasId'], $targetAccount);
+                        }
+                    }
+                }
+            }
+
+            // 3. 対象アカウントの rich_menus テーブルを完全クリア
+            try {
+                $targetDb->exec("DELETE FROM rich_menus");
+                $targetDb->exec("DELETE FROM sqlite_sequence WHERE name = 'rich_menus'");
+            } catch (Exception $e) {}
+
+            // 4. 顧客テーブルの個別リッチメニュー設定もクリア
+            try {
+                $targetDb->exec("UPDATE customer_cars SET custom_line_menu_id = '', custom_menu_text = '', custom_menu_set_at = NULL");
+            } catch (Exception $e) {}
+
+            $accConfig = getAccountConfig($targetAccount);
+            $accName = $accConfig['name'] ?? $targetAccount;
+
+            echo json_encode([
+                'success' => true,
+                'account' => $targetAccount,
+                'message' => "アカウント「{$accName}」のリッチメニューを初期状態にリセットしました！新規作成からまっさらな状態でスタートできます。"
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
         // --- 16. 特定ユーザー向け個別リッチメニュー適用 ---
         case 'admin_set_user_custom_richmenu':
             $authPass = getAdminAuthPassword();
@@ -3875,6 +3963,9 @@ try {
                 echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
                 exit;
             }
+
+            $targetAccount = trim($_POST['account'] ?? ($_GET['account'] ?? ($_SERVER['HTTP_X_LINE_ACCOUNT'] ?? getActiveAccountKey())));
+            $targetDb = getDbConnection($targetAccount);
 
             $userId = trim($_POST['uid'] ?? '');
             if (empty($userId) || str_starts_with($userId, 'MANUAL_')) {
@@ -3889,7 +3980,7 @@ try {
             // ベースとなるリッチメニューを取得（お知らせメニューは絶対に専用メニューのベースにしない！）
             $baseMenu = null;
             if ($baseMenuId > 0) {
-                $stmt = $db->prepare("SELECT * FROM rich_menus WHERE id = :id");
+                $stmt = $targetDb->prepare("SELECT * FROM rich_menus WHERE id = :id");
                 $stmt->execute([':id' => $baseMenuId]);
                 $candidate = $stmt->fetch(PDO::FETCH_ASSOC);
                 // お知らせメニューでなければ採用
@@ -3899,17 +3990,17 @@ try {
             }
             if (!$baseMenu) {
                 // デフォルトとして現在本番中の通常メニューを取得 (is_notice = 0)
-                $stmt = $db->query("SELECT * FROM rich_menus WHERE is_active = 1 AND is_notice = 0 ORDER BY id DESC LIMIT 1");
+                $stmt = $targetDb->query("SELECT * FROM rich_menus WHERE is_active = 1 AND is_notice = 0 ORDER BY id DESC LIMIT 1");
                 $baseMenu = $stmt->fetch(PDO::FETCH_ASSOC);
             }
             if (!$baseMenu) {
                 // さらに無ければ通常メニューの最新を取得 (is_notice = 0)
-                $stmt = $db->query("SELECT * FROM rich_menus WHERE is_notice = 0 ORDER BY id DESC LIMIT 1");
+                $stmt = $targetDb->query("SELECT * FROM rich_menus WHERE is_notice = 0 ORDER BY id DESC LIMIT 1");
                 $baseMenu = $stmt->fetch(PDO::FETCH_ASSOC);
             }
             if (!$baseMenu) {
                 // 最後の手段として全体から取得
-                $stmt = $db->query("SELECT * FROM rich_menus ORDER BY id DESC LIMIT 1");
+                $stmt = $targetDb->query("SELECT * FROM rich_menus ORDER BY id DESC LIMIT 1");
                 $baseMenu = $stmt->fetch(PDO::FETCH_ASSOC);
             }
             if (!$baseMenu) {
@@ -3962,7 +4053,7 @@ try {
             // 優先順位3: ベースメニューの line_menu_id から LINEサーバー実データを直接取得
             $lineMenuIdToFetch = !empty($baseMenu['line_menu_id']) ? $baseMenu['line_menu_id'] : ($_POST['base_line_menu_id'] ?? '');
             if (empty($rawAreas) && !empty($lineMenuIdToFetch)) {
-                $lineRemote = lineGetRichMenu($lineMenuIdToFetch);
+                $lineRemote = lineGetRichMenu($lineMenuIdToFetch, $targetAccount);
                 if (!empty($lineRemote['areas']) && is_array($lineRemote['areas']) && count($lineRemote['areas']) > 0) {
                     $rawAreas = $lineRemote['areas'];
                 }
@@ -3970,9 +4061,9 @@ try {
 
             // 優先順位4: 現在のLINE全体デフォルトリッチメニューから実データを取得
             if (empty($rawAreas)) {
-                $currentDefId = lineGetDefaultRichMenuId();
+                $currentDefId = lineGetDefaultRichMenuId($targetAccount);
                 if (!empty($currentDefId)) {
-                    $lineRemote = lineGetRichMenu($currentDefId);
+                    $lineRemote = lineGetRichMenu($currentDefId, $targetAccount);
                     if (!empty($lineRemote['areas']) && is_array($lineRemote['areas']) && count($lineRemote['areas']) > 0) {
                         $rawAreas = $lineRemote['areas'];
                     }
@@ -4058,14 +4149,14 @@ try {
             if ($bannerActionType !== 'none' && !empty($bannerBounds) && is_array($bannerBounds)) {
                 $bannerCleanAction = null;
                 if ($bannerActionType === 'reservation_cal' || $bannerActionType === 'proline_cal') {
-                    $calUrl = defined('PROLINE_CALENDAR_URL') ? PROLINE_CALENDAR_URL : 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1';
+                    $calUrl = getAccountProlineCalendarUrl($targetAccount);
                     $bannerCleanAction = [
                         'type' => 'uri',
                         'uri' => $calUrl,
                         'label' => '予約・日程変更'
                     ];
                 } elseif ($bannerActionType === 'mycar_liff') {
-                    $liffId = defined('LINE_LIFF_ID') ? LINE_LIFF_ID : (defined('LIFF_ID') ? LIFF_ID : '2000276344-YL1wXh0h');
+                    $liffId = getLineLiffId($targetAccount);
                     $bannerCleanAction = [
                         'type' => 'uri',
                         'uri' => "https://liff.line.me/{$liffId}/mycar.html",
@@ -4151,7 +4242,7 @@ try {
             ]);
 
             // 顧客名を取得
-            $stmtCust = $db->prepare("SELECT user_name, custom_line_menu_id FROM customer_cars WHERE user_id = :uid LIMIT 1");
+            $stmtCust = $targetDb->prepare("SELECT user_name, custom_line_menu_id FROM customer_cars WHERE user_id = :uid LIMIT 1");
             $stmtCust->execute([':uid' => $userId]);
             $custRow = $stmtCust->fetch(PDO::FETCH_ASSOC);
             $custName = $custRow['user_name'] ?? 'お客様';
@@ -4169,7 +4260,7 @@ try {
                 'areas' => $lineAreas
             ];
 
-            $createRes = lineCreateRichMenu($lineMenuData);
+            $createRes = lineCreateRichMenu($lineMenuData, $targetAccount);
             if (!$createRes['success'] || empty($createRes['richMenuId'])) {
                 @unlink($targetFilePath);
                 http_response_code(500);
@@ -4179,9 +4270,9 @@ try {
             $newLineMenuId = $createRes['richMenuId'];
 
             // LINE API: 画像アップロード
-            $uploadRes = lineUploadRichMenuImage($newLineMenuId, $targetFilePath, $contentType);
+            $uploadRes = lineUploadRichMenuImage($newLineMenuId, $targetFilePath, $contentType, $targetAccount);
             if (!$uploadRes['success']) {
-                lineDeleteRichMenu($newLineMenuId);
+                lineDeleteRichMenu($newLineMenuId, $targetAccount);
                 @unlink($targetFilePath);
                 http_response_code(500);
                 echo json_encode(['success' => false, 'error' => 'LINE画像アップロード失敗: ' . ($uploadRes['error'] ?? '')]);
@@ -4189,9 +4280,9 @@ try {
             }
 
             // LINE API: ユーザーへ個別リンク実行！
-            $linkRes = lineLinkUserRichMenu($userId, $newLineMenuId);
+            $linkRes = lineLinkUserRichMenu($userId, $newLineMenuId, $targetAccount);
             if (!$linkRes['success']) {
-                lineDeleteRichMenu($newLineMenuId);
+                lineDeleteRichMenu($newLineMenuId, $targetAccount);
                 @unlink($targetFilePath);
                 http_response_code(500);
                 echo json_encode(['success' => false, 'error' => 'ユーザーへの個別メニュー割当失敗: ' . ($linkRes['error'] ?? '')]);
@@ -4200,11 +4291,11 @@ try {
 
             // 以前の古い個別メニューがあれば削除
             if (!empty($oldLineMenuId) && $oldLineMenuId !== $newLineMenuId) {
-                lineDeleteRichMenu($oldLineMenuId);
+                lineDeleteRichMenu($oldLineMenuId, $targetAccount);
             }
 
             // DB更新
-            $db->prepare("
+            $targetDb->prepare("
                 UPDATE customer_cars SET
                     custom_line_menu_id = :lmid,
                     custom_menu_text = :txt,
@@ -4215,7 +4306,7 @@ try {
                 ':txt' => $customText,
                 ':uid' => $userId
             ]);
-            recordCustomerInteraction($db, $userId, 'custom_menu', "専用メッセージ設定: " . mb_substr($customText, 0, 35));
+            recordCustomerInteraction($targetDb, $userId, 'custom_menu', "専用メッセージ設定: " . mb_substr($customText, 0, 35));
 
             $buttonSummaries = [];
             foreach ($lineAreas as $idx => $la) {
@@ -4243,6 +4334,9 @@ try {
                 exit;
             }
 
+            $targetAccount = trim($_POST['account'] ?? ($_GET['account'] ?? ($_SERVER['HTTP_X_LINE_ACCOUNT'] ?? getActiveAccountKey())));
+            $targetDb = getDbConnection($targetAccount);
+
             $userId = trim($_POST['uid'] ?? '');
             if (empty($userId)) {
                 http_response_code(400);
@@ -4251,26 +4345,26 @@ try {
             }
 
             // 既存の個別メニューIDを取得
-            $stmtCust = $db->prepare("SELECT user_name, custom_line_menu_id FROM customer_cars WHERE user_id = :uid LIMIT 1");
+            $stmtCust = $targetDb->prepare("SELECT user_name, custom_line_menu_id FROM customer_cars WHERE user_id = :uid LIMIT 1");
             $stmtCust->execute([':uid' => $userId]);
             $custRow = $stmtCust->fetch(PDO::FETCH_ASSOC);
             $custName = $custRow['user_name'] ?? 'お客様';
             $oldLineMenuId = $custRow['custom_line_menu_id'] ?? '';
 
             // LINE API: 個別紐付け解除
-            $unlinkRes = lineUnlinkUserRichMenu($userId);
+            $unlinkRes = lineUnlinkUserRichMenu($userId, $targetAccount);
 
             // 既存の全体・作成済みリッチメニューでなければ（個別動的メニューなら）古いLINEメニューを削除
             if (!empty($oldLineMenuId)) {
-                $checkExist = $db->prepare("SELECT id FROM rich_menus WHERE line_menu_id = :mid LIMIT 1");
+                $checkExist = $targetDb->prepare("SELECT id FROM rich_menus WHERE line_menu_id = :mid LIMIT 1");
                 $checkExist->execute([':mid' => $oldLineMenuId]);
                 if (!$checkExist->fetch()) {
-                    lineDeleteRichMenu($oldLineMenuId);
+                    lineDeleteRichMenu($oldLineMenuId, $targetAccount);
                 }
             }
 
             // DB更新
-            $db->prepare("
+            $targetDb->prepare("
                 UPDATE customer_cars SET
                     custom_line_menu_id = '',
                     custom_menu_text = '',
@@ -4293,6 +4387,9 @@ try {
                 exit;
             }
 
+            $targetAccount = trim($_GET['account'] ?? ($_POST['account'] ?? ($_SERVER['HTTP_X_LINE_ACCOUNT'] ?? getActiveAccountKey())));
+            $targetDb = getDbConnection($targetAccount);
+
             $userId = trim($_GET['uid'] ?? ($_POST['uid'] ?? ''));
             if (empty($userId)) {
                 http_response_code(400);
@@ -4301,30 +4398,30 @@ try {
             }
 
             // LINEサーバー上の実態を取得
-            $realLineMenuId = lineGetUserRichMenu($userId);
+            $realLineMenuId = lineGetUserRichMenu($userId, $targetAccount);
 
             // 現在LINE公式アカウント全体のデフォルトリッチメニューID
-            $currentLineDefaultId = lineGetDefaultRichMenuId();
+            $currentLineDefaultId = lineGetDefaultRichMenuId($targetAccount);
 
             // DB上の現在全体デフォルトメニューを検索
             $defaultMenu = null;
             if (!empty($currentLineDefaultId)) {
-                $stmtDef = $db->prepare("SELECT id, title, line_menu_id, image_url FROM rich_menus WHERE line_menu_id = :mid LIMIT 1");
+                $stmtDef = $targetDb->prepare("SELECT id, title, line_menu_id, image_url FROM rich_menus WHERE line_menu_id = :mid LIMIT 1");
                 $stmtDef->execute([':mid' => $currentLineDefaultId]);
                 $defaultMenu = $stmtDef->fetch(PDO::FETCH_ASSOC);
             }
             if (!$defaultMenu) {
-                $defMenuStmt = $db->query("SELECT id, title, line_menu_id, image_url FROM rich_menus WHERE is_active = 1 AND is_notice = 0 ORDER BY id DESC LIMIT 1");
+                $defMenuStmt = $targetDb->query("SELECT id, title, line_menu_id, image_url FROM rich_menus WHERE is_active = 1 AND is_notice = 0 ORDER BY id DESC LIMIT 1");
                 $defaultMenu = $defMenuStmt->fetch(PDO::FETCH_ASSOC);
             }
             if (!$defaultMenu) {
-                $defMenuStmt = $db->query("SELECT id, title, line_menu_id, image_url FROM rich_menus WHERE is_notice = 0 ORDER BY id DESC LIMIT 1");
+                $defMenuStmt = $targetDb->query("SELECT id, title, line_menu_id, image_url FROM rich_menus WHERE is_notice = 0 ORDER BY id DESC LIMIT 1");
                 $defaultMenu = $defMenuStmt->fetch(PDO::FETCH_ASSOC);
             }
 
             $resolvedDefaultTitle = $defaultMenu['title'] ?? '';
             if (empty($resolvedDefaultTitle) && !empty($currentLineDefaultId)) {
-                $lineRemote = lineGetRichMenu($currentLineDefaultId);
+                $lineRemote = lineGetRichMenu($currentLineDefaultId, $targetAccount);
                 $resolvedDefaultTitle = $lineRemote['name'] ?? '通常メニュー';
             }
             if (empty($resolvedDefaultTitle) || $resolvedDefaultTitle === '全体共通メニュー') {
@@ -4332,7 +4429,7 @@ try {
             }
 
             // 顧客テーブルの記録
-            $custStmt = $db->prepare("SELECT user_name, custom_line_menu_id, custom_menu_text, custom_menu_set_at FROM customer_cars WHERE user_id = :uid LIMIT 1");
+            $custStmt = $targetDb->prepare("SELECT user_name, custom_line_menu_id, custom_menu_text, custom_menu_set_at FROM customer_cars WHERE user_id = :uid LIMIT 1");
             $custStmt->execute([':uid' => $userId]);
             $cust = $custStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -4343,7 +4440,7 @@ try {
 
             if (!empty($realLineMenuId)) {
                 // DBの全リッチメニューから照合
-                $stmtMenu = $db->prepare("SELECT id, title, image_url, is_notice FROM rich_menus WHERE line_menu_id = :mid LIMIT 1");
+                $stmtMenu = $targetDb->prepare("SELECT id, title, image_url, is_notice FROM rich_menus WHERE line_menu_id = :mid LIMIT 1");
                 $stmtMenu->execute([':mid' => $realLineMenuId]);
                 $matchedMenu = $stmtMenu->fetch(PDO::FETCH_ASSOC);
 
@@ -4364,6 +4461,7 @@ try {
 
             echo json_encode([
                 'success' => true,
+                'account' => $targetAccount,
                 'user_id' => $userId,
                 'user_name' => $cust['user_name'] ?? '',
                 'real_line_menu_id' => $realLineMenuId,
@@ -4391,6 +4489,9 @@ try {
                 exit;
             }
 
+            $targetAccount = trim($_POST['account'] ?? ($_GET['account'] ?? ($_SERVER['HTTP_X_LINE_ACCOUNT'] ?? getActiveAccountKey())));
+            $targetDb = getDbConnection($targetAccount);
+
             $userId = trim($_POST['uid'] ?? '');
             $menuId = (int)($_POST['rich_menu_id'] ?? ($_POST['menu_id'] ?? 0));
             if (empty($userId) || str_starts_with($userId, 'MANUAL_')) {
@@ -4400,7 +4501,7 @@ try {
             }
 
             // 指定メニューを取得
-            $stmtM = $db->prepare("SELECT * FROM rich_menus WHERE id = :id LIMIT 1");
+            $stmtM = $targetDb->prepare("SELECT * FROM rich_menus WHERE id = :id LIMIT 1");
             $stmtM->execute([':id' => $menuId]);
             $targetMenu = $stmtM->fetch(PDO::FETCH_ASSOC);
 
@@ -4413,14 +4514,14 @@ try {
             $newLineMenuId = $targetMenu['line_menu_id'];
 
             // 既存の個別メニューIDを取得
-            $stmtCust = $db->prepare("SELECT user_name, custom_line_menu_id, custom_menu_text FROM customer_cars WHERE user_id = :uid LIMIT 1");
+            $stmtCust = $targetDb->prepare("SELECT user_name, custom_line_menu_id, custom_menu_text FROM customer_cars WHERE user_id = :uid LIMIT 1");
             $stmtCust->execute([':uid' => $userId]);
             $custRow = $stmtCust->fetch(PDO::FETCH_ASSOC);
             $custName = $custRow['user_name'] ?? 'お客様';
             $oldLineMenuId = $custRow['custom_line_menu_id'] ?? '';
 
             // LINE API: 個別リンク実行
-            $linkRes = lineLinkUserRichMenu($userId, $newLineMenuId);
+            $linkRes = lineLinkUserRichMenu($userId, $newLineMenuId, $targetAccount);
             if (!$linkRes['success']) {
                 $errStr = $linkRes['error'] ?? '';
                 // LINEサーバー上でメニューが見つからない（richmenu not found / 削除済み）場合、自動自己修復（Auto-Recreate）
@@ -4465,23 +4566,23 @@ try {
                         'areas' => array_slice($lineAreas, 0, 20)
                     ];
 
-                    $recreateRes = lineCreateRichMenu($lineMenuData);
+                    $recreateRes = lineCreateRichMenu($lineMenuData, $targetAccount);
                     if (!empty($recreateRes['success']) && !empty($recreateRes['richMenuId'])) {
                         $recreatedLmid = $recreateRes['richMenuId'];
                         $uploadedOk = false;
                         if (!empty($imgFilePath) && file_exists($imgFilePath) && filesize($imgFilePath) > 0) {
                             $ext = strtolower(pathinfo($imgFilePath, PATHINFO_EXTENSION));
                             $cType = ($ext === 'png') ? 'image/png' : 'image/jpeg';
-                            $upRes = lineUploadRichMenuImage($recreatedLmid, $imgFilePath, $cType);
+                            $upRes = lineUploadRichMenuImage($recreatedLmid, $imgFilePath, $cType, $targetAccount);
                             $uploadedOk = !empty($upRes['success']);
                         }
 
                         if ($uploadedOk) {
                             $newLineMenuId = $recreatedLmid;
-                            $db->prepare("UPDATE rich_menus SET line_menu_id = :lmid, updated_at = datetime('now', '+9 hours') WHERE id = :id")
+                            $targetDb->prepare("UPDATE rich_menus SET line_menu_id = :lmid, updated_at = datetime('now', '+9 hours') WHERE id = :id")
                                ->execute([':lmid' => $newLineMenuId, ':id' => $targetMenu['id']]);
                             // 再試行
-                            $linkRes = lineLinkUserRichMenu($userId, $newLineMenuId);
+                            $linkRes = lineLinkUserRichMenu($userId, $newLineMenuId, $targetAccount);
                         }
                     }
                 }
@@ -4491,22 +4592,22 @@ try {
                 http_response_code(400);
                 echo json_encode([
                     'success' => false,
-                    'error' => "メニュー割当失敗: 選択されたメニューはLINEサーバー上に存在しないか期限切れです。\nリッチメニュー管理画面で「プロラインからメニュー同期」を実行するか、「専用メッセージ帯付きメニュー」タブから適用してください。（LINEエラー: " . ($linkRes['error'] ?? '') . "）"
+                    'error' => "メニュー割当失敗: 選択されたメニューはLINEサーバー上に存在しないか期限切れです。\nリッチメニュー管理画面で「LINEからメニュー同期」を実行するか、「専用メッセージ帯付きメニュー」タブから適用してください。（LINEエラー: " . ($linkRes['error'] ?? '') . "）"
                 ], JSON_UNESCAPED_UNICODE);
                 exit;
             }
 
             // 以前のメニューが「専用メッセージメニュー（custom_menu_textあり）」だった場合はLINE上の古い画像メニューを削除
             if (!empty($oldLineMenuId) && $oldLineMenuId !== $newLineMenuId && !empty($custRow['custom_menu_text'])) {
-                $checkExist = $db->prepare("SELECT id FROM rich_menus WHERE line_menu_id = :mid LIMIT 1");
+                $checkExist = $targetDb->prepare("SELECT id FROM rich_menus WHERE line_menu_id = :mid LIMIT 1");
                 $checkExist->execute([':mid' => $oldLineMenuId]);
                 if (!$checkExist->fetch()) {
-                    lineDeleteRichMenu($oldLineMenuId);
+                    lineDeleteRichMenu($oldLineMenuId, $targetAccount);
                 }
             }
 
             // DB更新（専用メッセージテキストはクリア）
-            $db->prepare("
+            $targetDb->prepare("
                 UPDATE customer_cars SET
                     custom_line_menu_id = :lmid,
                     custom_menu_text = '',
@@ -4516,7 +4617,7 @@ try {
                 ':lmid' => $newLineMenuId,
                 ':uid' => $userId
             ]);
-            recordCustomerInteraction($db, $userId, 'custom_menu', "個別メニュー割当: {$targetMenu['title']}");
+            recordCustomerInteraction($targetDb, $userId, 'custom_menu', "個別メニュー割当: {$targetMenu['title']}");
 
             echo json_encode([
                 'success' => true,

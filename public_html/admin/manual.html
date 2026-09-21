@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260921_quick_reply_fix_v2">
+    <link rel="stylesheet" href="manual.css?v=20260921_richmenu_reset_v1">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -734,6 +734,25 @@
                                 メニュー数が増加した場合でも快適にブラウジングできるよう、<strong>スマートページネーション機能（6件 / 9件 / 18件 / 全件表示切り替え）</strong>を搭載しています。「すべて」「通常メニュー」「お知らせ専用メニュー」のフィルタータブとも連動し、ページめくりも高速・軽快に動作します。</p>
                             </div>
                         </div>
+
+                        <div class="step-card">
+                            <div class="step-number" style="background:#dc2626; color:#fff;"><i class="fa-solid fa-trash-can"></i></div>
+                            <div class="step-body">
+                                <h4>🧹 リッチメニュー初期化（リセット）機能【新規アカウント作成時・完全クリーン化】</h4>
+                                <p>新規で他社アカウントや新店舗アカウントを作成した際、またはメニュー構成を一新してまっさらな初期状態からスタートしたい場合、画面上部ビュースイッチャーバーの「<strong><i class="fa-solid fa-trash-can"></i> リッチメニュー初期化</strong>」ボタンから初期化を実行できます。<br>
+                                初期化を実行すると以下が安全に実施されます：</p>
+                                <ul>
+                                    <li><strong>現在選択中のアカウントの登録リッチメニューを全消去</strong>（DBテーブル <code>rich_menus</code> を初期化）</li>
+                                    <li><strong>LINE公式アカウント（Messaging API）上のデフォルトリッチメニュー解除＆メニュー・エイリアス削除</strong>（チェックを入れた場合）</li>
+                                    <li><strong>個別受講生に割り当てられていたカスタムメニューの解除</strong>（全体デフォルト状態へ統一）</li>
+                                    <li><strong>エディタの全入力欄・プレビューをまっさらな初期状態へクリア</strong></li>
+                                </ul>
+                                <div class="tip-box" style="margin-top:8px; background:#fef2f2; border-left:4px solid #ef4444; padding:10px 14px; border-radius: var(--radius-xs); font-size:12.5px;">
+                                    <strong style="color:#b91c1c;"><i class="fa-solid fa-triangle-exclamation"></i> アカウント完全分離の安心安全設計:</strong><br>
+                                    初期化処理は<strong>「現在ヘッダーで選択しているアカウント」のみを対象</strong>として実行されます。別のアカウント（例: シニア教室など）に登録されているリッチメニューやLINE設定には一切影響しませんので、安心してお使いいただけます。
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -922,6 +941,16 @@
                                 <h4>データベース（DB）完全分離による安全設計</h4>
                                 <p>本システムは、アカウントごとに<strong>専用のSQLiteデータベースファイル</strong>（例: <code>kureba-senior-system.db</code>、<code>kureba_kaisya_dx.db</code> など）を完全に分離して管理しています。<br>
                                 これにより、顧客カルテや受講履歴、作成したリッチメニュー、配信履歴などが別のアカウントと混ざってしまう危険（データの交差汚染）を根本から防止しています。</p>
+                            </div>
+                        </div>
+
+                        <!-- ステップ: リッチメニューの完全独立管理 & 初期化スタート -->
+                        <div class="step-card">
+                            <div class="step-number" style="background:#0284c7; color:#fff;"><i class="fa-solid fa-table-cells-large"></i></div>
+                            <div class="step-body">
+                                <h4>アカウントごとのリッチメニュー完全独立 & クリーンスタート</h4>
+                                <p>各LINE公式アカウントのリッチメニュー（作成データ、本番公開メニュー、LINEサーバー上のメニューID・エイリアス、受講生ごとの個別メニュー設定）も、アカウントごとに<strong>完全独立したデータベースおよびLINEチャネルアクセストークン</strong>で管理されます。<br>
+                                新しく追加したアカウントのリッチメニュー管理画面を開いた際、前のアカウントのメニューが混ざることはありません。また、「<strong>🧹 リッチメニュー初期化</strong>」ボタンを使うことで、いつでも完全な初期状態（未登録・クリーン）からアカウント専用のメニュー構築をスタートできます。</p>
                             </div>
                         </div>
 
@@ -1619,6 +1648,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_quick_reply_fix_v2"></script>
+    <script src="manual.js?v=20260921_richmenu_reset_v1"></script>
 </body>
 </html>

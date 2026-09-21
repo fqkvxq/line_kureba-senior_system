@@ -321,7 +321,16 @@ const elements = {
     twoFaMaxAttemptsInput: document.getElementById('twoFaMaxAttemptsInput'),
     btnTest2FAEmail: document.getElementById('btnTest2FAEmail'),
     btnSave2FASettings: document.getElementById('btnSave2FASettings'),
-    twoFaStatusBanner: document.getElementById('twoFaStatusBanner')
+    twoFaStatusBanner: document.getElementById('twoFaStatusBanner'),
+
+    // リッチメニュー初期化モーダル
+    btnOpenResetRichmenuModal: document.getElementById('btnOpenResetRichmenuModal'),
+    resetRichmenuModal: document.getElementById('resetRichmenuModal'),
+    btnCloseResetRichmenuModal: document.getElementById('btnCloseResetRichmenuModal'),
+    btnCancelResetRichmenuModal: document.getElementById('btnCancelResetRichmenuModal'),
+    btnExecuteResetRichmenus: document.getElementById('btnExecuteResetRichmenus'),
+    resetAccountTargetName: document.getElementById('resetAccountTargetName'),
+    chkCleanLineServer: document.getElementById('chkCleanLineServer')
 };
 
 // ================= 初期化 =================
@@ -332,6 +341,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initAccountManagement();
     init2FASettings();
     initQuickReplySettings();
+    initResetRichmenu();
 });
 
 async function loadAccounts() {
@@ -5164,4 +5174,106 @@ window.closeQuickReplySettings = closeQuickReplySettingsModal;
 window.qrState = qrState;
 window.renderQuickReplyCustomItems = renderQuickReplyCustomItems;
 window.renderQuickReplyLivePreview = renderQuickReplyLivePreview;
+
+/* ==========================================================================
+   リッチメニュー初期化（リセット）機能
+   ========================================================================== */
+
+function initResetRichmenu() {
+    if (elements.btnOpenResetRichmenuModal) {
+        elements.btnOpenResetRichmenuModal.addEventListener('click', openResetRichmenuModal);
+    }
+    if (elements.btnCloseResetRichmenuModal) {
+        elements.btnCloseResetRichmenuModal.addEventListener('click', closeResetRichmenuModal);
+    }
+    if (elements.btnCancelResetRichmenuModal) {
+        elements.btnCancelResetRichmenuModal.addEventListener('click', closeResetRichmenuModal);
+    }
+    if (elements.btnExecuteResetRichmenus) {
+        elements.btnExecuteResetRichmenus.addEventListener('click', executeResetRichmenus);
+    }
+}
+
+function openResetRichmenuModal() {
+    const modal = elements.resetRichmenuModal;
+    if (!modal) return;
+    const currentAcc = (state.accounts || []).find(a => a.id === state.activeAccount) || state.activeAccountInfo;
+    const accName = currentAcc ? currentAcc.name : (state.activeAccount || '現在のアカウント');
+    if (elements.resetAccountTargetName) {
+        elements.resetAccountTargetName.textContent = `${accName} (${state.activeAccount})`;
+    }
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+    modal.style.zIndex = '9999';
+}
+
+function closeResetRichmenuModal() {
+    const modal = elements.resetRichmenuModal;
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    }
+}
+
+async function executeResetRichmenus() {
+    const btn = elements.btnExecuteResetRichmenus;
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 初期化実行中...';
+    }
+
+    try {
+        const cleanLine = elements.chkCleanLineServer ? (elements.chkCleanLineServer.checked ? '1' : '0') : '1';
+        const payload = new URLSearchParams({
+            action: 'admin_reset_account_richmenus',
+            account: state.activeAccount || 'senior',
+            clean_line_server: cleanLine,
+            password: state.password
+        });
+
+        const res = await fetch('../api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            closeResetRichmenuModal();
+            if (typeof showToast === 'function') {
+                showToast(data.message || 'リッチメニューを初期状態にリセットしました！', 'success');
+            } else {
+                alert(data.message || 'リッチメニューを初期状態にリセットしました！');
+            }
+            // エディタフォームを初期化
+            if (typeof resetEditorForm === 'function') {
+                resetEditorForm();
+            }
+            // 履歴一覧を再読み込み
+            if (typeof loadHistoryList === 'function') {
+                await loadHistoryList();
+            }
+            // エディタビューに切り替え
+            if (typeof switchView === 'function') {
+                switchView('editor');
+            }
+        } else {
+            alert(data.error || '初期化に失敗しました');
+        }
+    } catch (e) {
+        console.error('Reset richmenus error:', e);
+        alert('初期化中にエラーが発生しました: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
+
+window.openResetRichmenuModal = openResetRichmenuModal;
+window.closeResetRichmenuModal = closeResetRichmenuModal;
+window.executeResetRichmenus = executeResetRichmenus;
+
 
