@@ -1,7 +1,23 @@
 <?php
 /**
  * ルート index.php
- * ドメイン直下またはサブディレクトリにアクセスされた場合に管理画面（admin/）へ転送
+ * ドメイン直下または任意のサブディレクトリにアクセスされた場合に管理画面（/admin/）へ安全に完全絶対URL転送
  */
-header('Location: admin/index.html', true, 302);
+$isHttps = (
+    (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
+    (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ||
+    (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on') ||
+    (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)
+);
+$proto = $isHttps ? 'https' : 'http';
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$dir = dirname($_SERVER['SCRIPT_NAME'] ?? '');
+$dir = str_replace('\\', '/', $dir);
+$base = rtrim($dir, '/');
+
+// 管理画面への安全な完全絶対URL
+$targetUrl = "{$proto}://{$host}{$base}/admin/index.html";
+
+header("Location: {$targetUrl}", true, 302);
 exit;
+

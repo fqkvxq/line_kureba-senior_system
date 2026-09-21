@@ -27,13 +27,6 @@ SetEnv TZ Asia/Tokyo
     RewriteRule .* - [e=HTTP_X_ADMIN_PASSWORD:%1]
     RewriteCond %{HTTP:X-Line-Account} ^(.*)
     RewriteRule .* - [e=HTTP_X_LINE_ACCOUNT:%1]
-
-    # ブラウザから直接 /public_html/... にアクセスされた場合は URL から /public_html を外して301リダイレクト
-    # ※POSTリクエストおよびwebhook/APIエンドポイントはリダイレクトせずに直接実行（LINE Webhookの消失防止）
-    RewriteCond %{REQUEST_METHOD} !=POST
-    RewriteCond %{THE_REQUEST} \s+(\S*?)/public_html/([^\s?]*) [NC]
-    RewriteCond %{REQUEST_URI} !/(webhook\.php|api\.php|redirect\.php|setup\.php)
-    RewriteRule ^ %1/%2 [R=301,L,NE]
 </IfModule>
 <IfModule mod_setenvif.c>
     SetEnvIfNoCase Authorization "(.*)" HTTP_AUTHORIZATION=$1
