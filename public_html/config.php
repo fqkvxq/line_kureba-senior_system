@@ -889,8 +889,8 @@ function getBaseUrl(): string {
 /**
  * LINEユーザーのプロフィール情報（表示名・アイコン）を取得
  */
-function getLineUserProfile(string $userId): ?array {
-    $token = getLineAccessToken();
+function getLineUserProfile(string $userId, ?string $accountKey = null): ?array {
+    $token = getLineAccessToken($accountKey);
     if (empty($userId) || empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return null;
     }
@@ -918,10 +918,11 @@ function getLineUserProfile(string $userId): ?array {
 /**
  * 複数のLINEユーザープロフィールを並列（curl_multi）で一括超高速取得
  * @param array $userIds
+ * @param string|null $accountKey
  * @return array [ $userId => [ 'displayName' => ..., 'pictureUrl' => ... ] ]
  */
-function getLineUserProfilesBatch(array $userIds): array {
-    $token = getLineAccessToken();
+function getLineUserProfilesBatch(array $userIds, ?string $accountKey = null): array {
+    $token = getLineAccessToken($accountKey);
     if (empty($userIds) || empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return [];
     }

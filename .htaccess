@@ -27,6 +27,8 @@ SetEnv TZ Asia/Tokyo
     RewriteRule .* - [e=HTTP_X_ADMIN_PASSWORD:%1]
     RewriteCond %{HTTP:X-Line-Account} ^(.*)
     RewriteRule .* - [e=HTTP_X_LINE_ACCOUNT:%1]
+    RewriteCond %{HTTP:X-Line-Signature} ^(.*)
+    RewriteRule .* - [e=HTTP_X_LINE_SIGNATURE:%1]
 
     # 1. ルート直下へのアクセスは index.php に委譲（PHP側で安全に完全絶対URLへ転送）
     RewriteRule ^$ index.php [L]
@@ -42,5 +44,6 @@ SetEnv TZ Asia/Tokyo
     SetEnvIfNoCase Authorization "(.*)" HTTP_AUTHORIZATION=$1
     SetEnvIfNoCase X-Admin-Password "(.*)" HTTP_X_ADMIN_PASSWORD=$1
     SetEnvIfNoCase X-Line-Account "(.*)" HTTP_X_LINE_ACCOUNT=$1
+    SetEnvIfNoCase X-Line-Signature "(.*)" HTTP_X_LINE_SIGNATURE=$1
 </IfModule>
 

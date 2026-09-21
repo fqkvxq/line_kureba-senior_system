@@ -27,9 +27,12 @@ SetEnv TZ Asia/Tokyo
     RewriteRule .* - [e=HTTP_X_ADMIN_PASSWORD:%1]
     RewriteCond %{HTTP:X-Line-Account} ^(.*)
     RewriteRule .* - [e=HTTP_X_LINE_ACCOUNT:%1]
+    RewriteCond %{HTTP:X-Line-Signature} ^(.*)
+    RewriteRule .* - [e=HTTP_X_LINE_SIGNATURE:%1]
 </IfModule>
 <IfModule mod_setenvif.c>
     SetEnvIfNoCase Authorization "(.*)" HTTP_AUTHORIZATION=$1
     SetEnvIfNoCase X-Admin-Password "(.*)" HTTP_X_ADMIN_PASSWORD=$1
     SetEnvIfNoCase X-Line-Account "(.*)" HTTP_X_LINE_ACCOUNT=$1
+    SetEnvIfNoCase X-Line-Signature "(.*)" HTTP_X_LINE_SIGNATURE=$1
 </IfModule>

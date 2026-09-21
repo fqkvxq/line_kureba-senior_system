@@ -804,6 +804,25 @@ try {
         // --- 0-8. 全受講生の未読メッセージ件数一覧取得 (ブラウザ通知データ含む) ---
         case 'get_unread_chat_counts':
             try {
+                // テーブル存在保証
+                try {
+                    $db->exec("
+                        CREATE TABLE IF NOT EXISTS chat_messages (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            user_id TEXT NOT NULL,
+                            direction TEXT NOT NULL DEFAULT 'incoming',
+                            message_type TEXT NOT NULL DEFAULT 'text',
+                            message_text TEXT NOT NULL DEFAULT '',
+                            payload_json TEXT DEFAULT '{}',
+                            is_read INTEGER NOT NULL DEFAULT 0,
+                            sent_by TEXT DEFAULT '',
+                            created_at DATETIME NOT NULL
+                        );
+                        CREATE INDEX IF NOT EXISTS idx_chat_uid ON chat_messages (user_id);
+                        CREATE INDEX IF NOT EXISTS idx_chat_read ON chat_messages (direction, is_read);
+                    ");
+                } catch (Throwable $t) {}
+
                 // 1. 各ユーザーの未読数
                 $stmt = $db->query("
                     SELECT TRIM(user_id) as user_id, COUNT(*) as unread_count 

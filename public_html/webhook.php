@@ -256,33 +256,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $payloadJson = json_encode($rawPayload, JSON_UNESCAPED_UNICODE);
                 $nowJst = date('Y-m-d H:i:s');
 
-                // A. チャットメッセージ履歴テーブルへ即座に確実に保存 (最優先)
-                try {
-                    $chatStmt = $db->prepare("
-                        INSERT INTO chat_messages (
-                            user_id, direction, message_type, message_text, payload_json, is_read, created_at
-                        ) VALUES (
-                            :uid, 'incoming', :mtype, :mtext, :payload, 0, :now
-                        )
-                    ");
-                    $chatStmt->execute([
-                        ':uid' => $userId,
-                        ':mtype' => $msgType,
-                        ':mtext' => $userText,
-                        ':payload' => $payloadJson,
-                        ':now' => $nowJst
-                    ]);
-                    writeDebugLog("チャットメッセージDB保存完了", ['uid' => $userId, 'text' => $userText, 'msgType' => $msgType]);
-                } catch (Throwable $chatEx) {
-                    writeDebugLog("chat_messages 保存エラー", ['error' => $chatEx->getMessage()]);
+                // A. チャットメッセージ履歴テーブルへ即座に確実に保存 & 顧客カルテ更新 (最優先)
+                $targetAccountKeys = [$activeAccount];
+                if (function_exists('getAccountList')) {
+                    foreach (getAccountList() as $accItem) {
+                        $accId = $accItem['id'];
+                        if ($accId !== $activeAccount) {
+                            try {
+                                $accDb = getDbConnection($accId);
+                                $chk = $accDb->prepare("SELECT id FROM customer_cars WHERE TRIM(user_id) = :uid LIMIT 1");
+                                $chk->execute([':uid' => $userId]);
+                                if ($chk->fetch()) {
+                                    $targetAccountKeys[] = $accId;
+                                }
+                            } catch (Throwable $t) {}
+                        }
+                    }
                 }
+                $targetAccountKeys = array_values(array_unique($targetAccountKeys));
 
-                // B. 顧客カルテの自動登録確認・最終やり取り更新 & ブロック解除
-                try {
-                    ensureCustomerExists($db, $userId, $activeAccount);
-                    $db->prepare("UPDATE customer_cars SET is_blocked = 0, blocked_at = NULL, last_interaction_at = :now, last_interaction_type = 'user_message', last_interaction_preview = :prev WHERE TRIM(user_id) = :uid")
-                        ->execute([':now' => $nowJst, ':prev' => $preview, ':uid' => $userId]);
-                } catch (Throwable $e) {}
+                foreach ($targetAccountKeys as $targetAccKey) {
+                    try {
+                        $targetDb = ($targetAccKey === $activeAccount) ? $db : getDbConnection($targetAccKey);
+                        ensureCustomerExists($targetDb, $userId, $targetAccKey);
+                        
+                        $chatStmt = $targetDb->prepare("
+                            INSERT INTO chat_messages (
+                                user_id, direction, message_type, message_text, payload_json, is_read, created_at
+                            ) VALUES (
+                                :uid, 'incoming', :mtype, :mtext, :payload, 0, :now
+                            )
+                        ");
+                        $chatStmt->execute([
+                            ':uid' => $userId,
+                            ':mtype' => $msgType,
+                            ':mtext' => $userText,
+                            ':payload' => $payloadJson,
+                            ':now' => $nowJst
+                        ]);
+
+                        $targetDb->prepare("
+                            UPDATE customer_cars 
+                            SET is_blocked = 0, 
+                                blocked_at = NULL, 
+                                last_interaction_at = :now, 
+                                last_interaction_type = 'user_message', 
+                                last_interaction_preview = :prev 
+                            WHERE TRIM(user_id) = :uid
+                        ")->execute([':now' => $nowJst, ':prev' => $preview, ':uid' => $userId]);
+                        
+                        writeDebugLog("チャットメッセージDB保存完了 ({$targetAccKey})", ['uid' => $userId, 'text' => $userText, 'msgType' => $msgType]);
+                    } catch (Throwable $chatEx) {
+                        writeDebugLog("chat_messages 保存エラー ({$targetAccKey})", ['error' => $chatEx->getMessage()]);
+                    }
+                }
 
                 // C. 管理者マルチ通知送信 (LINE Push / Discord / Slack / WebPush)
                 try {
