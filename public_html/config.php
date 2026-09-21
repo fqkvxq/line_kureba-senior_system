@@ -211,7 +211,7 @@ define('ENABLE_NEW_CAR_DISCORD', true);   // 新着検知時にDiscordへ通知�
 
 // --- 店舗管理画面設定 & 二段階認証(2FA) ---
 define('ADMIN_PASSWORD', '1020143'); // 店舗用管理画面（/admin/）のログインパスワード
-define('ENABLE_ADMIN_2FA', true); // 管理者ログイン時のメール二段階認証 (true: 有効, false: 無効)
+define('ENABLE_ADMIN_2FA', false); // 管理者ログイン時のメール二段階認証 (true: 有効, false: 無効)
 define('ADMIN_2FA_EMAIL', 'kawai@kureba.co.jp'); // 認証コード送信先メールアドレス
 define('ADMIN_2FA_CODE_LIFETIME_MINUTES', 10); // 認証コード有効期限 (10分間)
 define('ADMIN_2FA_MAX_ATTEMPTS', 5); // 認証コード最大試行回数 (5回超過で無効化)

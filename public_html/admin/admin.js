@@ -41,6 +41,7 @@ window.fetch = function (resource, init = {}) {
             const parts = value.split(`; ${name}=`);
             if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
             return '';
+        };
         const currentToken = state.authToken || sessionStorage.getItem('admin_auth_token') || getCookie('admin_auth_token') || '';
         const currentPass = state.password || sessionStorage.getItem('admin_pass') || getCookie('admin_pass') || '';
         if (!init.headers) {
