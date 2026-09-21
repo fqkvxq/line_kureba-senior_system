@@ -541,7 +541,6 @@ try {
             }
 
             // LINE Messaging API で Push Message 送信
-            require_once __DIR__ . '/webhook.php';
             $nowJst = date('Y-m-d H:i:s');
 
             $msgPayload = [

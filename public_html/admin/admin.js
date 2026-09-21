@@ -6015,7 +6015,8 @@ async function sendChatMessage() {
         sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
     }
 
-    const senderName = (senderInput?.value || '').trim();
+    const senderInput = document.getElementById('chatSenderNameInput');
+    const senderName = (senderInput ? senderInput.value : '').trim();
 
     try {
         const payload = new URLSearchParams({
@@ -6055,13 +6056,35 @@ async function sendChatMessage() {
     }
 }
 
+let lastTotalUnreadCount = 0;
+
 async function loadUnreadChatCounts() {
     try {
         const res = await fetch(`../api.php?action=get_unread_chat_counts&account=${encodeURIComponent(state.activeAccount)}`);
         const data = await res.json();
         if (data.success && data.unread_counts) {
-            state.unreadChatCounts = data.unread_counts;
+            const newCounts = data.unread_counts || {};
+            let totalUnread = 0;
+            Object.values(newCounts).forEach(cnt => { totalUnread += parseInt(cnt, 10) || 0; });
+
+            // 新着メッセージ検知時のトースト通知
+            if (totalUnread > lastTotalUnreadCount && lastTotalUnreadCount >= 0) {
+                const diff = totalUnread - lastTotalUnreadCount;
+                showToast(`💬 新着LINEメッセージが ${diff}件 届きました！`);
+            }
+            lastTotalUnreadCount = totalUnread;
+
+            // ドキュメントタイトルに未読件数を反映
+            const baseTitle = '受講生カルテ・点検管理システム';
+            document.title = (totalUnread > 0) ? `(${totalUnread}) ${baseTitle}` : baseTitle;
+
+            state.unreadChatCounts = newCounts;
             renderTable();
+
+            // チャットモーダルが開いている場合は最新メッセージをリロード
+            if (elements.chatModal && elements.chatModal.classList.contains('active') && state.activeChatUser?.user_id) {
+                loadChatMessages(state.activeChatUser.user_id, true);
+            }
         }
     } catch (e) {
         console.warn('loadUnreadChatCounts error:', e);
