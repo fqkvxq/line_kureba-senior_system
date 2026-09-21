@@ -33,8 +33,8 @@ SetEnv TZ Asia/Tokyo
     RewriteCond %{REQUEST_URI} !/(webhook\.php|api\.php|redirect\.php|setup\.php)
     RewriteRule ^ %1/%2 [R=301,L,NE]
 
-    # 2. ディレクトリ直下（/）へのアクセスは管理画面（admin/）へ
-    RewriteRule ^$ public_html/admin/index.html [L]
+    # 2. ディレクトリ直下（/）へのアクセスは管理画面URL（admin/）へリダイレクト
+    RewriteRule ^$ admin/ [R=302,L]
 
     # 3. 内部的にすべてのリクエストを public_html/ 配下のファイル・ディレクトリへ転送
     RewriteCond %{REQUEST_URI} !public_html
