@@ -2607,6 +2607,7 @@ function getAdmin2FASettings(?PDO $db = null): array {
     }
 
     try {
+        $db->exec("CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, value TEXT, updated_at DATETIME)");
         $stmt = $db->prepare("SELECT value FROM system_settings WHERE key = 'admin_2fa_settings' LIMIT 1");
         $stmt->execute();
         $val = $stmt->fetchColumn();
@@ -2614,7 +2615,7 @@ function getAdmin2FASettings(?PDO $db = null): array {
             $decoded = json_decode($val, true);
             if (is_array($decoded)) {
                 return [
-                    'enabled' => !empty($decoded['enabled']),
+                    'enabled' => filter_var($decoded['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN),
                     'email' => !empty($decoded['email']) ? trim($decoded['email']) : $default['email'],
                     'lifetime_minutes' => !empty($decoded['lifetime_minutes']) ? max(1, (int)$decoded['lifetime_minutes']) : $default['lifetime_minutes'],
                     'max_attempts' => !empty($decoded['max_attempts']) ? max(1, (int)$decoded['max_attempts']) : $default['max_attempts'],
@@ -2642,9 +2643,10 @@ function saveAdmin2FASettings(array $settings, ?PDO $db = null): bool {
     }
 
     try {
+        $db->exec("CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, value TEXT, updated_at DATETIME)");
         $nowJst = date('Y-m-d H:i:s');
         $clean = [
-            'enabled' => !empty($settings['enabled']),
+            'enabled' => filter_var($settings['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN),
             'email' => trim((string)($settings['email'] ?? 'kawai@kureba.co.jp')),
             'lifetime_minutes' => max(1, min(60, (int)($settings['lifetime_minutes'] ?? 10))),
             'max_attempts' => max(1, min(20, (int)($settings['max_attempts'] ?? 5))),

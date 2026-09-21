@@ -4682,6 +4682,37 @@ function init2FASettings() {
     if (elements.btnTest2FAEmail) {
         elements.btnTest2FAEmail.addEventListener('click', test2FAEmail);
     }
+    if (elements.twoFaEnabledToggle) {
+        elements.twoFaEnabledToggle.addEventListener('change', (e) => {
+            update2FAToggleVisual(e.target.checked);
+        });
+    }
+}
+
+function update2FAToggleVisual(isEnabled) {
+    const card = document.getElementById('twoFaStatusCard');
+    const title = document.getElementById('twoFaStatusTitle');
+    const subtitle = document.getElementById('twoFaStatusSubtitle');
+
+    if (card) {
+        if (isEnabled) {
+            card.classList.remove('is-disabled');
+            card.classList.add('is-enabled');
+            if (title) title.innerHTML = '<i class="fa-solid fa-lock" style="color: #16a34a;"></i> メール二段階認証：<span style="color: #16a34a;">有効</span>';
+            if (subtitle) {
+                subtitle.style.color = '#15803d';
+                subtitle.textContent = 'ログイン時に登録メールアドレス宛へ6桁の認証コードを送信します（推奨）';
+            }
+        } else {
+            card.classList.remove('is-enabled');
+            card.classList.add('is-disabled');
+            if (title) title.innerHTML = '<i class="fa-solid fa-lock-open" style="color: #64748b;"></i> メール二段階認証：<span style="color: #64748b;">無効</span>';
+            if (subtitle) {
+                subtitle.style.color = '#64748b';
+                subtitle.textContent = '二段階認証は行われず、管理者パスワードのみでログインします';
+            }
+        }
+    }
 }
 
 async function open2FASettingsModal() {
@@ -4700,7 +4731,11 @@ async function open2FASettingsModal() {
 
         if (data.success && data.settings) {
             const s = data.settings;
-            if (elements.twoFaEnabledToggle) elements.twoFaEnabledToggle.checked = !!s.enabled;
+            const isEnabled = !!s.enabled;
+            if (elements.twoFaEnabledToggle) {
+                elements.twoFaEnabledToggle.checked = isEnabled;
+                update2FAToggleVisual(isEnabled);
+            }
             if (elements.twoFaEmailInput) elements.twoFaEmailInput.value = s.email || 'kawai@kureba.co.jp';
             if (elements.twoFaLifetimeInput) elements.twoFaLifetimeInput.value = String(s.lifetime_minutes || 10);
             if (elements.twoFaMaxAttemptsInput) elements.twoFaMaxAttemptsInput.value = String(s.max_attempts || 5);

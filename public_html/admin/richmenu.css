@@ -2150,3 +2150,87 @@
     border-color: #fca5a5;
     color: #dc2626;
 }
+
+/* ==========================================================================
+   2FA / トグルスイッチ UI コンポーネント
+   ========================================================================== */
+.switch-toggle {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 28px;
+    margin: 0;
+    flex-shrink: 0;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.switch-toggle input[type="checkbox"] {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+    margin: 0;
+    padding: 0;
+}
+
+.switch-toggle .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e1;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+    border-radius: 34px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.switch-toggle .slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 3px;
+    bottom: 3px;
+    background-color: #ffffff;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+}
+
+.switch-toggle input[type="checkbox"]:checked + .slider {
+    background-color: #16a34a !important;
+}
+
+.switch-toggle input[type="checkbox"]:checked + .slider:before {
+    transform: translateX(24px);
+}
+
+.switch-toggle input[type="checkbox"]:focus + .slider {
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.3);
+}
+
+/* 2FA設定カード状態別デザイン */
+.twofa-status-card {
+    transition: all 0.25s ease;
+    border-radius: var(--radius-md, 8px);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.twofa-status-card.is-enabled {
+    background: #f0fdf4 !important;
+    border: 1px solid #86efac !important;
+}
+
+.twofa-status-card.is-disabled {
+    background: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+}
+

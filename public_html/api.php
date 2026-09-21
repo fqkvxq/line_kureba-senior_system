@@ -864,7 +864,7 @@ try {
             }
 
             $settings = [
-                'enabled' => !empty($_POST['enabled']),
+                'enabled' => filter_var($_POST['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN),
                 'email' => $email,
                 'lifetime_minutes' => max(1, min(60, (int)($_POST['lifetime_minutes'] ?? 10))),
                 'max_attempts' => max(1, min(20, (int)($_POST['max_attempts'] ?? 5)))
