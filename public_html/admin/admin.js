@@ -1923,7 +1923,7 @@ function renderTable() {
                 <td data-col="actions">
                     <div class="action-btns">
                         <!-- 行1: メイン操作・個別対応 -->
-                        <button class="btn-table-chat" data-action="chat" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" title="この受講生との1対1トーク確認・返信">
+                        <button class="btn-table-chat" data-action="chat" data-idx="${globalIdx}" data-uid="${escapeHtml(userId || c.id || '')}" onclick="event.stopPropagation(); openChatModalByUid('${escapeHtml(userId || c.id || '')}');" title="この受講生との1対1トーク確認・返信">
                             <i class="fa-solid fa-comments"></i> チャット
                             ${state.unreadChatCounts && state.unreadChatCounts[userId] ? `
                                 <span class="badge-chat-unread">${state.unreadChatCounts[userId]}</span>
@@ -4840,6 +4840,21 @@ const DEFAULT_AVATAR_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2
 
 function openChatModal(cust) {
     if (!cust) return;
+
+    // 文字列（UIDまたはID）が渡された場合のフォールバック解決
+    if (typeof cust === 'string') {
+        const targetId = cust;
+        const found = state.allCustomers && state.allCustomers.length > 0
+            ? state.allCustomers.find(c => (c.user_id && c.user_id === targetId) || String(c.id) === String(targetId))
+            : null;
+        cust = found || {
+            user_id: targetId.startsWith('U') ? targetId : '',
+            id: targetId,
+            user_name: 'LINE受講生',
+            car_model: 'コース未設定'
+        };
+    }
+
     state.activeChatUser = cust;
 
     const uid = cust.user_id || '';
@@ -4878,9 +4893,10 @@ function openChatModal(cust) {
     const modal = elements.chatModal || document.getElementById('chatModal');
     if (modal) {
         modal.style.display = 'flex';
-        requestAnimationFrame(() => {
-            modal.classList.add('active');
-        });
+        modal.classList.add('active');
+        // トランジションが不完全な環境でも確実に前面表示
+        modal.style.opacity = '1';
+        modal.style.visibility = 'visible';
     }
 
     loadChatMessages(uid);
@@ -4899,11 +4915,9 @@ function closeChatModal() {
     const modal = elements.chatModal || document.getElementById('chatModal');
     if (modal) {
         modal.classList.remove('active');
-        setTimeout(() => {
-            if (modal && !modal.classList.contains('active')) {
-                modal.style.display = 'none';
-            }
-        }, 200);
+        modal.style.opacity = '';
+        modal.style.visibility = '';
+        modal.style.display = '';
     }
     if (state.chatPollTimer) {
         clearInterval(state.chatPollTimer);
@@ -4915,6 +4929,9 @@ function closeChatModal() {
 
 window.openChatModal = openChatModal;
 window.closeChatModal = closeChatModal;
+window.openChatModalByUid = function(uid) {
+    openChatModal(uid);
+};
 
 async function loadChatMessages(userId, isSilent = false) {
     if (!userId) {
