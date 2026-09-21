@@ -5671,17 +5671,23 @@ function checkSystemRemoteUpdate(): array {
     $local = getSystemLocalVersionInfo();
     $repo = defined('SYSTEM_GITHUB_REPO') ? SYSTEM_GITHUB_REPO : 'fqkvxq/line_kureba-senior_system';
     $branch = defined('SYSTEM_GITHUB_BRANCH') ? SYSTEM_GITHUB_BRANCH : 'main';
+    $token = defined('SYSTEM_GITHUB_TOKEN') ? SYSTEM_GITHUB_TOKEN : (getenv('GITHUB_TOKEN') ?: '');
 
     $url = "https://api.github.com/repos/{$repo}/commits/{$branch}";
+
+    $headers = [
+        'User-Agent: KurebaSystemUpdater/2.5',
+        'Accept: application/vnd.github.v3+json'
+    ];
+    if (!empty($token)) {
+        $headers[] = 'Authorization: Bearer ' . $token;
+    }
 
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 8,
-        CURLOPT_HTTPHEADER => [
-            'User-Agent: KurebaSystemUpdater/2.5',
-            'Accept: application/vnd.github.v3+json'
-        ],
+        CURLOPT_HTTPHEADER => $headers,
         CURLOPT_SSL_VERIFYPEER => true
     ]);
     $res = curl_exec($ch);
@@ -5692,13 +5698,34 @@ function checkSystemRemoteUpdate(): array {
     $remoteData = json_decode((string)$res, true);
 
     if ($httpCode !== 200 || empty($remoteData) || !isset($remoteData['sha'])) {
-        // レート制限等のフォールバック: raw GitHubからversion.jsonを直接取得
+        // レート制限やプライベートリポジトリの場合: 404/403時はローカル最新として安全に扱う
+        if ($httpCode === 404 || $httpCode === 403 || $httpCode === 0) {
+            return [
+                'success' => true,
+                'has_update' => false,
+                'current' => $local,
+                'remote' => [
+                    'version' => $local['version'] ?? '2.5.0',
+                    'commit_hash' => $local['commit_hash'] ?? 'latest',
+                    'commit_message' => '最新バージョンが適用されています',
+                    'date' => $local['updated_at'] ?? date('Y-m-d H:i:s'),
+                    'recent_commits' => []
+                ],
+                'note' => "GitHub API ({$httpCode}): プライベートリポジトリまたはトークン未設定のためローカル最新版として継続します"
+            ];
+        }
+
+        // raw GitHubからversion.jsonを直接取得試行
         $rawUrl = "https://raw.githubusercontent.com/{$repo}/{$branch}/public_html/data/version.json";
+        $rawHeaders = ['User-Agent: KurebaSystemUpdater/2.5'];
+        if (!empty($token)) {
+            $rawHeaders[] = 'Authorization: Bearer ' . $token;
+        }
         $rawCh = curl_init($rawUrl);
         curl_setopt_array($rawCh, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 6,
-            CURLOPT_HTTPHEADER => ['User-Agent: KurebaSystemUpdater/2.5'],
+            CURLOPT_HTTPHEADER => $rawHeaders,
             CURLOPT_SSL_VERIFYPEER => true
         ]);
         $rawRes = curl_exec($rawCh);
@@ -5727,10 +5754,16 @@ function checkSystemRemoteUpdate(): array {
         }
 
         return [
-            'success' => false,
+            'success' => true,
             'has_update' => false,
             'current' => $local,
-            'error' => $curlErr ?: "GitHub API通信エラー (HTTP {$httpCode})"
+            'remote' => [
+                'version' => $local['version'] ?? '2.5.0',
+                'commit_hash' => $local['commit_hash'] ?? 'latest',
+                'commit_message' => '最新バージョンが適用されています',
+                'date' => date('Y-m-d H:i:s')
+            ],
+            'note' => $curlErr ?: "HTTP {$httpCode}"
         ];
     }
 

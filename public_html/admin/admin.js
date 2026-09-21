@@ -474,8 +474,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     initBrowserNotifControls();
     await initWebPushServiceWorker();
     updateBrowserNotifUi();
+    loadUnreadChatCounts();
     if (!globalChatUnreadTimer) {
-        globalChatUnreadTimer = setInterval(loadUnreadChatCounts, 10000);
+        globalChatUnreadTimer = setInterval(loadUnreadChatCounts, 4000);
     }
 });
 
@@ -6259,19 +6260,35 @@ let lastTotalUnreadCount = -1;
 const notifiedMsgIds = new Set();
 let globalChatUnreadTimer = null;
 
+// AudioContext を安全に自動アンロック
+let sharedAudioCtx = null;
+function getSharedAudioContext() {
+    try {
+        if (!sharedAudioCtx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) sharedAudioCtx = new AudioCtx();
+        }
+        if (sharedAudioCtx && sharedAudioCtx.state === 'suspended') {
+            sharedAudioCtx.resume().catch(() => {});
+        }
+    } catch(e) {}
+    return sharedAudioCtx;
+}
+document.addEventListener('click', () => { getSharedAudioContext(); }, { once: true });
+document.addEventListener('keydown', () => { getSharedAudioContext(); }, { once: true });
+
 // Web Audio APIによる優しいチャイム音再生 (880Hz -> 1320Hz サイン波)
 function playNotificationSound() {
     try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) return;
-        const ctx = new AudioCtx();
+        const ctx = getSharedAudioContext();
+        if (!ctx) return;
         const now = ctx.currentTime;
 
         const osc1 = ctx.createOscillator();
         const gain1 = ctx.createGain();
         osc1.type = 'sine';
         osc1.frequency.setValueAtTime(880, now); // A5
-        gain1.gain.setValueAtTime(0.12, now);
+        gain1.gain.setValueAtTime(0.15, now);
         gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
         osc1.connect(gain1);
         gain1.connect(ctx.destination);
@@ -6282,7 +6299,7 @@ function playNotificationSound() {
         const gain2 = ctx.createGain();
         osc2.type = 'sine';
         osc2.frequency.setValueAtTime(1318.5, now + 0.12); // E6
-        gain2.gain.setValueAtTime(0.15, now + 0.12);
+        gain2.gain.setValueAtTime(0.18, now + 0.12);
         gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
         osc2.connect(gain2);
         gain2.connect(ctx.destination);
@@ -6290,6 +6307,103 @@ function playNotificationSound() {
         osc2.stop(now + 0.55);
     } catch (e) {
         console.warn('Audio play skipped:', e);
+    }
+}
+
+async function loadUnreadChatCounts() {
+    try {
+        const res = await fetch(`../api.php?action=get_unread_chat_counts&account=${encodeURIComponent(state.activeAccount)}`);
+        const data = await res.json();
+        if (data.success && data.unread_counts) {
+            const newCounts = data.unread_counts || {};
+            const recentUnread = data.recent_unread || [];
+            let totalUnread = 0;
+            Object.values(newCounts).forEach(cnt => { totalUnread += parseInt(cnt, 10) || 0; });
+
+            const checkSound = document.getElementById('checkNotifSound');
+            const shouldPlaySound = !checkSound || checkSound.checked;
+
+            const isNotifEnabled = ("Notification" in window) && (Notification.permission === "granted") && (localStorage.getItem('kureba_browser_notif_enabled') !== 'false');
+
+            let hasNewIncoming = false;
+
+            // 新着メッセージ検知時の通知処理
+            if (Array.isArray(recentUnread) && recentUnread.length > 0) {
+                recentUnread.forEach(msg => {
+                    const msgId = msg.id;
+                    if (!msgId || notifiedMsgIds.has(msgId)) return;
+                    notifiedMsgIds.add(msgId);
+
+                    // 初期ロード時でなければ通知を発行
+                    if (lastTotalUnreadCount >= 0) {
+                        hasNewIncoming = true;
+                        if (shouldPlaySound) {
+                            playNotificationSound();
+                        }
+
+                        const sName = msg.user_name || '受講生';
+                        let previewText = msg.message_text || '';
+                        if (msg.message_type === 'image') {
+                            previewText = '📷 [画像を受信しました]';
+                        } else if (msg.message_type === 'sticker') {
+                            previewText = '🎨 [スタンプを受信しました]';
+                        } else if (msg.message_type === 'video') {
+                            previewText = '🎬 [動画を受信しました]';
+                        } else if (msg.message_type === 'audio') {
+                            previewText = '🎵 [音声を受信しました]';
+                        }
+
+                        // デスクトップ通知 (フォアグラウンド表示)
+                        if (isNotifEnabled) {
+                            try {
+                                const notif = new Notification(`💬【新着LINE】${sName} 様`, {
+                                    body: previewText,
+                                    icon: msg.picture_url || 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/linecorp_code_withborder.png',
+                                    tag: `line_msg_${msgId}`,
+                                    requireInteraction: false
+                                });
+                                notif.onclick = function () {
+                                    window.focus();
+                                    if (msg.user_id) {
+                                        openChatModalByUid(msg.user_id);
+                                    }
+                                    notif.close();
+                                };
+                            } catch (e) {}
+                        }
+
+                        // 画面内トースト通知
+                        showToast(`💬 ${escapeHtml(sName)} 様から新着メッセージ: ${escapeHtml(previewText)}`);
+                    }
+                });
+            } else if (totalUnread > lastTotalUnreadCount && lastTotalUnreadCount >= 0) {
+                hasNewIncoming = true;
+                const diff = totalUnread - lastTotalUnreadCount;
+                playNotificationSound();
+                showToast(`💬 新着LINEメッセージが ${diff}件 届きました！`);
+            }
+
+            lastTotalUnreadCount = totalUnread;
+
+            // ドキュメントタイトルに未読件数を反映
+            const baseTitle = '受講生カルテ・点検管理システム';
+            document.title = (totalUnread > 0) ? `(${totalUnread}) 💬 ${baseTitle}` : baseTitle;
+
+            state.unreadChatCounts = newCounts;
+            renderTable();
+
+            // 新着があれば顧客カルテ一覧をバックグラウンドで最新同期
+            if (hasNewIncoming && typeof loadCustomers === 'function') {
+                loadCustomers();
+            }
+
+            // チャットモーダルが開いている場合は最新メッセージをリロード
+            if (elements.chatModal && elements.chatModal.classList.contains('active') && state.activeChatUser?.user_id) {
+                loadChatMessages(state.activeChatUser.user_id, true);
+            }
+        }
+    } catch (e) {
+        console.warn('loadUnreadChatCounts error:', e);
     }
 }
 
@@ -6682,94 +6796,6 @@ window.openBrowserNotifModal = openBrowserNotifModal;
 window.closeBrowserNotifModal = closeBrowserNotifModal;
 window.sendTestWebPush = sendTestWebPush;
 window.updateBrowserNotifUi = updateBrowserNotifUi;
-
-async function loadUnreadChatCounts() {
-    try {
-        const res = await fetch(`../api.php?action=get_unread_chat_counts&account=${encodeURIComponent(state.activeAccount)}`);
-        const data = await res.json();
-        if (data.success && data.unread_counts) {
-            const newCounts = data.unread_counts || {};
-            const recentUnread = data.recent_unread || [];
-            let totalUnread = 0;
-            Object.values(newCounts).forEach(cnt => { totalUnread += parseInt(cnt, 10) || 0; });
-
-            const checkSound = document.getElementById('checkNotifSound');
-            const shouldPlaySound = !checkSound || checkSound.checked;
-
-            const isNotifEnabled = ("Notification" in window) && (Notification.permission === "granted") && (localStorage.getItem('kureba_browser_notif_enabled') !== 'false');
-
-            // 新着メッセージ検知時の通知処理
-            if (Array.isArray(recentUnread) && recentUnread.length > 0) {
-                recentUnread.forEach(msg => {
-                    const msgId = msg.id;
-                    if (!msgId || notifiedMsgIds.has(msgId)) return;
-                    notifiedMsgIds.add(msgId);
-
-                    // 初期ロード時でなければ通知を発行
-                    if (lastTotalUnreadCount >= 0) {
-                        if (shouldPlaySound) {
-                            playNotificationSound();
-                        }
-
-                        const sName = msg.user_name || '受講生';
-                        let previewText = msg.message_text || '';
-                        if (msg.message_type === 'image') {
-                            previewText = '📷 [画像を受信しました]';
-                        } else if (msg.message_type === 'sticker') {
-                            previewText = '🎨 [スタンプを受信しました]';
-                        } else if (msg.message_type === 'video') {
-                            previewText = '🎬 [動画を受信しました]';
-                        } else if (msg.message_type === 'audio') {
-                            previewText = '🎵 [音声を受信しました]';
-                        }
-
-                        // デスクトップ通知 (フォアグラウンド表示)
-                        if (isNotifEnabled) {
-                            try {
-                                const notif = new Notification(`💬【新着LINE】${sName} 様`, {
-                                    body: previewText,
-                                    icon: msg.picture_url || 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/linecorp_code_withborder.png',
-                                    tag: `line_msg_${msgId}`,
-                                    requireInteraction: false
-                                });
-                                notif.onclick = function () {
-                                    window.focus();
-                                    if (msg.user_id) {
-                                        openChatModalByUid(msg.user_id);
-                                    }
-                                    notif.close();
-                                };
-                            } catch (e) {}
-                        }
-
-                        // 画面内トースト通知
-                        showToast(`💬 ${escapeHtml(sName)} 様から新着メッセージ: ${escapeHtml(previewText)}`);
-                    }
-                });
-            } else if (totalUnread > lastTotalUnreadCount && lastTotalUnreadCount >= 0) {
-                const diff = totalUnread - lastTotalUnreadCount;
-                playNotificationSound();
-                showToast(`💬 新着LINEメッセージが ${diff}件 届きました！`);
-            }
-
-            lastTotalUnreadCount = totalUnread;
-
-            // ドキュメントタイトルに未読件数を反映
-            const baseTitle = '受講生カルテ・点検管理システム';
-            document.title = (totalUnread > 0) ? `(${totalUnread}) ${baseTitle}` : baseTitle;
-
-            state.unreadChatCounts = newCounts;
-            renderTable();
-
-            // チャットモーダルが開いている場合は最新メッセージをリロード
-            if (elements.chatModal && elements.chatModal.classList.contains('active') && state.activeChatUser?.user_id) {
-                loadChatMessages(state.activeChatUser.user_id, true);
-            }
-        }
-    } catch (e) {
-        console.warn('loadUnreadChatCounts error:', e);
-    }
-}
 
 function checkUrlChatParam() {
     const params = new URLSearchParams(window.location.search);
