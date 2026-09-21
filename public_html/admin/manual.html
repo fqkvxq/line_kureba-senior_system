@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260921_richmenu_reset_v1">
+    <link rel="stylesheet" href="manual.css?v=20260921_tag_system_v1">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -528,6 +528,21 @@
                                 </ul>
                             </div>
                         </div>
+
+                        <div class="step-card" style="border: 2px solid #c026d3; background: #fdf4ff;">
+                            <div class="step-number" style="background: #a21caf; color: #fff;"><i class="fa-solid fa-tags"></i></div>
+                            <div class="step-body">
+                                <h4>🏷️ 属性タグ付け＆一括タグ操作・タグ絞り込み検索機能【新機能】</h4>
+                                <p>受講生ごとに「月謝会員」「体験受講」「スマホコース」「シニア初級」「個別指導」などの自由なタグを付与し、受講生の分類・絞り込み検索や、<strong>タグ連動リッチメニューの自動出し分け</strong>に活用できます。</p>
+                                <ul>
+                                    <li><strong>個別カルテからのタグ設定</strong>: 受講生一覧の「✏️ 編集」ボタンからカルテ編集モーダルを開き、「🏷️ 属性タグ」欄にカンマ区切りで入力するか、下部に表示される既存タグ候補（サジェストチップ）をワンクリックして設定・解除できます。保存するとタグ連動リッチメニューも即座に自動判定されます。</li>
+                                    <li><strong>一覧テーブルでのタグ表示＆ワンクリック絞り込み</strong>: 受講生行の「属性タグ」列に色鮮やかなタグバッジが表示されます。タグバッジをクリックするだけで、そのタグが付いた受講生のみを瞬時に絞り込み表示できます。</li>
+                                    <li><strong>上部ドロップダウンでのタグ絞り込み</strong>: 検索バー横の「🏷️ 全てのタグ」セレクターから特定のタグを選ぶだけで、該当する受講生を即座にフィルタリングできます。</li>
+                                    <li><strong>複数受講生への一括タグ操作（追加・削除・置換）</strong>: テーブル左端のチェックボックスで複数名の受講生を選択すると、画面下部に青色の「一括操作ツールバー」がスライド表示されます。「🏷️ 一括タグ操作」ボタンを押すと、選択した受講生全員に対して一括でタグを追加・削除・置き換え（上書き）できます。</li>
+                                    <li><strong>チャット画面でのタグ確認</strong>: 「💬 チャット」モーダルを開いた際も、受講生名の下に設定中の属性タグバッジが表示され、受講生属性を確認しながらスムーズに個別メッセージ対応を行えます。</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="callout callout-success">
@@ -735,7 +750,22 @@
                             </div>
                         </div>
 
-                        <div class="step-card">
+                        <div class="step-card" style="border: 2px solid #a21caf; background: #fdf4ff;">
+                            <div class="step-number" style="background: #c026d3; color: #fff;"><i class="fa-solid fa-tags"></i></div>
+                            <div class="step-body">
+                                <h4>🎯 タグ連動リッチメニュー出し分け＆一括同期機能【新機能】</h4>
+                                <p>リッチメニューごとに「出し分け対象タグ」を設定することで、特定のタグが付いた受講生のLINE画面にのみ指定のリッチメニューを自動表示（出し分け）できます。</p>
+                                <ul>
+                                    <li><strong>リッチメニューでの対象タグ設定</strong>: エディタ画面の基本設定内「<strong>🏷️ 出し分け対象タグ</strong>」欄に、表示対象としたいタグ（例: <code>月謝会員</code> や <code>スマホコース</code>）を入力するか、既存タグ候補チップをクリックして指定します。空欄の場合は誰でも表示可能な「通常メニュー（全体デフォルト）」となります。</li>
+                                    <li><strong>リアルタイム自動反映</strong>: 受講生カルテでタグを付与・変更・保存した瞬間に、該当受講生が保有するタグと合致するリッチメニューがLINE Messaging API経由で自動適用（<code>lineLinkUserRichMenu</code>）されます。</li>
+                                    <li><strong>🏷️ タグ連動メニューを一括同期</strong>: 「登録・履歴一覧」タブのツールバーにある「<strong>🏷️ タグ連動メニューを一括同期</strong>」ボタンを押すと、全受講生の属性タグを再スキャンし、各受講生に最適なタグ連動メニューを全友だちのLINEへ一括反映（同期）します。</li>
+                                    <li><strong>履歴一覧でのタグバッジ表示＆絞り込み</strong>: 履歴一覧カードには紫色のタグバッジが表示され、フィルタータブの「🏷️ タグ連動」を押すことで、タグ設定されたメニューのみを素早く絞り込めます。</li>
+                                    <li><strong>専用メッセージ帯との安全な共存設計</strong>: 次回レッスン日などの「専用メッセージ帯」が個別設定されている受講生は専用メッセージが最優先保持され、タグ自動切り替えで上書きされないよう二重ガードされています。</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="step-card" style="border: 1.5px solid #dc2626; background: #fef2f2;">
                             <div class="step-number" style="background:#dc2626; color:#fff;"><i class="fa-solid fa-trash-can"></i></div>
                             <div class="step-body">
                                 <h4>🧹 リッチメニュー初期化（リセット）機能【新規アカウント作成時・完全クリーン化】</h4>
@@ -1648,6 +1678,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260921_richmenu_reset_v1"></script>
+    <script src="manual.js?v=20260921_tag_system_v1"></script>
 </body>
 </html>

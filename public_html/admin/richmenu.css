@@ -2234,3 +2234,27 @@
     border: 1px solid #cbd5e1 !important;
 }
 
+/* タグ連動リッチメニューカードの強調スタイル */
+.history-card.is-tagged-card {
+    border-color: #f0abfc;
+    box-shadow: 0 2px 8px rgba(192, 38, 211, 0.08);
+}
+
+.history-card.is-tagged-card:hover {
+    border-color: #d946ef;
+    box-shadow: 0 4px 16px rgba(192, 38, 211, 0.15);
+}
+
+.badge-tagged-menu {
+    animation: tagBadgePulse 2s infinite ease-in-out;
+}
+
+@keyframes tagBadgePulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.02);
+    }
+}
+

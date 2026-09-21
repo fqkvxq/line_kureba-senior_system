@@ -647,8 +647,10 @@ function getDbConnection(?string $accountKey = null): PDO {
     try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN last_interaction_preview TEXT DEFAULT ''"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN is_blocked INTEGER DEFAULT 0"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN blocked_at DATETIME"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN tags TEXT DEFAULT ''"); } catch (Exception $e) {}
     try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_last_interaction ON customer_cars(last_interaction_at)"); } catch (Exception $e) {}
     try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_is_blocked ON customer_cars(is_blocked)"); } catch (Exception $e) {}
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_tags ON customer_cars(tags)"); } catch (Exception $e) {}
 
     // システム設定・マイグレーション管理テーブル
     try {
@@ -765,6 +767,7 @@ function getDbConnection(?string $accountKey = null): PDO {
     try { $pdo->exec("ALTER TABLE rich_menus ADD COLUMN base_image_url TEXT DEFAULT ''"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE rich_menus ADD COLUMN alias_id TEXT DEFAULT ''"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE rich_menus ADD COLUMN is_notice INTEGER DEFAULT 0"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE rich_menus ADD COLUMN target_tags TEXT DEFAULT ''"); } catch (Exception $e) {}
     try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_rich_menus_notice ON rich_menus(is_notice)"); } catch (Exception $e) {}
 
     // LINEチャット・メッセージ送受信履歴テーブルの初期化
@@ -2015,6 +2018,270 @@ function lineUnlinkUserRichMenu(string $userId, ?string $accountKey = null): arr
  */
 function getDB(?string $accountKey = null): PDO {
     return getDbConnection($accountKey);
+}
+
+/**
+ * タグ文字列または配列を正規化してきれいな文字列配列として返却
+ */
+function normalizeTagList($raw): array {
+    if (is_array($raw)) {
+        $list = $raw;
+    } elseif (is_string($raw)) {
+        $raw = trim($raw);
+        if ($raw === '') return [];
+        if (str_starts_with($raw, '[') && str_ends_with($raw, ']')) {
+            $decoded = json_decode($raw, true);
+            $list = is_array($decoded) ? $decoded : [];
+        } else {
+            $list = preg_split('/[,、\s\n]+/u', $raw, -1, PREG_SPLIT_NO_EMPTY);
+        }
+    } else {
+        return [];
+    }
+
+    $clean = [];
+    foreach ($list as $item) {
+        $t = trim((string)$item);
+        $t = ltrim($t, '#'); // 先頭の # があれば除去して統一
+        if ($t !== '' && !in_array($t, $clean, true)) {
+            $clean[] = $t;
+        }
+    }
+    return $clean;
+}
+
+/**
+ * タグ配列をDB保存用JSON文字列に変換
+ */
+function encodeTagsForDb(array $tags): string {
+    $clean = normalizeTagList($tags);
+    if (empty($clean)) return '';
+    return json_encode(array_values($clean), JSON_UNESCAPED_UNICODE);
+}
+
+/**
+ * 指定アカウントで使用中の全タグ一覧（利用人数付き）を集計
+ */
+function getAccountAllTags(?PDO $db = null, ?string $accountKey = null): array {
+    if (!$db) {
+        $db = getDbConnection($accountKey);
+    }
+    $tagCounts = [];
+
+    // 1. 顧客テーブルから集計
+    try {
+        $stmt = $db->query("SELECT tags FROM customer_cars WHERE tags IS NOT NULL AND tags != ''");
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $tags = normalizeTagList($row['tags'] ?? '');
+            foreach ($tags as $tag) {
+                $tagCounts[$tag] = ($tagCounts[$tag] ?? 0) + 1;
+            }
+        }
+    } catch (Throwable $e) {}
+
+    // 2. リッチメニューテーブルの対象タグからも未集計タグをキーとして追加
+    try {
+        $stmtMenu = $db->query("SELECT target_tags FROM rich_menus WHERE target_tags IS NOT NULL AND target_tags != ''");
+        while ($rowM = $stmtMenu->fetch(PDO::FETCH_ASSOC)) {
+            $mTags = normalizeTagList($rowM['target_tags'] ?? '');
+            foreach ($mTags as $tag) {
+                if (!isset($tagCounts[$tag])) {
+                    $tagCounts[$tag] = 0;
+                }
+            }
+        }
+    } catch (Throwable $e) {}
+
+    // カウント降順、名前昇順でソート
+    uksort($tagCounts, function($a, $b) use ($tagCounts) {
+        if ($tagCounts[$a] === $tagCounts[$b]) {
+            return strcmp($a, $b);
+        }
+        return ($tagCounts[$a] > $tagCounts[$b]) ? -1 : 1;
+    });
+
+    $result = [];
+    foreach ($tagCounts as $name => $count) {
+        $result[] = [
+            'name' => $name,
+            'count' => $count
+        ];
+    }
+    return $result;
+}
+
+/**
+ * 顧客のタグにマッチするリッチメニューを判定してLINE公式アカウントに自動リンク反映
+ * @param string $userId LINE User ID
+ * @param string|null $accountKey アカウントキー
+ * @param PDO|null $db データベース接続
+ * @return array 結果情報
+ */
+function applyTagBasedRichMenuForUser(string $userId, ?string $accountKey = null, ?PDO $db = null): array {
+    if (empty($userId) || !str_starts_with($userId, 'U')) {
+        return ['success' => false, 'error' => '無効なユーザーIDです'];
+    }
+    if (!$db) {
+        $db = getDbConnection($accountKey);
+    }
+
+    // 顧客情報取得
+    $custStmt = $db->prepare("SELECT * FROM customer_cars WHERE user_id = :uid LIMIT 1");
+    $custStmt->execute([':uid' => $userId]);
+    $customer = $custStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$customer) {
+        return ['success' => false, 'error' => '顧客が見つかりません'];
+    }
+
+    $userTags = normalizeTagList($customer['tags'] ?? '');
+    $hasCustomMessage = !empty($customer['custom_menu_text']);
+
+    // 個別専用メッセージ帯が設定されている場合はタグ自動変更を行わない（メッセージを優先）
+    if ($hasCustomMessage) {
+        return ['success' => true, 'applied_type' => 'custom_message', 'message' => '個別専用メッセージ設定中のためタグ出し分けはスキップしました'];
+    }
+
+    // タグ連動リッチメニューを取得（target_tags が設定されている通常メニュー）
+    $menuStmt = $db->query("SELECT * FROM rich_menus WHERE is_notice = 0 AND target_tags IS NOT NULL AND target_tags != '' ORDER BY id DESC");
+    $targetMenu = null;
+    $matchedTag = null;
+
+    while ($menu = $menuStmt->fetch(PDO::FETCH_ASSOC)) {
+        $menuTags = normalizeTagList($menu['target_tags'] ?? '');
+        foreach ($userTags as $uTag) {
+            if (in_array($uTag, $menuTags, true)) {
+                $targetMenu = $menu;
+                $matchedTag = $uTag;
+                break 2;
+            }
+        }
+    }
+
+    if ($targetMenu) {
+        // マッチするタグ連動メニューあり
+        $lineMenuId = $targetMenu['line_menu_id'] ?? '';
+        
+        // LINE上に未登録なら自動登録
+        if (empty($lineMenuId)) {
+            $areas = json_decode($targetMenu['areas_json'] ?? '[]', true) ?: [];
+            $lineAreas = [];
+            foreach ($areas as $area) {
+                if (isset($area['bounds']) && isset($area['action'])) {
+                    $lineAreas[] = [
+                        'bounds' => $area['bounds'],
+                        'action' => $area['action']
+                    ];
+                }
+            }
+            $createRes = lineCreateRichMenu([
+                'size' => [
+                    'width' => (int)($targetMenu['width'] ?: 2500),
+                    'height' => (int)($targetMenu['height'] ?: 1686)
+                ],
+                'selected' => true,
+                'name' => mb_substr($targetMenu['title'] ?: 'タグ連動メニュー', 0, 300),
+                'chatBarText' => mb_substr($targetMenu['chatBarText'] ?? ($targetMenu['chat_bar_text'] ?? 'メニュー'), 0, 14),
+                'areas' => $lineAreas
+            ], $accountKey);
+
+            if (!empty($createRes['richMenuId'])) {
+                $lineMenuId = $createRes['richMenuId'];
+                $imgRelPath = ltrim(parse_url($targetMenu['image_url'], PHP_URL_PATH) ?: '', '/');
+                $localImgPath = __DIR__ . '/' . $imgRelPath;
+                if (!file_exists($localImgPath) && file_exists(__DIR__ . '/admin/' . $imgRelPath)) {
+                    $localImgPath = __DIR__ . '/admin/' . $imgRelPath;
+                }
+                if (file_exists($localImgPath)) {
+                    lineUploadRichMenuImage($lineMenuId, $localImgPath, mime_content_type($localImgPath) ?: 'image/png', $accountKey);
+                }
+                $db->prepare("UPDATE rich_menus SET line_menu_id = :lmid WHERE id = :id")->execute([
+                    ':lmid' => $lineMenuId,
+                    ':id' => $targetMenu['id']
+                ]);
+            }
+        }
+
+        if (!empty($lineMenuId)) {
+            $linkRes = lineLinkUserRichMenu($userId, $lineMenuId, $accountKey);
+            $nowJst = date('Y-m-d H:i:s');
+            $db->prepare("UPDATE customer_cars SET custom_line_menu_id = :lmid, custom_menu_set_at = :now_jst, updated_at = :now_jst WHERE id = :id")->execute([
+                ':lmid' => $lineMenuId,
+                ':now_jst' => $nowJst,
+                ':id' => $customer['id']
+            ]);
+            return [
+                'success' => true,
+                'applied_type' => 'tag_menu',
+                'matched_tag' => $matchedTag,
+                'menu_title' => $targetMenu['title'],
+                'line_menu_id' => $lineMenuId
+            ];
+        }
+    } else {
+        // マッチするタグメニューがない場合、個別メニュー割り当てを解除（全体デフォルトメニューに戻す）
+        if (!empty($customer['custom_line_menu_id'])) {
+            lineUnlinkUserRichMenu($userId, $accountKey);
+            $nowJst = date('Y-m-d H:i:s');
+            $db->prepare("UPDATE customer_cars SET custom_line_menu_id = '', custom_menu_set_at = NULL, updated_at = :now_jst WHERE id = :id")->execute([
+                ':now_jst' => $nowJst,
+                ':id' => $customer['id']
+            ]);
+        }
+        return [
+            'success' => true,
+            'applied_type' => 'default',
+            'message' => '全体デフォルトメニューを適用しました'
+        ];
+    }
+
+    return ['success' => false, 'error' => 'メニューのリンク処理に失敗しました'];
+}
+
+/**
+ * 全顧客に対するタグ連動リッチメニューの一括反映（同期）
+ */
+function syncAllTagBasedRichMenus(?string $accountKey = null, ?PDO $db = null): array {
+    if (!$db) {
+        $db = getDbConnection($accountKey);
+    }
+
+    $stmt = $db->query("SELECT user_id, user_name, tags, custom_menu_text FROM customer_cars WHERE user_id IS NOT NULL AND user_id LIKE 'U%' AND (is_blocked = 0 OR is_blocked IS NULL)");
+    $allUsers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $successCount = 0;
+    $tagAppliedCount = 0;
+    $defaultCount = 0;
+    $skippedCount = 0;
+    $errors = [];
+
+    foreach ($allUsers as $u) {
+        $uid = $u['user_id'];
+        if (!empty($u['custom_menu_text'])) {
+            $skippedCount++;
+            continue;
+        }
+        $res = applyTagBasedRichMenuForUser($uid, $accountKey, $db);
+        if ($res['success']) {
+            $successCount++;
+            if (($res['applied_type'] ?? '') === 'tag_menu') {
+                $tagAppliedCount++;
+            } else {
+                $defaultCount++;
+            }
+        } else {
+            $errors[] = "{$u['user_name']}: " . ($res['error'] ?? '不明なエラー');
+        }
+    }
+
+    return [
+        'success' => true,
+        'total_processed' => count($allUsers),
+        'success_count' => $successCount,
+        'tag_applied_count' => $tagAppliedCount,
+        'default_count' => $defaultCount,
+        'skipped_custom_message' => $skippedCount,
+        'errors' => $errors
+    ];
 }
 
 /**

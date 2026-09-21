@@ -13,8 +13,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260921_richmenu_reset_v1">
-    <link rel="stylesheet" href="richmenu.css?v=20260921_richmenu_reset_v1">
+    <link rel="stylesheet" href="admin.css?v=20260921_tag_system_v1">
+    <link rel="stylesheet" href="richmenu.css?v=20260921_tag_system_v1">
 </head>
 <body>
     <!-- ログインモーダル (二段階認証対応) -->
@@ -231,6 +231,17 @@
                         <div class="form-group">
                             <label for="chatBarTextInput">トーク画面下バーの文字 (最大14文字)</label>
                             <input type="text" id="chatBarTextInput" placeholder="メニュー" value="メニュー" maxlength="14">
+                        </div>
+                        <div class="form-group" style="margin-top: 14px; padding: 12px 14px; background: #fdf4ff; border: 1.5px solid #f0abfc; border-radius: var(--radius-md);">
+                            <label for="menuTargetTagsInput" style="display: flex; align-items: center; justify-content: space-between; font-weight: 800; color: #86198f; margin-bottom: 6px;">
+                                <span><i class="fa-solid fa-tags" style="color: #c026d3;"></i> 出し分け対象タグ <span class="badge-opt" style="background: #fae8ff; color: #a21caf; border: 1px solid #f5d0fe;">任意</span></span>
+                                <span style="font-size: 11px; font-weight: 600; color: #a21caf;">タグ連動メニュー</span>
+                            </label>
+                            <input type="text" id="menuTargetTagsInput" placeholder="例: 月謝会員, スマホコース (カンマ区切り)" style="border: 1.5px solid #d946ef; background: #ffffff; width: 100%; padding: 8px 10px; font-size: 13px; border-radius: var(--radius-sm);">
+                            <div style="font-size: 11px; color: #86198f; line-height: 1.4; margin-top: 6px;">
+                                <i class="fa-solid fa-circle-info"></i> このタグが付与された顧客のみにこのメニューが自動表示されます。空欄の場合は誰でも表示可能な「通常メニュー（デフォルト）」となります。
+                            </div>
+                            <div class="tag-suggestions" id="menuTargetTagSuggestions" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px;"></div>
                         </div>
                     </div>
 
@@ -456,16 +467,22 @@
                         <h2><i class="fa-solid fa-clock-rotate-left"></i> リッチメニュー保存履歴</h2>
                         <p>過去に作成したメニュー一覧です。通常メニューとお知らせ用メニューを切り替えて管理できます。</p>
                     </div>
-                    <button class="btn-primary-sm" id="historyCreateNewBtn">
-                        <i class="fa-solid fa-plus"></i> 新規メニュー作成
-                    </button>
+                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                        <button type="button" class="btn-secondary-sm" id="btnSyncTagRichmenus" style="background: #fdf4ff; color: #a21caf; border: 1.5px solid #f0abfc; font-weight: 800; height: 36px; padding: 0 14px; border-radius: var(--radius-sm); font-size: 12px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;" title="受講生全員の属性タグと一致するリッチメニューを全友だちに一括反映（LINE同期）します">
+                            <i class="fa-solid fa-tags"></i> 🏷️ タグ連動メニューを一括同期
+                        </button>
+                        <button class="btn-primary-sm" id="historyCreateNewBtn">
+                            <i class="fa-solid fa-plus"></i> 新規メニュー作成
+                        </button>
+                    </div>
                 </div>
 
-                <!-- フィルタータブ (すべて / 通常メニュー / 🔤 専用メッセージ帯付き / 📢 お知らせ専用メニュー) -->
+                <!-- フィルタータブ (すべて / 通常メニュー / 🏷️ タグ連動 / 🔤 専用メッセージ帯付き / 📢 お知らせ専用メニュー) -->
                 <div class="history-filter-bar">
                     <div class="history-filter-tabs">
                         <button type="button" class="btn-filter-tab active" data-filter="all">すべて (<span id="countFilterAll">0</span>)</button>
                         <button type="button" class="btn-filter-tab" data-filter="normal">通常メニュー (<span id="countFilterNormal">0</span>)</button>
+                        <button type="button" class="btn-filter-tab" data-filter="tagged"><i class="fa-solid fa-tags"></i> タグ連動 (<span id="countFilterTagged">0</span>)</button>
                         <button type="button" class="btn-filter-tab" data-filter="custom_banner"><i class="fa-solid fa-wand-magic-sparkles"></i> 専用メッセージ帯付き (<span id="countFilterCustomBanner">0</span>)</button>
                         <button type="button" class="btn-filter-tab" data-filter="notice"><i class="fa-solid fa-bullhorn"></i> お知らせ専用 (<span id="countFilterNotice">0</span>)</button>
                     </div>
@@ -1216,6 +1233,6 @@
     <!-- トースト通知 -->
     <div class="toast-notification" id="adminToast"></div>
 
-    <script src="richmenu.js?v=20260921_richmenu_reset_v1"></script>
+    <script src="richmenu.js?v=20260921_tag_system_v1"></script>
 </body>
 </html>

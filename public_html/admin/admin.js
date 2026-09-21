@@ -181,6 +181,7 @@ const elements = {
     // ツールバー
     adminSearchInput: document.getElementById('adminSearchInput'),
     btnClearSearch: document.getElementById('btnClearSearch'),
+    adminTagFilterSelect: document.getElementById('adminTagFilterSelect'),
     filterMatchedCount: document.getElementById('filterMatchedCount'),
     adminSortSelect: document.getElementById('adminSortSelect'),
     tabBtns: document.querySelectorAll('.tab-btn'),
@@ -188,6 +189,23 @@ const elements = {
     tabCountOil: document.getElementById('tabCountOil'),
     tabCountPeriodic: document.getElementById('tabCountPeriodic'),
     tabCountInsp: document.getElementById('tabCountInsp'),
+
+    // 一括操作
+    selectAllCheckbox: document.getElementById('selectAllCheckbox'),
+    bulkActionBar: document.getElementById('bulkActionBar'),
+    bulkSelectedCount: document.getElementById('bulkSelectedCount'),
+    btnBulkAddTags: document.getElementById('btnBulkAddTags'),
+    btnBulkRemoveTags: document.getElementById('btnBulkRemoveTags'),
+    btnBulkClearSelection: document.getElementById('btnBulkClearSelection'),
+    bulkTagModal: document.getElementById('bulkTagModal'),
+    bulkTagModalTitle: document.getElementById('bulkTagModalTitle'),
+    bulkTagModalDesc: document.getElementById('bulkTagModalDesc'),
+    bulkTagInput: document.getElementById('bulkTagInput'),
+    bulkTagSuggestions: document.getElementById('bulkTagSuggestions'),
+    closeBulkTagModalBtn: document.getElementById('closeBulkTagModalBtn'),
+    cancelBulkTagBtn: document.getElementById('cancelBulkTagBtn'),
+    executeBulkTagBtn: document.getElementById('executeBulkTagBtn'),
+    bulkTagStatusMsg: document.getElementById('bulkTagStatusMsg'),
 
     // テーブル
     customerTableBody: document.getElementById('customerTableBody'),
@@ -213,6 +231,8 @@ const elements = {
     editUserName: document.getElementById('editUserName'),
     editCarModel: document.getElementById('editCarModel'),
     editCarNumber: document.getElementById('editCarNumber'),
+    editTagsInput: document.getElementById('editTagsInput'),
+    editTagSuggestions: document.getElementById('editTagSuggestions'),
     editOilLastDate: document.getElementById('editOilLastDate'),
     editOilNextDate: document.getElementById('editOilNextDate'),
     editPeriodicNextDate: document.getElementById('editPeriodicNextDate'),
@@ -425,12 +445,18 @@ const elements = {
     chatModalUserName: document.getElementById('chatModalUserName'),
     chatModalUidTag: document.getElementById('chatModalUidTag'),
     chatModalCourseInfo: document.getElementById('chatModalCourseInfo'),
+    chatModalTagsRow: document.getElementById('chatModalTagsRow'),
     chatMessagesContainer: document.getElementById('chatMessagesContainer'),
     chatInputText: document.getElementById('chatInputText'),
     btnSendChatMessage: document.getElementById('btnSendChatMessage'),
 
     toast: document.getElementById('adminToast')
 };
+
+state.allTags = [];
+state.currentTagFilter = '';
+state.selectedCustomerIds = new Set();
+state.bulkTagMode = 'add';
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadAccounts();
@@ -1516,6 +1542,42 @@ function initEventListeners() {
         });
     }
 
+    // タグ絞り込みセレクト
+    if (elements.adminTagFilterSelect) {
+        elements.adminTagFilterSelect.addEventListener('change', (e) => {
+            state.currentTagFilter = e.target.value;
+            state.currentPage = 1;
+            renderTable();
+        });
+    }
+
+    // 一括操作 全選択チェックボックス
+    if (elements.selectAllCheckbox) {
+        elements.selectAllCheckbox.addEventListener('change', (e) => {
+            toggleSelectAllCustomers(e.target.checked);
+        });
+    }
+
+    // 一括操作ボタン
+    if (elements.btnBulkAddTags) {
+        elements.btnBulkAddTags.addEventListener('click', () => openBulkTagModal('add'));
+    }
+    if (elements.btnBulkRemoveTags) {
+        elements.btnBulkRemoveTags.addEventListener('click', () => openBulkTagModal('remove'));
+    }
+    if (elements.btnBulkClearSelection) {
+        elements.btnBulkClearSelection.addEventListener('click', () => clearCustomerSelection());
+    }
+    if (elements.closeBulkTagModalBtn) {
+        elements.closeBulkTagModalBtn.addEventListener('click', closeBulkTagModal);
+    }
+    if (elements.cancelBulkTagBtn) {
+        elements.cancelBulkTagBtn.addEventListener('click', closeBulkTagModal);
+    }
+    if (elements.executeBulkTagBtn) {
+        elements.executeBulkTagBtn.addEventListener('click', executeBulkTagUpdate);
+    }
+
     // 並び替えセレクト
     if (elements.adminSortSelect) {
         elements.adminSortSelect.addEventListener('change', (e) => {
@@ -1800,6 +1862,7 @@ function initEventListeners() {
  * 表示カラム設定の管理 (localStorage連携 & 即時DOMトグル)
  */
 const DEFAULT_COLUMN_VISIBILITY = {
+    tags: true,
     course: true,
     oil: true,
     periodic: true,
@@ -2187,10 +2250,12 @@ async function fetchCustomers() {
         const data = await custRes.json();
         if (data.success) {
             state.allCustomers = data.customers || [];
+            state.allTags = data.all_tags || [];
             if (data.custom_labels) {
                 applyDynamicLabels(data.custom_labels);
             }
             updateBrandDisplay();
+            renderTagFilterOptions();
             updateStats();
             renderTable();
             checkUrlChatParam();
@@ -2432,7 +2497,15 @@ function renderTable() {
             const matchCar = (c.car_model || '').toLowerCase().includes(s);
             const matchNo = (c.car_number || '').toLowerCase().includes(s);
             const matchMemo = (c.staff_memo || '').toLowerCase().includes(s);
-            if (!matchName && !matchCar && !matchNo && !matchMemo) return false;
+            const matchTag = Array.isArray(c.tags) && c.tags.some(t => t.toLowerCase().includes(s));
+            if (!matchName && !matchCar && !matchNo && !matchMemo && !matchTag) return false;
+        }
+
+        // タグ絞り込みフィルター
+        if (state.currentTagFilter) {
+            if (!Array.isArray(c.tags) || !c.tags.includes(state.currentTagFilter)) {
+                return false;
+            }
         }
 
         // タブフィルター
@@ -2561,8 +2634,17 @@ function renderTable() {
             ? `<span style="font-size:10.5px; background:#fee2e2; color:#b91c1c; border:1px solid #fecdd3; padding:1px 6px; border-radius:var(--radius-xs); font-weight:700; white-space:nowrap;"><i class="fa-solid fa-user-slash"></i> ブロック中</span>`
             : (userId && userId.startsWith('U') ? `<span style="font-size:10.5px; background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; padding:1px 6px; border-radius:var(--radius-xs); font-weight:700; white-space:nowrap;"><i class="fa-solid fa-user-check"></i> 友だち</span>` : '');
 
+        const isRowChecked = state.selectedCustomerIds.has(c.id);
+        const tagsArr = Array.isArray(c.tags) ? c.tags : [];
+        const tagsHtml = tagsArr.length > 0 
+            ? `<div class="table-tags-wrap">${tagsArr.map(t => `<span class="tag-badge" onclick="event.stopPropagation(); filterByTag('${escapeHtml(t)}');" title="クリックでこのタグ絞り込み"><i class="fa-solid fa-tag" style="font-size:9px;"></i> ${escapeHtml(t)}</span>`).join('')}</div>`
+            : `<button type="button" class="tag-chip-btn" onclick="event.stopPropagation(); openEditModalByIndex(${globalIdx});" title="タグを追加"><i class="fa-solid fa-plus" style="font-size:9px;"></i> タグ追加</button>`;
+
         return `
-            <tr data-index="${globalIdx}" class="${isBlocked ? 'row-blocked' : ''}" style="${isBlocked ? 'background: #fff8f8;' : ''}">
+            <tr data-index="${globalIdx}" class="${isBlocked ? 'row-blocked' : ''} ${isRowChecked ? 'row-selected' : ''}" style="${isBlocked ? 'background: #fff8f8;' : (isRowChecked ? 'background: #f5f3ff;' : '')}">
+                <td style="text-align: center; width: 38px;">
+                    <input type="checkbox" class="customer-row-cb" data-id="${c.id}" ${isRowChecked ? 'checked' : ''} style="cursor: pointer; width: 16px; height: 16px;" onclick="event.stopPropagation(); toggleCustomerSelection(${c.id}, this.checked);">
+                </td>
                 <td data-col="name">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         ${c.picture_url ? `
@@ -2602,6 +2684,7 @@ function renderTable() {
                         </div>
                     </div>
                 </td>
+                <td data-col="tags">${tagsHtml}</td>
                 <td data-col="course">
                     <div class="car-tag">${escapeHtml(c.car_model || '-')}</div>
                     <div class="car-no">${escapeHtml(c.car_number || '')}</div>
@@ -3301,6 +3384,9 @@ function openEditModal(cust) {
         elements.editUserName.value = cust.user_name || '';
         elements.editCarModel.value = cust.car_model || '';
         elements.editCarNumber.value = cust.car_number || '';
+        if (elements.editTagsInput) {
+            elements.editTagsInput.value = Array.isArray(cust.tags) ? cust.tags.join(', ') : (cust.tags || '');
+        }
         elements.editOilLastDate.value = cust.oil_last_date || '';
         elements.editOilNextDate.value = cust.oil_next_date || '';
         elements.editPeriodicNextDate.value = cust.periodic_insp_next_date || '';
@@ -3367,6 +3453,7 @@ async function saveCustomer() {
         oil_next_date: elements.editOilNextDate.value,
         periodic_insp_next_date: elements.editPeriodicNextDate.value,
         inspection_next_date: elements.editInspectionNextDate.value,
+        tags: elements.editTagsInput ? elements.editTagsInput.value.trim() : '',
         staff_memo: elements.editStaffMemo.value.trim()
     });
 
@@ -7038,6 +7125,239 @@ window.closeQuickReplySettings = closeQuickReplySettingsModal;
 window.qrState = qrState;
 window.renderQuickReplyCustomItems = renderQuickReplyCustomItems;
 window.renderQuickReplyLivePreview = renderQuickReplyLivePreview;
+
+// ==============================================================================
+// 属性タグ機能 (Tag System) & 一括操作 ロジック
+// ==============================================================================
+
+function renderTagFilterOptions() {
+    if (!elements.adminTagFilterSelect) return;
+    const current = state.currentTagFilter;
+    const allTags = state.allTags || [];
+
+    let optionsHtml = '<option value="">すべてのタグ (全件)</option>';
+    allTags.forEach(t => {
+        const isSel = (t.name === current);
+        optionsHtml += `<option value="${escapeHtml(t.name)}" ${isSel ? 'selected' : ''}>#${escapeHtml(t.name)} (${t.count || 0})</option>`;
+    });
+
+    elements.adminTagFilterSelect.innerHTML = optionsHtml;
+}
+
+function filterByTag(tagName) {
+    if (!tagName) return;
+    state.currentTagFilter = tagName;
+    if (elements.adminTagFilterSelect) {
+        elements.adminTagFilterSelect.value = tagName;
+    }
+    state.currentPage = 1;
+    renderTable();
+    showToast(`🏷️ タグ「#${tagName}」で絞り込みました`);
+}
+
+function toggleCustomerSelection(id, isChecked) {
+    id = parseInt(id, 10);
+    if (isChecked) {
+        state.selectedCustomerIds.add(id);
+    } else {
+        state.selectedCustomerIds.delete(id);
+    }
+    updateBulkActionBar();
+}
+
+function toggleSelectAllCustomers(isChecked) {
+    const list = state.currentFilteredList || state.allCustomers || [];
+    if (isChecked) {
+        list.forEach(c => {
+            if (c.id) state.selectedCustomerIds.add(c.id);
+        });
+    } else {
+        state.selectedCustomerIds.clear();
+    }
+    renderTable();
+    updateBulkActionBar();
+}
+
+function clearCustomerSelection() {
+    state.selectedCustomerIds.clear();
+    if (elements.selectAllCheckbox) {
+        elements.selectAllCheckbox.checked = false;
+    }
+    renderTable();
+    updateBulkActionBar();
+}
+
+function updateBulkActionBar() {
+    const count = state.selectedCustomerIds.size;
+    if (elements.bulkSelectedCount) {
+        elements.bulkSelectedCount.textContent = count;
+    }
+    if (elements.bulkActionBar) {
+        elements.bulkActionBar.style.display = count > 0 ? 'flex' : 'none';
+    }
+    if (elements.selectAllCheckbox) {
+        const total = (state.currentFilteredList || []).length;
+        elements.selectAllCheckbox.checked = (total > 0 && count >= total);
+    }
+}
+
+function openBulkTagModal(mode = 'add') {
+    if (state.selectedCustomerIds.size === 0) {
+        alert('受講生が選択されていません。');
+        return;
+    }
+    state.bulkTagMode = mode;
+    const count = state.selectedCustomerIds.size;
+
+    if (elements.bulkTagModalTitle) {
+        elements.bulkTagModalTitle.innerHTML = mode === 'add'
+            ? `<i class="fa-solid fa-tag" style="color: #6366f1;"></i> ${count}名へタグを一括追加`
+            : `<i class="fa-solid fa-tags" style="color: #ef4444;"></i> ${count}名からタグを一括解除`;
+    }
+    if (elements.bulkTagModalDesc) {
+        elements.bulkTagModalDesc.textContent = mode === 'add'
+            ? `選択された ${count} 名の受講生に新しい属性タグを追加し、タグ連動リッチメニューがあれば即座に自動反映します。`
+            : `選択された ${count} 名の受講生から指定のタグを解除し、リッチメニューを最新状態へ更新します。`;
+    }
+    if (elements.bulkTagInput) {
+        elements.bulkTagInput.value = '';
+    }
+    if (elements.bulkTagStatusMsg) {
+        elements.bulkTagStatusMsg.style.display = 'none';
+    }
+
+    renderBulkTagSuggestions();
+
+    if (elements.bulkTagModal) {
+        elements.bulkTagModal.style.display = 'flex';
+    }
+}
+
+function closeBulkTagModal() {
+    if (elements.bulkTagModal) {
+        elements.bulkTagModal.style.display = 'none';
+    }
+}
+
+function renderBulkTagSuggestions() {
+    if (!elements.bulkTagSuggestions) return;
+    const allTags = state.allTags || [];
+    if (allTags.length === 0) {
+        elements.bulkTagSuggestions.innerHTML = '<span style="font-size:11px;color:#94a3b8;">登録済みタグはまだありません</span>';
+        return;
+    }
+    elements.bulkTagSuggestions.innerHTML = allTags.map(t => `
+        <button type="button" class="tag-chip-btn" onclick="appendTagToBulkInput('${escapeHtml(t.name)}')">
+            <i class="fa-solid fa-plus" style="font-size:9px;"></i> ${escapeHtml(t.name)} (${t.count})
+        </button>
+    `).join('');
+}
+
+function appendTagToBulkInput(tagName) {
+    if (!elements.bulkTagInput || !tagName) return;
+    const cur = elements.bulkTagInput.value.trim();
+    const tags = cur ? cur.split(/[,、\s]+/).map(t => t.trim()).filter(Boolean) : [];
+    if (!tags.includes(tagName)) {
+        tags.push(tagName);
+    }
+    elements.bulkTagInput.value = tags.join(', ');
+}
+
+function renderEditTagSuggestions() {
+    if (!elements.editTagSuggestions) return;
+    const allTags = state.allTags || [];
+    if (allTags.length === 0) {
+        elements.editTagSuggestions.innerHTML = '<span style="font-size:11px;color:#94a3b8;">よく使うタグ候補: 月謝会員, 体験受講, スマホコース, Windows11 (入力すると次回から候補に表示されます)</span>';
+        return;
+    }
+    elements.editTagSuggestions.innerHTML = allTags.map(t => `
+        <button type="button" class="tag-chip-btn" onclick="appendTagToEditInput('${escapeHtml(t.name)}')">
+            <i class="fa-solid fa-plus" style="font-size:9px;"></i> ${escapeHtml(t.name)}
+        </button>
+    `).join('');
+}
+
+function appendTagToEditInput(tagName) {
+    if (!elements.editTagsInput || !tagName) return;
+    const cur = elements.editTagsInput.value.trim();
+    const tags = cur ? cur.split(/[,、\s]+/).map(t => t.trim()).filter(Boolean) : [];
+    if (!tags.includes(tagName)) {
+        tags.push(tagName);
+    }
+    elements.editTagsInput.value = tags.join(', ');
+}
+
+async function executeBulkTagUpdate() {
+    const ids = Array.from(state.selectedCustomerIds);
+    if (ids.length === 0) {
+        alert('受講生が選択されていません。');
+        return;
+    }
+    const inputVal = elements.bulkTagInput ? elements.bulkTagInput.value.trim() : '';
+    if (!inputVal) {
+        alert('タグを入力または候補から選択してください。');
+        return;
+    }
+
+    const btn = elements.executeBulkTagBtn;
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 処理中...';
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('password', state.password);
+        formData.append('customer_ids', ids.join(','));
+        formData.append('mode', state.bulkTagMode || 'add');
+        formData.append('tags', inputVal);
+
+        const res = await fetch(`../api.php?action=admin_bulk_update_tags&account=${encodeURIComponent(state.activeAccount)}`, {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            closeBulkTagModal();
+            clearCustomerSelection();
+            showToast(`✅ ${data.message || 'タグを一括更新しました！'}`);
+            await fetchCustomers();
+        } else {
+            alert(data.error || '一括更新に失敗しました');
+        }
+    } catch (e) {
+        console.error('Bulk tag update error:', e);
+        alert('通信エラーが発生しました: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
+
+function openEditModalByIndex(idx) {
+    const list = state.currentFilteredList || state.allCustomers || [];
+    const cust = list[idx];
+    if (cust) {
+        openEditModal(cust);
+    }
+}
+
+// グローバルスコープ公開
+window.filterByTag = filterByTag;
+window.toggleCustomerSelection = toggleCustomerSelection;
+window.toggleSelectAllCustomers = toggleSelectAllCustomers;
+window.clearCustomerSelection = clearCustomerSelection;
+window.openBulkTagModal = openBulkTagModal;
+window.closeBulkTagModal = closeBulkTagModal;
+window.appendTagToBulkInput = appendTagToBulkInput;
+window.appendTagToEditInput = appendTagToEditInput;
+window.executeBulkTagUpdate = executeBulkTagUpdate;
+window.openEditModalByIndex = openEditModalByIndex;
+
 
 
 

@@ -233,6 +233,8 @@ const elements = {
     // プロパティパネル
     menuTitleInput: document.getElementById('menuTitleInput'),
     chatBarTextInput: document.getElementById('chatBarTextInput'),
+    menuTargetTagsInput: document.getElementById('menuTargetTagsInput'),
+    menuTargetTagSuggestions: document.getElementById('menuTargetTagSuggestions'),
     areaNoSelectionMsg: document.getElementById('areaNoSelectionMsg'),
     areaConfigForm: document.getElementById('areaConfigForm'),
     selectedAreaLabel: document.getElementById('selectedAreaLabel'),
@@ -297,8 +299,10 @@ const elements = {
     emptyCreateBtn: document.getElementById('emptyCreateBtn'),
     countFilterAll: document.getElementById('countFilterAll'),
     countFilterNormal: document.getElementById('countFilterNormal'),
+    countFilterTagged: document.getElementById('countFilterTagged'),
     countFilterCustomBanner: document.getElementById('countFilterCustomBanner'),
     countFilterNotice: document.getElementById('countFilterNotice'),
+    btnSyncTagRichmenus: document.getElementById('btnSyncTagRichmenus'),
     filterTabs: document.querySelectorAll('.btn-filter-tab'),
     historyPaginationBar: document.getElementById('historyPaginationBar'),
     historyPaginationInfoText: document.getElementById('historyPaginationInfoText'),
@@ -1273,7 +1277,7 @@ function initEventListeners() {
         switchView('editor');
     });
 
-    // 履歴フィルタータブ (すべて / 通常メニュー / 📢 お知らせ専用メニュー)
+    // 履歴フィルタータブ (すべて / 通常メニュー / 🏷️ タグ連動 / 📢 お知らせ専用メニュー)
     if (elements.filterTabs) {
         elements.filterTabs.forEach(tab => {
             tab.addEventListener('click', () => {
@@ -1283,6 +1287,48 @@ function initEventListeners() {
                 state.historyPage = 1;
                 renderHistoryList();
             });
+        });
+    }
+
+    // タグ連動リッチメニューの一括同期
+    if (elements.btnSyncTagRichmenus) {
+        elements.btnSyncTagRichmenus.addEventListener('click', async () => {
+            if (!confirm('全友だちの属性タグを再チェックし、一致するリッチメニューを全受講生のLINE画面に一括反映（同期）しますか？\n※専用メッセージ帯設定中のお客様は専用メッセージが優先保持されます。')) {
+                return;
+            }
+            showLoading('全友だちのタグ連動リッチメニューを一括同期中...');
+            try {
+                const res = await fetch('../api.php?action=admin_sync_tag_richmenus', {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                hideLoading();
+                if (data.success) {
+                    showToast(`✅ タグ連動リッチメニューの一括同期が完了しました（同期対象: ${data.synced_count}名 / 総合計: ${data.total_customers}名）`, 'success');
+                } else {
+                    showToast(data.error || '一括同期に失敗しました', 'error');
+                }
+            } catch (err) {
+                hideLoading();
+                showToast('通信エラーが発生しました: ' + err.message, 'error');
+            }
+        });
+    }
+
+    // タグ手動入力時のサジェストチップハイライト更新
+    if (elements.menuTargetTagsInput) {
+        elements.menuTargetTagsInput.addEventListener('input', () => {
+            const currentTags = elements.menuTargetTagsInput.value
+                .split(/[,、\s]+/)
+                .map(t => t.trim())
+                .filter(t => t.length > 0);
+            if (elements.menuTargetTagSuggestions) {
+                elements.menuTargetTagSuggestions.querySelectorAll('.btn-tag-suggest-chip').forEach(btn => {
+                    const isSelected = currentTags.includes(btn.dataset.tag);
+                    btn.style.background = isSelected ? '#f5d0fe' : '#ffffff';
+                    btn.style.borderColor = isSelected ? '#c026d3' : '#f0abfc';
+                });
+            }
         });
     }
 
@@ -1483,6 +1529,7 @@ function switchView(viewName) {
         elements.tabHistoryBtn.classList.remove('active');
         elements.editorView.style.display = 'grid';
         elements.historyView.style.display = 'none';
+        loadAndRenderMenuTargetTagSuggestions();
     } else {
         elements.tabEditorBtn.classList.remove('active');
         elements.tabHistoryBtn.classList.add('active');
@@ -3246,6 +3293,7 @@ async function saveRichMenu(publish, asCopy = false) {
         formData.append('password', state.password);
         formData.append('title', title);
         formData.append('chat_bar_text', elements.chatBarTextInput.value.trim() || 'メニュー');
+        formData.append('target_tags', elements.menuTargetTagsInput ? elements.menuTargetTagsInput.value.trim() : '');
         formData.append('width', state.width);
         formData.append('height', state.height);
         formData.append('publish', publish ? '1' : '0');
@@ -3393,17 +3441,21 @@ function renderHistoryList() {
 
     const totalCount = state.historyList.length;
     const noticeCount = state.historyList.filter(m => m.is_notice == 1).length;
+    const taggedCount = state.historyList.filter(m => Array.isArray(m.target_tags) && m.target_tags.length > 0).length;
     const customBannerCount = state.historyList.filter(m => isCustomBannerMenu(m) && m.is_notice != 1).length;
-    const normalCount = state.historyList.filter(m => (!m.is_notice || m.is_notice == 0) && !isCustomBannerMenu(m)).length;
+    const normalCount = state.historyList.filter(m => (!m.is_notice || m.is_notice == 0) && !isCustomBannerMenu(m) && (!m.target_tags || m.target_tags.length === 0)).length;
 
     if (elements.countFilterAll) elements.countFilterAll.textContent = totalCount;
     if (elements.countFilterNormal) elements.countFilterNormal.textContent = normalCount;
+    if (elements.countFilterTagged) elements.countFilterTagged.textContent = taggedCount;
     if (elements.countFilterCustomBanner) elements.countFilterCustomBanner.textContent = customBannerCount;
     if (elements.countFilterNotice) elements.countFilterNotice.textContent = noticeCount;
 
     let filteredList = state.historyList;
     if (state.historyFilter === 'normal') {
-        filteredList = state.historyList.filter(m => (!m.is_notice || m.is_notice == 0) && !isCustomBannerMenu(m));
+        filteredList = state.historyList.filter(m => (!m.is_notice || m.is_notice == 0) && !isCustomBannerMenu(m) && (!m.target_tags || m.target_tags.length === 0));
+    } else if (state.historyFilter === 'tagged') {
+        filteredList = state.historyList.filter(m => Array.isArray(m.target_tags) && m.target_tags.length > 0);
     } else if (state.historyFilter === 'custom_banner') {
         filteredList = state.historyList.filter(m => isCustomBannerMenu(m) && m.is_notice != 1);
     } else if (state.historyFilter === 'notice') {
@@ -3443,9 +3495,10 @@ function renderHistoryList() {
         const isNotice = (item.is_notice == 1);
         const isCustomBanner = isCustomBannerMenu(item) && !isNotice;
         const isActiveNotice = (isNotice && state.activeNoticeId && item.id == state.activeNoticeId);
+        const hasTargetTags = Array.isArray(item.target_tags) && item.target_tags.length > 0;
 
         const card = document.createElement('div');
-        card.className = 'history-card' + (isLive ? ' active-live' : '') + (isCustomBanner ? ' is-custom-banner-card' : '');
+        card.className = 'history-card' + (isLive ? ' active-live' : '') + (isCustomBanner ? ' is-custom-banner-card' : '') + (hasTargetTags ? ' is-tagged-card' : '');
 
         const areaCount = item.areas ? item.areas.length : 0;
         const sizeLabel = (item.height == 843) ? '小 (2500×843)' : '大 (2500×1686)';
@@ -3457,6 +3510,7 @@ function renderHistoryList() {
                 ${isLive ? '<span class="badge-live-now"><i class="fa-solid fa-circle-check"></i> 全体本番中</span>' : ''}
                 ${isNotice ? '<span class="badge-notice-tag"><i class="fa-solid fa-bullhorn"></i> お知らせ専用</span>' : ''}
                 ${isCustomBanner ? '<span class="badge-custom-banner-tag"><i class="fa-solid fa-wand-magic-sparkles"></i> 専用メッセージ帯</span>' : ''}
+                ${hasTargetTags ? `<span class="badge-tagged-menu" style="position: absolute; top: 10px; left: 10px; background: rgba(162, 28, 175, 0.9); color: #ffffff; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"><i class="fa-solid fa-tags"></i> ${item.target_tags.map(t=>escapeHtml(t)).join(', ')}</span>` : ''}
                 ${isActiveNotice ? '<span class="badge-notice-live"><i class="fa-solid fa-bolt"></i> クイックリプライ連携中</span>' : ''}
                 <span class="badge-size">${sizeLabel}</span>
             </div>
@@ -3476,6 +3530,7 @@ function renderHistoryList() {
                     <span><i class="fa-solid fa-clock"></i> 登録日時: ${escapeHtml(item.created_at || '-')}</span>
                     <span><i class="fa-solid fa-table-cells"></i> 設定エリア数: ${areaCount}枠</span>
                     <span><i class="fa-solid fa-comment-dots"></i> 下部バー表示: 「${escapeHtml(item.chat_bar_text || 'メニュー')}」</span>
+                    ${hasTargetTags ? `<span style="color:#a21caf;font-weight:700;"><i class="fa-solid fa-tags"></i> 出し分け対象タグ: <strong>${item.target_tags.map(t => escapeHtml(t)).join(', ')}</strong></span>` : ''}
                     ${isCustomBanner ? `<span style="color:#6366f1;font-weight:700;"><i class="fa-solid fa-wand-magic-sparkles"></i> 装飾・帯テキスト: ${overlayCount > 0 ? overlayCount + '件' : 'あり'}</span>` : ''}
                     ${item.alias_id ? `<span><i class="fa-solid fa-tag"></i> エイリアス: <code>${escapeHtml(item.alias_id)}</code></span>` : ''}
                 </div>
@@ -3810,6 +3865,10 @@ function loadMenuIntoEditor(item) {
 
     elements.menuTitleInput.value = item.title || '';
     elements.chatBarTextInput.value = item.chat_bar_text || 'メニュー';
+    if (elements.menuTargetTagsInput) {
+        elements.menuTargetTagsInput.value = Array.isArray(item.target_tags) ? item.target_tags.join(', ') : (item.target_tags || '');
+    }
+    loadAndRenderMenuTargetTagSuggestions();
     setMenuSize(item.height == 843 ? 'small' : 'large');
 
     // サイズボタンの見た目同期
@@ -3910,6 +3969,10 @@ function resetEditorForm() {
     exitEditMode(false);
     elements.menuTitleInput.value = '';
     elements.chatBarTextInput.value = 'メニュー';
+    if (elements.menuTargetTagsInput) {
+        elements.menuTargetTagsInput.value = '';
+    }
+    loadAndRenderMenuTargetTagSuggestions();
     state.imageFile = null;
     state.imageSrc = '';
     state.baseImageFile = null;
@@ -3925,6 +3988,55 @@ function resetEditorForm() {
     elements.stageImage.src = '';
     renderAreas();
     updateAreaConfigForm();
+}
+
+// 属性タグサジェストチップの読み込みと描画
+async function loadAndRenderMenuTargetTagSuggestions() {
+    if (!elements.menuTargetTagSuggestions) return;
+    try {
+        const res = await fetch('../api.php?action=admin_get_account_tags');
+        const data = await res.json();
+        if (!data.success || !Array.isArray(data.tags) || data.tags.length === 0) {
+            elements.menuTargetTagSuggestions.innerHTML = '';
+            return;
+        }
+        const currentTags = (elements.menuTargetTagsInput ? elements.menuTargetTagsInput.value : '')
+            .split(/[,、\s]+/)
+            .map(t => t.trim())
+            .filter(t => t.length > 0);
+
+        elements.menuTargetTagSuggestions.innerHTML = data.tags.map(tagObj => {
+            const tagName = typeof tagObj === 'string' ? tagObj : (tagObj.name || '');
+            if (!tagName) return '';
+            const isSelected = currentTags.includes(tagName);
+            return `
+                <button type="button" class="btn-tag-suggest-chip" data-tag="${escapeHtml(tagName)}" style="background: ${isSelected ? '#f5d0fe' : '#ffffff'}; color: #86198f; border: 1px solid ${isSelected ? '#c026d3' : '#f0abfc'}; border-radius: 12px; font-size: 11px; font-weight: 700; padding: 2px 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; transition: all 0.15s ease;">
+                    <i class="fa-solid fa-tag" style="font-size: 9px;"></i> ${escapeHtml(tagName)}
+                </button>
+            `;
+        }).join('');
+
+        // チップクリック時のトグル入力
+        elements.menuTargetTagSuggestions.querySelectorAll('.btn-tag-suggest-chip').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tag = btn.dataset.tag;
+                if (!elements.menuTargetTagsInput || !tag) return;
+                let tags = elements.menuTargetTagsInput.value
+                    .split(/[,、\s]+/)
+                    .map(t => t.trim())
+                    .filter(t => t.length > 0);
+                if (tags.includes(tag)) {
+                    tags = tags.filter(t => t !== tag);
+                } else {
+                    tags.push(tag);
+                }
+                elements.menuTargetTagsInput.value = tags.join(', ');
+                loadAndRenderMenuTargetTagSuggestions();
+            });
+        });
+    } catch (e) {
+        console.error('Failed to load menu target tag suggestions:', e);
+    }
 }
 
 // ================= ユーティリティ =================

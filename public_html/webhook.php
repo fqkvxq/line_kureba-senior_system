@@ -4307,11 +4307,11 @@ function handleCloseNoticeMenu(?PDO $db, string $replyToken, string $userId): vo
             lineUnlinkUserRichMenu($userId);
         }
     } else {
-        // 通常ユーザーは個別紐付けを解除（LINE公式アカウント全体のデフォルト通常リッチメニューに自動復帰）
-        $unlinkRes = lineUnlinkUserRichMenu($userId);
-        writeDebugLog("お知らせ終了: 全体デフォルトメニュー復帰実行(unlink)", [
+        // タグ連動リッチメニューがあれば適用、なければ全体デフォルトメニューに復帰
+        $tagRes = applyTagBasedRichMenuForUser($userId, null, $db);
+        writeDebugLog("お知らせ終了: タグ連動/全体デフォルトメニュー復帰実行", [
             'userId' => $userId,
-            'res' => $unlinkRes
+            'res' => $tagRes
         ]);
     }
 }

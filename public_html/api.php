@@ -1747,6 +1747,8 @@ try {
             $today = date('Y-m-d');
             $in30days = date('Y-m-d', strtotime('+30 days'));
 
+            $tagFilter = trim($_GET['tag'] ?? '');
+
             if ($filter === 'oil_soon') {
                 $where[] = "oil_next_date IS NOT NULL AND oil_next_date <= :in30";
                 $params[':in30'] = $in30days;
@@ -1760,6 +1762,11 @@ try {
                 $where[] = "is_blocked = 1";
             } elseif ($filter === 'active') {
                 $where[] = "(is_blocked = 0 OR is_blocked IS NULL)";
+            }
+
+            if (!empty($tagFilter)) {
+                $where[] = "tags LIKE :tag_f";
+                $params[':tag_f'] = "%\"" . $tagFilter . "\"%";
             }
 
             // ソート順の判定
@@ -1850,6 +1857,10 @@ try {
                     $c['current_menu_name'] = '個別メニュー';
                 }
 
+                // タグ配列の正規化
+                $c['tags'] = normalizeTagList($c['tags'] ?? '');
+                $c['tags_text'] = implode(', ', $c['tags']);
+
                 // 最後のやり取り情報の補完
                 $interactionAt = !empty($c['last_interaction_at']) ? $c['last_interaction_at'] : (!empty($c['updated_at']) ? $c['updated_at'] : ($c['created_at'] ?? ''));
                 $c['last_interaction_at'] = $interactionAt;
@@ -1885,7 +1896,8 @@ try {
                 'default_menu_title' => $defaultMenuTitle,
                 'active_account' => $activeAccountKey,
                 'active_account_name' => getAccountShopName($activeAccountKey),
-                'custom_labels' => getAccountCustomLabels($activeAccountKey)
+                'custom_labels' => getAccountCustomLabels($activeAccountKey),
+                'all_tags' => getAccountAllTags($db, $activeAccountKey)
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
@@ -1909,6 +1921,9 @@ try {
             $inspectionNextDate = !empty($_POST['inspection_next_date']) ? $_POST['inspection_next_date'] : null;
             $staffMemo = trim($_POST['staff_memo'] ?? '');
 
+            $rawTags = $_POST['tags'] ?? '';
+            $tagsJson = encodeTagsForDb(normalizeTagList($rawTags));
+
             if (empty($userId)) {
                 $userId = 'MANUAL_' . uniqid();
             }
@@ -1925,6 +1940,7 @@ try {
                         periodic_insp_next_date = :periodic_next_date,
                         inspection_next_date = :inspection_next_date,
                         staff_memo = :staff_memo,
+                        tags = :tags,
                         updated_at = :updated_at
                     WHERE id = :id
                 ");
@@ -1938,6 +1954,7 @@ try {
                     ':periodic_next_date' => $periodicInspNextDate,
                     ':inspection_next_date' => $inspectionNextDate,
                     ':staff_memo' => $staffMemo,
+                    ':tags' => $tagsJson,
                     ':updated_at' => $nowJst
                 ]);
             } else {
@@ -1945,12 +1962,12 @@ try {
                     INSERT INTO customer_cars (
                         user_id, user_name, car_model, car_number,
                         oil_last_date, oil_next_date, periodic_insp_next_date, inspection_next_date,
-                        staff_memo, last_interaction_at, last_interaction_type, last_interaction_preview,
+                        staff_memo, tags, last_interaction_at, last_interaction_type, last_interaction_preview,
                         created_at, updated_at
                     ) VALUES (
                         :uid, :uname, :car_model, :car_number,
                         :oil_last_date, :oil_next_date, :periodic_next_date, :inspection_next_date,
-                        :staff_memo, :now_jst1, 'follow', '手動登録',
+                        :staff_memo, :tags, :now_jst1, 'follow', '手動登録',
                         :now_jst2, :now_jst3
                     )
                 ");
@@ -1964,15 +1981,112 @@ try {
                     ':periodic_next_date' => $periodicInspNextDate,
                     ':inspection_next_date' => $inspectionNextDate,
                     ':staff_memo' => $staffMemo,
+                    ':tags' => $tagsJson,
                     ':now_jst1' => $nowJst,
                     ':now_jst2' => $nowJst,
                     ':now_jst3' => $nowJst
                 ]);
             }
 
+            // タグに応じたリッチメニューを自動連動・反映
+            $tagMenuRes = null;
+            if (str_starts_with($userId, 'U')) {
+                try {
+                    $tagMenuRes = applyTagBasedRichMenuForUser($userId, $activeAccountKey, $db);
+                } catch (Throwable $e) {}
+            }
+
             echo json_encode([
                 'success' => true,
-                'message' => '顧客メンテナンス情報を保存しました！'
+                'message' => '顧客メンテナンス情報を保存しました！',
+                'tag_menu_result' => $tagMenuRes
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
+        // --- 8-1-1. 店舗管理者用: 複数顧客の一括タグ操作 (追加/削除/上書き) ---
+        case 'admin_bulk_update_tags':
+            $authPass = getAdminAuthPassword();
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗']);
+                exit;
+            }
+
+            $rawCustomerIds = $_POST['customer_ids'] ?? [];
+            $customerIds = is_array($rawCustomerIds) ? $rawCustomerIds : (explode(',', (string)$rawCustomerIds) ?: []);
+            $customerIds = array_filter(array_map('intval', $customerIds));
+
+            if (empty($customerIds)) {
+                echo json_encode(['success' => false, 'error' => '対象の顧客が選択されていません']);
+                exit;
+            }
+
+            $mode = $_POST['mode'] ?? 'add'; // 'add' (追加), 'remove' (削除), 'replace' (上書き)
+            $inputTags = normalizeTagList($_POST['tags'] ?? []);
+
+            if (empty($inputTags) && $mode !== 'replace') {
+                echo json_encode(['success' => false, 'error' => 'タグが指定されていません']);
+                exit;
+            }
+
+            $placeholders = implode(',', array_fill(0, count($customerIds), '?'));
+            $stmt = $db->prepare("SELECT id, user_id, user_name, tags FROM customer_cars WHERE id IN ({$placeholders})");
+            $stmt->execute($customerIds);
+            $targetRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $updatedCount = 0;
+            $nowJst = date('Y-m-d H:i:s');
+
+            foreach ($targetRows as $row) {
+                $currentTags = normalizeTagList($row['tags'] ?? '');
+                $newTags = $currentTags;
+
+                if ($mode === 'add') {
+                    foreach ($inputTags as $it) {
+                        if (!in_array($it, $newTags, true)) {
+                            $newTags[] = $it;
+                        }
+                    }
+                } elseif ($mode === 'remove') {
+                    $newTags = array_values(array_diff($newTags, $inputTags));
+                } elseif ($mode === 'replace') {
+                    $newTags = $inputTags;
+                }
+
+                $newTagsJson = encodeTagsForDb($newTags);
+                $updateStmt = $db->prepare("UPDATE customer_cars SET tags = :tags, updated_at = :now_jst WHERE id = :id");
+                $updateStmt->execute([
+                    ':tags' => $newTagsJson,
+                    ':now_jst' => $nowJst,
+                    ':id' => $row['id']
+                ]);
+
+                // タグ連動メニューを即時更新
+                if (!empty($row['user_id']) && str_starts_with($row['user_id'], 'U')) {
+                    applyTagBasedRichMenuForUser($row['user_id'], $activeAccountKey, $db);
+                }
+                $updatedCount++;
+            }
+
+            echo json_encode([
+                'success' => true,
+                'updated_count' => $updatedCount,
+                'message' => "{$updatedCount}件の顧客のタグを更新し、リッチメニューを連動適用しました！",
+                'all_tags' => getAccountAllTags($db, $activeAccountKey)
+            ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            break;
+
+        // --- 8-1-2. 店舗管理者用: 全タグ一覧取得 ---
+        case 'admin_get_account_tags':
+            $authPass = getAdminAuthPassword();
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗']);
+                exit;
+            }
+            echo json_encode([
+                'success' => true,
+                'tags' => getAccountAllTags($db, $activeAccountKey)
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             break;
 
@@ -3215,6 +3329,10 @@ try {
                         $m['alias_id'] = $genAlias;
                     }
                 }
+                // 対象タグの配列化
+                $m['target_tags'] = normalizeTagList($m['target_tags'] ?? '');
+                $m['target_tags_text'] = implode(', ', $m['target_tags']);
+
                 $m['is_notice'] = (int)($m['is_notice'] ?? 0);
 
                 // 画像URLの完全正規化（フルURL化または動的配信フォールバック）
@@ -3565,6 +3683,9 @@ try {
             $textOverlays = json_decode($textOverlaysJson, true);
             if (!is_array($textOverlays)) $textOverlays = [];
 
+            $rawTargetTags = $_POST['target_tags'] ?? '';
+            $targetTagsJson = encodeTagsForDb(normalizeTagList($rawTargetTags));
+
             // 5. DBに保存 (既存更新 UPDATE or 新規登録 INSERT)
             if ($existingMenu) {
                 $stmt = $targetDb->prepare("
@@ -3577,6 +3698,7 @@ try {
                         base_image_url = :base_image_url,
                         areas_json = :areas_json,
                         text_overlays_json = :text_overlays_json,
+                        target_tags = :target_tags,
                         width = :width,
                         height = :height,
                         is_active = :is_active,
@@ -3593,6 +3715,7 @@ try {
                     ':base_image_url' => $baseImageUrl,
                     ':areas_json' => json_encode($dbAreas, JSON_UNESCAPED_UNICODE),
                     ':text_overlays_json' => json_encode($textOverlays, JSON_UNESCAPED_UNICODE),
+                    ':target_tags' => $targetTagsJson,
                     ':width' => $width,
                     ':height' => $height,
                     ':is_active' => $isActive,
@@ -3615,10 +3738,10 @@ try {
             } else {
                 $stmt = $targetDb->prepare("
                     INSERT INTO rich_menus (
-                        line_menu_id, alias_id, title, chat_bar_text, image_url, base_image_url, areas_json, text_overlays_json,
+                        line_menu_id, alias_id, title, chat_bar_text, image_url, base_image_url, areas_json, text_overlays_json, target_tags,
                         width, height, is_active, is_notice, created_at, updated_at
                     ) VALUES (
-                        :line_menu_id, :alias_id, :title, :chat_bar_text, :image_url, :base_image_url, :areas_json, :text_overlays_json,
+                        :line_menu_id, :alias_id, :title, :chat_bar_text, :image_url, :base_image_url, :areas_json, :text_overlays_json, :target_tags,
                         :width, :height, :is_active, :is_notice, datetime('now', '+9 hours'), datetime('now', '+9 hours')
                     )
                 ");
@@ -3631,6 +3754,7 @@ try {
                     ':base_image_url' => $baseImageUrl,
                     ':areas_json' => json_encode($dbAreas, JSON_UNESCAPED_UNICODE),
                     ':text_overlays_json' => json_encode($textOverlays, JSON_UNESCAPED_UNICODE),
+                    ':target_tags' => $targetTagsJson,
                     ':width' => $width,
                     ':height' => $height,
                     ':is_active' => $isActive,
@@ -3803,6 +3927,26 @@ try {
                 'success' => true,
                 'message' => "「{$menu['title']}」をLINE公式アカウントの本番リッチメニューに適用しました！"
             ], JSON_UNESCAPED_UNICODE);
+            break;
+
+        // --- 13-2. リッチメニュー管理: 全顧客へのタグ連動リッチメニュー一括適用・同期 ---
+        case 'admin_sync_tag_richmenus':
+            $authPass = getAdminAuthPassword();
+            if ($authPass !== ADMIN_PASSWORD) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => '認証失敗: パスワードが違います']);
+                exit;
+            }
+
+            $targetAccount = trim($_POST['account'] ?? ($_GET['account'] ?? ($_SERVER['HTTP_X_LINE_ACCOUNT'] ?? getActiveAccountKey())));
+            $targetDb = getDbConnection($targetAccount);
+
+            try {
+                $syncRes = syncAllTagBasedRichMenus($targetAccount, $targetDb);
+                echo json_encode($syncRes, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            } catch (Throwable $e) {
+                echo json_encode(['success' => false, 'error' => '一括同期例外: ' . $e->getMessage()]);
+            }
             break;
 
         // --- 14. リッチメニュー管理: 削除 ---
