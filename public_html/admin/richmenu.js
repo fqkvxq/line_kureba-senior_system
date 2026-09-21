@@ -59,6 +59,17 @@ const state = {
     activeAccountInfo: null
 };
 
+// アプリケーション直下のベースURLを自動取得（どのディレクトリ名・階層に配置されても自動追従）
+function getAppBaseUrl() {
+    const loc = window.location;
+    let path = loc.pathname;
+    path = path.substring(0, path.lastIndexOf('/'));
+    if (path.endsWith('/admin')) {
+        path = path.substring(0, path.length - 6);
+    }
+    return `${loc.protocol}//${loc.host}${path}`;
+}
+
 // APIリクエストに安全な認証ヘッダーとアクティブアカウントを自動付与するfetchインターセプター
 const originalFetch = window.fetch;
 window.fetch = function (resource, init = {}) {
@@ -556,15 +567,14 @@ function renderAccountCardsList() {
         return;
     }
 
-    const host = window.location.host;
-    const path = window.location.pathname.replace(/\/admin\/.*$/, '');
+    const baseUrl = getAppBaseUrl();
 
     wrap.innerHTML = state.accounts.map(acc => {
         const isActive = acc.id === state.activeAccount;
         const isDefault = !!acc.is_default;
         const isConfigured = !!acc.is_configured;
         const color = acc.theme_color || '#6366f1';
-        const whUrl = `${window.location.protocol}//${host}${path}/webhook.php${isDefault ? '' : '?account=' + encodeURIComponent(acc.id)}`;
+        const whUrl = `${baseUrl}/webhook.php${isDefault ? '' : '?account=' + encodeURIComponent(acc.id)}`;
 
         return `
             <div class="account-card-item ${isActive ? 'is-active-acc' : ''}">
@@ -790,15 +800,14 @@ async function openAccountEditForm(accountId) {
 function updateDisplayWebhookUrl(accId, isDefault = false) {
     const displayField = document.getElementById('accFormDisplayWebhookUrl');
     const displayProlineField = document.getElementById('accFormDisplayProlineEventUrl');
-    const host = window.location.host;
-    const path = window.location.pathname.replace(/\/admin\/.*$/, '');
+    const baseUrl = getAppBaseUrl();
     const cleanId = (accId || '').toLowerCase().replace(/[^a-z0-9_\-]/g, '');
     const query = (isDefault || cleanId === 'senior') ? '' : `?account=${cleanId || 'your_id'}`;
     if (displayField) {
-        displayField.value = `${window.location.protocol}//${host}${path}/webhook.php${query}`;
+        displayField.value = `${baseUrl}/webhook.php${query}`;
     }
     if (displayProlineField) {
-        displayProlineField.value = `${window.location.protocol}//${host}${path}/proline_webhook.php${query}`;
+        displayProlineField.value = `${baseUrl}/proline_webhook.php${query}`;
     }
 }
 

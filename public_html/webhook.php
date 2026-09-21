@@ -54,8 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     foreach (getAccountList() as $acc) {
         $isCurrent = ($acc['id'] === $activeAccount);
         $badge = $isCurrent ? '<strong style="color:#4f46e5;">[現在選択中]</strong>' : '';
-        $whUrl = "https://" . ($_SERVER['HTTP_HOST'] ?? 'example.com') . dirname($_SERVER['SCRIPT_NAME'] ?? '') . "/webhook.php" . ($acc['is_default'] ? '' : "?account={$acc['id']}");
-        $whUrl = str_replace('\\', '/', $whUrl);
+        $whUrl = getBaseUrl() . "/webhook.php" . ($acc['is_default'] ? '' : "?account={$acc['id']}");
         $accountListHtml .= "<tr><td>{$acc['name']} ({$acc['id']}) {$badge}</td><td><code style='font-size:11px;'>{$whUrl}</code></td></tr>";
     }
 

@@ -223,10 +223,7 @@ try {
                 exit;
             }
 
-            $host = $_SERVER['HTTP_HOST'] ?? 'example.com';
-            $scriptDir = dirname($_SERVER['SCRIPT_NAME'] ?? '');
-            $webhookUrl = "https://{$host}" . rtrim($scriptDir, '/') . "/webhook.php" . (!empty($accConfig['is_default']) ? '' : "?account={$accConfig['id']}");
-            $webhookUrl = str_replace('\\', '/', $webhookUrl);
+            $webhookUrl = getBaseUrl() . "/webhook.php" . (!empty($accConfig['is_default']) ? '' : "?account={$accConfig['id']}");
 
             echo json_encode([
                 'success' => true,
@@ -2969,8 +2966,7 @@ try {
             $currentLineDefaultId = lineGetDefaultRichMenuId();
 
             // 基本URLの定義
-            $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'];
-            $publicBase = rtrim($baseUrl . dirname($_SERVER['SCRIPT_NAME']), '/\\');
+            $publicBase = getBaseUrl();
 
             // LINEサーバー上の全リッチメニューを自動取得し、プロライン等の未登録メニューがあれば自動インポート
             $remoteList = lineGetRichMenuList();
@@ -3214,8 +3210,7 @@ try {
 
             // Web表示用URL
             $savedFileName = basename($targetFilePath);
-            $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://{$_SERVER['HTTP_HOST']}";
-            $imageUrl = $baseUrl . dirname($_SERVER['SCRIPT_NAME']) . '/uploads/richmenu/' . $savedFileName;
+            $imageUrl = getBaseUrl() . '/uploads/richmenu/' . $savedFileName;
 
             // クリーンな元画像（装飾テキストを焼き込んでいないベース画像）の保存処理
             $uploadedBaseFile = $_FILES['base_image'] ?? null;
@@ -3246,13 +3241,13 @@ try {
                             }
                             imagedestroy($bSrcImg);
                             imagedestroy($bDstImg);
-                            $baseImageUrl = $baseUrl . dirname($_SERVER['SCRIPT_NAME']) . '/uploads/richmenu/' . $bFileName;
+                            $baseImageUrl = getBaseUrl() . '/uploads/richmenu/' . $bFileName;
                             $bResized = true;
                         }
                     }
                     if (!$bResized) {
                         if (move_uploaded_file($uploadedBaseFile['tmp_name'], $bTargetFilePath)) {
-                            $baseImageUrl = $baseUrl . dirname($_SERVER['SCRIPT_NAME']) . '/uploads/richmenu/' . $bFileName;
+                            $baseImageUrl = getBaseUrl() . '/uploads/richmenu/' . $bFileName;
                         }
                     }
                 }
