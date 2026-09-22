@@ -36,8 +36,8 @@ define('LINE_ACCOUNTS_DATA_DIR', __DIR__ . '/data');
 define('LINE_ACCOUNTS_DATA_FILE', LINE_ACCOUNTS_DATA_DIR . '/line_accounts.json');
 
 // --- システムバージョン & 配布リポジトリ定義 (OTA自動更新用) ---
-define('SYSTEM_CURRENT_VERSION', '2.5.0');
-define('SYSTEM_BUILD_DATE', '2026-09-21');
+define('SYSTEM_CURRENT_VERSION', '2.5.1');
+define('SYSTEM_BUILD_DATE', '2026-09-22');
 define('SYSTEM_GITHUB_REPO', 'fqkvxq/line_kureba-senior_system');
 define('SYSTEM_GITHUB_BRANCH', 'main');
 
