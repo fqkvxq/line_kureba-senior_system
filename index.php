@@ -15,8 +15,9 @@ $dir = dirname($_SERVER['SCRIPT_NAME'] ?? '');
 $dir = str_replace('\\', '/', $dir);
 $base = rtrim($dir, '/');
 
-// 管理画面への安全な完全絶対URL
-$targetUrl = "{$proto}://{$host}{$base}/admin/index.html";
+// 管理画面への安全な完全絶対URL (public_html/admin/ または admin/ を自動判定)
+$adminPath = is_dir(__DIR__ . '/public_html/admin') ? '/public_html/admin/index.html' : '/admin/index.html';
+$targetUrl = "{$proto}://{$host}{$base}{$adminPath}";
 
 header("Location: {$targetUrl}", true, 302);
 exit;

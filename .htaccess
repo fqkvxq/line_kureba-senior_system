@@ -41,8 +41,10 @@ SetEnv TZ Asia/Tokyo
     RewriteCond %{REQUEST_URI} !/public_html/
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{DOCUMENT_ROOT}/public_html/$1 -f [OR]
-    RewriteCond %{DOCUMENT_ROOT}/public_html/$1 -d
+    RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI}/public_html/$1 -f [OR]
+    RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI}/public_html/$1 -d [OR]
+    RewriteCond public_html/$1 -f [OR]
+    RewriteCond public_html/$1 -d
     RewriteRule ^(.*)$ public_html/$1 [L]
 </IfModule>
 
