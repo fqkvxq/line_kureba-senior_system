@@ -1906,7 +1906,7 @@ function applyColumnVisibility(config) {
     if (!table) return;
 
     let visibleCount = 2; // お名前 と 操作（固定2列）
-    const totalCount = 8; // 全8列
+    const totalCount = 9; // 全9列（固定2列 + 選択対象7列）
 
     Object.keys(DEFAULT_COLUMN_VISIBILITY).forEach(colKey => {
         const isVisible = (config[colKey] !== false);

@@ -976,6 +976,7 @@ body {
 }
 
 /* カラム非表示CSSルール (高速即時反映) */
+.data-table.hide-col-tags [data-col="tags"] { display: none !important; }
 .data-table.hide-col-course [data-col="course"] { display: none !important; }
 .data-table.hide-col-oil [data-col="oil"] { display: none !important; }
 .data-table.hide-col-periodic [data-col="periodic"] { display: none !important; }
