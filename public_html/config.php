@@ -390,7 +390,7 @@ define('ADMIN_2FA_CODE_LIFETIME_MINUTES', 10); // 認証コード有効期限 (1
 define('ADMIN_2FA_MAX_ATTEMPTS', 5); // 認証コード最大試行回数 (5回超過で無効化)
 
 // --- Discord 通知設定 ---
-define('DISCORD_WEBHOOK_URL', 'https://discord.com/api/webhooks/1543636005582667776/8hnE-kLsB545xgS923mTvgIUaBuTz8TQQLrJXFvqB-A0oh92LmqC8Zn-1jaOIhW20YEZ');
+define('DISCORD_WEBHOOK_URL', 'https://discord.com/api/webhooks/1551765801915256945/oFevGuc0NNk5CVw4Ul26Cn7S4gFdHV8J0jqeNz2Yhiw_RN7XeR-uVhNOWAlSnw-HNfnY');
 
 // --- 店舗・教室・システム設定 ---
 define('SHOP_CODE', '0601492');
@@ -2674,6 +2674,79 @@ function sendDiscordTestNotification(string $webhookUrl): array {
         'http_code' => $httpCode,
         'error' => $curlErr ?: ($res ?: "HTTPステータス: {$httpCode} が返されました。Webhook URLを確認してください")
     ];
+}
+
+/**
+ * LINE Webhook受信用 Discord リアルタイム・デバッグ通知
+ * 処理の各段階でDiscordへEmbedカード形式で詳細情報を送信します
+ */
+function sendDiscordDebugNotification(string $title, array $fields = [], int $color = 0x5865F2, ?string $rawPayload = null, ?string $webhookUrl = null): bool {
+    try {
+        $url = $webhookUrl ?: (defined('DISCORD_WEBHOOK_URL') ? DISCORD_WEBHOOK_URL : '');
+        if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
+            return false;
+        }
+
+        $formattedFields = [];
+        foreach ($fields as $name => $value) {
+            if (is_array($value) || is_object($value)) {
+                $valStr = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+                if (mb_strlen($valStr) > 500) {
+                    $valStr = mb_substr($valStr, 0, 500) . "\n...";
+                }
+                $valStr = "```json\n{$valStr}\n```";
+            } else {
+                $valStr = (string)$value;
+                if ($valStr === '') $valStr = '(空)';
+                if (mb_strlen($valStr) > 1000) {
+                    $valStr = mb_substr($valStr, 0, 1000) . '...';
+                }
+            }
+            $formattedFields[] = [
+                'name' => (string)$name,
+                'value' => $valStr,
+                'inline' => (mb_strlen($valStr) < 40 && !str_contains($valStr, "\n"))
+            ];
+        }
+
+        $embed = [
+            'title' => $title,
+            'color' => $color,
+            'fields' => $formattedFields,
+            'footer' => [
+                'text' => 'LINE受講生管理 | Webhook リアルタイムデバッグ'
+            ],
+            'timestamp' => date('c')
+        ];
+
+        if ($rawPayload !== null && $rawPayload !== '') {
+            $cut = mb_substr($rawPayload, 0, 800);
+            if (mb_strlen($rawPayload) > 800) $cut .= '...';
+            $embed['description'] = "📄 **Raw Payload:**\n```json\n{$cut}\n```";
+        }
+
+        $payload = [
+            'username' => 'LINE Webhook デバッガー',
+            'avatar_url' => 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/linecorp_code_withborder.png',
+            'embeds' => [$embed]
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 4,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json; charset=utf-8'],
+            CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE)
+        ]);
+        $res = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        return ($httpCode >= 200 && $httpCode < 300);
+    } catch (Throwable $e) {
+        return false;
+    }
 }
 
 /**

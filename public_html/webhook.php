@@ -153,20 +153,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $lineSignature = base64_encode(hash_hmac('sha256', $rawInput, $channelSecret, true));
     }
 
+    $sigValid = false;
+    if (!empty($channelSecret) && $channelSecret !== 'YOUR_CHANNEL_SECRET_HERE' && !empty($lineSignature)) {
+        $hash = base64_encode(hash_hmac('sha256', $rawInput, $channelSecret, true));
+        $sigValid = hash_equals($hash, trim($lineSignature));
+    }
+
     writeDebugLog("Webhook受信", [
         'account' => $activeAccount,
         'bytes' => strlen($rawInput),
         'has_sig' => !empty($lineSignature),
+        'sig_valid' => $sigValid,
         'remote_ip' => $_SERVER['REMOTE_ADDR'] ?? ''
     ]);
 
-    // 署名検証 (Channel Secretが設定されている場合)
-    if (!empty($channelSecret) && $channelSecret !== 'YOUR_CHANNEL_SECRET_HERE' && !empty($lineSignature)) {
-        $hash = base64_encode(hash_hmac('sha256', $rawInput, $channelSecret, true));
-        if (!hash_equals($hash, trim($lineSignature))) {
-            writeDebugLog("署名検証警告 (Signature mismatch, processing payload anyway)", ['account' => $activeAccount]);
-        }
-    }
+    // Discord デバッグ通知: 1. Webhook 受信開始
+    sendDiscordDebugNotification("📥 【LINE Webhook】リクエスト受信", [
+        'アカウント' => "{$activeConfig['name']} (`{$activeAccount}`)",
+        'サイズ' => strlen($rawInput) . ' bytes',
+        '署名ヘッダー' => !empty($lineSignature) ? 'あり' : 'なし',
+        '署名検証' => $sigValid ? '✅ 一致 (Valid)' : '⚠️ 不一致/未検証 (継続処理)',
+        '送信元IP' => $_SERVER['REMOTE_ADDR'] ?? '不明'
+    ], 0x3B82F6, strlen($rawInput) > 0 ? $rawInput : null);
 
     // 1. データベース接続の確立
     $db = null;
@@ -192,20 +200,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } catch (Throwable $tblEx) {}
     } catch (Throwable $e) {
         writeDebugLog("DB接続例外: " . $e->getMessage(), ['account' => $activeAccount]);
+        sendDiscordDebugNotification("⚠️ 【DB接続例外】", [
+            'アカウント' => $activeAccount,
+            'エラー' => $e->getMessage()
+        ], 0xEF4444);
     }
 
     $data = json_decode($rawInput, true);
     if (empty($data['events'])) {
         writeDebugLog("イベントなし (検証Pingなど - 200 OK返却)");
+        sendDiscordDebugNotification("🧪 【LINE Webhook】接続検証Ping (Events空 - 正常200OK返却)", [
+            'アカウント' => $activeAccount,
+            '内容' => 'LINE Developersの検証ボタンまたはWebhookテストPing'
+        ], 0x10B981);
+
         // プロライン中継
         if ($db) {
-            relayWebhookToProline($rawInput, $lineSignature, $db, $activeAccount);
+            $relayRes = relayWebhookToProline($rawInput, $lineSignature, $db, $activeAccount);
+            if (!empty($relayRes['urls_sent'])) {
+                sendDiscordDebugNotification("🔀 【プロライン中継】検証Ping転送結果", [
+                    '転送件数' => count($relayRes['urls_sent']) . ' 件',
+                    '結果一覧' => $relayRes['results'] ?? []
+                ], 0x8B5CF6);
+            }
         }
         http_response_code(200);
         echo 'OK (No events)';
         exit;
     }
 
+    $eventCount = count($data['events']);
     $prolineSettings = $db ? getProlineSettings($db, $activeAccount) : [];
     $isProlineActive = (!empty($prolineSettings['webhook_urls']) && !empty($prolineSettings['relay_enabled']));
 
@@ -221,12 +245,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $allAccountKeys = array_values(array_unique($allAccountKeys));
 
     // 2. 【最優先】LINEメッセージ・イベントを即座に全ローカルデータベースに保存・反映
-    foreach ($data['events'] as $event) {
+    foreach ($data['events'] as $idx => $event) {
         $replyToken = $event['replyToken'] ?? null;
         $userId = trim($event['source']['userId'] ?? '');
         $type = $event['type'] ?? '';
 
-        writeDebugLog("イベント処理開始", ['type' => $type, 'userId' => $userId, 'account' => $activeAccount]);
+        writeDebugLog("イベント処理開始", ['type' => $type, 'userId' => $userId, 'account' => $activeAccount, 'event_index' => $idx + 1]);
 
         if (empty($userId)) continue;
 
@@ -284,6 +308,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $nowJst = date('Y-m-d H:i:s');
 
                 // A. チャットメッセージ履歴テーブルへ即座に確実に保存 (最優先・全アカウントDBへ完全同期)
+                $dbSavedCount = 0;
                 foreach ($allAccountKeys as $targetAccKey) {
                     try {
                         $targetDb = ($targetAccKey === $activeAccount && $db) ? $db : getDbConnection($targetAccKey);
@@ -336,16 +361,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             WHERE TRIM(user_id) = :uid
                         ")->execute([':now' => $nowJst, ':prev' => $preview, ':uid' => $userId]);
 
+                        $dbSavedCount++;
                         writeDebugLog("チャットメッセージDB保存完了 ({$targetAccKey})", ['uid' => $userId, 'text' => $userText, 'msgType' => $msgType]);
                     } catch (Throwable $chatEx) {
                         writeDebugLog("chat_messages 保存エラー ({$targetAccKey})", ['error' => $chatEx->getMessage()]);
                     }
                 }
 
-                // C. 管理者マルチ通知送信 (LINE Push / Discord / Slack / WebPush)
+                // C. 顧客プロファイルの取得 & 管理者マルチ通知送信
+                $userName = 'LINE受講生';
+                $picUrl = '';
+                $userProfile = null;
                 try {
-                    $userName = 'LINE受講生';
-                    $picUrl = '';
                     if ($db) {
                         $cStmt = $db->prepare("SELECT user_name, picture_url FROM customer_cars WHERE TRIM(user_id) = :uid LIMIT 1");
                         $cStmt->execute([':uid' => $userId]);
@@ -354,7 +381,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         if (!empty($cRow['picture_url'])) $picUrl = $cRow['picture_url'];
                     }
 
-                    $userProfile = null;
                     if (empty($userName) || $userName === '受講生' || $userName === 'LINE受講生') {
                         $userProfile = getLineUserProfile($userId, $activeAccount);
                         if (!empty($userProfile['displayName'])) $userName = $userProfile['displayName'];
@@ -375,7 +401,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         sendAdminLineChatMessageNotification($msgDataPayload, $userProfile, $db);
                     }
 
-                    // Discord & Slack 通知
+                    // Discord & Slack 通知 (通常チャット通知)
                     if ($db) {
                         sendDiscordChatMessageNotification($msgDataPayload, $userProfile, $db);
                         sendSlackChatMessageNotification($msgDataPayload, $userProfile, $db);
@@ -389,6 +415,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     writeDebugLog("チャット通知送信エラー", ['error' => $disEx->getMessage()]);
                 }
 
+                // Discord デバッグ通知: 2. LINEメッセージ処理 & DB保存完了
+                sendDiscordDebugNotification("💬 【LINE受信】メッセージ処理 & DB保存完了", [
+                    '受講生' => "{$userName} 様 (`{$userId}`)",
+                    'メッセージ種別' => $msgType,
+                    '受信本文' => $userText,
+                    'DB保存' => "✅ {$dbSavedCount} 箇所のアカウントDBに保存完了",
+                    '画像添付' => !empty($imageUrl) ? $imageUrl : 'なし',
+                    'プロライン中継' => $isProlineActive ? '有効 (後続処理で中継)' : '無効 (自動応答または待機)'
+                ], 0x10B981, json_encode($event, JSON_UNESCAPED_UNICODE));
+
                 // D. プロライン中継が無効な場合の自動テキスト応答
                 if (!$isProlineActive && !empty($replyToken) && $db) {
                     handleTextMessage($db, $replyToken, $userText, $userId);
@@ -397,6 +433,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } elseif ($type === 'follow') {
                 // 友だち追加・ブロック解除時
                 recordCustomerInteraction($db, $userId, 'follow', "✨ 友だち追加");
+                $uName = 'LINE受講生';
                 try {
                     $prof = getLineUserProfile($userId, $activeAccount);
                     $uName = $prof['displayName'] ?? 'LINE受講生';
@@ -420,6 +457,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } catch (Throwable $sEx) {
                     writeDebugLog("フォロー通知エラー", ['error' => $sEx->getMessage()]);
                 }
+
+                // Discord デバッグ通知: 3. 友だち追加
+                sendDiscordDebugNotification("✨ 【LINE受信】友だち追加・ブロック解除", [
+                    '受講生' => "{$uName} 様 (`{$userId}`)",
+                    'アカウント' => $activeAccount,
+                    'ステータス' => '✅ カルテ登録 & ブロック解除完了'
+                ], 0x10B981, json_encode($event, JSON_UNESCAPED_UNICODE));
 
                 // プロライン中継が無効な場合の自動フォロー応答
                 if (!$isProlineActive && !empty($replyToken)) {
@@ -446,6 +490,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
                 } catch (Throwable $dbEx) {}
                 recordCustomerInteraction($db, $userId, 'unfollow', "🚫 ブロック");
+
+                // Discord デバッグ通知: 4. ブロック
+                sendDiscordDebugNotification("🚫 【LINE受信】ユーザーがブロックしました", [
+                    'LINE UID' => $userId,
+                    'アカウント' => $activeAccount,
+                    'ステータス' => 'カルテをブロック状態に更新'
+                ], 0x64748B, json_encode($event, JSON_UNESCAPED_UNICODE));
 
             } elseif ($type === 'postback') {
                 $postbackData = $event['postback']['data'] ?? '';
@@ -475,6 +526,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } catch (Throwable $e) {}
                 recordCustomerInteraction($db, $userId, 'user_action', $actionLabel);
 
+                // Discord デバッグ通知: 5. ポストバック
+                sendDiscordDebugNotification("⚡ 【LINE受信】ポストバック操作", [
+                    'LINE UID' => $userId,
+                    '操作種別' => $actionLabel,
+                    'Postback Data' => $postbackData
+                ], 0x3B82F6, json_encode($event, JSON_UNESCAPED_UNICODE));
+
                 handlePostback($db, $replyToken, $postbackData, $userId, $event['postback']['params'] ?? []);
             }
         } catch (Throwable $e) {
@@ -484,6 +542,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
+            sendDiscordDebugNotification("❌ 【LINE Webhook処理例外】", [
+                'イベント種別' => $type,
+                'LINE UID' => $userId,
+                'エラー内容' => $e->getMessage(),
+                '発生ファイル' => $e->getFile() . ':' . $e->getLine()
+            ], 0xEF4444, $e->getTraceAsString());
         }
     }
 
@@ -491,8 +555,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $prolineRelayResult = relayWebhookToProline($rawInput, $lineSignature, $db, $activeAccount);
         writeDebugLog("外部ツール中継実行", $prolineRelayResult);
+
+        if (!empty($prolineRelayResult['urls_sent'])) {
+            $isSuccess = ($prolineRelayResult['status'] === 'success');
+            sendDiscordDebugNotification("🔀 【プロライン中継】転送実行結果", [
+                '中継ステータス' => $isSuccess ? '✅ 全件中継成功' : '⚠️ 一部または全部失敗',
+                '中継先URL数' => count($prolineRelayResult['urls_sent']) . ' 件',
+                '転送結果詳細' => $prolineRelayResult['results'] ?? []
+            ], $isSuccess ? 0x8B5CF6 : 0xF59E0B);
+        }
     } catch (Throwable $prEx) {
         writeDebugLog("プロライン中継例外", ['error' => $prEx->getMessage()]);
+        sendDiscordDebugNotification("❌ 【プロライン中継例外】", [
+            'エラー' => $prEx->getMessage()
+        ], 0xEF4444);
     }
 
     http_response_code(200);
