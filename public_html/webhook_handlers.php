@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * LINE Webhook イベントハンドラー & テンプレート生成関数群
  */
@@ -3895,39 +3895,7 @@ function handleCloseNoticeMenu(?PDO $db, string $replyToken, string $userId): vo
     }
 }
 
-/**
- * クイックリプライボタン一覧（LINE Messaging API 完全準拠: postbackのみ）
- * アカウントの業種に応じたクイックリプライを返却
- */
-function getQuickReplyItems(?string $accountKey = null): array {
-    if (function_exists('getAccountQuickReplyItems')) {
-        $qr = getAccountQuickReplyItems($accountKey);
-        if ($qr !== null) {
-            return $qr;
-        }
-    }
 
-    return [
-        'items' => [
-            [
-                'type' => 'action',
-                'action' => [
-                    'type' => 'postback',
-                    'label' => '📋 マイカルテ',
-                    'data' => 'action=open_mycar'
-                ]
-            ],
-            [
-                'type' => 'action',
-                'action' => [
-                    'type' => 'postback',
-                    'label' => '💬 お問い合わせ・相談',
-                    'data' => 'action=ask_class&topic=お問い合わせ'
-                ]
-            ]
-        ]
-    ];
-}
 
 /**
  * LINE Messaging API 返信送信
