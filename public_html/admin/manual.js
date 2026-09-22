@@ -102,6 +102,7 @@ function initAuth() {
     const admin2FACodeInput = document.getElementById('admin2FACodeInput');
     const loginBtn = document.getElementById('loginBtn');
     const btnVerify2FA = document.getElementById('btnVerify2FA');
+    const btnRequestNewCode = document.getElementById('btnRequestNewCode');
     const btnBackToPassword = document.getElementById('btnBackToPassword');
     const btnResend2FACode = document.getElementById('btnResend2FACode');
     const resendTimerText = document.getElementById('resendTimerText');
@@ -121,10 +122,25 @@ function initAuth() {
     };
 
     const hideLoginError = () => {
-        if (loginErrorMsg) {
-            loginErrorMsg.textContent = '';
-            loginErrorMsg.style.display = 'none';
-        }
+        if (loginErrorMsg) loginErrorMsg.style.display = 'none';
+    };
+
+    const startResendTimer = (seconds = 60) => {
+        resendCountdown = seconds;
+        if (resendTimerInterval) clearInterval(resendTimerInterval);
+        if (btnResend2FACode) btnResend2FACode.disabled = true;
+        if (resendTimerText) resendTimerText.textContent = `(${resendCountdown}s)`;
+
+        resendTimerInterval = setInterval(() => {
+            resendCountdown--;
+            if (resendCountdown <= 0) {
+                clearInterval(resendTimerInterval);
+                if (btnResend2FACode) btnResend2FACode.disabled = false;
+                if (resendTimerText) resendTimerText.textContent = '';
+            } else {
+                if (resendTimerText) resendTimerText.textContent = `(${resendCountdown}s)`;
+            }
+        }, 1000);
     };
 
     const finishLoginSuccess = (pass, authToken) => {
@@ -141,39 +157,51 @@ function initAuth() {
         if (adminApp) adminApp.style.display = 'flex';
     };
 
-    const startResendTimer = (seconds = 60) => {
-        if (resendTimerInterval) clearInterval(resendTimerInterval);
-        resendCountdown = seconds;
-
-        const updateUI = () => {
-            if (resendTimerText) {
-                resendTimerText.textContent = resendCountdown > 0 ? `(${resendCountdown}秒)` : '';
-            }
-            if (btnResend2FACode) {
-                btnResend2FACode.disabled = resendCountdown > 0;
-                btnResend2FACode.style.opacity = resendCountdown > 0 ? '0.5' : '1';
-                btnResend2FACode.style.cursor = resendCountdown > 0 ? 'not-allowed' : 'pointer';
-            }
-        };
-
-        updateUI();
-        resendTimerInterval = setInterval(() => {
-            resendCountdown--;
-            if (resendCountdown <= 0) {
-                clearInterval(resendTimerInterval);
-                resendCountdown = 0;
-            }
-            updateUI();
-        }, 1000);
-    };
-
-    const backToPasswordStep = () => {
-        if (resendTimerInterval) clearInterval(resendTimerInterval);
-        twoFactorSessionToken = '';
+    const requestEmailAuthCode = async (isUserAction = false) => {
+        if (btnRequestNewCode) {
+            btnRequestNewCode.disabled = true;
+            btnRequestNewCode.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> コード送信中...';
+        }
         hideLoginError();
-        if (loginStep2Wrap) loginStep2Wrap.style.display = 'none';
-        if (loginStep1Wrap) loginStep1Wrap.style.display = 'block';
-        if (adminPasswordInput) adminPasswordInput.focus();
+
+        try {
+            const payload = new URLSearchParams({
+                action: 'admin_request_email_code'
+            });
+            const res = await fetch('../api.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: payload.toString()
+            });
+            const data = await res.json();
+
+            if (!data.success) {
+                showLoginError(data.error || '認証コードの送信に失敗しました');
+                return;
+            }
+
+            twoFactorSessionToken = data.session_token;
+            if (login2FAEmailHint) {
+                login2FAEmailHint.textContent = data.email || data.email_hint || 'kawai@kureba.co.jp';
+            }
+            if (admin2FACodeInput) {
+                admin2FACodeInput.value = '';
+                admin2FACodeInput.focus();
+            }
+            startResendTimer(60);
+
+            if (isUserAction) {
+                alert('✉️ 認証コードをメール送信しました！メールをご確認ください。');
+            }
+        } catch (e) {
+            console.error('Request Email Auth Code Error:', e);
+            showLoginError('認証コード送信エラー: ' + e.message);
+        } finally {
+            if (btnRequestNewCode) {
+                btnRequestNewCode.disabled = false;
+                btnRequestNewCode.innerHTML = '<i class="fa-solid fa-paper-plane"></i> 認証コードを今すぐ送信';
+            }
+        }
     };
 
     if (savedToken || savedPass) {
@@ -184,62 +212,8 @@ function initAuth() {
     } else {
         if (loginModal) loginModal.style.display = 'flex';
         if (adminApp) adminApp.style.display = 'none';
+        requestEmailAuthCode(false);
     }
-
-    const attemptLogin = async () => {
-        const pass = adminPasswordInput ? adminPasswordInput.value.trim() : '';
-        if (!pass) {
-            showLoginError('パスワードを入力してください');
-            return;
-        }
-
-        if (loginBtn) {
-            loginBtn.disabled = true;
-            loginBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 確認中...';
-        }
-        hideLoginError();
-
-        try {
-            const payload = new URLSearchParams({
-                action: 'admin_login_step1',
-                password: pass
-            });
-            const res = await fetch('../api.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: payload.toString()
-            });
-            const data = await res.json();
-
-            if (!data.success) {
-                showLoginError(data.error || 'パスワードが正しくありません');
-                return;
-            }
-
-            if (data.require_2fa) {
-                twoFactorSessionToken = data.session_token;
-                if (login2FAEmailHint) {
-                    login2FAEmailHint.textContent = data.email_hint || 'kawai@kureba.co.jp';
-                }
-                if (loginStep1Wrap) loginStep1Wrap.style.display = 'none';
-                if (loginStep2Wrap) loginStep2Wrap.style.display = 'block';
-                if (admin2FACodeInput) {
-                    admin2FACodeInput.value = '';
-                    admin2FACodeInput.focus();
-                }
-                startResendTimer(60);
-            } else {
-                finishLoginSuccess(pass, data.auth_token);
-            }
-        } catch (e) {
-            showLoginError('通信エラーが発生しました: ' + e.message);
-        } finally {
-            if (loginBtn) {
-                loginBtn.disabled = false;
-                loginBtn.innerHTML = 'ログインして閲覧';
-            }
-        }
-    };
 
     const attemptVerify2FA = async () => {
         const code = admin2FACodeInput ? admin2FACodeInput.value.trim() : '';
@@ -269,7 +243,7 @@ function initAuth() {
 
             if (data.success && data.auth_token) {
                 if (resendTimerInterval) clearInterval(resendTimerInterval);
-                finishLoginSuccess(adminPasswordInput ? adminPasswordInput.value.trim() : '', data.auth_token);
+                finishLoginSuccess('', data.auth_token);
             } else {
                 showLoginError(data.error || '認証コードが正しくありません');
             }
@@ -278,14 +252,17 @@ function initAuth() {
         } finally {
             if (btnVerify2FA) {
                 btnVerify2FA.disabled = false;
-                btnVerify2FA.innerHTML = '認証してログイン';
+                btnVerify2FA.innerHTML = '認証して閲覧';
             }
         }
     };
 
     const attemptResend2FA = async () => {
         if (resendCountdown > 0) return;
-        if (!twoFactorSessionToken) return;
+        if (!twoFactorSessionToken) {
+            requestEmailAuthCode(true);
+            return;
+        }
 
         if (btnResend2FACode) btnResend2FACode.disabled = true;
         hideLoginError();
@@ -317,19 +294,13 @@ function initAuth() {
         }
     };
 
-    if (loginBtn) loginBtn.addEventListener('click', attemptLogin);
-    if (adminPasswordInput) {
-        adminPasswordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') attemptLogin();
-        });
-    }
+    if (btnRequestNewCode) btnRequestNewCode.addEventListener('click', () => requestEmailAuthCode(true));
     if (btnVerify2FA) btnVerify2FA.addEventListener('click', attemptVerify2FA);
     if (admin2FACodeInput) {
         admin2FACodeInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') attemptVerify2FA();
         });
     }
-    if (btnBackToPassword) btnBackToPassword.addEventListener('click', backToPasswordStep);
     if (btnResend2FACode) btnResend2FACode.addEventListener('click', attemptResend2FA);
 
     if (logoutBtn) {
@@ -344,13 +315,8 @@ function initAuth() {
             if (resendTimerInterval) clearInterval(resendTimerInterval);
             if (adminApp) adminApp.style.display = 'none';
             if (loginModal) loginModal.style.display = 'flex';
-            if (loginStep1Wrap) loginStep1Wrap.style.display = 'block';
-            if (loginStep2Wrap) loginStep2Wrap.style.display = 'none';
-            if (adminPasswordInput) {
-                adminPasswordInput.value = '';
-                adminPasswordInput.focus();
-            }
             hideLoginError();
+            requestEmailAuthCode(false);
         });
     }
 }

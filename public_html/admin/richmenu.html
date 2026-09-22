@@ -13,43 +13,39 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260921_tag_system_v1">
-    <link rel="stylesheet" href="richmenu.css?v=20260921_tag_system_v1">
+    <link rel="stylesheet" href="admin.css?v=20260922_email_auth_v23">
+    <link rel="stylesheet" href="richmenu.css?v=20260922_email_auth_v23">
 </head>
 <body>
-    <!-- ログインモーダル (二段階認証対応) -->
+    <!-- ログインモーダル (メール認証専用・パスワード不要) -->
     <div class="login-overlay" id="loginModal">
         <div class="login-card">
-            <!-- STEP 1: パスワード入力 -->
-            <div id="loginStep1Wrap">
-                <div class="login-icon"><i class="fa-solid fa-shield-halved"></i></div>
-                <h2>教室管理ログイン</h2>
-                <p>シニア向けパソコン教室 リッチメニュー管理システム</p>
-                <div class="login-form">
-                    <input type="password" id="adminPasswordInput" placeholder="管理者パスワードを入力" autofocus autocomplete="current-password">
-                    <button type="button" id="loginBtn" class="btn-login">ログイン</button>
-                </div>
-            </div>
-
-            <!-- STEP 2: メール二段階認証コード入力 -->
-            <div id="loginStep2Wrap" style="display: none;">
+            <!-- メール認証コード入力フォーム -->
+            <div id="loginStep2Wrap">
                 <div class="login-icon" style="background: #e0f2fe; color: #0284c7;"><i class="fa-solid fa-envelope-circle-check"></i></div>
-                <h2>二段階認証コードの入力</h2>
+                <h2>メール認証ログイン</h2>
                 <p style="font-size: 13px; line-height: 1.5; color: #475569; margin-bottom: 16px;">
-                    <span id="login2FAEmailHint" style="font-weight: 700; color: #0f172a;">kawai@kureba.co.jp</span> 宛てに送信された6桁の認証コードを入力してください。
+                    <span id="login2FAEmailHint" style="font-weight: 700; color: #0f172a;">kawai@kureba.co.jp</span> 宛てに送信された6桁の認証コードを入力してください。<br>
+                    <small style="color: #64748b;">※ パスワード入力は不要です</small>
                 </p>
                 <div class="login-form">
                     <input type="text" id="admin2FACodeInput" placeholder="6桁の認証コード" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" style="text-align: center; font-size: 22px; font-weight: 800; letter-spacing: 6px;">
                     <button type="button" id="btnVerify2FA" class="btn-login" style="background: #0284c7;">認証してログイン</button>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; font-size: 12px;">
-                    <button type="button" id="btnBackToPassword" style="background: none; border: none; color: #64748b; cursor: pointer; text-decoration: underline; padding: 0;">
-                        <i class="fa-solid fa-arrow-left"></i> パスワード再入力
+                    <button type="button" id="btnRequestNewCode" style="background: none; border: none; color: #0284c7; cursor: pointer; font-weight: 600; padding: 0;">
+                        <i class="fa-solid fa-paper-plane"></i> 認証コードを今すぐ送信
                     </button>
-                    <button type="button" id="btnResend2FACode" style="background: none; border: none; color: #0284c7; cursor: pointer; font-weight: 600; padding: 0;">
+                    <button type="button" id="btnResend2FACode" style="background: none; border: none; color: #64748b; cursor: pointer; font-weight: 600; padding: 0;">
                         <i class="fa-solid fa-rotate-right"></i> コード再送信 <span id="resendTimerText"></span>
                     </button>
                 </div>
+            </div>
+
+            <!-- 互換用非表示ラッパー -->
+            <div id="loginStep1Wrap" style="display: none;">
+                <input type="hidden" id="adminPasswordInput" value="">
+                <button type="button" id="loginBtn" style="display: none;"></button>
             </div>
 
             <div class="login-error" id="loginErrorMsg" style="margin-top: 14px;"></div>
@@ -1234,6 +1230,6 @@
     <!-- トースト通知 -->
     <div class="toast-notification" id="adminToast"></div>
 
-    <script src="richmenu.js?v=20260921_tag_system_v1"></script>
+    <script src="richmenu.js?v=20260922_email_auth_v23"></script>
 </body>
 </html>

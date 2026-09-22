@@ -1375,50 +1375,22 @@ try {
             echo json_encode($res, JSON_UNESCAPED_UNICODE);
             exit;
 
-        // --- 0-15. 管理者ログイン STEP 1 (パスワード検証 & 2FAコード送信) ---
+        // --- 0-15. 管理者ログイン (メール認証コード送信・パスワード不要) ---
+        case 'admin_request_email_code':
         case 'admin_login_step1':
-            $inputPass = trim($_POST['password'] ?? ($_GET['password'] ?? ''));
-            if ($inputPass !== ADMIN_PASSWORD) {
-                echo json_encode(['success' => false, 'error' => 'パスワードが正しくありません'], JSON_UNESCAPED_UNICODE);
-                exit;
-            }
-
-            // 2FA設定を確認
             $twoFa = getAdmin2FASettings($db);
-            if (!empty($twoFa['enabled'])) {
-                $targetEmail = !empty($twoFa['email']) ? $twoFa['email'] : 'kawai@kureba.co.jp';
-                $sessionRes = createAdmin2FASession($db, $targetEmail);
-                echo json_encode([
-                    'success' => true,
-                    'require_2fa' => true,
-                    'session_token' => $sessionRes['session_token'],
-                    'email_hint' => $sessionRes['email_hint'],
-                    'expires_in' => $sessionRes['expires_in'],
-                    'mail_sent' => $sessionRes['mail_sent'],
-                    'message' => "認証コードを {$sessionRes['email_hint']} へ送信しました"
-                ], JSON_UNESCAPED_UNICODE);
-                exit;
-            }
+            $targetEmail = !empty($twoFa['email']) ? $twoFa['email'] : 'kawai@kureba.co.jp';
 
-            // 2FAが無効な場合は直接認証トークン発行
-            $authToken = createAdminAuthToken($db);
-            @setcookie('admin_auth_token', $authToken, [
-                'expires' => time() + 86400 * 30,
-                'path' => '/',
-                'httponly' => false,
-                'samesite' => 'Lax'
-            ]);
-            @setcookie('admin_pass', ADMIN_PASSWORD, [
-                'expires' => time() + 86400 * 30,
-                'path' => '/',
-                'httponly' => false,
-                'samesite' => 'Lax'
-            ]);
+            $sessionRes = createAdmin2FASession($db, $targetEmail);
             echo json_encode([
                 'success' => true,
-                'require_2fa' => false,
-                'auth_token' => $authToken,
-                'message' => 'ログインに成功しました'
+                'require_2fa' => true,
+                'session_token' => $sessionRes['session_token'],
+                'email' => $targetEmail,
+                'email_hint' => $sessionRes['email_hint'],
+                'expires_in' => $sessionRes['expires_in'],
+                'mail_sent' => $sessionRes['mail_sent'],
+                'message' => "認証コードを {$targetEmail} 宛てに送信しました"
             ], JSON_UNESCAPED_UNICODE);
             exit;
 

@@ -193,6 +193,7 @@ const elements = {
     admin2FACodeInput: document.getElementById('admin2FACodeInput'),
     loginBtn: document.getElementById('loginBtn'),
     btnVerify2FA: document.getElementById('btnVerify2FA'),
+    btnRequestNewCode: document.getElementById('btnRequestNewCode'),
     btnBackToPassword: document.getElementById('btnBackToPassword'),
     btnResend2FACode: document.getElementById('btnResend2FACode'),
     resendTimerText: document.getElementById('resendTimerText'),
@@ -1055,11 +1056,12 @@ function initAuth() {
     } else {
         elements.loginModal.style.display = 'flex';
         elements.adminApp.style.display = 'none';
+        requestEmailAuthCode(false);
     }
 }
 
 function finishLoginSuccess(pass, authToken) {
-    state.password = pass;
+    state.password = pass || '';
     state.authToken = authToken || '';
     if (authToken) {
         sessionStorage.setItem('admin_auth_token', authToken);
@@ -1080,23 +1082,16 @@ function showApp() {
     loadHistoryList();
 }
 
-async function attemptLogin() {
-    const pass = elements.adminPasswordInput ? elements.adminPasswordInput.value.trim() : '';
-    if (!pass) {
-        showLoginError('パスワードを入力してください');
-        return;
-    }
-
-    if (elements.loginBtn) {
-        elements.loginBtn.disabled = true;
-        elements.loginBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 確認中...';
+async function requestEmailAuthCode(isUserAction = false) {
+    if (elements.btnRequestNewCode) {
+        elements.btnRequestNewCode.disabled = true;
+        elements.btnRequestNewCode.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> コード送信中...';
     }
     hideLoginError();
 
     try {
         const payload = new URLSearchParams({
-            action: 'admin_login_step1',
-            password: pass
+            action: 'admin_request_email_code'
         });
         const res = await fetch('../api.php', {
             method: 'POST',
@@ -1106,33 +1101,30 @@ async function attemptLogin() {
         const data = await res.json();
 
         if (!data.success) {
-            showLoginError(data.error || 'パスワードが正しくありません');
+            showLoginError(data.error || '認証コードの送信に失敗しました');
             return;
         }
 
-        if (data.require_2fa) {
-            state.twoFactorSessionToken = data.session_token;
-            state.password = pass;
-            if (elements.login2FAEmailHint) {
-                elements.login2FAEmailHint.textContent = data.email_hint || 'kawai@kureba.co.jp';
-            }
-            if (elements.loginStep1Wrap) elements.loginStep1Wrap.style.display = 'none';
-            if (elements.loginStep2Wrap) elements.loginStep2Wrap.style.display = 'block';
-            if (elements.admin2FACodeInput) {
-                elements.admin2FACodeInput.value = '';
-                elements.admin2FACodeInput.focus();
-            }
-            startResendTimer(60);
-        } else {
-            finishLoginSuccess(pass, data.auth_token);
+        state.twoFactorSessionToken = data.session_token;
+        if (elements.login2FAEmailHint) {
+            elements.login2FAEmailHint.textContent = data.email || data.email_hint || 'kawai@kureba.co.jp';
+        }
+        if (elements.admin2FACodeInput) {
+            elements.admin2FACodeInput.value = '';
+            elements.admin2FACodeInput.focus();
+        }
+        startResendTimer(60);
+
+        if (isUserAction) {
+            showToast('✉️ 認証コードをメール送信しました！メールをご確認ください。');
         }
     } catch (e) {
-        console.error('Login Step1 Error:', e);
-        showLoginError('通信エラーが発生しました: ' + e.message);
+        console.error('Request Email Auth Code Error:', e);
+        showLoginError('認証コード送信エラー: ' + e.message);
     } finally {
-        if (elements.loginBtn) {
-            elements.loginBtn.disabled = false;
-            elements.loginBtn.innerHTML = 'ログイン';
+        if (elements.btnRequestNewCode) {
+            elements.btnRequestNewCode.disabled = false;
+            elements.btnRequestNewCode.innerHTML = '<i class="fa-solid fa-paper-plane"></i> 認証コードを今すぐ送信';
         }
     }
 }
@@ -1165,7 +1157,7 @@ async function attemptVerify2FA() {
 
         if (data.success && data.auth_token) {
             if (state.resendTimerInterval) clearInterval(state.resendTimerInterval);
-            finishLoginSuccess(state.password || '', data.auth_token);
+            finishLoginSuccess('', data.auth_token);
         } else {
             showLoginError(data.error || '認証コードが正しくありません');
         }
@@ -1182,7 +1174,10 @@ async function attemptVerify2FA() {
 
 async function attemptResend2FA() {
     if (state.resendCountdown > 0) return;
-    if (!state.twoFactorSessionToken) return;
+    if (!state.twoFactorSessionToken) {
+        requestEmailAuthCode(true);
+        return;
+    }
 
     if (elements.btnResend2FACode) {
         elements.btnResend2FACode.disabled = true;
@@ -1230,13 +1225,8 @@ async function logout() {
     if (state.resendTimerInterval) clearInterval(state.resendTimerInterval);
     elements.adminApp.style.display = 'none';
     elements.loginModal.style.display = 'flex';
-    if (elements.loginStep1Wrap) elements.loginStep1Wrap.style.display = 'block';
-    if (elements.loginStep2Wrap) elements.loginStep2Wrap.style.display = 'none';
-    if (elements.adminPasswordInput) {
-        elements.adminPasswordInput.value = '';
-        elements.adminPasswordInput.focus();
-    }
     hideLoginError();
+    requestEmailAuthCode(false);
 }
 
 // ================= イベントリスナー設定 =================
@@ -1249,19 +1239,13 @@ function initEventListeners() {
     }
 
     // 認証
-    if (elements.loginBtn) elements.loginBtn.addEventListener('click', attemptLogin);
-    if (elements.adminPasswordInput) {
-        elements.adminPasswordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') attemptLogin();
-        });
-    }
+    if (elements.btnRequestNewCode) elements.btnRequestNewCode.addEventListener('click', () => requestEmailAuthCode(true));
     if (elements.btnVerify2FA) elements.btnVerify2FA.addEventListener('click', attemptVerify2FA);
     if (elements.admin2FACodeInput) {
         elements.admin2FACodeInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') attemptVerify2FA();
         });
     }
-    if (elements.btnBackToPassword) elements.btnBackToPassword.addEventListener('click', backToPasswordStep);
     if (elements.btnResend2FACode) elements.btnResend2FACode.addEventListener('click', attemptResend2FA);
     if (elements.logoutBtn) elements.logoutBtn.addEventListener('click', logout);
 

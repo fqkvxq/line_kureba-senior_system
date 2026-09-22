@@ -382,9 +382,9 @@ define('LIFF_ID', $SYSTEM_LINE_ACCOUNTS['senior']['liff_id'] ?? '');
 define('ENABLE_NEW_CAR_BROADCAST', false); // 新着検知時にLINE公式アカウントの友だち全員へ自動一斉配信するか (true: 送信する, false: 送信しない)
 define('ENABLE_NEW_CAR_DISCORD', true);   // 新着検知時にDiscordへ通知するか
 
-// --- 店舗管理画面設定 & 二段階認証(2FA) ---
-define('ADMIN_PASSWORD', '1020143'); // 店舗用管理画面（/admin/）のログインパスワード
-define('ENABLE_ADMIN_2FA', false); // 管理者ログイン時のメール二段階認証 (true: 有効, false: 無効)
+// --- 店舗管理画面設定 & メール認証 ---
+define('ADMIN_PASSWORD', '1020143'); // 店舗用管理画面（/admin/）のバックエンド認証キー
+define('ENABLE_ADMIN_2FA', true); // 管理者ログイン時のメール認証 (true: 有効・パスワード不要)
 define('ADMIN_2FA_EMAIL', 'kawai@kureba.co.jp'); // 認証コード送信先メールアドレス
 define('ADMIN_2FA_CODE_LIFETIME_MINUTES', 10); // 認証コード有効期限 (10分間)
 define('ADMIN_2FA_MAX_ATTEMPTS', 5); // 認証コード最大試行回数 (5回超過で無効化)
@@ -3076,7 +3076,7 @@ function maskEmailAddress(string $email): string {
  */
 function getAdmin2FASettings(?PDO $db = null): array {
     $default = [
-        'enabled' => defined('ENABLE_ADMIN_2FA') ? (bool)ENABLE_ADMIN_2FA : false,
+        'enabled' => defined('ENABLE_ADMIN_2FA') ? (bool)ENABLE_ADMIN_2FA : true,
         'email' => defined('ADMIN_2FA_EMAIL') ? (string)ADMIN_2FA_EMAIL : 'kawai@kureba.co.jp',
         'lifetime_minutes' => defined('ADMIN_2FA_CODE_LIFETIME_MINUTES') ? (int)ADMIN_2FA_CODE_LIFETIME_MINUTES : 10,
         'max_attempts' => defined('ADMIN_2FA_MAX_ATTEMPTS') ? (int)ADMIN_2FA_MAX_ATTEMPTS : 5,
