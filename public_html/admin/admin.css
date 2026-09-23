@@ -2587,6 +2587,45 @@ body {
     flex-direction: column;
     gap: 14px;
     -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    position: relative;
+}
+
+/* 最新へスクロールするフローティングボタン */
+.chat-scroll-bottom-btn {
+    position: absolute;
+    bottom: 120px;
+    right: 28px;
+    background: rgba(15, 23, 42, 0.88);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 9999px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    gap: 6px;
+    z-index: 50;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+}
+.chat-scroll-bottom-btn:hover {
+    background: #0f172a;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.38);
+}
+.chat-scroll-bottom-btn.has-new {
+    background: #0284c7;
+    border-color: #38bdf8;
+    animation: chatScrollPulse 2s infinite;
+}
+@keyframes chatScrollPulse {
+    0%, 100% { box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4); }
+    50% { box-shadow: 0 4px 22px rgba(56, 189, 248, 0.85); transform: translateY(-1px); }
 }
 
 .chat-empty-state {

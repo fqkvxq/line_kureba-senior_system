@@ -448,11 +448,15 @@ const elements = {
     chatModalCourseInfo: document.getElementById('chatModalCourseInfo'),
     chatModalTagsRow: document.getElementById('chatModalTagsRow'),
     chatMessagesContainer: document.getElementById('chatMessagesContainer'),
+    chatScrollBottomBtn: document.getElementById('chatScrollBottomBtn'),
+    chatScrollBottomBtnText: document.getElementById('chatScrollBottomBtnText'),
     chatInputText: document.getElementById('chatInputText'),
     btnSendChatMessage: document.getElementById('btnSendChatMessage'),
 
     toast: document.getElementById('adminToast')
 };
+
+state.lastRenderedChatKey = '';
 
 state.allTags = [];
 state.currentTagFilter = '';
@@ -5709,7 +5713,7 @@ function initChatModal() {
     if (refreshBtn) {
         refreshBtn.addEventListener('click', () => {
             if (state.activeChatUser && state.activeChatUser.user_id) {
-                loadChatMessages(state.activeChatUser.user_id);
+                loadChatMessages(state.activeChatUser.user_id, false, true);
             }
         });
     }
@@ -5723,6 +5727,38 @@ function initChatModal() {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
                 sendChatMessage();
+            }
+        });
+    }
+
+    // 最新へスクロールボタン
+    const scrollBtn = elements.chatScrollBottomBtn || document.getElementById('chatScrollBottomBtn');
+    if (scrollBtn) {
+        scrollBtn.addEventListener('click', () => {
+            const container = elements.chatMessagesContainer || document.getElementById('chatMessagesContainer');
+            if (container) {
+                container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+                scrollBtn.classList.remove('has-new');
+                scrollBtn.style.display = 'none';
+            }
+        });
+    }
+
+    // チャットコンテナのスクロール監視（最下部かどうかの判定 & ボタン表示制御）
+    const container = elements.chatMessagesContainer || document.getElementById('chatMessagesContainer');
+    if (container) {
+        container.addEventListener('scroll', () => {
+            const isNearBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) <= 80;
+            const btn = elements.chatScrollBottomBtn || document.getElementById('chatScrollBottomBtn');
+            const btnText = elements.chatScrollBottomBtnText || document.getElementById('chatScrollBottomBtnText');
+            if (btn) {
+                if (isNearBottom) {
+                    btn.classList.remove('has-new');
+                    btn.style.display = 'none';
+                    if (btnText) btnText.textContent = '最新へ';
+                } else {
+                    btn.style.display = 'flex';
+                }
             }
         });
     }
@@ -5916,7 +5952,7 @@ function openChatModal(cust, targetIdx = null) {
         modal.classList.add('active');
     }
 
-    loadChatMessages(uid);
+    loadChatMessages(uid, false, true);
 
     // 名前やアイコンが仮データの場合、受講生詳細APIから非同期で最新カルテ情報を補完
     if (uid && (cust.user_name === 'LINE受講生' || !cust.picture_url)) {
@@ -5941,12 +5977,12 @@ function openChatModal(cust, targetIdx = null) {
             .catch(() => {});
     }
 
-    // ポーリングタイマー開始（10秒ごとに新着自動確認）
+    // ポーリングタイマー開始（10秒ごとに新着自動確認・スクロール位置維持）
     if (state.chatPollTimer) clearInterval(state.chatPollTimer);
     state.chatPollTimer = setInterval(() => {
         const checkModal = elements.chatModal || document.getElementById('chatModal');
         if (state.activeChatUser && state.activeChatUser.user_id && checkModal && checkModal.classList.contains('active')) {
-            loadChatMessages(state.activeChatUser.user_id, true);
+            loadChatMessages(state.activeChatUser.user_id, true, false);
         }
     }, 10000);
 }
@@ -5965,6 +6001,12 @@ function closeChatModal() {
         state.chatPollTimer = null;
     }
     state.activeChatUser = null;
+    state.lastRenderedChatKey = '';
+    const scrollBtn = elements.chatScrollBottomBtn || document.getElementById('chatScrollBottomBtn');
+    if (scrollBtn) {
+        scrollBtn.classList.remove('has-new');
+        scrollBtn.style.display = 'none';
+    }
     loadUnreadChatCounts();
 }
 
@@ -5991,7 +6033,7 @@ window.openChatModalByIndex = openChatModalByIndex;
 window.openChatModalByUid = openChatModalByUid;
 window.closeChatModal = closeChatModal;
 
-async function loadChatMessages(userId, isSilent = false) {
+async function loadChatMessages(userId, isSilent = false, forceScrollBottom = false) {
     if (!userId) {
         if (elements.chatMessagesContainer) {
             elements.chatMessagesContainer.innerHTML = `
@@ -6019,7 +6061,7 @@ async function loadChatMessages(userId, isSilent = false) {
         const data = await res.json();
 
         if (data.success && Array.isArray(data.messages)) {
-            renderChatMessages(data.messages);
+            renderChatMessages(data.messages, forceScrollBottom);
         } else {
             if (!isSilent && elements.chatMessagesContainer) {
                 elements.chatMessagesContainer.innerHTML = `
@@ -6043,11 +6085,15 @@ async function loadChatMessages(userId, isSilent = false) {
     }
 }
 
-function renderChatMessages(messages) {
-    const container = elements.chatMessagesContainer;
+function renderChatMessages(messages, forceScrollBottom = false) {
+    const container = elements.chatMessagesContainer || document.getElementById('chatMessagesContainer');
     if (!container) return;
 
+    const scrollBtn = elements.chatScrollBottomBtn || document.getElementById('chatScrollBottomBtn');
+    const scrollBtnText = elements.chatScrollBottomBtnText || document.getElementById('chatScrollBottomBtnText');
+
     if (!messages || messages.length === 0) {
+        state.lastRenderedChatKey = 'empty';
         container.innerHTML = `
             <div class="chat-empty-state">
                 <div class="chat-empty-icon"><i class="fa-regular fa-comment-dots"></i></div>
@@ -6055,8 +6101,31 @@ function renderChatMessages(messages) {
                 <p style="font-size: 12px; opacity: 0.85;">下の入力欄からメッセージを送信すると、受講生のLINE公式トーク画面へ届きます。</p>
             </div>
         `;
+        if (scrollBtn) scrollBtn.style.display = 'none';
         return;
     }
+
+    // 差分判定用キー（件数 + 最新ID + 最新更新日時）
+    const lastMsg = messages[messages.length - 1];
+    const chatKey = `${messages.length}_${lastMsg.id || ''}_${lastMsg.created_at || ''}`;
+
+    // 現在のスクロール状態を判定（最下部から80px以内にいるか）
+    const isNearBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) <= 80;
+    const prevScrollTop = container.scrollTop;
+
+    // メッセージ差分がない場合は無駄なDOM再構築をスキップしてスクロールブレを防止
+    if (state.lastRenderedChatKey === chatKey) {
+        if (forceScrollBottom) {
+            container.scrollTop = container.scrollHeight;
+            if (scrollBtn) {
+                scrollBtn.classList.remove('has-new');
+                scrollBtn.style.display = 'none';
+            }
+        }
+        return;
+    }
+
+    state.lastRenderedChatKey = chatKey;
 
     let lastDateStr = '';
     const htmlParts = [];
@@ -6155,7 +6224,22 @@ function renderChatMessages(messages) {
     });
 
     container.innerHTML = htmlParts.join('');
-    container.scrollTop = container.scrollHeight;
+
+    // スクロール位置制御: 初回/送信後/最下部付近にいる場合は最下部へスクロール、過去ログ閲覧中は位置を厳密に維持
+    if (forceScrollBottom || isNearBottom) {
+        container.scrollTop = container.scrollHeight;
+        if (scrollBtn) {
+            scrollBtn.classList.remove('has-new');
+            scrollBtn.style.display = 'none';
+        }
+    } else {
+        container.scrollTop = prevScrollTop;
+        if (scrollBtn) {
+            scrollBtn.style.display = 'flex';
+            scrollBtn.classList.add('has-new');
+            if (scrollBtnText) scrollBtnText.textContent = '新着メッセージあり ↓';
+        }
+    }
 }
 
 function formatChatMessageText(text) {
@@ -6220,7 +6304,7 @@ async function sendChatMessage() {
         if (data.success) {
             if (elements.chatInputText) elements.chatInputText.value = '';
             showToast('メッセージを送信しました！');
-            await loadChatMessages(state.activeChatUser.user_id, true);
+            await loadChatMessages(state.activeChatUser.user_id, true, true);
             fetchCustomers();
         } else {
             alert(data.error || 'メッセージの送信に失敗しました');
@@ -6338,9 +6422,9 @@ async function loadUnreadChatCounts() {
                 loadCustomers();
             }
 
-            // チャットモーダルが開いている場合は最新メッセージをリロード
+            // チャットモーダルが開いている場合は最新メッセージをリロード（スクロール位置は維持）
             if (elements.chatModal && elements.chatModal.classList.contains('active') && state.activeChatUser?.user_id) {
-                loadChatMessages(state.activeChatUser.user_id, true);
+                loadChatMessages(state.activeChatUser.user_id, true, false);
             }
         }
     } catch (e) {

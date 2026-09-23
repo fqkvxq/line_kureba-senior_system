@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260923_email_auth_v24">
+    <link rel="stylesheet" href="manual.css?v=20260923_smart_chat_v25">
 </head>
 <body>
     <!-- ログインモーダル (メール認証専用・パスワード不要) -->
@@ -1092,13 +1092,14 @@
                         <div class="step-card">
                             <div class="step-number">2</div>
                             <div class="step-body">
-                                <h4>チャット画面の起動と会話履歴の確認（画像・メディア完全対応）</h4>
+                                <h4>チャット画面の起動と会話履歴の確認（スマートスクロール・画像メディア完全対応）</h4>
                                 <p>対象受講生の行にある「💬 チャット」ボタンをクリックすると、LINE風のチャットモーダルが開きます。<br>
                                 ・受講生のメッセージは左側（白吹き出し）、スタッフからの返信は右側（緑吹き出し）に時系列で表示されます。<br>
+                                ・<strong>📜 過去ログ閲覧時のスマートスクロール（快適化）</strong>：過去のやり取りを上にスクロールして確認している最中は、自動更新（ポーリング）が動作しても<strong>現在読んでいるスクロール位置が強制的に最新へ戻されることなく維持</strong>されます。また、画面右下に表示される「<strong>最新へ ↓</strong>」ボタンを押すことでいつでも瞬時に最新メッセージへジャンプできます。<br>
                                 ・<strong>📷 画像・写真メッセージ</strong>：受講生から送信された写真やスクリーンショットは、LINE APIより自動ダウンロードされてチャット内にサムネイル表示されます。画像をクリックすると新しいタブで原寸大の鮮明な写真を確認・保存できます。<br>
                                 ・<strong>🎬 動画 / 🎵 音声 / 😊 スタンプ</strong>：各種メディアもチャット画面上で直接再生・確認できます。<br>
                                 ・チャット画面を開いた時点で未読フラグは自動的に既読として処理されます。<br>
-                                ・チャットモーダルを開いている間は10秒ごとに自動更新（ポーリング）され、受講生からの最新メッセージが即座に反映されます。</p>
+                                ・チャットモーダルを開いている間は自動更新（ポーリング）され、受講生からの最新メッセージがバックグラウンドで安全に同期されます。</p>
                             </div>
                         </div>
 
@@ -1995,6 +1996,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260923_email_auth_v24"></script>
+    <script src="manual.js?v=20260923_smart_chat_v25"></script>
 </body>
 </html>
