@@ -4789,37 +4789,6 @@ function init2FASettings() {
     if (elements.btnTest2FAEmail) {
         elements.btnTest2FAEmail.addEventListener('click', test2FAEmail);
     }
-    if (elements.twoFaEnabledToggle) {
-        elements.twoFaEnabledToggle.addEventListener('change', (e) => {
-            update2FAToggleVisual(e.target.checked);
-        });
-    }
-}
-
-function update2FAToggleVisual(isEnabled) {
-    const card = document.getElementById('twoFaStatusCard');
-    const title = document.getElementById('twoFaStatusTitle');
-    const subtitle = document.getElementById('twoFaStatusSubtitle');
-
-    if (card) {
-        if (isEnabled) {
-            card.classList.remove('is-disabled');
-            card.classList.add('is-enabled');
-            if (title) title.innerHTML = '<i class="fa-solid fa-lock" style="color: #16a34a;"></i> メール二段階認証：<span style="color: #16a34a;">有効</span>';
-            if (subtitle) {
-                subtitle.style.color = '#15803d';
-                subtitle.textContent = 'ログイン時に登録メールアドレス宛へ6桁の認証コードを送信します（推奨）';
-            }
-        } else {
-            card.classList.remove('is-enabled');
-            card.classList.add('is-disabled');
-            if (title) title.innerHTML = '<i class="fa-solid fa-lock-open" style="color: #64748b;"></i> メール二段階認証：<span style="color: #64748b;">無効</span>';
-            if (subtitle) {
-                subtitle.style.color = '#64748b';
-                subtitle.textContent = '二段階認証は行われず、管理者パスワードのみでログインします';
-            }
-        }
-    }
 }
 
 async function open2FASettingsModal() {
@@ -4838,11 +4807,6 @@ async function open2FASettingsModal() {
 
         if (data.success && data.settings) {
             const s = data.settings;
-            const isEnabled = !!s.enabled;
-            if (elements.twoFaEnabledToggle) {
-                elements.twoFaEnabledToggle.checked = isEnabled;
-                update2FAToggleVisual(isEnabled);
-            }
             if (elements.twoFaEmailInput) elements.twoFaEmailInput.value = s.email || 'kawai@kureba.co.jp';
             if (elements.twoFaLifetimeInput) elements.twoFaLifetimeInput.value = String(s.lifetime_minutes || 10);
             if (elements.twoFaMaxAttemptsInput) elements.twoFaMaxAttemptsInput.value = String(s.max_attempts || 5);
@@ -4860,7 +4824,6 @@ function close2FASettingsModal() {
 }
 
 async function save2FASettings() {
-    const enabled = elements.twoFaEnabledToggle ? elements.twoFaEnabledToggle.checked : false;
     const email = elements.twoFaEmailInput ? elements.twoFaEmailInput.value.trim() : '';
     const lifetime = elements.twoFaLifetimeInput ? elements.twoFaLifetimeInput.value : '10';
     const maxAttempts = elements.twoFaMaxAttemptsInput ? elements.twoFaMaxAttemptsInput.value : '5';
@@ -4882,7 +4845,7 @@ async function save2FASettings() {
         const payload = new URLSearchParams({
             action: 'save_2fa_settings',
             password: state.password,
-            enabled: enabled ? '1' : '0',
+            enabled: '1',
             email: email,
             lifetime_minutes: lifetime,
             max_attempts: maxAttempts
@@ -4896,7 +4859,7 @@ async function save2FASettings() {
         const data = await res.json();
 
         if (data.success) {
-            showToast('メール二段階認証設定を保存しました！', 'success');
+            showToast('メール認証セキュリティ設定を保存しました！', 'success');
             close2FASettingsModal();
         } else {
             alert(data.error || '設定の保存に失敗しました');
