@@ -16,6 +16,19 @@ putenv('TZ=Asia/Tokyo');
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
+// ログ出力関数
+function logWeatherBatch(string $msg) {
+    $now = date('Y-m-d H:i:s');
+    $line = "[{$now}] {$msg}\n";
+    echo $line;
+    $logFile = __DIR__ . '/data/weather_batch.log';
+    if (!is_dir(__DIR__ . '/data')) {
+        @mkdir(__DIR__ . '/data', 0777, true);
+    }
+    @file_put_contents($logFile, $line, FILE_APPEND | LOCK_EX);
+}
+
+require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/quote_engine.php';
 
 // 今時間の名言を取得（10文字以内）
@@ -32,15 +45,6 @@ $db = getDbConnection($targetAccount);
 $channelAccessToken = $accConfig['channel_access_token'] ?? '';
 if (empty($channelAccessToken) || $channelAccessToken === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
     die("エラー: LINE公式アカウントのアクセストークンが設定されていません。\n");
-}
-
-// ログ出力関数
-function logWeatherBatch(string $msg) {
-    $now = date('Y-m-d H:i:s');
-    $line = "[{$now}] {$msg}\n";
-    echo $line;
-    $logFile = __DIR__ . '/data/weather_batch.log';
-    @file_put_contents($logFile, $line, FILE_APPEND | LOCK_EX);
 }
 
 logWeatherBatch("=== 三島市 天気リッチメニュー自動更新バッチ 開始 (アカウント: {$targetAccount}) ===");
