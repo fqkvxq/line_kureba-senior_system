@@ -2074,15 +2074,13 @@
                         <div class="step-card" style="grid-column: 1 / -1;">
                             <div class="step-number" style="background: #ea580c; color: #fff;"><i class="fa-solid fa-cloud-sun-rain"></i></div>
                             <div class="step-body">
-                                <h4>静岡県三島市 天気予報メニュー ＆ 12星座占いメニュー サイレント双方向切替</h4>
-                                <p>受講生がLINEトーク画面を汚さずにメニューを切り替えられる<strong>サイレント切替（発言なし）</strong>と、登録星座に応じた<strong>毎日の12星座占い（Flex Message）</strong>に対応しました。<br>
+                                <h4>静岡県三島市 天気予報連動リッチメニュー（サイレント切替 ＆ 個別アタッチ運用）</h4>
+                                <p>受講生がLINEトーク画面を汚さずにメニューを切り替えられる<strong>サイレント切替（発言なし）</strong>と、対象受講生への<strong>リアルタイム天気予報メニュー自動生成</strong>に対応しています。<br>
                                 <strong>💡 サイレント双方向切替:</strong><br>
-                                ・「<strong>天気を表示</strong>」をタップすると、ボットのメッセージ返信なしで天気メニューへ即時アタッチ。<br>
-                                ・「<strong>通常メニュー（占いメニュー）に戻す</strong>」をタップすると、余計な発言なしで即座に標準メニューに復帰。<br>
-                                <strong>💡 12星座占いエンジン連携【新機能】:</strong><br>
-                                ・占いメニューや「<strong>今日の運勢</strong>」をタップすると、登録された星座の総合運（★1〜5）、ラッキーカラー、ラッキーアイテム、ポジティブなメッセージをカード形式で送信。<br>
-                                ・初回や未設定時は12星座選択クイックリプライが表示され、一度選択するとDB（<code>customer_cars.zodiac_sign</code>）に自動保存。次回以降は1タップで当日の運勢が表示されます。<br>
-                                <strong>💡 三島市リアルタイム天気自動更新:</strong> 毎時0分のCron実行（<code>batch_hourly_weather.php</code>）により、最新の天気・最高最低気温・週間雨予報がリッチメニュー上部に常時反映されます。</p>
+                                ・「<strong>天気を表示</strong>」や「天気」と送信すると、ボットの余計なメッセージ返信なしで天気メニューへ即時アタッチ。<br>
+                                ・「<strong>通常メニューに戻す</strong>」と送信すると、発言なしで即座に標準メニューに復帰。<br>
+                                <strong>💡 三島市リアルタイム天気自動更新:</strong> 毎時0分のCron実行（<code>batch_hourly_weather.php</code>）により、最新の天気・最高最低気温・週間雨予報がリッチメニュー上部（300px帯・<code>#FF8700</code>）に常時自動反映されます。<br>
+                                <strong>💡 自動クリーンアップ:</strong> 新しいメニュー生成後、前回の古いリッチメニューは自動でDELETE削除されるため、LINEのメニュー上限に達することなく永久運用可能です。</p>
                                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-top: 10px;">
                                     <strong>📋 エックスサーバー サーバーパネルでの設定手順:</strong><br>
                                     1. サーバーパネルにログイン ＞「Cron設定」を開きます。<br>
@@ -2109,6 +2107,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260924_silent_menu_fortune_v31"></script>
+    <script src="manual.js?v=20260924_weather_only_v32"></script>
 </body>
 </html>
