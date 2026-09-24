@@ -81,8 +81,9 @@ $now = new DateTime('now', new DateTimeZone('Asia/Tokyo'));
 $dayNames = ['日', '月', '火', '水', '木', '金', '土'];
 $dayStr = $dayNames[(int)$now->format('w')];
 $datePrefix = $now->format('n/j') . "({$dayStr})";
+$hourStr = $now->format('G') . "時時点";
 
-$weatherText = "{$datePrefix} 三島の天気：{$iconText} {$weatherLabel}  最高 {$maxTemp}℃ / 最低 {$minTemp}℃";
+$weatherText = "{$datePrefix} {$hourStr} 三島の天気：{$iconText} {$weatherLabel}　最高 {$maxTemp}℃ / 最低 {$minTemp}℃";
 logWeatherBatch("取得天気テキスト: {$weatherText}");
 
 // 2. ベースとなるリッチメニュー画像を取得
