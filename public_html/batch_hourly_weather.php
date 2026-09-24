@@ -45,9 +45,10 @@ $weatherLabel = '晴れ';
 $maxTemp = 28;
 $minTemp = 20;
 $iconText = '晴れ';
+$rainNotice = '';
 
 try {
-    $apiUrl = 'https://api.open-meteo.com/v1/forecast?latitude=35.1184&longitude=138.9184&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Asia%2FTokyo';
+    $apiUrl = 'https://api.open-meteo.com/v1/forecast?latitude=35.1184&longitude=138.9184&hourly=precipitation_probability,precipitation,weathercode&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Asia%2FTokyo&forecast_days=3';
     $ch = curl_init($apiUrl);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
@@ -68,9 +69,36 @@ try {
             elseif ($code >= 1 && $code <= 3) { $iconText = '🌤️'; $weatherLabel = '晴れ時々曇り'; }
             elseif ($code >= 45 && $code <= 48) { $iconText = '🌫️'; $weatherLabel = '霧'; }
             elseif ($code >= 51 && $code <= 67) { $iconText = '🌧️'; $weatherLabel = '雨'; }
-            elseif ($code >= 71 && code <= 77) { $iconText = '❄️'; $weatherLabel = '雪'; }
+            elseif ($code >= 71 && $code <= 77) { $iconText = '❄️'; $weatherLabel = '雪'; }
             elseif ($code >= 80 && $code <= 82) { $iconText = '🌦️'; $weatherLabel = 'にわか雨'; }
             elseif ($code >= 95) { $iconText = '⚡'; $weatherLabel = '雷雨'; }
+        }
+
+        // 直近36時間以内の雨予報（降水確率40%以上または雨コード）を検知
+        if (!empty($weatherData['hourly']['time'])) {
+            $nowTs = time();
+            $hTimes = $weatherData['hourly']['time'];
+            $hProbs = $weatherData['hourly']['precipitation_probability'] ?? [];
+            $hPrecip = $weatherData['hourly']['precipitation'] ?? [];
+            $hCodes = $weatherData['hourly']['weathercode'] ?? [];
+
+            for ($i = 0; $i < count($hTimes); $i++) {
+                $tTs = strtotime($hTimes[$i]);
+                if ($tTs >= $nowTs && $tTs <= ($nowTs + 36 * 3600)) {
+                    $p = (int)($hProbs[$i] ?? 0);
+                    $pr = (float)($hPrecip[$i] ?? 0);
+                    $c = (int)($hCodes[$i] ?? 0);
+
+                    if ($p >= 40 || $pr >= 0.2 || ($c >= 51 && $c <= 67) || ($c >= 80 && $c <= 82)) {
+                        $isToday = (date('Y-m-d', $tTs) === date('Y-m-d', $nowTs));
+                        $isTomorrow = (date('Y-m-d', $tTs) === date('Y-m-d', $nowTs + 86400));
+                        $dayPrefix = $isToday ? '今日' : ($isTomorrow ? '明日' : date('n/j', $tTs));
+                        $hourNum = (int)date('G', $tTs);
+                        $rainNotice = "【☔{$dayPrefix}{$hourNum}時〜雨予報】";
+                        break;
+                    }
+                }
+            }
         }
     }
 } catch (Throwable $e) {
@@ -83,7 +111,11 @@ $dayStr = $dayNames[(int)$now->format('w')];
 $datePrefix = $now->format('n/j') . "({$dayStr})";
 $hourStr = $now->format('G') . "時時点";
 
-$weatherText = "{$datePrefix} {$hourStr} 三島の天気：{$iconText} {$weatherLabel}　最高 {$maxTemp}℃ / 最低 {$minTemp}℃";
+if (!empty($rainNotice)) {
+    $weatherText = "{$datePrefix} {$hourStr} 三島：{$iconText} {$weatherLabel}({$maxTemp}℃/{$minTemp}℃) {$rainNotice}";
+} else {
+    $weatherText = "{$datePrefix} {$hourStr} 三島の天気：{$iconText} {$weatherLabel}　最高 {$maxTemp}℃ / 最低 {$minTemp}℃";
+}
 logWeatherBatch("取得天気テキスト: {$weatherText}");
 
 // 2. ベースとなるリッチメニュー画像を取得

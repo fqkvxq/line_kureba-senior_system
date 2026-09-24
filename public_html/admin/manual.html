@@ -2072,10 +2072,12 @@
                         </div>
 
                         <div class="step-card" style="grid-column: 1 / -1;">
-                            <div class="step-number" style="background: #ea580c; color: #fff;"><i class="fa-solid fa-cloud-sun"></i></div>
+                            <div class="step-number" style="background: #ea580c; color: #fff;"><i class="fa-solid fa-cloud-sun-rain"></i></div>
                             <div class="step-body">
-                                <h4>静岡県三島市 天気予報連動リッチメニュー 1時間毎 自動更新（Xサーバー Cron設定）</h4>
-                                <p>毎時0分に三島市の最新天気・最高最低気温を自動取得し、リッチメニュー上部（300px帯）に文字合成してアタッチするバッチスクリプト（<code>batch_hourly_weather.php</code>）のCron設定手順です。古いメニューは毎回自動DELETEされ上限に達しません。</p>
+                                <h4>静岡県三島市 天気予報連動リッチメニュー 1時間毎 自動更新 & 雨予報自動検知（Xサーバー Cron設定）</h4>
+                                <p>毎時0分に静岡県三島市の最新天気・最高最低気温を取得し、リッチメニュー上部（300px帯）に文字合成してアタッチするバッチスクリプト（<code>batch_hourly_weather.php</code>）の機能とCron設定手順です。<br>
+                                <strong>💡 雨予報自動検知機能:</strong> 直近36時間以内の時間別予報を自動スキャンし、降水確率40%以上または雨コードを検知した場合は「<strong>【☔明日10時〜雨予報】</strong>」のように雨の降り始め日時をバナー帯に自動明記します。<br>
+                                <strong>💡 クリーンアップ仕様:</strong> 1時間ごとに新しいメニューを生成・適用後、前回の古いリッチメニューは自動でDELETE削除されるため、LINEの1,000件上限に達することなく永久運用可能です。</p>
                                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-top: 10px;">
                                     <strong>📋 エックスサーバー サーバーパネルでの設定手順:</strong><br>
                                     1. サーバーパネルにログイン ＞「Cron設定」を開きます。<br>
