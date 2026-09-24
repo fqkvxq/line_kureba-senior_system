@@ -193,18 +193,18 @@ imagedestroy($srcImg);
 
 $bannerHeight = 300;
 
-// 上部300pxに高級感ある濃いオレンジグラデーション帯を描画
+// 上部300pxにオレンジ帯 (#FF8700) を描画
 for ($y = 0; $y < $bannerHeight; $y++) {
     $ratio = $y / $bannerHeight;
-    $r = (int)(234 * (1 - $ratio) + 194 * $ratio);
-    $g = (int)(88 * (1 - $ratio) + 65 * $ratio);
-    $b = (int)(12 * (1 - $ratio) + 12 * $ratio);
+    $r = (int)(255 * (1 - $ratio) + 234 * $ratio);
+    $g = (int)(135 * (1 - $ratio) + 114 * $ratio);
+    $b = (int)(0 * (1 - $ratio) + 0 * $ratio);
     $color = imagecolorallocate($dstImg, $r, $g, $b);
     imageline($dstImg, 0, $y, $width, $y, $color);
 }
 
 // 境界アクセントライン
-$borderCol = imagecolorallocate($dstImg, 254, 215, 170);
+$borderCol = imagecolorallocate($dstImg, 255, 224, 178);
 for ($b = 0; $b < 6; $b++) {
     imageline($dstImg, 0, $bannerHeight - $b, $width, $bannerHeight - $b, $borderCol);
 }
