@@ -3,6 +3,8 @@
  * LINE Webhook イベントハンドラー & テンプレート生成関数群
  */
 
+require_once __DIR__ . '/fortune_engine.php';
+
 // --- イベント処理関数群 ---
 
 /**
@@ -46,15 +48,30 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
         return;
     }
 
-    // --- 天気メニュー切替のキーワード応答 ---
-    if (in_array($cleanText, ['天気を表示', '天気表示', '天気', '天気予報', '三島の天気', '雨予報', '天気メニュー'], true)) {
+    // --- 天気メニュー切替のキーワード応答 (サイレント切替) ---
+    if (in_array($cleanText, ['天気を表示', '天気表示', '天気メニュー'], true)) {
         recordCustomerInteraction($db, $userId, 'user_action', "🌤️ 天気メニュー表示切替: {$cleanText}");
-        handleSwitchWeatherMenu($db, $replyToken, $userId);
+        handleSwitchWeatherMenuSilent($db, $userId);
         return;
     }
     if (in_array($cleanText, ['通常メニューに戻す', '通常メニュー', '通常に戻す', 'メニュー戻す', '標準メニュー', '占いメニュー'], true)) {
         recordCustomerInteraction($db, $userId, 'user_action', "📱 通常メニュー復帰切替: {$cleanText}");
-        handleSwitchDefaultMenu($db, $replyToken, $userId);
+        handleSwitchDefaultMenuSilent($db, $userId);
+        return;
+    }
+
+    // --- 星座占いキーワード応答 ---
+    if (in_array($cleanText, ['今日の運勢', '運勢', '占い', '星占い', '星座占い', '今日の占い', 'タロット占い', '相性占い'], true)) {
+        recordCustomerInteraction($db, $userId, 'user_action', "🔮 星座占い呼出: {$cleanText}");
+        handleUserFortuneRequest($db, $replyToken, $userId);
+        return;
+    }
+
+    // 12星座名が直接送信された場合（例: 「天秤座」「獅子座」など）
+    $matchedZodiac = normalizeZodiacKey($cleanText);
+    if ($matchedZodiac !== null) {
+        recordCustomerInteraction($db, $userId, 'user_action', "🌟 星座設定: {$matchedZodiac}");
+        handleSetUserZodiac($db, $replyToken, $userId, $matchedZodiac);
         return;
     }
 
@@ -175,15 +192,33 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             handleDxSurveyQ2($db, $replyToken, $params, $userId);
             break;
 
-        // --- 5-0-4. 天気メニュー / 通常メニュー切替 ---
+        // --- 5-0-4. 天気メニュー / 占いメニュー切替 (サイレント切替・発言なし) ---
         case 'switch_weather_menu':
         case 'show_weather':
-            handleSwitchWeatherMenu($db, $replyToken, $userId);
+            handleSwitchWeatherMenuSilent($db, $userId);
             break;
 
         case 'switch_default_menu':
+        case 'switch_fortune_menu':
         case 'show_default':
-            handleSwitchDefaultMenu($db, $replyToken, $userId);
+        case 'show_fortune_menu':
+            handleSwitchDefaultMenuSilent($db, $userId);
+            break;
+
+        // --- 5-0-5. 星座占い（今日の運勢）機能 ---
+        case 'show_fortune':
+        case 'ask_fortune':
+        case 'fortune':
+            handleUserFortuneRequest($db, $replyToken, $userId);
+            break;
+
+        case 'set_zodiac':
+            $sign = trim($params['sign'] ?? ($params['zodiac'] ?? ''));
+            handleSetUserZodiac($db, $replyToken, $userId, $sign);
+            break;
+
+        case 'select_zodiac':
+            sendZodiacSelectPrompt($replyToken, $userId);
             break;
 
         // --- 5-1. お知らせリッチメニュー表示 ---
@@ -4420,43 +4455,12 @@ function getWeatherSwitchQuickReply(bool $isCurrentlyWeather = false): array {
 }
 
 /**
- * 天気リッチメニューを表示（アタッチ）する処理
+ * 天気リッチメニューを表示（アタッチ）する処理（メッセージ付き）
  */
 function handleSwitchWeatherMenu(PDO $db, string $replyToken, string $userId) {
-    if (empty($userId) || !str_starts_with($userId, 'U')) {
-        return;
-    }
+    handleSwitchWeatherMenuSilent($db, $userId);
 
-    $accountKey = getActiveAccountKey();
-    $nowJst = date('Y-m-d H:i:s');
-
-    // 1. DBに「天気メニュー利用中」フラグを記録
-    try {
-        $db->prepare("UPDATE customer_cars SET custom_menu_text = 'weather', updated_at = :now WHERE TRIM(user_id) = :uid")
-            ->execute([':now' => $nowJst, ':uid' => $userId]);
-    } catch (Throwable $e) {}
-
-    // 2. 最新の天気リッチメニューIDを取得（LINEまたはDB）
-    $weatherMenuId = null;
-    try {
-        $stmt = $db->query("SELECT line_menu_id FROM rich_menus WHERE (title LIKE '%三島天気%' OR title LIKE '%天気%') AND line_menu_id IS NOT NULL AND line_menu_id != '' ORDER BY id DESC LIMIT 1");
-        $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
-        if (!empty($row['line_menu_id'])) {
-            $weatherMenuId = $row['line_menu_id'];
-        }
-    } catch (Throwable $e) {}
-
-    // 直近でアタッチされたメニューがあればそれをフォールバック
-    if (empty($weatherMenuId)) {
-        // 現在リンクされている最新のメニューまたは全体最新
-        $weatherMenuId = lineGetUserRichMenuId($userId);
-    }
-
-    if (!empty($weatherMenuId)) {
-        lineLinkUserRichMenu($userId, $weatherMenuId, $accountKey);
-    }
-
-    // 3. 返信メッセージ送信
+    // 返信メッセージ送信
     $msgText = "🌤️ 三島市の最新天気予報メニューを表示しました！\n\n・1時間毎に最新の天気・気温・雨予報が自動更新されます。\n・上部のオレンジ帯をタップすると、ウェザーニュースの今日の詳細予報を開けます。\n\n通常のメニューに戻したいときは、いつでも下の「📱 通常メニューに戻す」をタップしてください。";
 
     $messages = [
@@ -4471,9 +4475,61 @@ function handleSwitchWeatherMenu(PDO $db, string $replyToken, string $userId) {
 }
 
 /**
- * 通常リッチメニューに戻す（個別リンク解除）処理
+ * 天気リッチメニューへのサイレント切替（一切発言せずメニューのみ切替）
+ */
+function handleSwitchWeatherMenuSilent(PDO $db, string $userId) {
+    if (empty($userId) || !str_starts_with($userId, 'U')) {
+        return;
+    }
+
+    $accountKey = getActiveAccountKey();
+    $nowJst = date('Y-m-d H:i:s');
+
+    // 1. DBに「天気メニュー利用中」フラグを記録
+    try {
+        $db->prepare("UPDATE customer_cars SET custom_menu_text = 'weather', updated_at = :now WHERE TRIM(user_id) = :uid")
+            ->execute([':now' => $nowJst, ':uid' => $userId]);
+    } catch (Throwable $e) {}
+
+    // 2. 最新の天気リッチメニューIDを取得（DBまたは固定ID）
+    $weatherMenuId = 'richmenu-0b91b89ece6d4b8e6fbdd151f96d42bf';
+    try {
+        $stmt = $db->query("SELECT line_menu_id FROM rich_menus WHERE (title LIKE '%三島天気%' OR title LIKE '%天気%') AND line_menu_id IS NOT NULL AND line_menu_id != '' ORDER BY id DESC LIMIT 1");
+        $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+        if (!empty($row['line_menu_id'])) {
+            $weatherMenuId = $row['line_menu_id'];
+        }
+    } catch (Throwable $e) {}
+
+    if (!empty($weatherMenuId)) {
+        lineLinkUserRichMenu($userId, $weatherMenuId, $accountKey);
+    }
+}
+
+/**
+ * 通常リッチメニューに戻す（個別リンク解除）処理（メッセージ付き）
  */
 function handleSwitchDefaultMenu(PDO $db, string $replyToken, string $userId) {
+    handleSwitchDefaultMenuSilent($db, $userId);
+
+    // 返信メッセージ送信
+    $msgText = "📱 通常メニューに戻しました！\n\n天気をもう一度確認・表示したいときは、下の「🌤️ 天気を表示」をタップするか、「天気」と話しかけてください😊";
+
+    $messages = [
+        [
+            'type' => 'text',
+            'text' => $msgText,
+            'quickReply' => getWeatherSwitchQuickReply(false)
+        ]
+    ];
+
+    sendReplyMessage($replyToken, $messages, $userId);
+}
+
+/**
+ * 通常リッチメニューへのサイレント切替（一切発言せずアンリンク）
+ */
+function handleSwitchDefaultMenuSilent(PDO $db, string $userId) {
     if (empty($userId) || !str_starts_with($userId, 'U')) {
         return;
     }
@@ -4489,17 +4545,106 @@ function handleSwitchDefaultMenu(PDO $db, string $replyToken, string $userId) {
 
     // 2. LINEの個別アタッチを解除（全体デフォルトメニューに戻す）
     lineUnlinkUserRichMenu($userId, $accountKey);
+}
 
-    // 3. 返信メッセージ送信
-    $msgText = "📱 通常メニューに戻しました！\n\n天気をもう一度確認・表示したいときは、下の「🌤️ 天気を表示」をタップするか、「天気」と話しかけてください😊";
+/**
+ * ユーザーの登録星座を取得
+ */
+function getUserZodiacSign(PDO $db, string $userId): ?string {
+    if (empty($userId)) return null;
+    try {
+        $stmt = $db->prepare("SELECT zodiac_sign FROM customer_cars WHERE TRIM(user_id) = :uid ORDER BY id DESC LIMIT 1");
+        $stmt->execute([':uid' => $userId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!empty($row['zodiac_sign'])) {
+            return trim($row['zodiac_sign']);
+        }
+    } catch (Throwable $e) {}
+    return null;
+}
+
+/**
+ * 今日の星座占いリクエスト処理
+ */
+function handleUserFortuneRequest(PDO $db, string $replyToken, string $userId) {
+    $zodiac = getUserZodiacSign($db, $userId);
+
+    if (empty($zodiac)) {
+        // 星座が未設定の場合は選択プロンプトを表示
+        sendZodiacSelectPrompt($replyToken, $userId);
+        return;
+    }
+
+    // 設定済みの星座で今日の運勢を生成
+    $fortune = getTodayFortune($zodiac);
+    $flexBubble = buildFortuneFlexBubble($fortune);
+
+    $messages = [
+        [
+            'type' => 'flex',
+            'altText' => "🔮 【{$fortune['name']}】今日の運勢: {$fortune['stars']}",
+            'contents' => $flexBubble
+        ]
+    ];
+
+    sendReplyMessage($replyToken, $messages, $userId);
+}
+
+/**
+ * ユーザーの星座を設定して即座に運勢を返信
+ */
+function handleSetUserZodiac(PDO $db, string $replyToken, string $userId, string $zodiacKey) {
+    $normKey = normalizeZodiacKey($zodiacKey) ?: 'libra';
+    $nowJst = date('Y-m-d H:i:s');
+
+    if (!empty($userId)) {
+        try {
+            // 既存レコードの確認
+            $stmt = $db->prepare("SELECT id FROM customer_cars WHERE TRIM(user_id) = :uid LIMIT 1");
+            $stmt->execute([':uid' => $userId]);
+            $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($existing) {
+                $db->prepare("UPDATE customer_cars SET zodiac_sign = :zodiac, updated_at = :now WHERE TRIM(user_id) = :uid")
+                    ->execute([':zodiac' => $normKey, ':now' => $nowJst, ':uid' => $userId]);
+            } else {
+                $db->prepare("INSERT INTO customer_cars (user_id, zodiac_sign, created_at, updated_at) VALUES (:uid, :zodiac, :now, :now)")
+                    ->execute([':uid' => $userId, ':zodiac' => $normKey, ':now' => $nowJst]);
+            }
+        } catch (Throwable $e) {
+            writeDebugLog("星座保存エラー", ['error' => $e->getMessage()]);
+        }
+    }
+
+    // 今日の運勢を返信
+    $fortune = getTodayFortune($normKey);
+    $flexBubble = buildFortuneFlexBubble($fortune);
 
     $messages = [
         [
             'type' => 'text',
-            'text' => $msgText,
-            'quickReply' => getWeatherSwitchQuickReply(false)
+            'text' => "🌟 星座を「{$fortune['symbol']} {$fortune['name']}」に設定しました！\n次回からはメニューの「今日の運勢」を押すだけですぐに確認できます😊"
+        ],
+        [
+            'type' => 'flex',
+            'altText' => "🔮 【{$fortune['name']}】今日の運勢: {$fortune['stars']}",
+            'contents' => $flexBubble
         ]
     ];
 
+    sendReplyMessage($replyToken, $messages, $userId);
+}
+
+/**
+ * 12星座選択プロンプト（クイックリプライ）を送信
+ */
+function sendZodiacSelectPrompt(string $replyToken, string $userId) {
+    $messages = [
+        [
+            'type' => 'text',
+            'text' => "🔮 あなたの星座を教えてください！\n\n一度選ぶと次回からメニューを押すだけでその日の運勢がすぐに出るようになります✨（下の12星座からタップしてください）",
+            'quickReply' => getZodiacSelectionQuickReply()
+        ]
+    ];
     sendReplyMessage($replyToken, $messages, $userId);
 }

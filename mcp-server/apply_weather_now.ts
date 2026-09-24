@@ -139,16 +139,16 @@ async function run() {
     // 下地
     ctx.drawImage(baseImage, 0, 0, 2500, 1686);
 
-    // 上部300pxオレンジ帯
+    // 上部300pxオレンジ帯 (#FF8700)
     const bannerHeight = 300;
     const grad = ctx.createLinearGradient(0, 0, 0, bannerHeight);
-    grad.addColorStop(0, '#ea580c');
-    grad.addColorStop(1, '#c2410c');
+    grad.addColorStop(0, '#ff8700');
+    grad.addColorStop(1, '#ea7200');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 2500, bannerHeight);
 
     // 区切り線
-    ctx.fillStyle = '#fed7aa';
+    ctx.fillStyle = '#ffe0b2';
     ctx.fillRect(0, bannerHeight - 6, 2500, 6);
 
     const maxWidth = 2420;

@@ -684,9 +684,11 @@ function getDbConnection(?string $accountKey = null): PDO {
         try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN is_blocked INTEGER DEFAULT 0"); } catch (Throwable $e) {}
         try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN blocked_at DATETIME"); } catch (Throwable $e) {}
         try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN tags TEXT DEFAULT ''"); } catch (Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE customer_cars ADD COLUMN zodiac_sign TEXT DEFAULT ''"); } catch (Throwable $e) {}
         try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_last_interaction ON customer_cars(last_interaction_at)"); } catch (Throwable $e) {}
         try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_is_blocked ON customer_cars(is_blocked)"); } catch (Throwable $e) {}
         try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_tags ON customer_cars(tags)"); } catch (Throwable $e) {}
+        try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_cars_zodiac ON customer_cars(zodiac_sign)"); } catch (Throwable $e) {}
 
         // システム設定・マイグレーション管理テーブル
         try {
