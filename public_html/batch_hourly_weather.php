@@ -241,18 +241,18 @@ $shadow = imagecolorallocatealpha($dstImg, 0, 0, 0, 75);
 $maxWidth = 2420;
 
 if ($fontFile && function_exists('imagettftext')) {
-    // 1行目描画
-    $fontSize1 = 48;
-    $icon1Size = 58;
-    while ($fontSize1 > 26) {
+    // 1行目描画（200から自動縮小して帯幅2420pxギリギリの最大サイズに留める）
+    $fontSize1 = 200;
+    $icon1Size = 200;
+    while ($fontSize1 > 20) {
         $bb_pre = imagettfbbox($fontSize1, 0, $fontFile, $line1_pre);
         $w_pre = abs($bb_pre[4] - $bb_pre[0]);
         $bb_suf = imagettfbbox($fontSize1, 0, $fontFile, $line1_suf);
         $w_suf = abs($bb_suf[4] - $bb_suf[0]);
         $total1W = $w_pre + $icon1Size + 10 + $w_suf;
         if ($total1W <= $maxWidth) break;
-        $fontSize1 -= 2;
-        $icon1Size = (int)round($fontSize1 * 1.2);
+        $fontSize1 -= 1;
+        $icon1Size = (int)round($fontSize1 * 1.05);
     }
     $bb_pre = imagettfbbox($fontSize1, 0, $fontFile, $line1_pre);
     $w_pre = abs($bb_pre[4] - $bb_pre[0]);
@@ -260,7 +260,7 @@ if ($fontFile && function_exists('imagettftext')) {
     $w_suf = abs($bb_suf[4] - $bb_suf[0]);
     $total1W = $w_pre + $icon1Size + 10 + $w_suf;
     $start1X = max(30, (int)(($width - $total1W) / 2));
-    $y1 = 115;
+    $y1 = 110;
 
     // 1行目 テキスト prefix
     imagettftext($dstImg, $fontSize1, 0, $start1X + 2, $y1 + 2, $shadow, $fontFile, $line1_pre);
@@ -272,7 +272,7 @@ if ($fontFile && function_exists('imagettftext')) {
         $e1Img = imagecreatefrompng($emoji1Path);
         if ($e1Img) {
             $e1X = $start1X + $w_pre + 5;
-            $e1Y = $y1 - (int)($fontSize1 * 0.9);
+            $e1Y = $y1 - (int)($fontSize1 * 0.85);
             imagecopyresampled($dstImg, $e1Img, $e1X, $e1Y, 0, 0, $icon1Size, $icon1Size, imagesx($e1Img), imagesy($e1Img));
             imagedestroy($e1Img);
         }
@@ -283,16 +283,18 @@ if ($fontFile && function_exists('imagettftext')) {
     imagettftext($dstImg, $fontSize1, 0, $suf1X + 2, $y1 + 2, $shadow, $fontFile, $line1_suf);
     imagettftext($dstImg, $fontSize1, 0, $suf1X, $y1, $white, $fontFile, $line1_suf);
 
-    // 2行目描画
-    $fontSize2 = 44;
-    $icon2Size = 52;
-    while ($fontSize2 > 24) {
+    // 2行目描画（200から自動縮小して最大化）
+    $fontSize2 = 200;
+    $icon2Size = 200;
+    while ($fontSize2 > 20) {
         $bb2 = imagettfbbox($fontSize2, 0, $fontFile, $line2_text);
         $w2_text = abs($bb2[4] - $bb2[0]);
         $total2W = $icon2Size + 12 + $w2_text;
-        if ($total2W <= $maxWidth) break;
-        $fontSize2 -= 2;
-        $icon2Size = (int)round($fontSize2 * 1.15);
+        // 高さ100px以内、幅2420px以内に収める
+        $h2_text = abs($bb2[5] - $bb2[1]);
+        if ($total2W <= $maxWidth && $h2_text <= 90) break;
+        $fontSize2 -= 1;
+        $icon2Size = (int)round($fontSize2 * 0.95);
     }
     $bb2 = imagettfbbox($fontSize2, 0, $fontFile, $line2_text);
     $w2_text = abs($bb2[4] - $bb2[0]);
@@ -306,7 +308,7 @@ if ($fontFile && function_exists('imagettftext')) {
     if (file_exists($emoji2Path)) {
         $e2Img = imagecreatefrompng($emoji2Path);
         if ($e2Img) {
-            $e2Y = $y2 - (int)($fontSize2 * 0.9);
+            $e2Y = $y2 - (int)($fontSize2 * 0.85);
             imagecopyresampled($dstImg, $e2Img, $start2X, $e2Y, 0, 0, $icon2Size, $icon2Size, imagesx($e2Img), imagesy($e2Img));
             imagedestroy($e2Img);
         }
