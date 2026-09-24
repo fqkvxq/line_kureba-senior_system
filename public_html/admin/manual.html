@@ -1956,7 +1956,7 @@
                             <div class="step-body">
                                 <h4>管理画面のパスワードログインができない・エラーになる場合は？</h4>
                                 <p>以下の点をご確認ください：<br>
-                                <strong>1. 管理者パスワードの入力確認</strong>：デフォルトパスワードは <code>1020143</code> に設定されています（変更は <code>public_html/config.php</code> の <code>ADMIN_PASSWORD</code> で行えます）。前後に余分なスペースが入っていないかご確認ください。<br>
+                                <strong>1. 管理者パスワードの入力確認</strong>：APIマスターパスワードは <code>config.php</code> の <code>ADMIN_PASSWORD</code> で高セキュリティ文字列が定義されています。ブラウザからのアクセス時はメール2段階認証（6桁コード）が利用されます。<br>
                                 <strong>2. サーバーのHTTPヘッダー転送環境</strong>：当システムはXserverなどの共有ホスティング環境（Apache + FastCGI / PHP-FPM）に対応するため、<code>.htaccess</code> によるヘッダー転送、Bearerトークン、URLパラメータ、セッションCookieによる多重認証に対応しています。最新のコードがサーバーに反映されていることをご確認ください。<br>
                                 <strong>3. ブラウザのCookie・ストレージ設定</strong>：ログイン状態の保持のためブラウザのCookieおよびセッションストレージ（sessionStorage）を使用します。シークレットモードやCookieブロック設定を行っている場合は許可してください。</p>
                             </div>

@@ -383,7 +383,7 @@ define('ENABLE_NEW_CAR_BROADCAST', false); // 新着検知時にLINE公式アカ
 define('ENABLE_NEW_CAR_DISCORD', true);   // 新着検知時にDiscordへ通知するか
 
 // --- 店舗管理画面設定 & メール認証 ---
-define('ADMIN_PASSWORD', '1020143'); // 店舗用管理画面（/admin/）のバックエンド認証キー
+define('ADMIN_PASSWORD', 'KrbSenior_Sec2026!x9Wq$8mP#LvK24r'); // 店舗用管理画面（/admin/）のバックエンド認証キー・APIマスターキー
 define('ENABLE_ADMIN_2FA', true); // 管理者ログイン時のメール認証 (true: 有効・パスワード不要)
 define('ADMIN_2FA_EMAIL', 'kawai@kureba.co.jp'); // 認証コード送信先メールアドレス
 define('ADMIN_2FA_CODE_LIFETIME_MINUTES', 10); // 認証コード有効期限 (10分間)

@@ -2,11 +2,11 @@
   "default_server": "production",
   "servers": {
     "production": {
-      "name": "本番環境（Xサーバー）",
+      "name": "スマホ・パソコン教室KUREBA（本番）",
       "baseUrl": "https://your-domain.com/public_html/api.php",
-      "adminPassword": "YOUR_ADMIN_PASSWORD_HERE",
-      "defaultAccount": "default",
-      "description": "本番運用のLINE公式アカウント"
+      "adminPassword": "KrbSenior_Sec2026!x9Wq$8mP#LvK24r",
+      "defaultAccount": "senior",
+      "description": "スマホ・パソコン教室KUREBAのLINE公式アカウント"
     }
   }
 }
