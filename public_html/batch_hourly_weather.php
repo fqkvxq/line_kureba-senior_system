@@ -40,15 +40,15 @@ function logWeatherBatch(string $msg) {
 
 logWeatherBatch("=== 三島市 天気リッチメニュー自動更新バッチ 開始 (アカウント: {$targetAccount}) ===");
 
-// 1. 静岡県三島市の天気を取得 (緯度: 35.1184, 経度: 138.9184)
-$weatherLabel = '晴れ';
+// 1. 静岡県三島市の天気を取得 (緯度: 35.1184, 経度: 138.9184, 8日間予報)
+$weatherLabel = '晴れ時々曇り';
 $maxTemp = 28;
 $minTemp = 20;
-$iconText = '晴れ';
-$rainNotice = '';
+$nextRainStr = '';
+$futureRainDays = [];
 
 try {
-    $apiUrl = 'https://api.open-meteo.com/v1/forecast?latitude=35.1184&longitude=138.9184&hourly=precipitation_probability,precipitation,weathercode&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Asia%2FTokyo&forecast_days=3';
+    $apiUrl = 'https://api.open-meteo.com/v1/forecast?latitude=35.1184&longitude=138.9184&hourly=precipitation_probability,precipitation,weathercode&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=8';
     $ch = curl_init($apiUrl);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
@@ -65,38 +65,54 @@ try {
             $maxTemp = (int)round($weatherData['daily']['temperature_2m_max'][0]);
             $minTemp = (int)round($weatherData['daily']['temperature_2m_min'][0]);
 
-            if ($code === 0) { $iconText = '☀️'; $weatherLabel = '快晴'; }
-            elseif ($code >= 1 && $code <= 3) { $iconText = '🌤️'; $weatherLabel = '晴れ時々曇り'; }
-            elseif ($code >= 45 && $code <= 48) { $iconText = '🌫️'; $weatherLabel = '霧'; }
-            elseif ($code >= 51 && $code <= 67) { $iconText = '🌧️'; $weatherLabel = '雨'; }
-            elseif ($code >= 71 && $code <= 77) { $iconText = '❄️'; $weatherLabel = '雪'; }
-            elseif ($code >= 80 && $code <= 82) { $iconText = '🌦️'; $weatherLabel = 'にわか雨'; }
-            elseif ($code >= 95) { $iconText = '⚡'; $weatherLabel = '雷雨'; }
+            if ($code === 0) { $weatherLabel = '快晴'; }
+            elseif ($code >= 1 && $code <= 3) { $weatherLabel = '晴れ時々曇り'; }
+            elseif ($code >= 45 && $code <= 48) { $weatherLabel = '霧'; }
+            elseif ($code >= 51 && $code <= 67) { $weatherLabel = '雨'; }
+            elseif ($code >= 71 && $code <= 77) { $weatherLabel = '雪'; }
+            elseif ($code >= 80 && $code <= 82) { $weatherLabel = 'にわか雨'; }
+            elseif ($code >= 95) { $weatherLabel = '雷雨'; }
         }
 
-        // 直近36時間以内の雨予報（降水確率40%以上または雨コード）を検知
+        $nowTs = time();
+        $dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+
+        // 最も近い雨の降り始め時間（時間別予報）
         if (!empty($weatherData['hourly']['time'])) {
-            $nowTs = time();
             $hTimes = $weatherData['hourly']['time'];
             $hProbs = $weatherData['hourly']['precipitation_probability'] ?? [];
-            $hPrecip = $weatherData['hourly']['precipitation'] ?? [];
             $hCodes = $weatherData['hourly']['weathercode'] ?? [];
 
             for ($i = 0; $i < count($hTimes); $i++) {
                 $tTs = strtotime($hTimes[$i]);
-                if ($tTs >= $nowTs && $tTs <= ($nowTs + 36 * 3600)) {
+                if ($tTs >= $nowTs) {
                     $p = (int)($hProbs[$i] ?? 0);
-                    $pr = (float)($hPrecip[$i] ?? 0);
                     $c = (int)($hCodes[$i] ?? 0);
 
-                    if ($p >= 40 || $pr >= 0.2 || ($c >= 51 && $c <= 67) || ($c >= 80 && $c <= 82)) {
+                    if ($p >= 40 || ($c >= 51 && $c <= 67) || ($c >= 80 && $c <= 82)) {
                         $isToday = (date('Y-m-d', $tTs) === date('Y-m-d', $nowTs));
                         $isTomorrow = (date('Y-m-d', $tTs) === date('Y-m-d', $nowTs + 86400));
-                        $dayPrefix = $isToday ? '今日' : ($isTomorrow ? '明日' : date('n/j', $tTs));
+                        $dayPrefix = $isToday ? '今日' : ($isTomorrow ? '明日' : date('n/j', $tTs) . '(' . $dayNames[(int)date('w', $tTs)] . ')');
                         $hourNum = (int)date('G', $tTs);
-                        $rainNotice = "【☔{$dayPrefix}{$hourNum}時〜雨予報】";
+                        $nextRainStr = "{$dayPrefix} {$hourNum}時〜 (降水確率{$p}%)";
                         break;
                     }
+                }
+            }
+        }
+
+        // 週間（3日目以降〜8日目）の雨の日をリストアップ
+        if (!empty($weatherData['daily']['time'])) {
+            $dTimes = $weatherData['daily']['time'];
+            $dProbs = $weatherData['daily']['precipitation_probability_max'] ?? [];
+            $dCodes = $weatherData['daily']['weathercode'] ?? [];
+
+            for ($d = 2; $d < count($dTimes); $d++) {
+                $p = (int)($dProbs[$d] ?? 0);
+                $c = (int)($dCodes[$d] ?? 0);
+                if ($p >= 50 || ($c >= 51 && $c <= 67) || ($c >= 80 && $c <= 82)) {
+                    $dTs = strtotime($dTimes[$d]);
+                    $futureRainDays[] = date('j', $dTs) . '日(' . $dayNames[(int)date('w', $dTs)] . ')';
                 }
             }
         }
@@ -111,12 +127,23 @@ $dayStr = $dayNames[(int)$now->format('w')];
 $datePrefix = $now->format('n/j') . "({$dayStr})";
 $hourStr = $now->format('G') . "時時点";
 
-if (!empty($rainNotice)) {
-    $weatherText = "{$datePrefix} {$hourStr} 三島：{$iconText} {$weatherLabel}({$maxTemp}℃/{$minTemp}℃) {$rainNotice}";
+// 1行目: 日時・三島市天気・気温
+$line1 = "{$datePrefix} {$hourStr}　三島の天気：{$weatherLabel}（最高 {$maxTemp}℃ / 最低 {$minTemp}℃）";
+
+// 2行目: 直近の雨＆週間雨予報
+if (!empty($nextRainStr)) {
+    if (!empty($futureRainDays)) {
+        $weekStr = implode('・', array_slice($futureRainDays, 0, 3));
+        $line2 = "【雨予報】 直近の雨：{$nextRainStr} ｜ 週間：{$weekStr}も雨予報";
+    } else {
+        $line2 = "【雨予報】 直近の雨：{$nextRainStr} ｜ その後は晴れ間が広がる見込み";
+    }
 } else {
-    $weatherText = "{$datePrefix} {$hourStr} 三島の天気：{$iconText} {$weatherLabel}　最高 {$maxTemp}℃ / 最低 {$minTemp}℃";
+    $line2 = "【週間雨予報】 目先1週間はまとまった雨の心配はありません";
 }
-logWeatherBatch("取得天気テキスト: {$weatherText}");
+
+logWeatherBatch("1行目: {$line1}");
+logWeatherBatch("2行目: {$line2}");
 
 // 2. ベースとなるリッチメニュー画像を取得
 $stmtBase = $db->query("SELECT * FROM rich_menus WHERE is_active = 1 ORDER BY id DESC LIMIT 1");
@@ -163,32 +190,33 @@ imagedestroy($srcImg);
 
 $bannerHeight = 300;
 
-// 上部300pxにオレンジグラデーション帯を描画
+// 上部300pxに高級感ある濃いオレンジグラデーション帯を描画
 for ($y = 0; $y < $bannerHeight; $y++) {
     $ratio = $y / $bannerHeight;
-    $r = (int)(249 * (1 - $ratio) + 234 * $ratio);
-    $g = (int)(115 * (1 - $ratio) + 88 * $ratio);
-    $b = (int)(22 * (1 - $ratio) + 12 * $ratio);
+    $r = (int)(234 * (1 - $ratio) + 194 * $ratio);
+    $g = (int)(88 * (1 - $ratio) + 65 * $ratio);
+    $b = (int)(12 * (1 - $ratio) + 12 * $ratio);
     $color = imagecolorallocate($dstImg, $r, $g, $b);
     imageline($dstImg, 0, $y, $width, $y, $color);
 }
 
 // 境界アクセントライン
-$borderCol = imagecolorallocate($dstImg, 255, 237, 213);
-for ($b = 0; $b < 8; $b++) {
+$borderCol = imagecolorallocate($dstImg, 254, 215, 170);
+for ($b = 0; $b < 6; $b++) {
     imageline($dstImg, 0, $bannerHeight - $b, $width, $bannerHeight - $b, $borderCol);
 }
 
-// テキストの描画 (日本語TTFフォントがあればTTF、なければシステムフォント)
+// フォントファイルの探索（LINE Seed JP を最優先）
 $fontFile = null;
 $possibleFonts = [
+    __DIR__ . '/data/LINESeedJP-Bold.ttf',
+    __DIR__ . '/data/font.ttf',
     'C:/Windows/Fonts/meiryob.ttc',
     'C:/Windows/Fonts/meiryo.ttc',
     'C:/Windows/Fonts/YuGothB.ttc',
     '/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc',
     '/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc',
-    '/usr/share/fonts/ipa-gothic/ipag.ttf',
-    __DIR__ . '/data/font.ttf'
+    '/usr/share/fonts/ipa-gothic/ipag.ttf'
 ];
 foreach ($possibleFonts as $f) {
     if (file_exists($f)) {
@@ -198,23 +226,51 @@ foreach ($possibleFonts as $f) {
 }
 
 $white = imagecolorallocate($dstImg, 255, 255, 255);
-$shadow = imagecolorallocatealpha($dstImg, 0, 0, 0, 70);
+$yellow = imagecolorallocate($dstImg, 254, 240, 138); // 明るいイエロー
+$greenLight = imagecolorallocate($dstImg, 240, 253, 244);
+$shadow = imagecolorallocatealpha($dstImg, 0, 0, 0, 75);
+
+$maxWidth = 2380;
 
 if ($fontFile && function_exists('imagettftext')) {
-    $fontSize = 46;
-    $bbox = imagettfbbox($fontSize, 0, $fontFile, $weatherText);
-    $textW = abs($bbox[4] - $bbox[0]);
-    $textX = max(40, (int)(($width - $textW) / 2));
-    $textY = 175;
+    // 1行目描画
+    $fontSize1 = 44;
+    while ($fontSize1 > 24) {
+        $bbox = imagettfbbox($fontSize1, 0, $fontFile, $line1);
+        $w = abs($bbox[4] - $bbox[0]);
+        if ($w <= $maxWidth) break;
+        $fontSize1 -= 2;
+    }
+    $bbox1 = imagettfbbox($fontSize1, 0, $fontFile, $line1);
+    $text1W = abs($bbox1[4] - $bbox1[0]);
+    $text1X = max(40, (int)(($width - $text1W) / 2));
+    $text1Y = 110;
 
-    // ドロップシャドウ
-    imagettftext($dstImg, $fontSize, 0, $textX + 3, $textY + 3, $shadow, $fontFile, $weatherText);
-    // メイン白文字
-    imagettftext($dstImg, $fontSize, 0, $textX, $textY, $white, $fontFile, $weatherText);
+    imagettftext($dstImg, $fontSize1, 0, $text1X + 2, $text1Y + 2, $shadow, $fontFile, $line1);
+    imagettftext($dstImg, $fontSize1, 0, $text1X, $text1Y, $white, $fontFile, $line1);
+
+    // 2行目描画 (雨予報ハイライト)
+    $fontSize2 = 40;
+    while ($fontSize2 > 22) {
+        $bbox = imagettfbbox($fontSize2, 0, $fontFile, $line2);
+        $w = abs($bbox[4] - $bbox[0]);
+        if ($w <= $maxWidth) break;
+        $fontSize2 -= 2;
+    }
+    $bbox2 = imagettfbbox($fontSize2, 0, $fontFile, $line2);
+    $text2W = abs($bbox2[4] - $bbox2[0]);
+    $text2X = max(40, (int)(($width - $text2W) / 2));
+    $text2Y = 225;
+
+    $color2 = !empty($nextRainStr) ? $yellow : $greenLight;
+    imagettftext($dstImg, $fontSize2, 0, $text2X + 2, $text2Y + 2, $shadow, $fontFile, $line2);
+    imagettftext($dstImg, $fontSize2, 0, $text2X, $text2Y, $color2, $fontFile, $line2);
 } else {
-    // TTFフォントがない環境用のフォールバック
-    $textX = (int)(($width - (mb_strlen($weatherText) * 20)) / 2);
-    imagestring($dstImg, 5, $textX, 130, $weatherText, $white);
+    // フォールバック
+    $text1X = (int)(($width - (mb_strlen($line1) * 18)) / 2);
+    $text2X = (int)(($width - (mb_strlen($line2) * 18)) / 2);
+    imagestring($dstImg, 5, $text1X, 80, $line1, $white);
+    imagestring($dstImg, 5, $text2X, 190, $line2, $yellow);
 }
 
 $tmpJpg = __DIR__ . '/data/weather_temp_' . time() . '.jpg';

@@ -2074,10 +2074,13 @@
                         <div class="step-card" style="grid-column: 1 / -1;">
                             <div class="step-number" style="background: #ea580c; color: #fff;"><i class="fa-solid fa-cloud-sun-rain"></i></div>
                             <div class="step-body">
-                                <h4>静岡県三島市 天気予報連動リッチメニュー 1時間毎 自動更新 & 雨予報自動検知（Xサーバー Cron設定）</h4>
-                                <p>毎時0分に静岡県三島市の最新天気・最高最低気温を取得し、リッチメニュー上部（300px帯）に文字合成してアタッチするバッチスクリプト（<code>batch_hourly_weather.php</code>）の機能とCron設定手順です。<br>
-                                <strong>💡 雨予報自動検知機能:</strong> 直近36時間以内の時間別予報を自動スキャンし、降水確率40%以上または雨コードを検知した場合は「<strong>【☔明日10時〜雨予報】</strong>」のように雨の降り始め日時をバナー帯に自動明記します。<br>
-                                <strong>💡 クリーンアップ仕様:</strong> 1時間ごとに新しいメニューを生成・適用後、前回の古いリッチメニューは自動でDELETE削除されるため、LINEの1,000件上限に達することなく永久運用可能です。</p>
+                                <h4>静岡県三島市 LINE Seed JPフォント・2行改行＆週間雨予報連動リッチメニュー（Xサーバー Cron設定）</h4>
+                                <p>毎時0分に静岡県三島市の最新天気・最高最低気温・週間降水予報を取得し、リッチメニュー上部（300px帯）に合成してアタッチするバッチスクリプト（<code>batch_hourly_weather.php</code>）の仕様とCron設定手順です。<br>
+                                <strong>💡 LINE Seed JPフォント採用 & 文字化け防止:</strong> LINE公式フォント「LINE Seed JP Bold」を採用し、文字化け（豆腐 □）を完全に防止。帯幅いっぱいの最大フォントサイズで鮮明に描画します。<br>
+                                <strong>💡 2行改行 & 目先1週間の雨予報検知（ウェザーニュース連携）:</strong><br>
+                                ・1行目: <code>9/24(木) 13時時点　三島の天気：晴れ時々曇り（最高 28℃ / 最低 20℃）</code><br>
+                                ・2行目: <code>【雨予報】 直近の雨：明日 10時〜 (降水確率42%) ｜ 週間：26日(土)・27日(日)・28日(月)も雨予報</code><br>
+                                <strong>💡 自動クリーンアップ:</strong> 1時間ごとに新しいメニューを生成・適用後、前回の古いリッチメニューは自動でDELETE削除されるため、LINEの1,000件上限に達することなく永久運用可能です。</p>
                                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-top: 10px;">
                                     <strong>📋 エックスサーバー サーバーパネルでの設定手順:</strong><br>
                                     1. サーバーパネルにログイン ＞「Cron設定」を開きます。<br>
@@ -2104,6 +2107,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260924_hourly_weather_cron_v27"></script>
+    <script src="manual.js?v=20260924_lineseed_week_rain_v28"></script>
 </body>
 </html>
