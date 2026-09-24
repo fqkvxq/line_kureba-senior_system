@@ -2074,15 +2074,17 @@
                         <div class="step-card" style="grid-column: 1 / -1;">
                             <div class="step-number" style="background: #ea580c; color: #fff;"><i class="fa-solid fa-cloud-sun-rain"></i></div>
                             <div class="step-body">
-                                <h4>静岡県三島市 天気予報連動リッチメニュー（全ユーザー全体デフォルト運用 ＆ 1時間毎自動更新）</h4>
-                                <p>全受講生・お友達のLINE画面の標準メニューとして、静岡県三島市のリアルタイム天気・気温・週間雨予報が合成された<strong>天気リッチメニュー</strong>を自動配信・運用します。<br>
-                                <strong>💡 全ユーザー共通の全体デフォルトメニュー:</strong><br>
-                                ・友だち追加時やトークを開いた際に、すべてのユーザーに最新の三島市天気予報メニューが表示されます。<br>
-                                ・上部のオレンジ帯（<code>#FF8700</code>）をタップすると、ウェザーニュースの三島市詳細予報ページへ直接アクセス可能です。<br>
+                                <h4>静岡県三島市 天気予報 ＆ 毎時切替・10文字以内の名言連動リッチメニュー（全体デフォルト運用）</h4>
+                                <p>全受講生・お友達のLINE画面の標準メニューとして、上部に<strong>静岡県三島市のリアルタイム天気・気温・週間雨予報</strong>、下部に<strong>10文字以内の心に響く名言・格言</strong>が自動合成されたリッチメニューを毎時間更新・配信します。<br>
+                                <strong>💡 上部：三島市リアルタイム天気帯（300px・オレンジグラデーション <code>#FF8700</code>）:</strong><br>
+                                ・毎時最新の天気・最高最低気温・直近の雨の降り始め予報を高解像度絵文字付きで表示。タップするとウェザーニュース三島市詳細へジャンプ。<br>
+                                <strong>💡 下部：10文字以内の今時間のことば帯（200px・ダークスレート＆ゴールドアクセント【新機能】）:</strong><br>
+                                ・外部名言API（<code>https://meigen.doodlenote.net/api/json.php</code>）および厳選マスターリスト（<code>quote_engine.php</code>）と連携し、10文字以内のポジティブな名言（例:「継続は力なり」「思い立ったが吉日」「一期一会」など）を毎時間自動で切り替えて表示。<br>
+                                ・タップするとトーク画面にその時間のことばが表示されます。<br>
                                 <strong>💡 1時間毎の自動更新バッチ（Xサーバー Cron）:</strong><br>
-                                ・毎時0分のCron実行（<code>batch_hourly_weather.php</code>）により、最新の天気・最高最低気温・雨の降り始め予報が自動で再生成され、全体デフォルトメニューとして即座に切り替わります。<br>
-                                <strong>💡 自動クリーンアップ & メニュー上限対策:</strong><br>
-                                ・新しいメニュー生成・適用後、前回の古いリッチメニューは自動でDELETE削除されるため、LINEの1,000件上限に達することなく永久運用可能です。</p>
+                                ・毎時0分のCron実行（<code>batch_hourly_weather.php</code>）により、最新天気と新しい名言が自動合成され、全体デフォルトメニューとして即座に切り替わります。<br>
+                                <strong>💡 自動クリーンアップ:</strong><br>
+                                ・前回の古いデフォルトメニューは自動でDELETE削除されるため、LINEのメニュー上限に達することなく永久運用可能です。</p>
                                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-top: 10px;">
                                     <strong>📋 エックスサーバー サーバーパネルでの設定手順:</strong><br>
                                     1. サーバーパネルにログイン ＞「Cron設定」を開きます。<br>
@@ -2109,6 +2111,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260924_weather_all_default_v33"></script>
+    <script src="manual.js?v=20260924_weather_hourly_quote_v34"></script>
 </body>
 </html>

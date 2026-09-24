@@ -223,15 +223,118 @@ async function run() {
     ctx.fillStyle = hasRain ? '#fef08a' : '#f0fdf4'; // 雨予報があるときはイエロー
     ctx.fillText(line2_text, text2X, y2);
 
+    // --- 下部200px 名言帯 (#0f172a〜#1e293b) ---
+    // 10文字以内の名言取得
+    const quoteMaster = [
+        '継続は力なり',
+        '思い立ったが吉日',
+        '一期一会',
+        '日日是好日',
+        '笑う門には福来たる',
+        '千里の道も一歩から',
+        '初心忘るべからず',
+        '為せば成る',
+        '自分を信じて',
+        '一歩一歩前へ',
+        '明日には明日の風',
+        '失敗は成功の母',
+        '今を大切に生きる',
+        '夢は逃げない',
+        '焦らずマイペース',
+        '努力は裏切らない',
+        '学ぶ心に老いなし',
+        '感謝の心が道開く',
+        '七転び八起き',
+        '笑顔は最高の魔法',
+        '好きこそ物の上手',
+        '案ずるより生む易し',
+        '希望は光となる',
+        '知恵は無限の財産',
+        '温故知新',
+        '明日はもっと良く',
+        '好奇心が若さの鍵',
+        '楽しむことが一番',
+        '感謝から始まる',
+        '雨のち晴れ',
+        '今日を楽しもう',
+        '今日が一番若い日'
+    ];
+
+    let currentQuote = '';
+    try {
+        const qRes = await fetch('https://meigen.doodlenote.net/api/json.php');
+        if (qRes.ok) {
+            const qData = await qRes.json() as any;
+            if (Array.isArray(qData) && qData[0]?.meigen) {
+                const clean = qData[0].meigen.replace(/[。、！？\s]/g, '');
+                if (clean.length >= 3 && clean.length <= 10) {
+                    currentQuote = clean;
+                }
+            }
+        }
+    } catch (e) {}
+
+    if (!currentQuote) {
+        const seedStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()} ${now.getHours()}_quote`;
+        let hash = 0;
+        for (let i = 0; i < seedStr.length; i++) {
+            hash = ((hash << 5) - hash) + seedStr.charCodeAt(i);
+            hash |= 0;
+        }
+        currentQuote = quoteMaster[Math.abs(hash) % quoteMaster.length];
+    }
+
+    const bottomBannerHeight = 200;
+    const bottomY = 1686 - bottomBannerHeight;
+
+    // 下部帯背景グラデーション
+    const gradBottom = ctx.createLinearGradient(0, bottomY, 0, 1686);
+    gradBottom.addColorStop(0, '#0f172a');
+    gradBottom.addColorStop(1, '#1e293b');
+    ctx.fillStyle = gradBottom;
+    ctx.fillRect(0, bottomY, 2500, bottomBannerHeight);
+
+    // 上部ゴールドアクセント境界線
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(0, bottomY, 2500, 6);
+
+    // 名言テキスト描画
+    const quotePrefix = `💡 今時間のことば：`;
+    const quoteMain = `『${currentQuote}』`;
+    
+    let fontQSize = 58;
+    ctx.font = `bold ${fontQSize}px "LINESeedJP", sans-serif`;
+    let w_qpre = ctx.measureText(quotePrefix).width;
+    let w_qmain = ctx.measureText(quoteMain).width;
+    let totalQW = w_qpre + w_qmain;
+
+    const startQX = Math.max(40, (2500 - totalQW) / 2);
+    const qTextY = bottomY + (bottomBannerHeight / 2);
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    // quotePrefix (白)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.fillText(quotePrefix, startQX + 2, qTextY + 2);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillText(quotePrefix, startQX, qTextY);
+
+    // quoteMain (輝くゴールド)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.fillText(quoteMain, startQX + w_qpre + 2, qTextY + 2);
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillText(quoteMain, startQX + w_qpre, qTextY);
+
     const outJpg = path.resolve(process.cwd(), 'weather_richmenu.jpg');
     fs.writeFileSync(outJpg, canvas.toBuffer('image/jpeg', 92));
-    console.log(`JPEG saved to ${outJpg} (Font1: ${font1Size}px, Font2: ${font2Size}px)`);
+    console.log(`JPEG saved to ${outJpg} (Quote: ${currentQuote})`);
 
-    // 6. LINE リッチメニュー作成
+    // 6. LINE リッチメニュー作成 (全体デフォルト適用)
     const menuBody = {
         size: { width: 2500, height: 1686 },
         selected: true,
-        name: `三島天気 (${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${now.getMinutes()})`,
+        name: `三島天気＆名言 (${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${now.getMinutes()})`,
         chatBarText: 'メニュー',
         areas: [
             {
@@ -243,24 +346,28 @@ async function run() {
                 }
             },
             {
-                bounds: { x: 0, y: 300, width: 833, height: 693 },
-                action: { type: 'uri', label: '今日の運勢', uri: 'https://fortune.line.me/' }
+                bounds: { x: 0, y: 300, width: 1250, height: 1186 },
+                action: {
+                    type: 'uri',
+                    label: '教室案内・予約',
+                    uri: 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1'
+                }
             },
             {
-                bounds: { x: 833, y: 300, width: 834, height: 693 },
-                action: { type: 'uri', label: 'タロット占い', uri: 'https://fortune.line.me/' }
+                bounds: { x: 1250, y: 300, width: 1250, height: 1186 },
+                action: {
+                    type: 'uri',
+                    label: '受講生マイページ',
+                    uri: 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcp%2FA9xhz7MWZF%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1'
+                }
             },
             {
-                bounds: { x: 1667, y: 300, width: 833, height: 693 },
-                action: { type: 'uri', label: '相性占い', uri: 'https://fortune.line.me/' }
-            },
-            {
-                bounds: { x: 0, y: 993, width: 1250, height: 693 },
-                action: { type: 'message', label: '教室への問い合わせ', text: '問い合わせ' }
-            },
-            {
-                bounds: { x: 1250, y: 993, width: 1250, height: 693 },
-                action: { type: 'message', label: '予約確認', text: '予約確認' }
+                bounds: { x: 0, y: 1486, width: 2500, height: 200 },
+                action: {
+                    type: 'message',
+                    label: '今時間のことば',
+                    text: `今時間のことばは「${currentQuote}」です✨`
+                }
             }
         ]
     };
@@ -291,34 +398,38 @@ async function run() {
     });
     console.log('Upload image status:', uploadRes.status);
 
-    // 8. かわいたくや様へアタッチ
-    const userId = 'U38c887032d23d83bcc44ae08c1f987a2';
-    
-    // 現在のメニューID取得
-    const curRes = await fetch(`https://api.line.me/v2/bot/user/${userId}/richmenu`, {
+    // 8. 全ユーザー共通の全体デフォルトメニューとして設定
+    const defRes = await fetch('https://api.line.me/v2/bot/user/all/richmenu', {
         headers: { 'Authorization': `Bearer ${token}` }
     });
-    const curData = await curRes.json() as any;
-    const oldMenuId = curData.richMenuId;
-    console.log(`Current user menu: ${oldMenuId}`);
+    const defData = await defRes.json() as any;
+    const oldDefaultMenuId = defData.richMenuId;
+    console.log(`Current default menu: ${oldDefaultMenuId}`);
 
-    // 新メニューリンク
-    const linkRes = await fetch(`https://api.line.me/v2/bot/user/${userId}/richmenu/${newMenuId}`, {
+    const setDefaultRes = await fetch(`https://api.line.me/v2/bot/user/all/richmenu/${newMenuId}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
     });
-    console.log('Link menu status:', linkRes.status);
+    console.log('Set default menu status:', setDefaultRes.status);
 
-    // 9. 古いリッチメニューを削除
-    if (oldMenuId && oldMenuId !== newMenuId && oldMenuId !== baseMenuId) {
-        const delRes = await fetch(`https://api.line.me/v2/bot/richmenu/${oldMenuId}`, {
+    // 個別リンクされているユーザーがいればクリーンアップ（念のためアンリンク）
+    const userId = 'U38c887032d23d83bcc44ae08c1f987a2';
+    await fetch(`https://api.line.me/v2/bot/user/${userId}/richmenu`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    // 9. 古いデフォルトリッチメニューを削除
+    if (oldDefaultMenuId && oldDefaultMenuId !== newMenuId && oldDefaultMenuId !== baseMenuId) {
+        const delRes = await fetch(`https://api.line.me/v2/bot/richmenu/${oldDefaultMenuId}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        console.log(`Deleted old menu ${oldMenuId}: ${delRes.status}`);
+        console.log(`Deleted old default menu ${oldDefaultMenuId}: ${delRes.status}`);
     }
 
-    console.log('✅ 高画質絵文字アイコン付きリッチメニューの適用完了！');
+    console.log('✅ 三島市天気予報＆今時間の名言リッチメニュー（全体デフォルト）の適用完了！');
 }
 
 run().catch(console.error);
+

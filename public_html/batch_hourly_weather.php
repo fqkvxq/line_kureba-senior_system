@@ -16,7 +16,12 @@ putenv('TZ=Asia/Tokyo');
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
-require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/quote_engine.php';
+
+// 今時間の名言を取得（10文字以内）
+$quoteInfo = getHourlyQuote();
+$currentQuote = $quoteInfo['quote'] ?? '継続は力なり';
+logWeatherBatch("今時間の名言取得: 「{$currentQuote}」 (文字数: " . mb_strlen($currentQuote, 'UTF-8') . "文字)");
 
 // アカウント指定
 $targetAccount = $_REQUEST['account'] ?? ($_SERVER['HTTP_X_LINE_ACCOUNT'] ?? 'senior');
@@ -312,6 +317,50 @@ if ($fontFile && function_exists('imagettftext')) {
     $color2 = $hasRain ? $yellow : $greenLight;
     imagettftext($dstImg, $fontSize2, 0, $text2X + 2, $y2 + 2, $shadow, $fontFile, $line2_text);
     imagettftext($dstImg, $fontSize2, 0, $text2X, $y2, $color2, $fontFile, $line2_text);
+    // --- 下部200px 名言帯描画 (#0f172a 〜 #1e293b) ---
+    $bottomBannerHeight = 200;
+    $bottomY = $height - $bottomBannerHeight;
+
+    for ($by = 0; $by < $bottomBannerHeight; $by++) {
+        $ratio = $by / $bottomBannerHeight;
+        $br = (int)(15 * (1 - $ratio) + 30 * $ratio);
+        $bg = (int)(23 * (1 - $ratio) + 41 * $ratio);
+        $bb = (int)(42 * (1 - $ratio) + 59 * $ratio);
+        $bColor = imagecolorallocate($dstImg, $br, $bg, $bb);
+        imageline($dstImg, 0, $bottomY + $by, $width, $bottomY + $by, $bColor);
+    }
+
+    // 上部ゴールドアクセント境界線 (6px)
+    $gold = imagecolorallocate($dstImg, 245, 158, 11);
+    for ($gb = 0; $gb < 6; $gb++) {
+        imageline($dstImg, 0, $bottomY + $gb, $width, $bottomY + $gb, $gold);
+    }
+
+    // 名言テキスト
+    $quotePrefix = "💡 今時間のことば：";
+    $quoteMain = "『{$currentQuote}』";
+    $fontSizeQ = 50;
+
+    $bbQPre = imagettfbbox($fontSizeQ, 0, $fontFile, $quotePrefix);
+    $wQPre = abs($bbQPre[4] - $bbQPre[0]);
+    $bbQMain = imagettfbbox($fontSizeQ, 0, $fontFile, $quoteMain);
+    $wQMain = abs($bbQMain[4] - $bbQMain[0]);
+    $totalQW = $wQPre + $wQMain;
+
+    $startQX = max(40, (int)(($width - $totalQW) / 2));
+    $qY = $bottomY + 115;
+
+    $lightSlate = imagecolorallocate($dstImg, 226, 232, 240);
+    $brightGold = imagecolorallocate($dstImg, 251, 191, 36);
+
+    // prefix
+    imagettftext($dstImg, $fontSizeQ, 0, $startQX + 2, $qY + 2, $shadow, $fontFile, $quotePrefix);
+    imagettftext($dstImg, $fontSizeQ, 0, $startQX, $qY, $lightSlate, $fontFile, $quotePrefix);
+
+    // main
+    $mainQX = $startQX + $wQPre;
+    imagettftext($dstImg, $fontSizeQ, 0, $mainQX + 2, $qY + 2, $shadow, $fontFile, $quoteMain);
+    imagettftext($dstImg, $fontSizeQ, 0, $mainQX, $qY, $brightGold, $fontFile, $quoteMain);
 } else {
     // フォールバック
     $text1X = (int)(($width - (mb_strlen($line1_pre . $line1_suf) * 18)) / 2);
@@ -327,7 +376,7 @@ if (!is_dir(__DIR__ . '/data')) {
 imagejpeg($dstImg, $tmpJpg, 92);
 imagedestroy($dstImg);
 
-logWeatherBatch("天気帯合成JPEG作成完了 ({$tmpJpg})");
+logWeatherBatch("天気帯＆名言帯合成JPEG作成完了 ({$tmpJpg})");
 
 // 4. LINE Messaging API で新規リッチメニュー作成
 $weathernewsUrl = 'https://weathernews.jp/onebox/tenki/shizuoka/22206/';
@@ -341,18 +390,37 @@ $areas = [
             'label' => '三島市の天気詳細',
             'uri' => $weathernewsUrl
         ]
+    ],
+    // 中央 左 (受講案内・予約)
+    [
+        'bounds' => ['x' => 0, 'y' => 300, 'width' => 1250, 'height' => 1186],
+        'action' => [
+            'type' => 'uri',
+            'label' => '教室案内・予約',
+            'uri' => 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1'
+        ]
+    ],
+    // 中央 右 (受講生マイページ)
+    [
+        'bounds' => ['x' => 1250, 'y' => 300, 'width' => 1250, 'height' => 1186],
+        'action' => [
+            'type' => 'uri',
+            'label' => '受講生マイページ',
+            'uri' => 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcp%2FA9xhz7MWZF%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1'
+        ]
+    ],
+    // 下部 200px: 今時間のことば
+    [
+        'bounds' => ['x' => 0, 'y' => 1486, 'width' => 2500, 'height' => 200],
+        'action' => [
+            'type' => 'message',
+            'label' => '今時間のことば',
+            'text' => "今時間のことばは「{$currentQuote}」です✨"
+        ]
     ]
 ];
 
-// ベースメニューのエリア設定を引き継ぐ
-$baseAreas = !empty($baseMenu['areas_json']) ? json_decode($baseMenu['areas_json'], true) : [];
-if (!empty($baseAreas) && is_array($baseAreas)) {
-    foreach ($baseAreas as $ba) {
-        $areas[] = $ba;
-    }
-}
-
-$menuTitle = "【毎時自動】三島天気 (" . $now->format('m/d H:i') . ")";
+$menuTitle = "【毎時自動】三島天気＆名言 (" . $now->format('m/d H:i') . ")";
 $menuData = [
     'size' => ['width' => $width, 'height' => $height],
     'selected' => true,
