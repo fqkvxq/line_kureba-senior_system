@@ -238,12 +238,12 @@ $yellow = imagecolorallocate($dstImg, 254, 240, 138); // 明るいイエロー
 $greenLight = imagecolorallocate($dstImg, 240, 253, 244);
 $shadow = imagecolorallocatealpha($dstImg, 0, 0, 0, 75);
 
-$maxWidth = 2300;
+$maxWidth = 2380;
 
 if ($fontFile && function_exists('imagettftext')) {
-    // 1行目描画（帯の上部エリアに余裕を持って収まるコンパクトサイズ）
-    $fontSize1 = 44;
-    $icon1Size = 46;
+    // 1行目描画（行間を詰めて大きく表示）
+    $fontSize1 = 54;
+    $icon1Size = 56;
     while ($fontSize1 > 20) {
         $bb_pre = imagettfbbox($fontSize1, 0, $fontFile, $line1_pre);
         $w_pre = abs($bb_pre[4] - $bb_pre[0]);
@@ -259,8 +259,8 @@ if ($fontFile && function_exists('imagettftext')) {
     $bb_suf = imagettfbbox($fontSize1, 0, $fontFile, $line1_suf);
     $w_suf = abs($bb_suf[4] - $bb_suf[0]);
     $total1W = $w_pre + $icon1Size + 10 + $w_suf;
-    $start1X = max(40, (int)(($width - $total1W) / 2));
-    $y1 = 95;
+    $start1X = max(30, (int)(($width - $total1W) / 2));
+    $y1 = 82;
 
     // 1行目 テキスト prefix
     imagettftext($dstImg, $fontSize1, 0, $start1X + 2, $y1 + 2, $shadow, $fontFile, $line1_pre);
@@ -283,9 +283,9 @@ if ($fontFile && function_exists('imagettftext')) {
     imagettftext($dstImg, $fontSize1, 0, $suf1X + 2, $y1 + 2, $shadow, $fontFile, $line1_suf);
     imagettftext($dstImg, $fontSize1, 0, $suf1X, $y1, $white, $fontFile, $line1_suf);
 
-    // 2行目描画（帯の下部エリアに余裕を持って収まるコンパクトサイズ）
-    $fontSize2 = 40;
-    $icon2Size = 42;
+    // 2行目描画（1行目と接近させて大きく配置）
+    $fontSize2 = 50;
+    $icon2Size = 52;
     while ($fontSize2 > 20) {
         $bb2 = imagettfbbox($fontSize2, 0, $fontFile, $line2_text);
         $w2_text = abs($bb2[4] - $bb2[0]);
@@ -297,8 +297,8 @@ if ($fontFile && function_exists('imagettftext')) {
     $bb2 = imagettfbbox($fontSize2, 0, $fontFile, $line2_text);
     $w2_text = abs($bb2[4] - $bb2[0]);
     $total2W = $icon2Size + 12 + $w2_text;
-    $start2X = max(40, (int)(($width - $total2W) / 2));
-    $y2 = 210;
+    $start2X = max(30, (int)(($width - $total2W) / 2));
+    $y2 = 185;
 
     // 2行目 絵文字アイコン合成 (傘 or 太陽)
     $emoji2Key = $hasRain ? 'umbrella' : 'sun';
