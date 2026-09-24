@@ -230,12 +230,12 @@ $yellow = imagecolorallocate($dstImg, 254, 240, 138); // 明るいイエロー
 $greenLight = imagecolorallocate($dstImg, 240, 253, 244);
 $shadow = imagecolorallocatealpha($dstImg, 0, 0, 0, 75);
 
-$maxWidth = 2380;
+$maxWidth = 2420;
 
 if ($fontFile && function_exists('imagettftext')) {
     // 1行目描画
-    $fontSize1 = 44;
-    while ($fontSize1 > 24) {
+    $fontSize1 = 48;
+    while ($fontSize1 > 26) {
         $bbox = imagettfbbox($fontSize1, 0, $fontFile, $line1);
         $w = abs($bbox[4] - $bbox[0]);
         if ($w <= $maxWidth) break;
@@ -243,15 +243,15 @@ if ($fontFile && function_exists('imagettftext')) {
     }
     $bbox1 = imagettfbbox($fontSize1, 0, $fontFile, $line1);
     $text1W = abs($bbox1[4] - $bbox1[0]);
-    $text1X = max(40, (int)(($width - $text1W) / 2));
-    $text1Y = 110;
+    $text1X = max(30, (int)(($width - $text1W) / 2));
+    $text1Y = 115;
 
     imagettftext($dstImg, $fontSize1, 0, $text1X + 2, $text1Y + 2, $shadow, $fontFile, $line1);
     imagettftext($dstImg, $fontSize1, 0, $text1X, $text1Y, $white, $fontFile, $line1);
 
     // 2行目描画 (雨予報ハイライト)
-    $fontSize2 = 40;
-    while ($fontSize2 > 22) {
+    $fontSize2 = 44;
+    while ($fontSize2 > 24) {
         $bbox = imagettfbbox($fontSize2, 0, $fontFile, $line2);
         $w = abs($bbox[4] - $bbox[0]);
         if ($w <= $maxWidth) break;
@@ -259,8 +259,8 @@ if ($fontFile && function_exists('imagettftext')) {
     }
     $bbox2 = imagettfbbox($fontSize2, 0, $fontFile, $line2);
     $text2W = abs($bbox2[4] - $bbox2[0]);
-    $text2X = max(40, (int)(($width - $text2W) / 2));
-    $text2Y = 225;
+    $text2X = max(30, (int)(($width - $text2W) / 2));
+    $text2Y = 220;
 
     $color2 = !empty($nextRainStr) ? $yellow : $greenLight;
     imagettftext($dstImg, $fontSize2, 0, $text2X + 2, $text2Y + 2, $shadow, $fontFile, $line2);
@@ -269,8 +269,8 @@ if ($fontFile && function_exists('imagettftext')) {
     // フォールバック
     $text1X = (int)(($width - (mb_strlen($line1) * 18)) / 2);
     $text2X = (int)(($width - (mb_strlen($line2) * 18)) / 2);
-    imagestring($dstImg, 5, $text1X, 80, $line1, $white);
-    imagestring($dstImg, 5, $text2X, 190, $line2, $yellow);
+    imagestring($dstImg, 5, $text1X, 90, $line1, $white);
+    imagestring($dstImg, 5, $text2X, 195, $line2, $yellow);
 }
 
 $tmpJpg = __DIR__ . '/data/weather_temp_' . time() . '.jpg';
