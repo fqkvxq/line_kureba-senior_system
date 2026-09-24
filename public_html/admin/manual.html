@@ -2074,13 +2074,15 @@
                         <div class="step-card" style="grid-column: 1 / -1;">
                             <div class="step-number" style="background: #ea580c; color: #fff;"><i class="fa-solid fa-cloud-sun-rain"></i></div>
                             <div class="step-body">
-                                <h4>静岡県三島市 天気予報連動リッチメニュー（サイレント切替 ＆ 個別アタッチ運用）</h4>
-                                <p>受講生がLINEトーク画面を汚さずにメニューを切り替えられる<strong>サイレント切替（発言なし）</strong>と、対象受講生への<strong>リアルタイム天気予報メニュー自動生成</strong>に対応しています。<br>
-                                <strong>💡 サイレント双方向切替:</strong><br>
-                                ・「<strong>天気を表示</strong>」や「天気」と送信すると、ボットの余計なメッセージ返信なしで天気メニューへ即時アタッチ。<br>
-                                ・「<strong>通常メニューに戻す</strong>」と送信すると、発言なしで即座に標準メニューに復帰。<br>
-                                <strong>💡 三島市リアルタイム天気自動更新:</strong> 毎時0分のCron実行（<code>batch_hourly_weather.php</code>）により、最新の天気・最高最低気温・週間雨予報がリッチメニュー上部（300px帯・<code>#FF8700</code>）に常時自動反映されます。<br>
-                                <strong>💡 自動クリーンアップ:</strong> 新しいメニュー生成後、前回の古いリッチメニューは自動でDELETE削除されるため、LINEのメニュー上限に達することなく永久運用可能です。</p>
+                                <h4>静岡県三島市 天気予報連動リッチメニュー（全ユーザー全体デフォルト運用 ＆ 1時間毎自動更新）</h4>
+                                <p>全受講生・お友達のLINE画面の標準メニューとして、静岡県三島市のリアルタイム天気・気温・週間雨予報が合成された<strong>天気リッチメニュー</strong>を自動配信・運用します。<br>
+                                <strong>💡 全ユーザー共通の全体デフォルトメニュー:</strong><br>
+                                ・友だち追加時やトークを開いた際に、すべてのユーザーに最新の三島市天気予報メニューが表示されます。<br>
+                                ・上部のオレンジ帯（<code>#FF8700</code>）をタップすると、ウェザーニュースの三島市詳細予報ページへ直接アクセス可能です。<br>
+                                <strong>💡 1時間毎の自動更新バッチ（Xサーバー Cron）:</strong><br>
+                                ・毎時0分のCron実行（<code>batch_hourly_weather.php</code>）により、最新の天気・最高最低気温・雨の降り始め予報が自動で再生成され、全体デフォルトメニューとして即座に切り替わります。<br>
+                                <strong>💡 自動クリーンアップ & メニュー上限対策:</strong><br>
+                                ・新しいメニュー生成・適用後、前回の古いリッチメニューは自動でDELETE削除されるため、LINEの1,000件上限に達することなく永久運用可能です。</p>
                                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-top: 10px;">
                                     <strong>📋 エックスサーバー サーバーパネルでの設定手順:</strong><br>
                                     1. サーバーパネルにログイン ＞「Cron設定」を開きます。<br>
@@ -2107,6 +2109,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260924_weather_only_v32"></script>
+    <script src="manual.js?v=20260924_weather_all_default_v33"></script>
 </body>
 </html>

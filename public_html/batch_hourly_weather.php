@@ -381,48 +381,31 @@ if (!$uploadRes['success']) {
 }
 logWeatherBatch("LINE画像アップロード成功");
 
-// 6. 対象受講生（かわいたくや様、または「天気を表示」設定中の受講生）へアタッチ＆古いメニュー削除
-$targetUids = ['U38c887032d23d83bcc44ae08c1f987a2'];
-
-// DBから「天気を表示」を選択中の受講生を追加抽出
-try {
-    $stmtUsers = $db->query("SELECT user_id FROM customer_cars WHERE custom_menu_text = 'weather' AND user_id IS NOT NULL AND user_id != ''");
-    while ($row = $stmtUsers->fetch(PDO::FETCH_ASSOC)) {
-        $u = trim($row['user_id']);
-        if (!in_array($u, $targetUids) && str_starts_with($u, 'U')) {
-            $targetUids[] = $u;
-        }
-    }
-} catch (Exception $e) {}
-
-foreach ($targetUids as $uid) {
-    // 既存の古いリッチメニューIDを取得
-    $oldMenuId = null;
-    $chUser = curl_init("https://api.line.me/v2/bot/user/{$uid}/richmenu");
-    curl_setopt_array($chUser, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER => ["Authorization: Bearer {$channelAccessToken}"]
-    ]);
-    $userRes = curl_exec($chUser);
-    curl_close($chUser);
-    if ($userRes) {
-        $userData = json_decode($userRes, true);
-        $oldMenuId = $userData['richMenuId'] ?? null;
-    }
-
-    // アタッチ実行
-    $linkRes = lineLinkUserRichMenu($uid, $newRichMenuId, $targetAccount);
-    if ($linkRes['success']) {
-        logWeatherBatch("✅ ユーザー [{$uid}] へ新しい天気メニューをアタッチ完了");
-        
-        // 古いメニューを自動削除 (クリーンアップ)
-        if (!empty($oldMenuId) && $oldMenuId !== $newRichMenuId) {
-            lineDeleteRichMenu($oldMenuId, $targetAccount);
-            logWeatherBatch("🗑️ 以前の古いリッチメニューを自動削除しました: {$oldMenuId}");
-        }
-    } else {
-        logWeatherBatch("⚠️ ユーザー [{$uid}] へのアタッチ失敗: " . ($linkRes['error'] ?? ''));
-    }
+// 6. 全受講生・ユーザー共通の全体デフォルトメニューとして適用 ＆ 古いメニュー自動削除
+$oldDefaultMenuId = null;
+$chDef = curl_init("https://api.line.me/v2/bot/user/all/richmenu");
+curl_setopt_array($chDef, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPHEADER => ["Authorization: Bearer {$channelAccessToken}"]
+]);
+$defRes = curl_exec($chDef);
+curl_close($chDef);
+if ($defRes) {
+    $defData = json_decode($defRes, true);
+    $oldDefaultMenuId = $defData['richMenuId'] ?? null;
 }
 
-logWeatherBatch("🎉 1時間毎 天気リッチメニュー自動更新バッチ 正常完了！\n");
+$setDefRes = lineSetDefaultRichMenu($newRichMenuId, $targetAccount);
+if ($setDefRes['success']) {
+    logWeatherBatch("✅ 全ユーザーのデフォルトリッチメニューを最新の天気メニュー [{$newRichMenuId}] に設定完了！");
+    
+    // 古いデフォルトメニューを自動削除 (クリーンアップ)
+    if (!empty($oldDefaultMenuId) && $oldDefaultMenuId !== $newRichMenuId) {
+        lineDeleteRichMenu($oldDefaultMenuId, $targetAccount);
+        logWeatherBatch("🗑️ 以前の古いデフォルトリッチメニューを自動削除しました: {$oldDefaultMenuId}");
+    }
+} else {
+    logWeatherBatch("⚠️ 全体デフォルトリッチメニューの設定失敗: " . ($setDefRes['error'] ?? ''));
+}
+
+logWeatherBatch("🎉 1時間毎 天気リッチメニュー自動更新バッチ（全員適用） 正常完了！\n");
