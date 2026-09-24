@@ -42,6 +42,7 @@ logWeatherBatch("=== 三島市 天気リッチメニュー自動更新バッチ 
 
 // 1. 静岡県三島市の天気を取得 (緯度: 35.1184, 経度: 138.9184, 8日間予報)
 $weatherLabel = '晴れ時々曇り';
+$weatherIconKey = 'sun_cloud';
 $maxTemp = 28;
 $minTemp = 20;
 $nextRainStr = '';
@@ -65,13 +66,13 @@ try {
             $maxTemp = (int)round($weatherData['daily']['temperature_2m_max'][0]);
             $minTemp = (int)round($weatherData['daily']['temperature_2m_min'][0]);
 
-            if ($code === 0) { $weatherLabel = '快晴'; }
-            elseif ($code >= 1 && $code <= 3) { $weatherLabel = '晴れ時々曇り'; }
-            elseif ($code >= 45 && $code <= 48) { $weatherLabel = '霧'; }
-            elseif ($code >= 51 && $code <= 67) { $weatherLabel = '雨'; }
-            elseif ($code >= 71 && $code <= 77) { $weatherLabel = '雪'; }
-            elseif ($code >= 80 && $code <= 82) { $weatherLabel = 'にわか雨'; }
-            elseif ($code >= 95) { $weatherLabel = '雷雨'; }
+            if ($code === 0) { $weatherLabel = '快晴'; $weatherIconKey = 'sun'; }
+            elseif ($code >= 1 && $code <= 3) { $weatherLabel = '晴れ時々曇り'; $weatherIconKey = 'sun_cloud'; }
+            elseif ($code >= 45 && $code <= 48) { $weatherLabel = '霧'; $weatherIconKey = 'cloud'; }
+            elseif ($code >= 51 && $code <= 67) { $weatherLabel = '雨'; $weatherIconKey = 'rain'; }
+            elseif ($code >= 71 && $code <= 77) { $weatherLabel = '雪'; $weatherIconKey = 'snow'; }
+            elseif ($code >= 80 && $code <= 82) { $weatherLabel = 'にわか雨'; $weatherIconKey = 'rain'; }
+            elseif ($code >= 95) { $weatherLabel = '雷雨'; $weatherIconKey = 'thunder'; }
         }
 
         $nowTs = time();
@@ -127,23 +128,25 @@ $dayStr = $dayNames[(int)$now->format('w')];
 $datePrefix = $now->format('n/j') . "({$dayStr})";
 $hourStr = $now->format('G') . "時時点";
 
-// 1行目: 日時・三島市天気・気温
-$line1 = "{$datePrefix} {$hourStr}　三島市の天気：{$weatherLabel}（最高 {$maxTemp}℃ / 最低 {$minTemp}℃）";
+// 1行目のパーツ
+$line1_pre = "{$datePrefix} {$hourStr}　三島市の天気：";
+$line1_suf = " {$weatherLabel}（最高 {$maxTemp}℃ / 最低 {$minTemp}℃）";
 
-// 2行目: 直近の雨＆週間雨予報
-if (!empty($nextRainStr)) {
+// 2行目のパーツ
+$hasRain = !empty($nextRainStr);
+if ($hasRain) {
     if (!empty($futureRainDays)) {
         $weekStr = implode('・', array_slice($futureRainDays, 0, 3));
-        $line2 = "【三島市の雨予報】 直近の雨：{$nextRainStr} ｜ 週間：{$weekStr}も雨予報";
+        $line2_text = "直近の雨：{$nextRainStr} ｜ 週間：{$weekStr}も雨予報";
     } else {
-        $line2 = "【三島市の雨予報】 直近の雨：{$nextRainStr} ｜ その後は晴れ間が広がる見込み";
+        $line2_text = "直近の雨：{$nextRainStr} ｜ その後は晴れ間が広がる見込み";
     }
 } else {
-    $line2 = "【三島市の週間予報】 目先1週間はまとまった雨の心配はありません";
+    $line2_text = "目先1週間はまとまった雨の心配はありません";
 }
 
-logWeatherBatch("1行目: {$line1}");
-logWeatherBatch("2行目: {$line2}");
+logWeatherBatch("1行目: {$line1_pre}[{$weatherIconKey}]{$line1_suf}");
+logWeatherBatch("2行目: [umbrella] {$line2_text}");
 
 // 2. ベースとなるリッチメニュー画像を取得
 $stmtBase = $db->query("SELECT * FROM rich_menus WHERE is_active = 1 ORDER BY id DESC LIMIT 1");
@@ -235,42 +238,86 @@ $maxWidth = 2420;
 if ($fontFile && function_exists('imagettftext')) {
     // 1行目描画
     $fontSize1 = 48;
+    $icon1Size = 58;
     while ($fontSize1 > 26) {
-        $bbox = imagettfbbox($fontSize1, 0, $fontFile, $line1);
-        $w = abs($bbox[4] - $bbox[0]);
-        if ($w <= $maxWidth) break;
+        $bb_pre = imagettfbbox($fontSize1, 0, $fontFile, $line1_pre);
+        $w_pre = abs($bb_pre[4] - $bb_pre[0]);
+        $bb_suf = imagettfbbox($fontSize1, 0, $fontFile, $line1_suf);
+        $w_suf = abs($bb_suf[4] - $bb_suf[0]);
+        $total1W = $w_pre + $icon1Size + 10 + $w_suf;
+        if ($total1W <= $maxWidth) break;
         $fontSize1 -= 2;
+        $icon1Size = (int)round($fontSize1 * 1.2);
     }
-    $bbox1 = imagettfbbox($fontSize1, 0, $fontFile, $line1);
-    $text1W = abs($bbox1[4] - $bbox1[0]);
-    $text1X = max(30, (int)(($width - $text1W) / 2));
-    $text1Y = 115;
+    $bb_pre = imagettfbbox($fontSize1, 0, $fontFile, $line1_pre);
+    $w_pre = abs($bb_pre[4] - $bb_pre[0]);
+    $bb_suf = imagettfbbox($fontSize1, 0, $fontFile, $line1_suf);
+    $w_suf = abs($bb_suf[4] - $bb_suf[0]);
+    $total1W = $w_pre + $icon1Size + 10 + $w_suf;
+    $start1X = max(30, (int)(($width - $total1W) / 2));
+    $y1 = 115;
 
-    imagettftext($dstImg, $fontSize1, 0, $text1X + 2, $text1Y + 2, $shadow, $fontFile, $line1);
-    imagettftext($dstImg, $fontSize1, 0, $text1X, $text1Y, $white, $fontFile, $line1);
+    // 1行目 テキスト prefix
+    imagettftext($dstImg, $fontSize1, 0, $start1X + 2, $y1 + 2, $shadow, $fontFile, $line1_pre);
+    imagettftext($dstImg, $fontSize1, 0, $start1X, $y1, $white, $fontFile, $line1_pre);
 
-    // 2行目描画 (雨予報ハイライト)
+    // 1行目 絵文字アイコン合成
+    $emoji1Path = __DIR__ . "/data/emojis/{$weatherIconKey}.png";
+    if (file_exists($emoji1Path)) {
+        $e1Img = imagecreatefrompng($emoji1Path);
+        if ($e1Img) {
+            $e1X = $start1X + $w_pre + 5;
+            $e1Y = $y1 - (int)($fontSize1 * 0.9);
+            imagecopyresampled($dstImg, $e1Img, $e1X, $e1Y, 0, 0, $icon1Size, $icon1Size, imagesx($e1Img), imagesy($e1Img));
+            imagedestroy($e1Img);
+        }
+    }
+
+    // 1行目 テキスト suffix
+    $suf1X = $start1X + $w_pre + 5 + $icon1Size + 5;
+    imagettftext($dstImg, $fontSize1, 0, $suf1X + 2, $y1 + 2, $shadow, $fontFile, $line1_suf);
+    imagettftext($dstImg, $fontSize1, 0, $suf1X, $y1, $white, $fontFile, $line1_suf);
+
+    // 2行目描画
     $fontSize2 = 44;
+    $icon2Size = 52;
     while ($fontSize2 > 24) {
-        $bbox = imagettfbbox($fontSize2, 0, $fontFile, $line2);
-        $w = abs($bbox[4] - $bbox[0]);
-        if ($w <= $maxWidth) break;
+        $bb2 = imagettfbbox($fontSize2, 0, $fontFile, $line2_text);
+        $w2_text = abs($bb2[4] - $bb2[0]);
+        $total2W = $icon2Size + 12 + $w2_text;
+        if ($total2W <= $maxWidth) break;
         $fontSize2 -= 2;
+        $icon2Size = (int)round($fontSize2 * 1.15);
     }
-    $bbox2 = imagettfbbox($fontSize2, 0, $fontFile, $line2);
-    $text2W = abs($bbox2[4] - $bbox2[0]);
-    $text2X = max(30, (int)(($width - $text2W) / 2));
-    $text2Y = 220;
+    $bb2 = imagettfbbox($fontSize2, 0, $fontFile, $line2_text);
+    $w2_text = abs($bb2[4] - $bb2[0]);
+    $total2W = $icon2Size + 12 + $w2_text;
+    $start2X = max(30, (int)(($width - $total2W) / 2));
+    $y2 = 220;
 
-    $color2 = !empty($nextRainStr) ? $yellow : $greenLight;
-    imagettftext($dstImg, $fontSize2, 0, $text2X + 2, $text2Y + 2, $shadow, $fontFile, $line2);
-    imagettftext($dstImg, $fontSize2, 0, $text2X, $text2Y, $color2, $fontFile, $line2);
+    // 2行目 絵文字アイコン合成 (傘 or 太陽)
+    $emoji2Key = $hasRain ? 'umbrella' : 'sun';
+    $emoji2Path = __DIR__ . "/data/emojis/{$emoji2Key}.png";
+    if (file_exists($emoji2Path)) {
+        $e2Img = imagecreatefrompng($emoji2Path);
+        if ($e2Img) {
+            $e2Y = $y2 - (int)($fontSize2 * 0.9);
+            imagecopyresampled($dstImg, $e2Img, $start2X, $e2Y, 0, 0, $icon2Size, $icon2Size, imagesx($e2Img), imagesy($e2Img));
+            imagedestroy($e2Img);
+        }
+    }
+
+    // 2行目 テキスト
+    $text2X = $start2X + $icon2Size + 12;
+    $color2 = $hasRain ? $yellow : $greenLight;
+    imagettftext($dstImg, $fontSize2, 0, $text2X + 2, $y2 + 2, $shadow, $fontFile, $line2_text);
+    imagettftext($dstImg, $fontSize2, 0, $text2X, $y2, $color2, $fontFile, $line2_text);
 } else {
     // フォールバック
-    $text1X = (int)(($width - (mb_strlen($line1) * 18)) / 2);
-    $text2X = (int)(($width - (mb_strlen($line2) * 18)) / 2);
-    imagestring($dstImg, 5, $text1X, 90, $line1, $white);
-    imagestring($dstImg, 5, $text2X, 195, $line2, $yellow);
+    $text1X = (int)(($width - (mb_strlen($line1_pre . $line1_suf) * 18)) / 2);
+    $text2X = (int)(($width - (mb_strlen($line2_text) * 18)) / 2);
+    imagestring($dstImg, 5, $text1X, 90, $line1_pre . $line1_suf, $white);
+    imagestring($dstImg, 5, $text2X, 195, $line2_text, $yellow);
 }
 
 $tmpJpg = __DIR__ . '/data/weather_temp_' . time() . '.jpg';
