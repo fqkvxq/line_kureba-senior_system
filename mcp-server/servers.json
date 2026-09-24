@@ -3,7 +3,7 @@
   "servers": {
     "production": {
       "name": "スマホ・パソコン教室KUREBA（本番）",
-      "baseUrl": "https://your-domain.com/public_html/api.php",
+      "baseUrl": "https://kureba.co.jp/line_kureba-senior_system/public_html/api.php",
       "adminPassword": "KrbSenior_Sec2026!x9Wq$8mP#LvK24r",
       "defaultAccount": "senior",
       "description": "スマホ・パソコン教室KUREBAのLINE公式アカウント"
