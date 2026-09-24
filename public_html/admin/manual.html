@@ -2070,6 +2070,27 @@
 }</code></pre>
                             </div>
                         </div>
+
+                        <div class="step-card" style="grid-column: 1 / -1;">
+                            <div class="step-number" style="background: #ea580c; color: #fff;"><i class="fa-solid fa-cloud-sun"></i></div>
+                            <div class="step-body">
+                                <h4>静岡県三島市 天気予報連動リッチメニュー 1時間毎 自動更新（Xサーバー Cron設定）</h4>
+                                <p>毎時0分に三島市の最新天気・最高最低気温を自動取得し、リッチメニュー上部（300px帯）に文字合成してアタッチするバッチスクリプト（<code>batch_hourly_weather.php</code>）のCron設定手順です。古いメニューは毎回自動DELETEされ上限に達しません。</p>
+                                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-top: 10px;">
+                                    <strong>📋 エックスサーバー サーバーパネルでの設定手順:</strong><br>
+                                    1. サーバーパネルにログイン ＞「Cron設定」を開きます。<br>
+                                    2. 「Cronの追加」をクリックし、以下のように入力します：
+                                    <ul style="margin: 8px 0 0 20px; font-size: 13px; line-height: 1.8;">
+                                        <li><strong>分</strong>: <code>0</code>（毎時0分に実行）</li>
+                                        <li><strong>時間</strong>: <code>*</code>（毎時間）</li>
+                                        <li><strong>日</strong>: <code>*</code></li>
+                                        <li><strong>月</strong>: <code>*</code></li>
+                                        <li><strong>曜日</strong>: <code>*</code></li>
+                                        <li><strong>コマンド</strong>: <code style="background:#0f172a; color:#38bdf8; padding:3px 8px; border-radius:4px;">/usr/bin/php8.2 /home/あなたのサーバーID/kureba.co.jp/public_html/line_kureba-senior_system/public_html/batch_hourly_weather.php > /dev/null 2>&1</code></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -2081,6 +2102,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260924_mcp_integration_v26"></script>
+    <script src="manual.js?v=20260924_hourly_weather_cron_v27"></script>
 </body>
 </html>
