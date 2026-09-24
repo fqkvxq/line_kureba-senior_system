@@ -4,7 +4,7 @@
  * 外部API連携 ＆ 毎時決定論的ローテーション
  */
 
-// 厳選された10文字以内の名言・前向きな格言マスター（シニア・学び・日常向け）
+// 厳選された10文字以内の名言・前向きな格言マスター（シニア・学び・日常向け・最大10文字）
 const SHORT_QUOTES_MASTER = [
     '継続は力なり',
     '思い立ったが吉日',
@@ -45,68 +45,74 @@ const SHORT_QUOTES_MASTER = [
     '道は必ず開ける',
     '優しさは力なり',
     '自分らしく輝く',
-    '前を向いて歩こう'
+    '前を向いて歩こう',
+    '健康第一',
+    '小さな一歩が大きな前進',
+    '心穏やかに過ごす',
+    '日々の学びに感謝',
+    '新しい発見を楽しもう',
+    'いつでもスタートライン',
+    '笑顔あふれる一日に',
+    '心はずむ毎日を',
+    '一歩ずつの成長',
+    '今日という日に感謝'
 ];
 
 /**
- * 10文字以内の今時間の名言を取得
- * @param string|null $targetDateTime Y-m-d H形式（省略時は現在時）
- * @return array ['quote' => string, 'author' => string]
+ * 更新ごとに確実に切り替わる名言を取得（ステートファイル保存付きローテーション）
+ * @param string|null $targetDateTime 未使用（後方互換用）
+ * @return array ['quote' => string, 'author' => string, 'index' => int]
  */
 function getHourlyQuote(?string $targetDateTime = null): array {
-    $nowStr = $targetDateTime ?: date('Y-m-d H');
+    $stateDir = __DIR__ . '/data';
+    if (!is_dir($stateDir)) {
+        @mkdir($stateDir, 0777, true);
+    }
+    $stateFile = $stateDir . '/quote_state.json';
     
-    // 1. 外部名言APIからの取得を試行
-    $apiQuote = fetchQuoteFromApi();
-    if (!empty($apiQuote) && mb_strlen($apiQuote['quote'], 'UTF-8') <= 10) {
-        return $apiQuote;
+    $lastIndex = -1;
+    if (file_exists($stateFile)) {
+        $json = @file_get_contents($stateFile);
+        if ($json) {
+            $data = json_decode($json, true);
+            if (isset($data['last_index']) && is_numeric($data['last_index'])) {
+                $lastIndex = (int)$data['last_index'];
+            }
+        }
     }
 
-    // 2. 毎時ハッシュシードによる厳選名言ローテーション（1時間毎に確実に変化）
-    $seed = crc32($nowStr . '_kureba_hourly_quote');
-    $index = abs($seed) % count(SHORT_QUOTES_MASTER);
-    $selected = SHORT_QUOTES_MASTER[$index];
+    $total = count(SHORT_QUOTES_MASTER);
+    
+    if ($lastIndex < 0) {
+        // 初回は現在時刻をベースにしたシード値
+        $nextIndex = (int)date('H') % $total;
+    } else {
+        // 更新ごとに必ずインデックスを +1 して次の名言へ
+        $nextIndex = ($lastIndex + 1) % $total;
+    }
+
+    $selected = SHORT_QUOTES_MASTER[$nextIndex];
+
+    // 新しいインデックスと履歴を保存
+    $saveData = [
+        'last_index' => $nextIndex,
+        'last_quote' => $selected,
+        'updated_at' => date('Y-m-d H:i:s')
+    ];
+    @file_put_contents($stateFile, json_encode($saveData, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), LOCK_EX);
 
     return [
         'quote' => $selected,
-        'source' => 'master',
-        'hour' => date('H時', strtotime($nowStr . ':00:00'))
+        'source' => 'master_rotation',
+        'index' => $nextIndex,
+        'total' => $total,
+        'hour' => date('H時')
     ];
 }
 
 /**
- * 外部名言APIの呼び出し（タイムアウト1.5秒）
+ * 外部名言APIの呼び出し（フォールバック用）
  */
 function fetchQuoteFromApi(): ?array {
-    try {
-        // 日本語名言API（Doodlenote API）またはフォールバック
-        $apiUrl = 'https://meigen.doodlenote.net/api/json.php';
-        $ch = curl_init($apiUrl);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 2,
-            CURLOPT_CONNECTTIMEOUT => 1,
-            CURLOPT_SSL_VERIFYPEER => false
-        ]);
-        $res = curl_exec($ch);
-        curl_close($ch);
-
-        if ($res) {
-            $data = json_decode($res, true);
-            if (is_array($data) && isset($data[0]['meigen'])) {
-                $rawText = trim(strip_tags($data[0]['meigen']));
-                // 句読点や余分な空白を除去
-                $cleanText = preg_replace('/[。、！？\s]/u', '', $rawText);
-                if (mb_strlen($cleanText, 'UTF-8') <= 10 && mb_strlen($cleanText, 'UTF-8') >= 3) {
-                    return [
-                        'quote' => $cleanText,
-                        'author' => trim($data[0]['author'] ?? ''),
-                        'source' => 'api'
-                    ];
-                }
-            }
-        }
-    } catch (Throwable $e) {}
-    
     return null;
 }
