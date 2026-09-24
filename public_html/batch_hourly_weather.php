@@ -260,7 +260,7 @@ if ($fontFile && function_exists('imagettftext')) {
     $w_suf = abs($bb_suf[4] - $bb_suf[0]);
     $total1W = $w_pre + $icon1Size + 10 + $w_suf;
     $start1X = max(25, (int)(($width - $total1W) / 2));
-    $y1 = 95;
+    $y1 = 115;
 
     // 1行目 テキスト prefix
     imagettftext($dstImg, $fontSize1, 0, $start1X + 2, $y1 + 2, $shadow, $fontFile, $line1_pre);
@@ -298,7 +298,7 @@ if ($fontFile && function_exists('imagettftext')) {
     $w2_text = abs($bb2[4] - $bb2[0]);
     $total2W = $icon2Size + 12 + $w2_text;
     $start2X = max(25, (int)(($width - $total2W) / 2));
-    $y2 = 175;
+    $y2 = 195;
 
     // 2行目 絵文字アイコン合成 (傘 or 太陽)
     $emoji2Key = $hasRain ? 'umbrella' : 'sun';
