@@ -241,12 +241,36 @@ $yellow = imagecolorallocate($dstImg, 254, 240, 138); // 明るいイエロー
 $greenLight = imagecolorallocate($dstImg, 240, 253, 244);
 $shadow = imagecolorallocatealpha($dstImg, 0, 0, 0, 75);
 
+/**
+ * =========================================================================
+ * 【安定版デザイン仕様】天気リッチメニュー上部帯（高さ300px・3行レイアウト）
+ * =========================================================================
+ * - フォント: LINE Seed JP Bold (LINESeedJP-Bold.ttf)
+ * - 1行目 (現在の天気): フォント 52px, アイコン 54px, Y=80 (白色 #FFFFFF)
+ * - 2行目 (直近の雨)  : フォント 48px, アイコン 50px, Y=165 (黄色 #FEF08A / 薄緑 #F0FDF4)
+ * - 3行目 (週間予報)  : フォント 48px, アイコン 50px, Y=248 (黄色 #FEF08A / 薄緑 #F0FDF4)
+ * - 最下部メニューバー: chatBarText に10文字以内の名言・ことばを毎時自動ローテーション
+ * =========================================================================
+ */
+$bannerHeight = 300;
 $maxWidth = 2420;
 
+$STABLE_FONT_SIZE_LINE1 = 52;
+$STABLE_ICON_SIZE_LINE1 = 54;
+$STABLE_Y_LINE1         = 80;
+
+$STABLE_FONT_SIZE_LINE2 = 48;
+$STABLE_ICON_SIZE_LINE2 = 50;
+$STABLE_Y_LINE2         = 165;
+
+$STABLE_FONT_SIZE_LINE3 = 48;
+$STABLE_ICON_SIZE_LINE3 = 50;
+$STABLE_Y_LINE3         = 248;
+
 if ($fontFile && function_exists('imagettftext')) {
-    // 1行目描画（52px, Y=80）
-    $fontSize1 = 52;
-    $icon1Size = 54;
+    // 1行目描画（安定版: 52px, Y=80）
+    $fontSize1 = $STABLE_FONT_SIZE_LINE1;
+    $icon1Size = $STABLE_ICON_SIZE_LINE1;
     while ($fontSize1 > 20) {
         $bb_pre = imagettfbbox($fontSize1, 0, $fontFile, $line1_pre);
         $w_pre = abs($bb_pre[4] - $bb_pre[0]);
@@ -286,9 +310,9 @@ if ($fontFile && function_exists('imagettftext')) {
     imagettftext($dstImg, $fontSize1, 0, $suf1X + 2, $y1 + 2, $shadow, $fontFile, $line1_suf);
     imagettftext($dstImg, $fontSize1, 0, $suf1X, $y1, $white, $fontFile, $line1_suf);
 
-    // 2行目描画（48px, Y=165）
-    $fontSize2 = 48;
-    $icon2Size = 50;
+    // 2行目描画（安定版: 48px, Y=165）
+    $fontSize2 = $STABLE_FONT_SIZE_LINE2;
+    $icon2Size = $STABLE_ICON_SIZE_LINE2;
     while ($fontSize2 > 20) {
         $bb2 = imagettfbbox($fontSize2, 0, $fontFile, $line2_text);
         $w2_text = abs($bb2[4] - $bb2[0]);
@@ -301,7 +325,7 @@ if ($fontFile && function_exists('imagettftext')) {
     $w2_text = abs($bb2[4] - $bb2[0]);
     $total2W = $icon2Size + 10 + $w2_text;
     $start2X = max(25, (int)(($width - $total2W) / 2));
-    $y2 = 165;
+    $y2 = $STABLE_Y_LINE2;
 
     // 2行目 絵文字アイコン合成 (傘 or 太陽)
     $emoji2Key = $hasRain ? 'umbrella' : 'sun';
@@ -321,9 +345,9 @@ if ($fontFile && function_exists('imagettftext')) {
     imagettftext($dstImg, $fontSize2, 0, $text2X + 2, $y2 + 2, $shadow, $fontFile, $line2_text);
     imagettftext($dstImg, $fontSize2, 0, $text2X, $y2, $color2, $fontFile, $line2_text);
 
-    // 3行目描画（48px, Y=248）
-    $fontSize3 = 48;
-    $icon3Size = 50;
+    // 3行目描画（安定版: 48px, Y=248）
+    $fontSize3 = $STABLE_FONT_SIZE_LINE3;
+    $icon3Size = $STABLE_ICON_SIZE_LINE3;
     while ($fontSize3 > 20) {
         $bb3 = imagettfbbox($fontSize3, 0, $fontFile, $line3_text);
         $w3_text = abs($bb3[4] - $bb3[0]);
@@ -336,7 +360,7 @@ if ($fontFile && function_exists('imagettftext')) {
     $w3_text = abs($bb3[4] - $bb3[0]);
     $total3W = $icon3Size + 10 + $w3_text;
     $start3X = max(25, (int)(($width - $total3W) / 2));
-    $y3 = 248;
+    $y3 = $STABLE_Y_LINE3;
 
     $hasFutureRain = !empty($futureRainDays);
     $emoji3Key = $hasFutureRain ? 'umbrella' : 'sun';
