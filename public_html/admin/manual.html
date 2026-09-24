@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260923_smart_chat_v25">
+    <link rel="stylesheet" href="manual.css?v=20260924_mcp_integration_v26">
 </head>
 <body>
     <!-- ログインモーダル (メール認証専用・パスワード不要) -->
@@ -130,6 +130,7 @@
                         <li class="toc-item"><a href="#sec-line-diagnostics"><i class="fa-solid fa-stethoscope" style="color:#4f46e5;"></i> 21. LINE公式アカウント接続診断＆テスト受信</a></li>
                         <li class="toc-item"><a href="#sec-debug-console"><i class="fa-solid fa-terminal" style="color:#38bdf8;"></i> 22. 全ログ統合リアルタイムデバッグコンソール（debug.html）</a></li>
                         <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 23. よくある質問・トラブルシューティング</a></li>
+                        <li class="toc-item"><a href="#sec-mcp"><i class="fa-solid fa-robot" style="color:#8b5cf6;"></i> 24. AI・MCP（Model Context Protocol）連携・自動操作</a></li>
                     </ul>
                 </div>
             </aside>
@@ -1988,6 +1989,90 @@
                     </div>
                 </section>
 
+                <!-- 24. AI・MCP連携機能 -->
+                <section class="manual-section" id="sec-mcp">
+                    <div class="section-badge" style="background: #f5f3ff; color: #8b5cf6;"><i class="fa-solid fa-robot"></i> AIアシスタント連携</div>
+                    <h3>24. AI・MCP（Model Context Protocol）連携・自動操作</h3>
+                    <p>Claude Desktop、Antigravity（Gemini）、Cursor、ClineなどのAIアシスタントから、自然言語チャットで当システムを直接操作できる <strong>MCP（Model Context Protocol）サーバー</strong> の利用ガイドです。</p>
+
+                    <div class="tips-card" style="background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); border-left: 4px solid #8b5cf6;">
+                        <div class="tips-title" style="color: #6d28d9;"><i class="fa-solid fa-wand-magic-sparkles"></i> MCPで実現できること（主なAIコマンド例）</div>
+                        <ul style="margin: 8px 0 0 20px; color: #4b5563; font-size: 13.5px; line-height: 1.8;">
+                            <li><strong>顧客・点検検索</strong>：「今月車検満了の顧客一覧を出して」「山田様の所有車両と次回点検日を教えて」</li>
+                            <li><strong>チャット返信アシスタント</strong>：「未読チャット一覧を出して」「〇〇様への車検見積案内文を作成してLINEで送信して」</li>
+                            <li><strong>タグ・メモ更新</strong>：「先週来店された〇〇様に『VIP』タグを追加して」</li>
+                            <li><strong>リッチメニュー切替</strong>：「全体のリッチメニューを『秋のキャンペーン』に変更して」</li>
+                            <li><strong>複数サーバー・マルチアカウント横断</strong>：「A社サーバーの支店アカウントに切り替えて」「全環境の未読サマリを比較して」</li>
+                        </ul>
+                    </div>
+
+                    <div class="step-card-grid" style="margin-top: 24px;">
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <div class="step-body">
+                                <h4>構成と仕組み（手元のPCから各Xサーバーへ連携）</h4>
+                                <p>MCPサーバーは手元のPC（Node.js環境）で軽量に動作し、Xサーバー上の <code>api.php</code> とHTTPS通信を行います。レンタルサーバー側に追加のプロセス起動や設定は一切不要です。</p>
+                                <pre style="background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; margin-top: 8px;"><code>AI (Antigravity / Claude) 
+  ↔ [標準入出力 stdio] ↔ ローカル MCP サーバー (mcp-server/)
+  ↔ [HTTPS / X-Admin-Password] ↔ 各顧客の Xサーバー (api.php)</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <div class="step-body">
+                                <h4>接続先サーバー設定（<code>mcp-server/servers.json</code>）</h4>
+                                <p>複数顧客のXサーバーURLと管理者パスワードを <code>servers.json</code> に記述するだけで、何台のサーバーでも一括で扱えます。</p>
+                                <pre style="background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; margin-top: 8px;"><code>{
+  "default_server": "company_a",
+  "servers": {
+    "company_a": {
+      "name": "株式会社A様",
+      "baseUrl": "https://kureba.company-a.com/public_html/api.php",
+      "adminPassword": "xxx_password_xxx",
+      "defaultAccount": "default"
+    },
+    "company_b": {
+      "name": "Bモータース様",
+      "baseUrl": "https://kureba.company-b.jp/public_html/api.php",
+      "adminPassword": "yyy_password_yyy",
+      "defaultAccount": "branch_tokyo"
+    }
+  }
+}</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">3</div>
+                            <div class="step-body">
+                                <h4>誤操作防止（セーフティ設計）</h4>
+                                <p>意図しない環境への誤送信や破壊的変更を防ぐため、以下の安全対策が組み込まれています：<br>
+                                ・<strong>操作環境の常時レスポンス</strong>：すべての操作結果に「対象サーバー名（企業名）」と「LINE公式アカウント名（店舗名）」が明示されます。<br>
+                                ・<strong>送信前プレビュー（ドライラン）</strong>：<code>dry_run: true</code> により、実際のLINE送信を行わずに送信先と文面を確認できます。</p>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">4</div>
+                            <div class="step-body">
+                                <h4>AIツールへの登録設定</h4>
+                                <p>Claude Desktop や Antigravity の MCP 設定ファイル（<code>mcp_config.json</code> / <code>claude_desktop_config.json</code>）に以下を追記するだけで即座に利用可能になります。</p>
+                                <pre style="background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; margin-top: 8px;"><code>{
+  "mcpServers": {
+    "line_kureba_manager": {
+      "command": "node",
+      "args": [
+        "C:/path/to/line_kureba-senior_system/mcp-server/dist/index.js"
+      ]
+    }
+  }
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- フッター -->
                 <footer class="manual-footer">
                     &copy; 2026 シニア向けパソコン教室 LINE受講生・カルテ管理システム
@@ -1996,6 +2081,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260923_smart_chat_v25"></script>
+    <script src="manual.js?v=20260924_mcp_integration_v26"></script>
 </body>
 </html>

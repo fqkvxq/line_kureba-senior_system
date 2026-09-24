@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "line_kureba_manager": {
+      "command": "C:\\Program Files\\nodejs\\node.exe",
+      "args": [
+        "c:\\Users\\Kawai\\.gemini\\antigravity-ide\\scratch\\line_kureba-senior_system\\mcp-server\\dist\\index.js"
+      ],
+      "env": {
+        "PATH": "C:\\Program Files\\nodejs;C:\\Windows\\system32;C:\\Windows"
+      }
+    }
+  }
+}

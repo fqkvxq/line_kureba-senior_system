@@ -1,0 +1,12 @@
+{
+  "default_server": "production",
+  "servers": {
+    "production": {
+      "name": "本番環境（Xサーバー）",
+      "baseUrl": "https://your-domain.com/public_html/api.php",
+      "adminPassword": "YOUR_ADMIN_PASSWORD_HERE",
+      "defaultAccount": "default",
+      "description": "本番運用のLINE公式アカウント"
+    }
+  }
+}

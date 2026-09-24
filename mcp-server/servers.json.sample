@@ -1,0 +1,24 @@
+{
+  "default_server": "production",
+  "servers": {
+    "production": {
+      "name": "本番環境（Xサーバー）",
+      "baseUrl": "https://your-domain.com/public_html/api.php",
+      "adminPassword": "YOUR_ADMIN_PASSWORD_HERE",
+      "defaultAccount": "default",
+      "description": "本番運用のLINE公式アカウント"
+    },
+    "client_a": {
+      "name": "A社様システム",
+      "baseUrl": "https://client-a.com/public_html/api.php",
+      "adminPassword": "CLIENT_A_PASSWORD",
+      "defaultAccount": "default"
+    },
+    "local": {
+      "name": "ローカル検証環境",
+      "baseUrl": "http://localhost/line_kureba-senior_system/public_html/api.php",
+      "adminPassword": "admin",
+      "defaultAccount": "default"
+    }
+  }
+}
