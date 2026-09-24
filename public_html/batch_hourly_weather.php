@@ -128,18 +128,18 @@ $datePrefix = $now->format('n/j') . "({$dayStr})";
 $hourStr = $now->format('G') . "時時点";
 
 // 1行目: 日時・三島市天気・気温
-$line1 = "{$datePrefix} {$hourStr}　三島の天気：{$weatherLabel}（最高 {$maxTemp}℃ / 最低 {$minTemp}℃）";
+$line1 = "{$datePrefix} {$hourStr}　三島市の天気：{$weatherLabel}（最高 {$maxTemp}℃ / 最低 {$minTemp}℃）";
 
 // 2行目: 直近の雨＆週間雨予報
 if (!empty($nextRainStr)) {
     if (!empty($futureRainDays)) {
         $weekStr = implode('・', array_slice($futureRainDays, 0, 3));
-        $line2 = "【雨予報】 直近の雨：{$nextRainStr} ｜ 週間：{$weekStr}も雨予報";
+        $line2 = "【三島市の雨予報】 直近の雨：{$nextRainStr} ｜ 週間：{$weekStr}も雨予報";
     } else {
-        $line2 = "【雨予報】 直近の雨：{$nextRainStr} ｜ その後は晴れ間が広がる見込み";
+        $line2 = "【三島市の雨予報】 直近の雨：{$nextRainStr} ｜ その後は晴れ間が広がる見込み";
     }
 } else {
-    $line2 = "【週間雨予報】 目先1週間はまとまった雨の心配はありません";
+    $line2 = "【三島市の週間予報】 目先1週間はまとまった雨の心配はありません";
 }
 
 logWeatherBatch("1行目: {$line1}");
