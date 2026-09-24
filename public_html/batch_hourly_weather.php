@@ -241,9 +241,9 @@ $shadow = imagecolorallocatealpha($dstImg, 0, 0, 0, 75);
 $maxWidth = 2420;
 
 if ($fontFile && function_exists('imagettftext')) {
-    // 1行目描画（70px）
-    $fontSize1 = 70;
-    $icon1Size = 72;
+    // 1行目描画（60px）
+    $fontSize1 = 60;
+    $icon1Size = 62;
     while ($fontSize1 > 20) {
         $bb_pre = imagettfbbox($fontSize1, 0, $fontFile, $line1_pre);
         $w_pre = abs($bb_pre[4] - $bb_pre[0]);
@@ -259,8 +259,8 @@ if ($fontFile && function_exists('imagettftext')) {
     $bb_suf = imagettfbbox($fontSize1, 0, $fontFile, $line1_suf);
     $w_suf = abs($bb_suf[4] - $bb_suf[0]);
     $total1W = $w_pre + $icon1Size + 10 + $w_suf;
-    $start1X = max(20, (int)(($width - $total1W) / 2));
-    $y1 = 80;
+    $start1X = max(25, (int)(($width - $total1W) / 2));
+    $y1 = 95;
 
     // 1行目 テキスト prefix
     imagettftext($dstImg, $fontSize1, 0, $start1X + 2, $y1 + 2, $shadow, $fontFile, $line1_pre);
@@ -283,9 +283,9 @@ if ($fontFile && function_exists('imagettftext')) {
     imagettftext($dstImg, $fontSize1, 0, $suf1X + 2, $y1 + 2, $shadow, $fontFile, $line1_suf);
     imagettftext($dstImg, $fontSize1, 0, $suf1X, $y1, $white, $fontFile, $line1_suf);
 
-    // 2行目描画（70px）
-    $fontSize2 = 70;
-    $icon2Size = 72;
+    // 2行目描画（60px・行間接近配置）
+    $fontSize2 = 60;
+    $icon2Size = 62;
     while ($fontSize2 > 20) {
         $bb2 = imagettfbbox($fontSize2, 0, $fontFile, $line2_text);
         $w2_text = abs($bb2[4] - $bb2[0]);
@@ -297,8 +297,8 @@ if ($fontFile && function_exists('imagettftext')) {
     $bb2 = imagettfbbox($fontSize2, 0, $fontFile, $line2_text);
     $w2_text = abs($bb2[4] - $bb2[0]);
     $total2W = $icon2Size + 12 + $w2_text;
-    $start2X = max(20, (int)(($width - $total2W) / 2));
-    $y2 = 190;
+    $start2X = max(25, (int)(($width - $total2W) / 2));
+    $y2 = 175;
 
     // 2行目 絵文字アイコン合成 (傘 or 太陽)
     $emoji2Key = $hasRain ? 'umbrella' : 'sun';
