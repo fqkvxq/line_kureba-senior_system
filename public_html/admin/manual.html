@@ -2074,19 +2074,18 @@
                         <div class="step-card" style="grid-column: 1 / -1;">
                             <div class="step-number" style="background: #ea580c; color: #fff;"><i class="fa-solid fa-cloud-sun-rain"></i></div>
                             <div class="step-body">
-                                <h4>静岡県三島市 天気予報 ＆ 毎時切替・10文字以内の名言連動リッチメニュー（全体デフォルト運用）</h4>
-                                <p>全受講生・お友達のLINE画面の標準メニューとして、上部に<strong>静岡県三島市のリアルタイム天気・気温・週間雨予報</strong>、下部に<strong>10文字以内の心に響く名言・格言</strong>が自動合成されたリッチメニューを毎時間更新・配信します。<br>
+                                <h4>静岡県三島市 天気予報 ＆ トーク最下部メニューバー（chatBarText）10文字名言 毎時自動切替</h4>
+                                <p>全受講生・お友達のLINE画面の標準メニューとして、上部に<strong>静岡県三島市のリアルタイム天気・最高最低気温・週間雨予報</strong>、トーク画面最下部のメニューバー（「メニュー▼」の開閉帯）に<strong>10文字以内の心に響く名言・格言</strong>を表示・毎時更新します。<br>
                                 <strong>💡 上部：三島市リアルタイム天気帯（300px・オレンジグラデーション <code>#FF8700</code>）:</strong><br>
-                                ・毎時最新の天気・最高最低気温・直近の雨の降り始め予報を高解像度絵文字付きで表示。タップするとウェザーニュース三島市詳細へジャンプ。<br>
-                                <strong>💡 下部：10文字以内の今時間のことば帯（200px・ダークスレート＆ゴールドアクセント【新機能】）:</strong><br>
-                                ・外部名言API（<code>https://meigen.doodlenote.net/api/json.php</code>）および厳選マスターリスト（<code>quote_engine.php</code>）と連携し、10文字以内のポジティブな名言（例:「継続は力なり」「思い立ったが吉日」「一期一会」など）を毎時間自動で切り替えて表示。<br>
-                                ・タップするとトーク画面にその時間のことばが表示されます。<br>
+                                ・LINE Seed JPフォントによる大きな文字サイズと高精細絵文字で、毎時最新の天気・気温・直近の雨降り始め予報を表示。タップでウェザーニュース三島市詳細へジャンプ。<br>
+                                <strong>💡 下部メニューバー（chatBarText）：10文字以内の今時間のことば【新機能】:</strong><br>
+                                ・メニューを開閉する最下部のバー文字列（最大14文字）に、外部名言APIおよび厳選マスター（「継続は力なり」「思い立ったが吉日」「一期一会」「初心忘るべからず」など）から、毎時間異なる名言を自動セット。<br>
                                 <strong>💡 1時間毎の自動更新バッチ（Xサーバー Cron）:</strong><br>
-                                ・毎時0分のCron実行（<code>batch_hourly_weather.php</code>）により、最新天気と新しい名言が自動合成され、全体デフォルトメニューとして即座に切り替わります。<br>
+                                ・毎時0分のCron実行（<code>batch_hourly_weather.php</code>）により、最新天気と新しい名言バーが自動生成され、全体デフォルトメニューとして即座に切り替わります。<br>
                                 <strong>💡 自動クリーンアップ:</strong><br>
                                 ・前回の古いデフォルトメニューは自動でDELETE削除されるため、LINEのメニュー上限に達することなく永久運用可能です。</p>
                                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-top: 10px;">
-                                    <strong>📋 エックスサーバー サーバーパネルでの設定手順:</strong><br>
+                                    <strong>📋 エックスサーバー サーバーパネルでの推奨Cron設定手順:</strong><br>
                                     1. サーバーパネルにログイン ＞「Cron設定」を開きます。<br>
                                     2. 「Cronの追加」をクリックし、以下のように入力します：
                                     <ul style="margin: 8px 0 0 20px; font-size: 13px; line-height: 1.8;">
@@ -2095,7 +2094,7 @@
                                         <li><strong>日</strong>: <code>*</code></li>
                                         <li><strong>月</strong>: <code>*</code></li>
                                         <li><strong>曜日</strong>: <code>*</code></li>
-                                        <li><strong>コマンド</strong>: <code style="background:#0f172a; color:#38bdf8; padding:3px 8px; border-radius:4px;">/usr/bin/php8.2 /home/あなたのサーバーID/kureba.co.jp/public_html/line_kureba-senior_system/public_html/batch_hourly_weather.php > /dev/null 2>&1</code></li>
+                                        <li><strong>コマンド</strong>: <code style="background:#0f172a; color:#38bdf8; padding:3px 8px; border-radius:4px;">cd /home/kureba/kureba.co.jp/public_html/line_kureba-senior_system && git pull origin main > /dev/null 2>&1 && /usr/bin/php8.2 /home/kureba/kureba.co.jp/public_html/line_kureba-senior_system/public_html/batch_hourly_weather.php > /dev/null 2>&1</code></li>
                                     </ul>
                                 </div>
                             </div>
@@ -2111,6 +2110,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260924_weather_hourly_quote_v34"></script>
+    <script src="manual.js?v=20260924_weather_chatbar_quote_v35"></script>
 </body>
 </html>

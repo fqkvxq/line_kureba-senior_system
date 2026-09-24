@@ -223,8 +223,7 @@ async function run() {
     ctx.fillStyle = hasRain ? '#fef08a' : '#f0fdf4'; // 雨予報があるときはイエロー
     ctx.fillText(line2_text, text2X, y2);
 
-    // --- 下部200px 名言帯 (#0f172a〜#1e293b) ---
-    // 10文字以内の名言取得
+    // --- 10文字以内の名言取得（メニューバーの文字列 chatBarText に設定） ---
     const quoteMaster = [
         '継続は力なり',
         '思い立ったが吉日',
@@ -267,7 +266,7 @@ async function run() {
             const qData = await qRes.json() as any;
             if (Array.isArray(qData) && qData[0]?.meigen) {
                 const clean = qData[0].meigen.replace(/[。、！？\s]/g, '');
-                if (clean.length >= 3 && clean.length <= 10) {
+                if (clean.length >= 3 && clean.length <= 14) {
                     currentQuote = clean;
                 }
             }
@@ -284,58 +283,16 @@ async function run() {
         currentQuote = quoteMaster[Math.abs(hash) % quoteMaster.length];
     }
 
-    const bottomBannerHeight = 200;
-    const bottomY = 1686 - bottomBannerHeight;
-
-    // 下部帯背景グラデーション
-    const gradBottom = ctx.createLinearGradient(0, bottomY, 0, 1686);
-    gradBottom.addColorStop(0, '#0f172a');
-    gradBottom.addColorStop(1, '#1e293b');
-    ctx.fillStyle = gradBottom;
-    ctx.fillRect(0, bottomY, 2500, bottomBannerHeight);
-
-    // 上部ゴールドアクセント境界線
-    ctx.fillStyle = '#f59e0b';
-    ctx.fillRect(0, bottomY, 2500, 6);
-
-    // 名言テキスト描画
-    const quotePrefix = `💡 今時間のことば：`;
-    const quoteMain = `『${currentQuote}』`;
-    
-    let fontQSize = 58;
-    ctx.font = `bold ${fontQSize}px "LINESeedJP", sans-serif`;
-    let w_qpre = ctx.measureText(quotePrefix).width;
-    let w_qmain = ctx.measureText(quoteMain).width;
-    let totalQW = w_qpre + w_qmain;
-
-    const startQX = Math.max(40, (2500 - totalQW) / 2);
-    const qTextY = bottomY + (bottomBannerHeight / 2);
-
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-
-    // quotePrefix (白)
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-    ctx.fillText(quotePrefix, startQX + 2, qTextY + 2);
-    ctx.fillStyle = '#e2e8f0';
-    ctx.fillText(quotePrefix, startQX, qTextY);
-
-    // quoteMain (輝くゴールド)
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-    ctx.fillText(quoteMain, startQX + w_qpre + 2, qTextY + 2);
-    ctx.fillStyle = '#fbbf24';
-    ctx.fillText(quoteMain, startQX + w_qpre, qTextY);
-
     const outJpg = path.resolve(process.cwd(), 'weather_richmenu.jpg');
     fs.writeFileSync(outJpg, canvas.toBuffer('image/jpeg', 92));
-    console.log(`JPEG saved to ${outJpg} (Quote: ${currentQuote})`);
+    console.log(`JPEG saved to ${outJpg} (ChatBar Quote: ${currentQuote})`);
 
-    // 6. LINE リッチメニュー作成 (全体デフォルト適用)
+    // 6. LINE リッチメニュー作成 (chatBarText に名言を設定)
     const menuBody = {
         size: { width: 2500, height: 1686 },
         selected: true,
-        name: `三島天気＆名言 (${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${now.getMinutes()})`,
-        chatBarText: 'メニュー',
+        name: `三島天気 (${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${now.getMinutes()})`,
+        chatBarText: currentQuote.slice(0, 14),
         areas: [
             {
                 bounds: { x: 0, y: 0, width: 2500, height: 300 },
@@ -346,15 +303,7 @@ async function run() {
                 }
             },
             {
-                bounds: { x: 0, y: 300, width: 1250, height: 1186 },
-                action: {
-                    type: 'uri',
-                    label: '教室案内・予約',
-                    uri: 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1'
-                }
-            },
-            {
-                bounds: { x: 1250, y: 300, width: 1250, height: 1186 },
+                bounds: { x: 1375, y: 320, width: 1100, height: 1315 },
                 action: {
                     type: 'uri',
                     label: '受講生マイページ',
@@ -362,11 +311,11 @@ async function run() {
                 }
             },
             {
-                bounds: { x: 0, y: 1486, width: 2500, height: 200 },
+                bounds: { x: 25, y: 320, width: 1350, height: 1332 },
                 action: {
-                    type: 'message',
-                    label: '今時間のことば',
-                    text: `今時間のことばは「${currentQuote}」です✨`
+                    type: 'uri',
+                    label: '教室案内・予約',
+                    uri: 'https://liff.line.me/2000276344-XlmvL9qZ?r=https%3A%2F%2Fd0o2pa7q.autosns.app%2Fcl%2FQaOK41fkzp%3Fuid%3D%5B%5Buid%5D%5D%26openExternalBrowser%3D1'
                 }
             }
         ]
