@@ -46,6 +46,18 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
         return;
     }
 
+    // --- 天気メニュー切替のキーワード応答 ---
+    if (in_array($cleanText, ['天気を表示', '天気表示', '天気', '天気予報', '三島の天気', '雨予報', '天気メニュー'], true)) {
+        recordCustomerInteraction($db, $userId, 'user_action', "🌤️ 天気メニュー表示切替: {$cleanText}");
+        handleSwitchWeatherMenu($db, $replyToken, $userId);
+        return;
+    }
+    if (in_array($cleanText, ['通常メニューに戻す', '通常メニュー', '通常に戻す', 'メニュー戻す', '標準メニュー', '占いメニュー'], true)) {
+        recordCustomerInteraction($db, $userId, 'user_action', "📱 通常メニュー復帰切替: {$cleanText}");
+        handleSwitchDefaultMenu($db, $replyToken, $userId);
+        return;
+    }
+
     // --- 会社DX向けアンケートのキーワード応答 ---
     if (in_array(mb_strtolower($cleanText), ['アンケート', 'dxアンケート', 'dx相談', 'dx診断', 'dx', '関心度'], true)) {
         recordCustomerInteraction($db, $userId, 'user_action', "📋 DXアンケート呼出: {$cleanText}");
@@ -161,6 +173,17 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
         // --- 5-0-3. 会社DXアンケート Q2（関心テーマ回答） ---
         case 'dx_survey_q2':
             handleDxSurveyQ2($db, $replyToken, $params, $userId);
+            break;
+
+        // --- 5-0-4. 天気メニュー / 通常メニュー切替 ---
+        case 'switch_weather_menu':
+        case 'show_weather':
+            handleSwitchWeatherMenu($db, $replyToken, $userId);
+            break;
+
+        case 'switch_default_menu':
+        case 'show_default':
+            handleSwitchDefaultMenu($db, $replyToken, $userId);
             break;
 
         // --- 5-1. お知らせリッチメニュー表示 ---
@@ -4336,3 +4359,147 @@ function notifyStaffOfDxSurvey(PDO $db, string $userName, string $userId, string
         writeDebugLog("Discord通知エラー(DXアンケート)", ['error' => $e->getMessage()]);
     }
 }
+
+/**
+ * 天気メニュー切り替え用 クイックリプライを生成
+ */
+function getWeatherSwitchQuickReply(bool $isCurrentlyWeather = false): array {
+    $items = [];
+
+    if ($isCurrentlyWeather) {
+        $items[] = [
+            'type' => 'action',
+            'action' => [
+                'type' => 'postback',
+                'label' => '📱 通常メニューに戻す',
+                'data' => 'action=switch_default_menu',
+                'displayText' => '通常メニューに戻す'
+            ]
+        ];
+        $items[] = [
+            'type' => 'action',
+            'action' => [
+                'type' => 'postback',
+                'label' => '🔄 天気を今すぐ更新',
+                'data' => 'action=switch_weather_menu',
+                'displayText' => '天気を表示'
+            ]
+        ];
+    } else {
+        $items[] = [
+            'type' => 'action',
+            'action' => [
+                'type' => 'postback',
+                'label' => '🌤️ 天気を表示',
+                'data' => 'action=switch_weather_menu',
+                'displayText' => '天気を表示'
+            ]
+        ];
+    }
+
+    $items[] = [
+        'type' => 'action',
+        'action' => [
+            'type' => 'uri',
+            'label' => '🌐 三島の天気詳細',
+            'uri' => 'https://weathernews.jp/onebox/tenki/shizuoka/22206/'
+        ]
+    ];
+
+    $items[] = [
+        'type' => 'action',
+        'action' => [
+            'type' => 'postback',
+            'label' => '💡 お役立ち情報',
+            'data' => 'action=show_knowledge_menu',
+            'displayText' => 'お役立ち情報'
+        ]
+    ];
+
+    return ['items' => $items];
+}
+
+/**
+ * 天気リッチメニューを表示（アタッチ）する処理
+ */
+function handleSwitchWeatherMenu(PDO $db, string $replyToken, string $userId) {
+    if (empty($userId) || !str_starts_with($userId, 'U')) {
+        return;
+    }
+
+    $accountKey = getActiveAccountKey();
+    $nowJst = date('Y-m-d H:i:s');
+
+    // 1. DBに「天気メニュー利用中」フラグを記録
+    try {
+        $db->prepare("UPDATE customer_cars SET custom_menu_text = 'weather', updated_at = :now WHERE TRIM(user_id) = :uid")
+            ->execute([':now' => $nowJst, ':uid' => $userId]);
+    } catch (Throwable $e) {}
+
+    // 2. 最新の天気リッチメニューIDを取得（LINEまたはDB）
+    $weatherMenuId = null;
+    try {
+        $stmt = $db->query("SELECT line_menu_id FROM rich_menus WHERE (title LIKE '%三島天気%' OR title LIKE '%天気%') AND line_menu_id IS NOT NULL AND line_menu_id != '' ORDER BY id DESC LIMIT 1");
+        $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+        if (!empty($row['line_menu_id'])) {
+            $weatherMenuId = $row['line_menu_id'];
+        }
+    } catch (Throwable $e) {}
+
+    // 直近でアタッチされたメニューがあればそれをフォールバック
+    if (empty($weatherMenuId)) {
+        // 現在リンクされている最新のメニューまたは全体最新
+        $weatherMenuId = lineGetUserRichMenuId($userId);
+    }
+
+    if (!empty($weatherMenuId)) {
+        lineLinkUserRichMenu($userId, $weatherMenuId, $accountKey);
+    }
+
+    // 3. 返信メッセージ送信
+    $msgText = "🌤️ 三島市の最新天気予報メニューを表示しました！\n\n・1時間毎に最新の天気・気温・雨予報が自動更新されます。\n・上部のオレンジ帯をタップすると、ウェザーニュースの今日の詳細予報を開けます。\n\n通常のメニューに戻したいときは、いつでも下の「📱 通常メニューに戻す」をタップしてください。";
+
+    $messages = [
+        [
+            'type' => 'text',
+            'text' => $msgText,
+            'quickReply' => getWeatherSwitchQuickReply(true)
+        ]
+    ];
+
+    sendReplyMessage($replyToken, $messages, $userId);
+}
+
+/**
+ * 通常リッチメニューに戻す（個別リンク解除）処理
+ */
+function handleSwitchDefaultMenu(PDO $db, string $replyToken, string $userId) {
+    if (empty($userId) || !str_starts_with($userId, 'U')) {
+        return;
+    }
+
+    $accountKey = getActiveAccountKey();
+    $nowJst = date('Y-m-d H:i:s');
+
+    // 1. DBのフラグをクリア
+    try {
+        $db->prepare("UPDATE customer_cars SET custom_menu_text = NULL, custom_line_menu_id = NULL, updated_at = :now WHERE TRIM(user_id) = :uid")
+            ->execute([':now' => $nowJst, ':uid' => $userId]);
+    } catch (Throwable $e) {}
+
+    // 2. LINEの個別アタッチを解除（全体デフォルトメニューに戻す）
+    lineUnlinkUserRichMenu($userId, $accountKey);
+
+    // 3. 返信メッセージ送信
+    $msgText = "📱 通常メニューに戻しました！\n\n天気をもう一度確認・表示したいときは、下の「🌤️ 天気を表示」をタップするか、「天気」と話しかけてください😊";
+
+    $messages = [
+        [
+            'type' => 'text',
+            'text' => $msgText,
+            'quickReply' => getWeatherSwitchQuickReply(false)
+        ]
+    ];
+
+    sendReplyMessage($replyToken, $messages, $userId);
+}

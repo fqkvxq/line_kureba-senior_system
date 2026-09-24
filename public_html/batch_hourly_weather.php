@@ -381,16 +381,16 @@ if (!$uploadRes['success']) {
 }
 logWeatherBatch("LINE画像アップロード成功");
 
-// 6. 対象受講生（かわいたくや様、または個別リッチメニュー設定者）へアタッチ＆古いメニュー削除
-// 対象ユーザー（かわいたくや様: U38c887032d23d83bcc44ae08c1f987a2 または custom_menu 設定者）
+// 6. 対象受講生（かわいたくや様、または「天気を表示」設定中の受講生）へアタッチ＆古いメニュー削除
 $targetUids = ['U38c887032d23d83bcc44ae08c1f987a2'];
 
-// DBから個別メニュー利用受講生も追加抽出
+// DBから「天気を表示」を選択中の受講生を追加抽出
 try {
-    $stmtUsers = $db->query("SELECT user_id, custom_line_menu_id FROM customer_cars WHERE user_id IS NOT NULL AND user_id != ''");
+    $stmtUsers = $db->query("SELECT user_id FROM customer_cars WHERE custom_menu_text = 'weather' AND user_id IS NOT NULL AND user_id != ''");
     while ($row = $stmtUsers->fetch(PDO::FETCH_ASSOC)) {
-        if (!in_array($row['user_id'], $targetUids) && str_starts_with($row['user_id'], 'U')) {
-            // 必要に応じて追加
+        $u = trim($row['user_id']);
+        if (!in_array($u, $targetUids) && str_starts_with($u, 'U')) {
+            $targetUids[] = $u;
         }
     }
 } catch (Exception $e) {}
