@@ -72,10 +72,12 @@ export class ConfigManager {
   }
 
   public getServers(): Record<string, ServerConfig> {
+    this.loadConfig();
     return this.config.servers || {};
   }
 
   public getServer(serverId?: string): { id: string; config: ServerConfig } {
+    this.loadConfig();
     const id = serverId || this.activeServerId;
     const server = this.config.servers[id];
     if (!server) {
