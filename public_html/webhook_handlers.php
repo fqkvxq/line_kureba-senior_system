@@ -46,15 +46,31 @@ function handleTextMessage(PDO $db, string $replyToken, string $text, string $us
         return;
     }
 
-    // --- 天気メニュー切替のキーワード応答 (サイレント切替) ---
+    // --- 天気 / 占い / 通常 メニュー切替のキーワード応答 (サイレント切替) ---
     if (in_array($cleanText, ['天気を表示', '天気表示', '天気メニュー', '天気'], true)) {
         recordCustomerInteraction($db, $userId, 'user_action', "🌤️ 天気メニュー表示切替: {$cleanText}");
         handleSwitchWeatherMenuSilent($db, $userId);
         return;
     }
-    if (in_array($cleanText, ['通常メニューに戻す', '通常メニュー', '通常に戻す', 'メニュー戻す', '標準メニュー', '戻す'], true)) {
+    if (in_array($cleanText, ['占い', '星占い', '今日の占い', '占いメニュー', '星占いメニュー'], true)) {
+        recordCustomerInteraction($db, $userId, 'user_action', "🔮 占いメニュー表示切替: {$cleanText}");
+        handleSwitchFortuneMenuSilent($db, $userId);
+        return;
+    }
+    if (in_array($cleanText, ['通常メニューに戻す', '通常メニュー', '通常に戻す', 'メニュー戻す', '標準メニュー', '戻す', '通常'], true)) {
         recordCustomerInteraction($db, $userId, 'user_action', "📱 通常メニュー復帰切替: {$cleanText}");
         handleSwitchDefaultMenuSilent($db, $userId);
+        return;
+    }
+    if (in_array($cleanText, ['メニュー切替', 'モード切替', 'メニュー変更', '切替', 'きりかえ', 'メニュー'], true)) {
+        recordCustomerInteraction($db, $userId, 'user_action', "🔄 メニュー切替案内: {$cleanText}");
+        $msg = [
+            'type' => 'text',
+            'text' => "📱 メニュー切り替え
+下のボタンから表示したいメニューをお選びください😊",
+            'quickReply' => getModeSwitchQuickReply()
+        ];
+        sendReplyMessage($replyToken, [$msg], $userId);
         return;
     }
 
@@ -120,13 +136,31 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             handleSwitchFortuneMenuSilent($db, $userId);
             break;
 
+        case 'switch_default_mode':
+        case 'switch_default_menu':
+        case 'switch_normal_mode':
+        case 'switch_normal_menu':
+            handleSwitchDefaultMenuSilent($db, $userId);
+            break;
+
+        // --- メニュー切替クイックリプライ案内 ---
+        case 'ask_mode_switch':
+        case 'menu_switch':
+        case 'change_menu':
+            $msg = [
+                'type' => 'text',
+                'text' => "📱 メニュー切り替え\n下のボタンから表示したいメニューをお選びください😊",
+                'quickReply' => getModeSwitchQuickReply()
+            ];
+            sendReplyMessage($replyToken, [$msg], $userId);
+            break;
+
         // --- 星座選択案内 (クイックリプライ表示) ---
         case 'ask_zodiac_selection':
         case 'select_zodiac':
             $msg = [
                 'type' => 'text',
-                'text' => "✨ あなたの星座をお選びください ✨
-下のボタンからご自身の星座をタップすると、リッチメニューがあなた専用の星占いに切り替わります😊",
+                'text' => "✨ あなたの星座をお選びください ✨\n下のボタンからご自身の星座をタップすると、リッチメニューがあなた専用の星占いに切り替わります😊",
                 'quickReply' => getZodiacSelectionQuickReply()
             ];
             sendReplyMessage($replyToken, [$msg], $userId);
@@ -4395,42 +4429,41 @@ function notifyStaffOfDxSurvey(PDO $db, string $userName, string $userId, string
  */
 
 /**
- * 天気モード / 星占いモード 切替用クイックリプライ
- */
-/**
- * 天気モード / 星占いモード 切替用クイックリプライ (完全サイレント仕様: displayTextなし)
+ * 天気メニュー / 占いメニュー / 通常メニュー 切替用クイックリプライ (完全サイレント仕様: displayTextなし)
  */
 function getModeSwitchQuickReply(string $currentMode = ''): array {
-    $items = [];
-
-    if ($currentMode !== 'weather') {
-        $items[] = [
+    $items = [
+        [
             'type' => 'action',
             'action' => [
                 'type' => 'postback',
-                'label' => '🌤️ 天気モードにする',
+                'label' => '🌤️ 天気メニュー',
                 'data' => 'action=switch_weather_mode'
             ]
-        ];
-    }
-
-    if ($currentMode !== 'fortune') {
-        $items[] = [
+        ],
+        [
             'type' => 'action',
             'action' => [
                 'type' => 'postback',
-                'label' => '🔮 星占いモードにする',
+                'label' => '🔮 占いメニュー',
                 'data' => 'action=switch_fortune_mode'
             ]
-        ];
-    }
-
-    $items[] = [
-        'type' => 'action',
-        'action' => [
-            'type' => 'postback',
-            'label' => '♈ 星座を設定・変更',
-            'data' => 'action=ask_zodiac_selection'
+        ],
+        [
+            'type' => 'action',
+            'action' => [
+                'type' => 'postback',
+                'label' => '📱 通常メニュー',
+                'data' => 'action=switch_default_mode'
+            ]
+        ],
+        [
+            'type' => 'action',
+            'action' => [
+                'type' => 'postback',
+                'label' => '♈ 星座設定',
+                'data' => 'action=ask_zodiac_selection'
+            ]
         ]
     ];
 
