@@ -4466,29 +4466,13 @@ function getModeSwitchQuickReply(string $currentMode = ''): array {
                 'data' => 'action=ask_zodiac_selection'
             ]
         ];
-    } elseif ($currentMode === 'weather' || $currentMode === 'default') {
-        $items[] = [
-            'type' => 'action',
-            'action' => [
-                'type' => 'postback',
-                'label' => '🔮 占いメニュー',
-                'data' => 'action=switch_fortune_mode'
-            ]
-        ];
     } else {
+        // 天気メニューのときは「星座メニューに切り替える」ボタンだけ
         $items[] = [
             'type' => 'action',
             'action' => [
                 'type' => 'postback',
-                'label' => '🌤️ 天気メニュー',
-                'data' => 'action=switch_default_mode'
-            ]
-        ];
-        $items[] = [
-            'type' => 'action',
-            'action' => [
-                'type' => 'postback',
-                'label' => '🔮 占いメニュー',
+                'label' => '🔮 星座メニューに切り替える',
                 'data' => 'action=switch_fortune_mode'
             ]
         ];
