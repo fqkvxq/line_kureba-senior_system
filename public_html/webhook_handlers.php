@@ -4508,12 +4508,6 @@ function handleSetCityWeather(PDO $db, string $userId, string $cityKey, string $
     $accountKey = getActiveAccountKey();
     $dispCity = !empty($cityName) ? $cityName : $cityKey;
 
-    if ($cityKey === 'mishima') {
-        // 三島市は全体デフォルトメニューに復帰（アンリンク）
-        lineUnlinkUserRichMenu($userId, $accountKey);
-        return;
-    }
-
     $mappingFile = __DIR__ . '/data/weather_richmenus.json';
     $targetMenuId = null;
     if (file_exists($mappingFile)) {
@@ -4652,29 +4646,7 @@ function handleSwitchFortuneMenuSilent(PDO $db, string $userId) {
  * 天気リッチメニューへの即時サイレント切り替え
  */
 function handleSwitchWeatherMenuSilent(PDO $db, string $userId) {
-    if (empty($userId) || !str_starts_with($userId, 'U')) {
-        return;
-    }
-
-    $accountKey = getActiveAccountKey();
-    $nowJst = date('Y-m-d H:i:s');
-
-    try {
-        $db->prepare("UPDATE customer_cars SET custom_menu_text = 'weather', updated_at = :now WHERE TRIM(user_id) = :uid")
-            ->execute([':now' => $nowJst, ':uid' => $userId]);
-    } catch (Throwable $e) {}
-
-    // 最新の三島天気リッチメニューID
-    $weatherMenuId = 'richmenu-4aac3bf98a44376a03c01b6bd36139df';
-    try {
-        $stmt = $db->query("SELECT line_menu_id FROM rich_menus WHERE (title LIKE '%三島天気%' OR title LIKE '%MishimaWeather%') AND line_menu_id IS NOT NULL AND line_menu_id != '' ORDER BY id DESC LIMIT 1");
-        $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
-        if (!empty($row['line_menu_id'])) {
-            $weatherMenuId = $row['line_menu_id'];
-        }
-    } catch (Throwable $e) {}
-
-    lineLinkUserRichMenu($userId, $weatherMenuId, $accountKey);
+    handleSetCityWeather($db, $userId, 'mishima', '三島市');
 }
 
 /**
@@ -4698,7 +4670,7 @@ function handleSwitchDefaultMenu(PDO $db, string $replyToken, string $userId) {
 }
 
 /**
- * 通常リッチメニューへのサイレント切替（一切発言せずアンリンク）
+ * 天気メニュー（三島市）へのサイレント切替
  */
 function handleSwitchDefaultMenuSilent(PDO $db, string $userId) {
     if (empty($userId) || !str_starts_with($userId, 'U')) {
@@ -4708,14 +4680,14 @@ function handleSwitchDefaultMenuSilent(PDO $db, string $userId) {
     $accountKey = getActiveAccountKey();
     $nowJst = date('Y-m-d H:i:s');
 
-    // 1. DBのフラグをクリア
+    // 1. DBのフラグを更新
     try {
-        $db->prepare("UPDATE customer_cars SET custom_menu_text = NULL, custom_line_menu_id = NULL, updated_at = :now WHERE TRIM(user_id) = :uid")
+        $db->prepare("UPDATE customer_cars SET custom_menu_text = 'weather_mishima', updated_at = :now WHERE TRIM(user_id) = :uid")
             ->execute([':now' => $nowJst, ':uid' => $userId]);
     } catch (Throwable $e) {}
 
-    // 2. LINEの個別アタッチを解除（全体デフォルトメニューに戻す）
-    lineUnlinkUserRichMenu($userId, $accountKey);
+    // 2. 三島市の天気メニューをアタッチ
+    handleSetCityWeather($db, $userId, 'mishima', '三島市');
 }
 
 
