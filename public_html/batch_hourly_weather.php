@@ -182,7 +182,7 @@ foreach ($cities as $cityKey => $cityInfo) {
     $futureRainDays = [];
 
     try {
-        $apiUrl = "https://api.open-meteo.com/v1/forecast?latitude={$lat}&longitude={$lon}&hourly=precipitation_probability,precipitation,weathercode&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=8";
+        $apiUrl = "https://api.open-meteo.com/v1/forecast?latitude={$lat}&longitude={$lon}&current=weather_code,temperature_2m&hourly=precipitation_probability,precipitation,weathercode&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=8";
         $ch = curl_init($apiUrl);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
@@ -195,18 +195,23 @@ foreach ($cities as $cityKey => $cityInfo) {
         if ($resJson) {
             $weatherData = json_decode($resJson, true);
             if (isset($weatherData['daily']['weathercode'][0])) {
-                $code = (int)$weatherData['daily']['weathercode'][0];
                 $maxTemp = (int)round($weatherData['daily']['temperature_2m_max'][0]);
                 $minTemp = (int)round($weatherData['daily']['temperature_2m_min'][0]);
-
-                if ($code === 0) { $weatherLabel = '快晴'; $weatherIconKey = 'sun'; $weatherEmoji = '☀️'; }
-                elseif ($code >= 1 && $code <= 3) { $weatherLabel = '晴れ時々曇り'; $weatherIconKey = 'sun_cloud'; $weatherEmoji = '🌤️'; }
-                elseif ($code >= 45 && $code <= 48) { $weatherLabel = '霧'; $weatherIconKey = 'cloud'; $weatherEmoji = '☁️'; }
-                elseif ($code >= 51 && $code <= 67) { $weatherLabel = '雨'; $weatherIconKey = 'rain'; $weatherEmoji = '🌧️'; }
-                elseif ($code >= 71 && $code <= 77) { $weatherLabel = '雪'; $weatherIconKey = 'snow'; $weatherEmoji = '❄️'; }
-                elseif ($code >= 80 && $code <= 82) { $weatherLabel = 'にわか雨'; $weatherIconKey = 'rain'; $weatherEmoji = '🌧️'; }
-                elseif ($code >= 95) { $weatherLabel = '雷雨'; $weatherIconKey = 'thunder'; $weatherEmoji = '⛈️'; }
             }
+
+            // リアルタイム(current)の気象コードを最優先で適用
+            $code = isset($weatherData['current']['weather_code'])
+                ? (int)$weatherData['current']['weather_code']
+                : (isset($weatherData['daily']['weathercode'][0]) ? (int)$weatherData['daily']['weathercode'][0] : 1);
+
+            if ($code === 0) { $weatherLabel = '快晴'; $weatherIconKey = 'sun'; $weatherEmoji = '☀️'; }
+            elseif ($code >= 1 && $code <= 2) { $weatherLabel = '晴れ時々曇り'; $weatherIconKey = 'sun_cloud'; $weatherEmoji = '🌤️'; }
+            elseif ($code === 3) { $weatherLabel = '曇り'; $weatherIconKey = 'cloud'; $weatherEmoji = '☁️'; }
+            elseif ($code >= 45 && $code <= 48) { $weatherLabel = '霧'; $weatherIconKey = 'cloud'; $weatherEmoji = '🌫️'; }
+            elseif ($code >= 51 && $code <= 67) { $weatherLabel = '雨'; $weatherIconKey = 'rain'; $weatherEmoji = '🌧️'; }
+            elseif ($code >= 71 && $code <= 77) { $weatherLabel = '雪'; $weatherIconKey = 'snow'; $weatherEmoji = '❄️'; }
+            elseif ($code >= 80 && $code <= 82) { $weatherLabel = 'にわか雨'; $weatherIconKey = 'rain'; $weatherEmoji = '🌧️'; }
+            elseif ($code >= 95) { $weatherLabel = '雷雨'; $weatherIconKey = 'thunder'; $weatherEmoji = '⛈️'; }
 
             $nowTs = time();
 
