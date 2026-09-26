@@ -1,0 +1,51 @@
+{
+  "mishima": {
+    "name": "三島市",
+    "code": 51,
+    "temp": 19,
+    "emoji": "🌧️",
+    "label": "🌧️ 三島市"
+  },
+  "shizuoka": {
+    "name": "静岡市",
+    "code": 55,
+    "temp": 19.4,
+    "emoji": "🌧️",
+    "label": "🌧️ 静岡市"
+  },
+  "hamamatsu": {
+    "name": "浜松市",
+    "code": 61,
+    "temp": 19.6,
+    "emoji": "🌧️",
+    "label": "🌧️ 浜松市"
+  },
+  "yokohama": {
+    "name": "横浜市",
+    "code": 1,
+    "temp": 19.2,
+    "emoji": "☀️",
+    "label": "☀️ 横浜市"
+  },
+  "tokyo": {
+    "name": "東京都",
+    "code": 2,
+    "temp": 18.7,
+    "emoji": "🌤️",
+    "label": "🌤️ 東京都"
+  },
+  "osaka": {
+    "name": "大阪市",
+    "code": 55,
+    "temp": 20.8,
+    "emoji": "🌧️",
+    "label": "🌧️ 大阪市"
+  },
+  "fukuoka": {
+    "name": "福岡市",
+    "code": 51,
+    "temp": 22.2,
+    "emoji": "🌧️",
+    "label": "🌧️ 福岡市"
+  }
+}
