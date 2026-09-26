@@ -125,15 +125,27 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
 
     try {
         switch ($action) {
-                // --- リッチメニュー モード切替 (完全サイレント) ---
+                // --- リッチメニュー モード切替 ---
         case 'switch_weather_mode':
         case 'switch_weather_menu':
             handleSwitchWeatherMenuSilent($db, $userId);
+            $msg = [
+                'type' => 'text',
+                'text' => "🌤️ 天気メニューに切り替えました！\n別のメニューへの切り替えは下のボタンからいつでも行えます😊",
+                'quickReply' => getModeSwitchQuickReply('weather')
+            ];
+            sendReplyMessage($replyToken, [$msg], $userId);
             break;
 
         case 'switch_fortune_mode':
         case 'switch_fortune_menu':
             handleSwitchFortuneMenuSilent($db, $userId);
+            $msg = [
+                'type' => 'text',
+                'text' => "🔮 星占いメニューに切り替えました！\n別のメニューへの切り替えは下のボタンからいつでも行えます😊",
+                'quickReply' => getModeSwitchQuickReply('fortune')
+            ];
+            sendReplyMessage($replyToken, [$msg], $userId);
             break;
 
         case 'switch_default_mode':
@@ -141,6 +153,12 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
         case 'switch_normal_mode':
         case 'switch_normal_menu':
             handleSwitchDefaultMenuSilent($db, $userId);
+            $msg = [
+                'type' => 'text',
+                'text' => "📱 通常メニューに戻しました！\n別のメニューへの切り替えは下のボタンからいつでも行えます😊",
+                'quickReply' => getModeSwitchQuickReply('default')
+            ];
+            sendReplyMessage($replyToken, [$msg], $userId);
             break;
 
         // --- メニュー切替クイックリプライ案内 ---
@@ -166,11 +184,17 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             sendReplyMessage($replyToken, [$msg], $userId);
             break;
 
-        // --- 星座設定保存実行 (完全サイレント即時切り替え) ---
+        // --- 星座設定保存実行 ---
         case 'set_zodiac':
             $zKey = $params['zodiac'] ?? 'aries';
             $zName = urldecode($params['name'] ?? '');
             handleSetUserZodiac($db, $userId, $zKey, $zName);
+            $msg = [
+                'type' => 'text',
+                'text' => "✨ 【{$zName}】の占いにセットしました！\n他のメニューへの切り替えは下のボタンからいつでも行えます😊",
+                'quickReply' => getModeSwitchQuickReply('fortune')
+            ];
+            sendReplyMessage($replyToken, [$msg], $userId);
             break;
 
 
@@ -4490,6 +4514,16 @@ function getZodiacSelectionQuickReply(): array {
     ];
 
     $items = [];
+    // 1番目にメニュー切替に戻るボタンを配置 (合計13個 = LINE上限以内)
+    $items[] = [
+        'type' => 'action',
+        'action' => [
+            'type' => 'postback',
+            'label' => '🔙 メニュー切替',
+            'data' => 'action=ask_mode_switch'
+        ]
+    ];
+
     foreach ($zodiacs as $z) {
         $items[] = [
             'type' => 'action',
