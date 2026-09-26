@@ -125,7 +125,7 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
 
     try {
         switch ($action) {
-                // --- リッチメニュー モード切替 (完全サイレント & ログ記録) ---
+                // --- リッチメニュー モード切替 ---
         case 'switch_weather_mode':
         case 'switch_weather_menu':
         case 'switch_default_mode':
@@ -135,15 +135,27 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             handleSwitchDefaultMenuSilent($db, $userId);
             recordMenuActionLog($db, $userId, 'weather_city', '三島市 (デフォルト)');
             recordCustomerInteraction($db, $userId, 'user_action', '🌤️ 天気メニュー表示 (三島市)');
+            $msg = [
+                'type' => 'text',
+                'text' => "🌤️",
+                'quickReply' => getModeSwitchQuickReply('weather')
+            ];
+            sendReplyMessage($replyToken, [$msg], $userId);
             break;
 
-        // --- 都市別天気リッチメニュー切替 (完全サイレント & ログ記録) ---
+        // --- 都市別天気リッチメニュー切替 ---
         case 'set_city_weather':
             $cityKey = $params['city'] ?? 'mishima';
             $cityName = urldecode($params['name'] ?? '三島市');
             handleSetCityWeather($db, $userId, $cityKey, $cityName);
             recordMenuActionLog($db, $userId, 'weather_city', $cityName);
             recordCustomerInteraction($db, $userId, 'user_action', "🌤️ {$cityName}の天気を表示");
+            $msg = [
+                'type' => 'text',
+                'text' => "🌤️ {$cityName}",
+                'quickReply' => getModeSwitchQuickReply('weather')
+            ];
+            sendReplyMessage($replyToken, [$msg], $userId);
             break;
 
         case 'switch_fortune_mode':
@@ -151,6 +163,12 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             handleSwitchFortuneMenuSilent($db, $userId);
             recordMenuActionLog($db, $userId, 'fortune_mode', '星占いメニュー');
             recordCustomerInteraction($db, $userId, 'user_action', '🔮 星占いメニュー表示');
+            $msg = [
+                'type' => 'text',
+                'text' => "🔮",
+                'quickReply' => getModeSwitchQuickReply('fortune')
+            ];
+            sendReplyMessage($replyToken, [$msg], $userId);
             break;
 
         // --- メニュー切替クイックリプライ案内 ---
@@ -172,13 +190,13 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             if ($mode === 'fortune') {
                 $msg = [
                     'type' => 'text',
-                    'text' => "🔮 星座占いメニュー\n下のボタンからあなたの星座を選択するか、天気メニューに切り替えられます😊",
+                    'text' => "🔮",
                     'quickReply' => getModeSwitchQuickReply('fortune')
                 ];
             } else {
                 $msg = [
                     'type' => 'text',
-                    'text' => "📱 メニュー切り替え\n下のボタンから表示したいメニューをお選びください😊",
+                    'text' => "🌤️",
                     'quickReply' => getModeSwitchQuickReply('weather')
                 ];
             }
@@ -190,19 +208,25 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
         case 'select_zodiac':
             $msg = [
                 'type' => 'text',
-                'text' => "✨ あなたの星座をお選びください ✨\n下のボタンからご自身の星座をタップすると、リッチメニューがあなた専用の星占いに切り替わります😊",
-                'quickReply' => getZodiacSelectionQuickReply()
+                'text' => "🔮",
+                'quickReply' => getModeSwitchQuickReply('fortune')
             ];
             sendReplyMessage($replyToken, [$msg], $userId);
             break;
 
-        // --- 星座設定保存実行 (完全サイレント & ログ記録) ---
+        // --- 星座設定保存実行 ---
         case 'set_zodiac':
             $zKey = $params['zodiac'] ?? 'aries';
             $zName = urldecode($params['name'] ?? '');
             handleSetUserZodiac($db, $userId, $zKey, $zName);
             recordMenuActionLog($db, $userId, 'zodiac_set', $zName);
             recordCustomerInteraction($db, $userId, 'user_action', "♈ 星座設定: {$zName}");
+            $msg = [
+                'type' => 'text',
+                'text' => "✨ {$zName}",
+                'quickReply' => getModeSwitchQuickReply('fortune')
+            ];
+            sendReplyMessage($replyToken, [$msg], $userId);
             break;
 
 
