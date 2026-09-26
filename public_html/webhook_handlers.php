@@ -4749,9 +4749,6 @@ function generateCityWeatherDetailText(string $cityKey, string $cityName): strin
     return $msg;
 }
 
-/**
- * 都市別天気リッチメニューへの即時切り替え
- */
 function handleSetCityWeather(PDO $db, string $userId, string $cityKey, string $cityName = '') {
     if (empty($userId) || !str_starts_with($userId, 'U')) {
         return;
@@ -4759,6 +4756,17 @@ function handleSetCityWeather(PDO $db, string $userId, string $cityKey, string $
 
     $accountKey = getActiveAccountKey();
     $dispCity = !empty($cityName) ? $cityName : $cityKey;
+    $nowJst = date('Y-m-d H:i:s');
+
+    // 三島市の場合は個別リンクを解除してデフォルト（毎時自動更新の三島天気）に戻す
+    if ($cityKey === 'mishima' || $dispCity === '三島市') {
+        lineUnlinkUserRichMenu($userId, $accountKey);
+        try {
+            $stmt = $db->prepare("UPDATE customer_cars SET custom_line_menu_id = NULL, custom_menu_text = 'weather_mishima', custom_menu_set_at = :now, updated_at = :now WHERE TRIM(user_id) = :uid");
+            $stmt->execute([':now' => $nowJst, ':uid' => $userId]);
+        } catch (Throwable $e) {}
+        return;
+    }
 
     $mappingFile = __DIR__ . '/data/weather_richmenus.json';
     $targetMenuId = null;
@@ -4769,6 +4777,15 @@ function handleSetCityWeather(PDO $db, string $userId, string $cityKey, string $
 
     if (!empty($targetMenuId)) {
         lineLinkUserRichMenu($userId, $targetMenuId, $accountKey);
+        try {
+            $stmt = $db->prepare("UPDATE customer_cars SET custom_line_menu_id = :mid, custom_menu_text = :mtxt, custom_menu_set_at = :now, updated_at = :now WHERE TRIM(user_id) = :uid");
+            $stmt->execute([
+                ':mid' => $targetMenuId,
+                ':mtxt' => 'weather_' . $cityKey,
+                ':now' => $nowJst,
+                ':uid' => $userId
+            ]);
+        } catch (Throwable $e) {}
     }
 }
 

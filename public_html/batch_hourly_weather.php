@@ -491,6 +491,17 @@ $setDefRes = lineSetDefaultRichMenu($newRichMenuId, $targetAccount);
 if ($setDefRes['success']) {
     logWeatherBatch("✅ 全ユーザーのデフォルトリッチメニューを最新の天気メニュー [{$newRichMenuId}] に設定完了！");
     
+    // weather_richmenus.json の三島市IDも更新
+    $mappingFile = __DIR__ . '/data/weather_richmenus.json';
+    $mapping = [];
+    if (file_exists($mappingFile)) {
+        $mapping = json_decode(file_get_contents($mappingFile), true) ?: [];
+    }
+    $mapping['mishima'] = $newRichMenuId;
+    $mapping['三島市'] = $newRichMenuId;
+    @file_put_contents($mappingFile, json_encode($mapping, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    logWeatherBatch("📝 weather_richmenus.json を最新の三島市メニューID [{$newRichMenuId}] で更新しました。");
+
     // 古いデフォルトメニューを自動削除 (クリーンアップ)
     if (!empty($oldDefaultMenuId) && $oldDefaultMenuId !== $newRichMenuId) {
         lineDeleteRichMenu($oldDefaultMenuId, $targetAccount);
