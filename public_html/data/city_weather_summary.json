@@ -1,51 +1,51 @@
 {
   "mishima": {
     "name": "三島市",
-    "code": 51,
-    "temp": 19,
+    "weatherText": "雨",
+    "code": "300",
     "emoji": "🌧️",
     "label": "🌧️ 三島市"
   },
   "shizuoka": {
     "name": "静岡市",
-    "code": 55,
-    "temp": 19.4,
+    "weatherText": "雨",
+    "code": "300",
     "emoji": "🌧️",
     "label": "🌧️ 静岡市"
   },
   "hamamatsu": {
     "name": "浜松市",
-    "code": 61,
-    "temp": 19.6,
+    "weatherText": "雨",
+    "code": "300",
     "emoji": "🌧️",
     "label": "🌧️ 浜松市"
   },
   "yokohama": {
     "name": "横浜市",
-    "code": 1,
-    "temp": 19.2,
-    "emoji": "☀️",
-    "label": "☀️ 横浜市"
+    "weatherText": "雨",
+    "code": "300",
+    "emoji": "🌧️",
+    "label": "🌧️ 横浜市"
   },
   "tokyo": {
     "name": "東京都",
-    "code": 2,
-    "temp": 18.7,
-    "emoji": "🌤️",
-    "label": "🌤️ 東京都"
+    "weatherText": "雨　夜遅く　くもり",
+    "code": "313",
+    "emoji": "🌧️",
+    "label": "🌧️ 東京都"
   },
   "osaka": {
     "name": "大阪市",
-    "code": 55,
-    "temp": 20.8,
+    "weatherText": "雨",
+    "code": "300",
     "emoji": "🌧️",
     "label": "🌧️ 大阪市"
   },
   "fukuoka": {
     "name": "福岡市",
-    "code": 51,
-    "temp": 22.2,
-    "emoji": "🌧️",
-    "label": "🌧️ 福岡市"
+    "weatherText": "雨　夜遅く　くもり　所により　夕方　雷を伴い　激しく　降る",
+    "code": "313",
+    "emoji": "⛈️",
+    "label": "⛈️ 福岡市"
   }
 }

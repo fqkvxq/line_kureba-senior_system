@@ -119,18 +119,67 @@ export async function generate(baseImgBuffer, options = {}) {
     const lon = options.lon || city.lon;
     const cityName = options.cityName || city.name;
 
-    // 1. Open-Meteo 天気予報データ取得
+    // 1. Open-Meteo 天気予報データ取得（気温・降水確率用）
     const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&hourly=weathercode,temperature_2m,precipitation,precipitation_probability&timezone=Asia%2FTokyo`;
 
     const res = await fetch(weatherUrl);
     const wData = await res.json();
 
-    const todayCode = wData.daily?.weathercode?.[0] ?? 1;
     const maxTemp = Math.round(wData.daily?.temperature_2m_max?.[0] ?? 25);
     const minTemp = Math.round(wData.daily?.temperature_2m_min?.[0] ?? 18);
-    const weatherInfo = WEATHER_CODE_MAP[todayCode] || { label: '晴れ', icon: 'sun' };
-    const weatherLabel = weatherInfo.label;
-    const weatherIconKey = weatherInfo.icon;
+
+    // 2. 気象庁(JMA)公式実況天気データを優先取得
+    const jmaMap = {
+        mishima: { pref: '220000', areaIdx: 2 },
+        shizuoka: { pref: '220000', areaIdx: 0 },
+        hamamatsu: { pref: '220000', areaIdx: 1 },
+        yokohama: { pref: '140000', areaIdx: 0 },
+        tokyo: { pref: '130000', areaIdx: 0 },
+        osaka: { pref: '270000', areaIdx: 0 },
+        fukuoka: { pref: '400000', areaIdx: 0 }
+    };
+
+    let weatherLabel = '晴れ';
+    let weatherIconKey = 'sun';
+
+    try {
+        const jmaInfo = jmaMap[cityKey];
+        if (jmaInfo) {
+            const jmaRes = await fetch(`https://www.jma.go.jp/bosai/forecast/data/forecast/${jmaInfo.pref}.json`);
+            if (jmaRes.ok) {
+                const jmaJson = await jmaRes.json();
+                const area = jmaJson[0]?.timeSeries?.[0]?.areas?.[jmaInfo.areaIdx] || jmaJson[0]?.timeSeries?.[0]?.areas?.[0];
+                const jmaText = area?.weathers?.[0] || '';
+                const jmaCode = String(area?.weatherCodes?.[0] || '');
+
+                if (jmaText.includes('雷') || jmaCode.startsWith('9')) {
+                    weatherLabel = '雷雨';
+                    weatherIconKey = 'thunder';
+                } else if (jmaText.includes('雪') || jmaCode.startsWith('4')) {
+                    weatherLabel = '雪';
+                    weatherIconKey = 'snow';
+                } else if (jmaText.includes('雨') || jmaCode.startsWith('3')) {
+                    weatherLabel = '雨';
+                    weatherIconKey = 'rain';
+                } else if (jmaText.includes('晴れ') && jmaText.includes('くもり')) {
+                    weatherLabel = '一部曇';
+                    weatherIconKey = 'sun_cloud';
+                } else if (jmaText.includes('くもり') || jmaCode.startsWith('2')) {
+                    weatherLabel = '曇り';
+                    weatherIconKey = 'cloud';
+                } else {
+                    weatherLabel = '晴れ';
+                    weatherIconKey = 'sun';
+                }
+            }
+        }
+    } catch (e) {
+        // フォールバック: Open-Meteo
+        const todayCode = wData.daily?.weathercode?.[0] ?? 1;
+        const weatherInfo = WEATHER_CODE_MAP[todayCode] || { label: '晴れ', icon: 'sun' };
+        weatherLabel = weatherInfo.label;
+        weatherIconKey = weatherInfo.icon;
+    }
 
     const now = new Date();
 
