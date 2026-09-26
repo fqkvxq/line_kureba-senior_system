@@ -4678,9 +4678,17 @@ function generateCityWeatherDetailText(string $cityKey, string $cityName): strin
             $hTime = strtotime($hourly['time'][$i]);
             $hour = date('H', $hTime);
             $hCode = (int)($hourly['weather_code'][$i] ?? 1);
-            $hInfo = $codeMap[$hCode] ?? ['label' => '晴れ', 'emoji' => '☀️'];
-            $hTemp = round($hourly['temperature_2m'][$i] ?? 20);
             $hProb = $hourly['precipitation_probability'][$i] ?? 0;
+            $hInfo = $codeMap[$hCode] ?? ['label' => '晴れ', 'emoji' => '☀️'];
+
+            // 降水確率との整合性自動補正
+            if ($hProb >= 60 && in_array($hCode, [0, 1, 2, 3, 45, 48])) {
+                $hInfo = ['label' => '雨', 'emoji' => '🌧️'];
+            } elseif ($hProb >= 40 && in_array($hCode, [0, 1, 2])) {
+                $hInfo = ['label' => '曇り時々雨', 'emoji' => '☁️'];
+            }
+
+            $hTemp = round($hourly['temperature_2m'][$i] ?? 20);
             $hLines[] = "・{$hour}時: {$hInfo['emoji']} {$hInfo['label']} {$hTemp}℃ (降水 {$hProb}%)";
         }
 
@@ -4697,10 +4705,17 @@ function generateCityWeatherDetailText(string $cityKey, string $cityName): strin
         $tomD = date('j', $tomDate);
         $tomWk = $weekdays[date('w', $tomDate)];
         $tomCode = (int)($daily['weather_code'][1] ?? 1);
+        $tomProb = $daily['precipitation_probability_max'][1] ?? 0;
         $tomInfo = $codeMap[$tomCode] ?? ['label' => '晴れ', 'emoji' => '☀️'];
+
+        if ($tomProb >= 60 && in_array($tomCode, [0, 1, 2, 3, 45, 48])) {
+            $tomInfo = ['label' => '雨', 'emoji' => '🌧️'];
+        } elseif ($tomProb >= 40 && in_array($tomCode, [0, 1, 2])) {
+            $tomInfo = ['label' => '曇り時々雨', 'emoji' => '☁️'];
+        }
+
         $tomMax = round($daily['temperature_2m_max'][1] ?? 25);
         $tomMin = round($daily['temperature_2m_min'][1] ?? 18);
-        $tomProb = $daily['precipitation_probability_max'][1] ?? 0;
 
         $msg .= "📅 明日の天気 ({$tomM}/{$tomD} {$tomWk})\n";
         $msg .= "・{$tomInfo['emoji']} {$tomInfo['label']} (最高 {$tomMax}℃ / 最低 {$tomMin}℃) 降水 {$tomProb}%\n\n";
@@ -4715,7 +4730,15 @@ function generateCityWeatherDetailText(string $cityKey, string $cityName): strin
         $d = date('j', $dTime);
         $wk = $weekdays[date('w', $dTime)];
         $wCode = (int)($daily['weather_code'][$i] ?? 1);
+        $wProb = $daily['precipitation_probability_max'][$i] ?? 0;
         $info = $codeMap[$wCode] ?? ['label' => '晴れ', 'emoji' => '☀️'];
+
+        if ($wProb >= 60 && in_array($wCode, [0, 1, 2, 3, 45, 48])) {
+            $info = ['label' => '雨', 'emoji' => '🌧️'];
+        } elseif ($wProb >= 40 && in_array($wCode, [0, 1, 2])) {
+            $info = ['label' => '曇り時々雨', 'emoji' => '☁️'];
+        }
+
         $max = round($daily['temperature_2m_max'][$i] ?? 25);
         $min = round($daily['temperature_2m_min'][$i] ?? 18);
 
