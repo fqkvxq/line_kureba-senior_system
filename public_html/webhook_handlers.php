@@ -109,7 +109,37 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
 
     try {
         switch ($action) {
-        // --- 1. 車両問い合わせ確認ステップ (誤タップ防止) ---
+                // --- リッチメニュー モード切替 (完全サイレント) ---
+        case 'switch_weather_mode':
+        case 'switch_weather_menu':
+            handleSwitchWeatherMenuSilent($db, $userId);
+            break;
+
+        case 'switch_fortune_mode':
+        case 'switch_fortune_menu':
+            handleSwitchFortuneMenuSilent($db, $userId);
+            break;
+
+        // --- 星座選択案内 (クイックリプライ表示) ---
+        case 'ask_zodiac_selection':
+        case 'select_zodiac':
+            $msg = [
+                'type' => 'text',
+                'text' => "✨ あなたの星座をお選びください ✨
+下のボタンからご自身の星座をタップすると、リッチメニューがあなた専用の星占いに切り替わります😊",
+                'quickReply' => getZodiacSelectionQuickReply()
+            ];
+            sendReplyMessage($replyToken, [$msg], $userId);
+            break;
+
+        // --- 星座設定保存実行 (完全サイレント即時切り替え) ---
+        case 'set_zodiac':
+            $zKey = $params['zodiac'] ?? 'aries';
+            $zName = urldecode($params['name'] ?? '');
+            handleSetUserZodiac($db, $userId, $zKey, $zName);
+            break;
+
+
         case 'ask_inquiry':
             $carId = $params['id'] ?? '';
             sendInquiryConfirmMessage($db, $replyToken, $carId, $userId);
@@ -4363,36 +4393,34 @@ function notifyStaffOfDxSurvey(PDO $db, string $userName, string $userId, string
 /**
  * 天気メニュー切り替え用 クイックリプライを生成
  */
-function getWeatherSwitchQuickReply(bool $isCurrentlyWeather = false): array {
+
+/**
+ * 天気モード / 星占いモード 切替用クイックリプライ
+ */
+/**
+ * 天気モード / 星占いモード 切替用クイックリプライ (完全サイレント仕様: displayTextなし)
+ */
+function getModeSwitchQuickReply(string $currentMode = ''): array {
     $items = [];
 
-    if ($isCurrentlyWeather) {
+    if ($currentMode !== 'weather') {
         $items[] = [
             'type' => 'action',
             'action' => [
                 'type' => 'postback',
-                'label' => '📱 通常メニューに戻す',
-                'data' => 'action=switch_default_menu',
-                'displayText' => '通常メニューに戻す'
+                'label' => '🌤️ 天気モードにする',
+                'data' => 'action=switch_weather_mode'
             ]
         ];
+    }
+
+    if ($currentMode !== 'fortune') {
         $items[] = [
             'type' => 'action',
             'action' => [
                 'type' => 'postback',
-                'label' => '🔄 天気を今すぐ更新',
-                'data' => 'action=switch_weather_menu',
-                'displayText' => '天気を表示'
-            ]
-        ];
-    } else {
-        $items[] = [
-            'type' => 'action',
-            'action' => [
-                'type' => 'postback',
-                'label' => '🌤️ 天気を表示',
-                'data' => 'action=switch_weather_menu',
-                'displayText' => '天気を表示'
+                'label' => '🔮 星占いモードにする',
+                'data' => 'action=switch_fortune_mode'
             ]
         ];
     }
@@ -4400,19 +4428,9 @@ function getWeatherSwitchQuickReply(bool $isCurrentlyWeather = false): array {
     $items[] = [
         'type' => 'action',
         'action' => [
-            'type' => 'uri',
-            'label' => '🌐 三島の天気詳細',
-            'uri' => 'https://weathernews.jp/onebox/tenki/shizuoka/22206/'
-        ]
-    ];
-
-    $items[] = [
-        'type' => 'action',
-        'action' => [
             'type' => 'postback',
-            'label' => '💡 お役立ち情報',
-            'data' => 'action=show_knowledge_menu',
-            'displayText' => 'お役立ち情報'
+            'label' => '♈ 星座を設定・変更',
+            'data' => 'action=ask_zodiac_selection'
         ]
     ];
 
@@ -4420,27 +4438,119 @@ function getWeatherSwitchQuickReply(bool $isCurrentlyWeather = false): array {
 }
 
 /**
- * 天気リッチメニューを表示（アタッチ）する処理（メッセージ付き）
+ * 12星座選択用クイックリプライ (完全サイレント仕様: displayTextなし)
  */
-function handleSwitchWeatherMenu(PDO $db, string $replyToken, string $userId) {
-    handleSwitchWeatherMenuSilent($db, $userId);
-
-    // 返信メッセージ送信
-    $msgText = "🌤️ 三島市の最新天気予報メニューを表示しました！\n\n・1時間毎に最新の天気・気温・雨予報が自動更新されます。\n・上部のオレンジ帯をタップすると、ウェザーニュースの今日の詳細予報を開けます。\n\n通常のメニューに戻したいときは、いつでも下の「📱 通常メニューに戻す」をタップしてください。";
-
-    $messages = [
-        [
-            'type' => 'text',
-            'text' => $msgText,
-            'quickReply' => getWeatherSwitchQuickReply(true)
-        ]
+function getZodiacSelectionQuickReply(): array {
+    $zodiacs = [
+        ['key' => 'aries', 'label' => '♈ 牡羊座', 'name' => '牡羊座'],
+        ['key' => 'taurus', 'label' => '♉ 牡牛座', 'name' => '牡牛座'],
+        ['key' => 'gemini', 'label' => '♊ 双子座', 'name' => '双子座'],
+        ['key' => 'cancer', 'label' => '♋ 蟹座', 'name' => '蟹座'],
+        ['key' => 'leo', 'label' => '♌ 獅子座', 'name' => '獅子座'],
+        ['key' => 'virgo', 'label' => '♍ 乙女座', 'name' => '乙女座'],
+        ['key' => 'libra', 'label' => '♎ 天秤座', 'name' => '天秤座'],
+        ['key' => 'scorpio', 'label' => '♏ 蠍座', 'name' => '蠍座'],
+        ['key' => 'sagittarius', 'label' => '♐ 射手座', 'name' => '射手座'],
+        ['key' => 'capricorn', 'label' => '♑ 山羊座', 'name' => '山羊座'],
+        ['key' => 'aquarius', 'label' => '♒ 水瓶座', 'name' => '水瓶座'],
+        ['key' => 'pisces', 'label' => '♓ 魚座', 'name' => '魚座']
     ];
 
-    sendReplyMessage($replyToken, $messages, $userId);
+    $items = [];
+    foreach ($zodiacs as $z) {
+        $items[] = [
+            'type' => 'action',
+            'action' => [
+                'type' => 'postback',
+                'label' => $z['label'],
+                'data' => 'action=set_zodiac&zodiac=' . $z['key'] . '&name=' . urlencode($z['name'])
+            ]
+        ];
+    }
+
+    return ['items' => $items];
 }
 
 /**
- * 天気リッチメニューへのサイレント切替（一切発言せずメニューのみ切替）
+ * 星座設定の保存と専用占いリッチメニューへの即時サイレント切り替え
+ */
+function handleSetUserZodiac(PDO $db, string $userId, string $zodiacKey, string $zodiacName = '') {
+    if (empty($userId) || !str_starts_with($userId, 'U')) {
+        return;
+    }
+
+    $accountKey = getActiveAccountKey();
+    $nowJst = date('Y-m-d H:i:s');
+    $dispName = !empty($zodiacName) ? $zodiacName : $zodiacKey;
+
+    // 1. DBに星座設定を記録
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS user_zodiacs (
+            user_id TEXT PRIMARY KEY,
+            zodiac TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )");
+        $stmt = $db->prepare("INSERT INTO user_zodiacs (user_id, zodiac, updated_at) VALUES (:u, :z, :now) ON CONFLICT(user_id) DO UPDATE SET zodiac = :z, updated_at = :now");
+        $stmt->execute([':u' => $userId, ':z' => $zodiacKey, ':now' => $nowJst]);
+        
+        $db->prepare("UPDATE customer_cars SET zodiac_sign = :z, custom_menu_text = 'fortune', updated_at = :now WHERE TRIM(user_id) = :uid")
+            ->execute([':z' => $dispName, ':now' => $nowJst, ':uid' => $userId]);
+    } catch (Throwable $e) {}
+
+    // 2. data/zodiac_richmenus.json から該当星座のメニューIDを取得して即時アタッチ
+    $mappingFile = __DIR__ . '/data/zodiac_richmenus.json';
+    $targetMenuId = null;
+    if (file_exists($mappingFile)) {
+        $mapping = json_decode(file_get_contents($mappingFile), true);
+        $targetMenuId = $mapping[$zodiacKey] ?? ($mapping[$dispName] ?? null);
+    }
+
+    if (empty($targetMenuId)) {
+        $targetMenuId = 'richmenu-3c08fccffa3ef92c7542d572d83203d8'; // fallback
+    }
+
+    if (!empty($targetMenuId)) {
+        lineLinkUserRichMenu($userId, $targetMenuId, $accountKey);
+    }
+}
+
+/**
+ * 星占いリッチメニューへの即時サイレント切り替え
+ */
+function handleSwitchFortuneMenuSilent(PDO $db, string $userId) {
+    if (empty($userId) || !str_starts_with($userId, 'U')) {
+        return;
+    }
+
+    $accountKey = getActiveAccountKey();
+    $nowJst = date('Y-m-d H:i:s');
+
+    // 1. ユーザーの星座設定を確認
+    $userZodiac = null;
+    try {
+        $stmt = $db->prepare("SELECT zodiac FROM user_zodiacs WHERE user_id = :u");
+        $stmt->execute([':u' => $userId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $userZodiac = $row['zodiac'] ?? null;
+    } catch (Throwable $e) {}
+
+    // 2. mapping から該当星座（または全体）のメニューIDを取得
+    $mappingFile = __DIR__ . '/data/zodiac_richmenus.json';
+    $targetMenuId = null;
+    if (file_exists($mappingFile)) {
+        $mapping = json_decode(file_get_contents($mappingFile), true);
+        $targetMenuId = $mapping[$userZodiac] ?? ($mapping['all'] ?? null);
+    }
+    if (empty($targetMenuId)) {
+        $targetMenuId = 'richmenu-3c08fccffa3ef92c7542d572d83203d8';
+    }
+
+    lineLinkUserRichMenu($userId, $targetMenuId, $accountKey);
+}
+
+/**
+ * 天気リッチメニューへの即時サイレント切り替え
  */
 function handleSwitchWeatherMenuSilent(PDO $db, string $userId) {
     if (empty($userId) || !str_starts_with($userId, 'U')) {
@@ -4450,25 +4560,22 @@ function handleSwitchWeatherMenuSilent(PDO $db, string $userId) {
     $accountKey = getActiveAccountKey();
     $nowJst = date('Y-m-d H:i:s');
 
-    // 1. DBに「天気メニュー利用中」フラグを記録
     try {
         $db->prepare("UPDATE customer_cars SET custom_menu_text = 'weather', updated_at = :now WHERE TRIM(user_id) = :uid")
             ->execute([':now' => $nowJst, ':uid' => $userId]);
     } catch (Throwable $e) {}
 
-    // 2. 最新の天気リッチメニューIDを取得（DBまたは固定ID）
-    $weatherMenuId = 'richmenu-0b91b89ece6d4b8e6fbdd151f96d42bf';
+    // 最新の三島天気リッチメニューID
+    $weatherMenuId = 'richmenu-4aac3bf98a44376a03c01b6bd36139df';
     try {
-        $stmt = $db->query("SELECT line_menu_id FROM rich_menus WHERE (title LIKE '%三島天気%' OR title LIKE '%天気%') AND line_menu_id IS NOT NULL AND line_menu_id != '' ORDER BY id DESC LIMIT 1");
+        $stmt = $db->query("SELECT line_menu_id FROM rich_menus WHERE (title LIKE '%三島天気%' OR title LIKE '%MishimaWeather%') AND line_menu_id IS NOT NULL AND line_menu_id != '' ORDER BY id DESC LIMIT 1");
         $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
         if (!empty($row['line_menu_id'])) {
             $weatherMenuId = $row['line_menu_id'];
         }
     } catch (Throwable $e) {}
 
-    if (!empty($weatherMenuId)) {
-        lineLinkUserRichMenu($userId, $weatherMenuId, $accountKey);
-    }
+    lineLinkUserRichMenu($userId, $weatherMenuId, $accountKey);
 }
 
 /**

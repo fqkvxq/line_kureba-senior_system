@@ -1,3 +1,7 @@
+// @ts-ignore
+import { runPreset } from '../presets/runner.js';
+import fs from 'fs';
+import path from 'path';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -23,6 +27,28 @@ const server = new Server(
 
 // ツール一覧定義
 const TOOLS: Tool[] = [
+    // --- 4. リッチメニュー・プリセット管理 ---
+  {
+    name: 'list_richmenu_presets',
+    description: '利用可能なリッチメニュープリセット一覧（三島天気メニュー、カスタムテンプレートなど）を取得します。',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'apply_richmenu_preset',
+    description: '指定したプリセット（例: mishima_weather で三島の天気メニュー）を実行し、リッチメニューを生成・LINE公式アカウントに即時適用します。',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        presetName: {
+          type: 'string',
+          description: '適用するプリセット名（デフォルト: mishima_weather）',
+        },
+      },
+    },
+  },
   // --- 1. サーバー & LINE公式アカウント管理 ---
   {
     name: 'list_servers',

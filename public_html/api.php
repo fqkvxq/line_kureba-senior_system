@@ -26,6 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // 共通設定・DB接続
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/zodiac_api.php';
 
 /**
  * 管理者認証パスワード / 2FA認証トークンを取得・検証
@@ -159,6 +160,13 @@ try {
     $action = $_GET['action'] ?? ($_POST['action'] ?? 'list');
 
     switch ($action) {
+        case 'save_user_zodiac':
+        case 'get_user_zodiac':
+        case 'list_user_zodiacs':
+            $result = handleZodiacAction($action, $db, $req);
+            echo json_encode($result, JSON_UNESCAPED_UNICODE);
+            exit;
+
         // --- 0. アカウント一覧取得 & 現在のアクティブアカウント情報 (マルチアカウント対応) ---
         case 'get_accounts':
             $accConfig = getAccountConfig($activeAccountKey);
