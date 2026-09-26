@@ -135,7 +135,20 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             handleSwitchDefaultMenuSilent($db, $userId);
             $msg = [
                 'type' => 'text',
-                'text' => "🌤️ 天気メニューに切り替えました！\n占いは下のボタンからいつでもご覧いただけます😊",
+                'text' => "🌤️ 天気メニュー（三島市）に切り替えました！\n他の地域や占いは下のボタンからいつでもご覧いただけます😊",
+                'quickReply' => getModeSwitchQuickReply('weather')
+            ];
+            sendReplyMessage($replyToken, [$msg], $userId);
+            break;
+
+        // --- 都市別天気リッチメニュー切替 ---
+        case 'set_city_weather':
+            $cityKey = $params['city'] ?? 'mishima';
+            $cityName = urldecode($params['name'] ?? '三島市');
+            handleSetCityWeather($db, $userId, $cityKey, $cityName);
+            $msg = [
+                'type' => 'text',
+                'text' => "🌤️ 【{$cityName}】のリアルタイム天気に切り替えました！\n他の地域の天気や星座メニューは下のボタンからいつでもご覧いただけます😊",
                 'quickReply' => getModeSwitchQuickReply('weather')
             ];
             sendReplyMessage($replyToken, [$msg], $userId);
@@ -4467,7 +4480,24 @@ function getModeSwitchQuickReply(string $currentMode = ''): array {
             ]
         ];
     } else {
-        // 天気メニューのときは「星座メニューに切り替える」ボタンだけ
+        // 天気メニューのときは 5都市（三島・静岡・浜松・横浜・東京）＋星座メニュー切替
+        $cities = [
+            ['key' => 'mishima', 'name' => '三島市', 'label' => '🌤️ 三島市'],
+            ['key' => 'shizuoka', 'name' => '静岡市', 'label' => '🌤️ 静岡市'],
+            ['key' => 'hamamatsu', 'name' => '浜松市', 'label' => '🌤️ 浜松市'],
+            ['key' => 'yokohama', 'name' => '横浜市', 'label' => '🌤️ 横浜市'],
+            ['key' => 'tokyo', 'name' => '東京都', 'label' => '🌤️ 東京都']
+        ];
+        foreach ($cities as $c) {
+            $items[] = [
+                'type' => 'action',
+                'action' => [
+                    'type' => 'postback',
+                    'label' => $c['label'],
+                    'data' => 'action=set_city_weather&city=' . $c['key'] . '&name=' . urlencode($c['name'])
+                ]
+            ];
+        }
         $items[] = [
             'type' => 'action',
             'action' => [
@@ -4479,6 +4509,35 @@ function getModeSwitchQuickReply(string $currentMode = ''): array {
     }
 
     return ['items' => $items];
+}
+
+/**
+ * 都市別天気リッチメニューへの即時切り替え
+ */
+function handleSetCityWeather(PDO $db, string $userId, string $cityKey, string $cityName = '') {
+    if (empty($userId) || !str_starts_with($userId, 'U')) {
+        return;
+    }
+
+    $accountKey = getActiveAccountKey();
+    $dispCity = !empty($cityName) ? $cityName : $cityKey;
+
+    if ($cityKey === 'mishima') {
+        // 三島市は全体デフォルトメニューに復帰（アンリンク）
+        lineUnlinkUserRichMenu($userId, $accountKey);
+        return;
+    }
+
+    $mappingFile = __DIR__ . '/data/weather_richmenus.json';
+    $targetMenuId = null;
+    if (file_exists($mappingFile)) {
+        $mapping = json_decode(file_get_contents($mappingFile), true);
+        $targetMenuId = $mapping[$cityKey] ?? ($mapping[$dispCity] ?? null);
+    }
+
+    if (!empty($targetMenuId)) {
+        lineLinkUserRichMenu($userId, $targetMenuId, $accountKey);
+    }
 }
 
 /**
