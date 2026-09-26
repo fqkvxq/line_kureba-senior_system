@@ -125,7 +125,7 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
 
     try {
         switch ($action) {
-                // --- リッチメニュー モード切替 (完全サイレント) ---
+                // --- リッチメニュー モード切替（天気メニュー） ---
         case 'switch_weather_mode':
         case 'switch_weather_menu':
         case 'switch_default_mode':
@@ -135,51 +135,99 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             handleSwitchDefaultMenuSilent($db, $userId);
             recordMenuActionLog($db, $userId, 'weather_city', '三島市 (デフォルト)');
             recordCustomerInteraction($db, $userId, 'user_action', '🌤️ 天気メニュー表示 (三島市)');
+            $msg = [
+                'type' => 'text',
+                'text' => "🌤️ 天気メニュー",
+                'quickReply' => getModeSwitchQuickReply('weather')
+            ];
+            sendReplyMessage($replyToken, [$msg], $userId);
             break;
 
-        // --- 都市別天気リッチメニュー切替 (完全サイレント) ---
+        // --- 都市別天気リッチメニュー切替 ---
         case 'set_city_weather':
             $cityKey = $params['city'] ?? 'mishima';
             $cityName = urldecode($params['name'] ?? '三島市');
             handleSetCityWeather($db, $userId, $cityKey, $cityName);
             recordMenuActionLog($db, $userId, 'weather_city', $cityName);
             recordCustomerInteraction($db, $userId, 'user_action', "🌤️ {$cityName}の天気を表示");
+            $msg = [
+                'type' => 'text',
+                'text' => "🌤️ {$cityName}",
+                'quickReply' => getModeSwitchQuickReply('weather')
+            ];
+            sendReplyMessage($replyToken, [$msg], $userId);
             break;
 
-        // --- 星占いメニュー切替 (完全サイレント) ---
+        // --- 星占いメニュー切替 ---
         case 'switch_fortune_mode':
         case 'switch_fortune_menu':
             handleSwitchFortuneMenuSilent($db, $userId);
             recordMenuActionLog($db, $userId, 'fortune_mode', '星占いメニュー');
             recordCustomerInteraction($db, $userId, 'user_action', '🔮 星占いメニュー表示');
+            $msg = [
+                'type' => 'text',
+                'text' => "🔮 占いメニュー",
+                'quickReply' => getModeSwitchQuickReply('fortune')
+            ];
+            sendReplyMessage($replyToken, [$msg], $userId);
             break;
 
-        // --- メニュー切替 (完全サイレント) ---
+        // --- メニュー切替案内（帯タップ時） ---
         case 'ask_mode_switch':
         case 'menu_switch':
         case 'change_menu':
-            // 帯タップ時もメッセージ送信せずサイレントでモード反転または維持
             $mode = $params['mode'] ?? '';
-            if ($mode === 'fortune') {
-                handleSwitchDefaultMenuSilent($db, $userId);
-            } else {
-                handleSwitchFortuneMenuSilent($db, $userId);
+            if (empty($mode)) {
+                try {
+                    $stmt = $db->prepare("SELECT custom_menu_text FROM customer_cars WHERE TRIM(user_id) = :uid LIMIT 1");
+                    $stmt->execute([':uid' => $userId]);
+                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if ($row && str_contains($row['custom_menu_text'] ?? '', 'fortune')) {
+                        $mode = 'fortune';
+                    }
+                } catch (Throwable $e) {}
             }
+
+            if ($mode === 'fortune') {
+                $msg = [
+                    'type' => 'text',
+                    'text' => "🔮 占いメニュー",
+                    'quickReply' => getModeSwitchQuickReply('fortune')
+                ];
+            } else {
+                $msg = [
+                    'type' => 'text',
+                    'text' => "🌤️ 天気メニュー",
+                    'quickReply' => getModeSwitchQuickReply('weather')
+                ];
+            }
+            sendReplyMessage($replyToken, [$msg], $userId);
             break;
 
-        // --- 星座選択案内 (完全サイレント) ---
+        // --- 星座選択案内 ---
         case 'ask_zodiac_selection':
         case 'select_zodiac':
-            handleSwitchFortuneMenuSilent($db, $userId);
+            $msg = [
+                'type' => 'text',
+                'text' => "🔮 占いメニュー",
+                'quickReply' => getModeSwitchQuickReply('fortune')
+            ];
+            sendReplyMessage($replyToken, [$msg], $userId);
             break;
 
-        // --- 星座設定保存実行 (完全サイレント) ---
+        // --- 星座設定保存実行 ---
         case 'set_zodiac':
             $zKey = $params['zodiac'] ?? 'aries';
             $zName = urldecode($params['name'] ?? '');
             handleSetUserZodiac($db, $userId, $zKey, $zName);
             recordMenuActionLog($db, $userId, 'zodiac_set', $zName);
             recordCustomerInteraction($db, $userId, 'user_action', "♈ 星座設定: {$zName}");
+            $msg = [
+                'type' => 'text',
+                'text' => "✨ {$zName}",
+                'quickReply' => getModeSwitchQuickReply('fortune')
+            ];
+            sendReplyMessage($replyToken, [$msg], $userId);
             break;
 
 
