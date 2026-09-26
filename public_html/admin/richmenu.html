@@ -119,6 +119,9 @@
                     <button class="view-tab-btn" id="tabHistoryBtn">
                         <i class="fa-solid fa-clock-rotate-left"></i> 登録・履歴一覧 (<span id="historyCount">0</span>)
                     </button>
+                    <button class="view-tab-btn" id="tabAnalyticsBtn" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; font-weight: 700;">
+                        <i class="fa-solid fa-chart-pie"></i> 📊 クイックリプライ利用分析
+                    </button>
                 </div>
                 <div class="view-switch-right">
                     <button type="button" class="btn-secondary" id="btnSyncLineMenus" style="background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; font-weight: 700; height: 34px; padding: 0 12px; border-radius: var(--radius-sm); font-size: 12px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;" title="プロラインやLINE公式側で作成された最新リッチメニューを取り込みます">
@@ -514,6 +517,69 @@
                     <button class="btn-primary-sm" id="emptyCreateBtn">
                         <i class="fa-solid fa-plus"></i> 新規メニュー作成
                     </button>
+                </div>
+            </div>
+
+            <!-- ================= ビュー3: クイックリプライ＆メニュー利用分析 ================= -->
+            <div class="analytics-container" id="analyticsView" style="display: none; padding: 24px; max-width: 1200px; margin: 0 auto;">
+                <div class="analytics-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <div>
+                        <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-chart-column" style="color: #10b981;"></i> クイックリプライ＆メニュー利用分析・統計
+                        </h2>
+                        <p style="font-size: 13px; color: #64748b; margin-top: 4px;">受講生・ユーザー様がタップした天気・星座占い・クイックリプライの操作履歴と集計です。</p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <select id="analyticsPeriodSelect" style="height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px; font-weight: 600; background: #fff;">
+                            <option value="7">直近 7日間</option>
+                            <option value="30" selected>直近 30日間</option>
+                            <option value="90">直近 90日間</option>
+                        </select>
+                        <button type="button" id="btnRefreshAnalytics" style="height: 36px; padding: 0 14px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-weight: 700; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-rotate"></i> 更新
+                        </button>
+                    </div>
+                </div>
+
+                <!-- サマリ統計カード -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <div style="font-size: 12px; font-weight: 700; color: #64748b; margin-bottom: 8px;"><i class="fa-solid fa-hand-pointer" style="color: #3b82f6;"></i> 期間内 総操作数</div>
+                        <div style="font-size: 28px; font-weight: 900; color: #0f172a;" id="statTotalActions">-</div>
+                        <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">メニュー切替・都市タップ総数</div>
+                    </div>
+                    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <div style="font-size: 12px; font-weight: 700; color: #64748b; margin-bottom: 8px;"><i class="fa-solid fa-users" style="color: #10b981;"></i> 利用受講生数</div>
+                        <div style="font-size: 28px; font-weight: 900; color: #0f172a;" id="statUniqueUsers">-</div>
+                        <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">実際に機能を使った受講生</div>
+                    </div>
+                    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <div style="font-size: 12px; font-weight: 700; color: #64748b; margin-bottom: 8px;"><i class="fa-solid fa-calendar-day" style="color: #f59e0b;"></i> 本日の操作数</div>
+                        <div style="font-size: 28px; font-weight: 900; color: #0f172a;" id="statTodayActions">-</div>
+                        <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">今日タップされた回数</div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                    <!-- 人気機能・都市・星座ランキング -->
+                    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <h3 style="font-size: 15px; font-weight: 800; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-trophy" style="color: #f59e0b;"></i> 人気機能・地域・星座ランキング
+                        </h3>
+                        <div id="analyticsRankingWrap" style="display: flex; flex-direction: column; gap: 12px;">
+                            <div style="text-align: center; color: #94a3b8; padding: 20px;">データ読み込み中...</div>
+                        </div>
+                    </div>
+
+                    <!-- 直近の操作ログタイムライン -->
+                    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <h3 style="font-size: 15px; font-weight: 800; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-timeline" style="color: #6366f1;"></i> 直近の操作ログ履歴
+                        </h3>
+                        <div id="analyticsLogsList" style="max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+                            <div style="text-align: center; color: #94a3b8; padding: 20px;">ログ読み込み中...</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>

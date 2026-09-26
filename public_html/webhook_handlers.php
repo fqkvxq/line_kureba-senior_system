@@ -125,7 +125,7 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
 
     try {
         switch ($action) {
-                // --- リッチメニュー モード切替 ---
+                // --- リッチメニュー モード切替 (完全サイレント & ログ記録) ---
         case 'switch_weather_mode':
         case 'switch_weather_menu':
         case 'switch_default_mode':
@@ -133,33 +133,28 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
         case 'switch_normal_mode':
         case 'switch_normal_menu':
             handleSwitchDefaultMenuSilent($db, $userId);
-            $msg = [
-                'type' => 'text',
-                'text' => "🌤️ 天気メニュー（三島市）に切り替えました！\n他の地域や占いは下のボタンからいつでもご覧いただけます😊",
-                'quickReply' => getModeSwitchQuickReply('weather')
-            ];
-            sendReplyMessage($replyToken, [$msg], $userId);
+            recordMenuActionLog($db, $userId, 'weather_city', '三島市 (デフォルト)');
+            recordCustomerInteraction($db, $userId, 'user_action', '🌤️ 天気メニュー表示 (三島市)');
             break;
 
-        // --- 都市別天気リッチメニュー切替 ---
+        // --- 都市別天気リッチメニュー切替 (完全サイレント & ログ記録) ---
         case 'set_city_weather':
             $cityKey = $params['city'] ?? 'mishima';
             $cityName = urldecode($params['name'] ?? '三島市');
             handleSetCityWeather($db, $userId, $cityKey, $cityName);
-            $msg = [
-                'type' => 'text',
-                'text' => "🌤️ 【{$cityName}】のリアルタイム天気に切り替えました！\n他の地域の天気や星座メニューは下のボタンからいつでもご覧いただけます😊",
-                'quickReply' => getModeSwitchQuickReply('weather')
-            ];
-            sendReplyMessage($replyToken, [$msg], $userId);
+            recordMenuActionLog($db, $userId, 'weather_city', $cityName);
+            recordCustomerInteraction($db, $userId, 'user_action', "🌤️ {$cityName}の天気を表示");
             break;
 
         case 'switch_fortune_mode':
         case 'switch_fortune_menu':
             handleSwitchFortuneMenuSilent($db, $userId);
+            recordMenuActionLog($db, $userId, 'fortune_mode', '星占いメニュー');
+            recordCustomerInteraction($db, $userId, 'user_action', '🔮 星占いメニュー表示');
+            // 星座選択クイックリプライを画面下に表示
             $msg = [
                 'type' => 'text',
-                'text' => "🔮 今日の星占いに切り替えました！\n下のボタンからご自身の星座をタップすると、あなた専用の占いに切り替わります😊",
+                'text' => "✨ あなたの星座をお選びください ✨\n下のボタンからご自身の星座をタップすると、リッチメニューがあなた専用の星占いに切り替わります😊",
                 'quickReply' => getZodiacSelectionQuickReply()
             ];
             sendReplyMessage($replyToken, [$msg], $userId);
@@ -188,17 +183,13 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             sendReplyMessage($replyToken, [$msg], $userId);
             break;
 
-        // --- 星座設定保存実行 ---
+        // --- 星座設定保存実行 (完全サイレント & ログ記録) ---
         case 'set_zodiac':
             $zKey = $params['zodiac'] ?? 'aries';
             $zName = urldecode($params['name'] ?? '');
             handleSetUserZodiac($db, $userId, $zKey, $zName);
-            $msg = [
-                'type' => 'text',
-                'text' => "✨ 【{$zName}】の占いにセットしました！\nお天気メニューに戻すときは下のボタンをタップしてください😊",
-                'quickReply' => getModeSwitchQuickReply('fortune')
-            ];
-            sendReplyMessage($replyToken, [$msg], $userId);
+            recordMenuActionLog($db, $userId, 'zodiac_set', $zName);
+            recordCustomerInteraction($db, $userId, 'user_action', "♈ 星座設定: {$zName}");
             break;
 
 
@@ -4733,4 +4724,49 @@ function handleSwitchDefaultMenuSilent(PDO $db, string $userId) {
     // 2. LINEの個別アタッチを解除（全体デフォルトメニューに戻す）
     lineUnlinkUserRichMenu($userId, $accountKey);
 }
-
+
+
+/**
+ * リッチメニュー＆クイックリプライ利用ログをDBに記録
+ */
+function recordMenuActionLog(PDO $db, string $userId, string $actionType, string $detailLabel) {
+    if (empty($userId)) return;
+
+    $accountKey = getActiveAccountKey();
+    $nowJst = date('Y-m-d H:i:s');
+
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS menu_action_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            user_name TEXT DEFAULT '',
+            action_type TEXT NOT NULL,
+            detail_label TEXT NOT NULL,
+            account_id TEXT NOT NULL,
+            created_at DATETIME NOT NULL
+        )");
+        $db->exec("CREATE INDEX IF NOT EXISTS idx_menu_action_time ON menu_action_logs(created_at)");
+        $db->exec("CREATE INDEX IF NOT EXISTS idx_menu_action_type ON menu_action_logs(action_type)");
+
+        // ユーザー名を取得
+        $userName = '';
+        try {
+            $stmt = $db->prepare("SELECT user_name FROM customer_cars WHERE TRIM(user_id) = :u LIMIT 1");
+            $stmt->execute([':u' => $userId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            $userName = $row['user_name'] ?? '';
+        } catch (Throwable $e) {}
+
+        $ins = $db->prepare("INSERT INTO menu_action_logs (user_id, user_name, action_type, detail_label, account_id, created_at) VALUES (:u, :name, :atype, :label, :acc, :now)");
+        $ins->execute([
+            ':u' => $userId,
+            ':name' => $userName,
+            ':atype' => $actionType,
+            ':label' => $detailLabel,
+            ':acc' => $accountKey,
+            ':now' => $nowJst
+        ]);
+    } catch (Throwable $e) {
+        writeDebugLog("recordMenuActionLog エラー", ['error' => $e->getMessage()]);
+    }
+}

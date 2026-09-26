@@ -131,6 +131,7 @@
                         <li class="toc-item"><a href="#sec-debug-console"><i class="fa-solid fa-terminal" style="color:#38bdf8;"></i> 22. 全ログ統合リアルタイムデバッグコンソール（debug.html）</a></li>
                         <li class="toc-item"><a href="#sec-faq"><i class="fa-solid fa-circle-question"></i> 23. よくある質問・トラブルシューティング</a></li>
                         <li class="toc-item"><a href="#sec-mcp"><i class="fa-solid fa-robot" style="color:#8b5cf6;"></i> 24. AI・MCP（Model Context Protocol）連携・自動操作</a></li>
+                        <li class="toc-item"><a href="#sec-weather-fortune"><i class="fa-solid fa-cloud-sun" style="color:#f59e0b;"></i> 25. リアルタイム5都市天気・12星座占い＆利用分析</a></li>
                     </ul>
                 </div>
             </aside>
@@ -2136,6 +2137,46 @@
                                         <li><strong>コマンド</strong>: <code style="background:#0f172a; color:#38bdf8; padding:3px 8px; border-radius:4px;">cd /home/kureba/kureba.co.jp/public_html/line_kureba-senior_system && git pull origin main > /dev/null 2>&1 && /usr/bin/php8.2 /home/kureba/kureba.co.jp/public_html/line_kureba-senior_system/public_html/batch_hourly_weather.php > /dev/null 2>&1</code></li>
                                     </ul>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 25. リアルタイム5都市天気・12星座占い＆利用分析 -->
+                <section class="manual-section" id="sec-weather-fortune">
+                    <div class="section-header">
+                        <span class="section-num"><i class="fa-solid fa-cloud-sun"></i> 25</span>
+                        <h2>リアルタイム5都市天気・12星座占いリッチメニュー ＆ クイックリプライ利用分析</h2>
+                    </div>
+
+                    <div class="manual-card">
+                        <div class="manual-card-header">
+                            <span class="step-badge">機能解説</span>
+                            <h3>完全サイレント切替 ＆ 5都市天気・12星座パーソナライズ仕様</h3>
+                        </div>
+                        <div class="manual-card-body">
+                            <p>LINE公式アカウントのリッチメニュー上部バナーにおいて、三島市・静岡市・浜松市・横浜市・東京都のリアルタイム天気予報と、12星座の毎日の星占いをシームレスに切り替えて提供できます。</p>
+
+                            <div style="margin: 16px 0; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
+                                <h4 style="margin: 0 0 10px 0; color: #0f172a; font-size: 15px;"><i class="fa-solid fa-bolt" style="color: #f59e0b;"></i> クイックリプライのUI構成</h4>
+                                <ul style="margin: 0 0 0 20px; font-size: 13px; line-height: 1.8;">
+                                    <li><strong>天気メニュー表示時:</strong> 左端に「🔮 占いメニュー」、続いて「🌤️ 三島市」「🌤️ 静岡市」「🌤️ 浜松市」「🌤️ 横浜市」「🌤️ 東京都」のボタンが配置されます。</li>
+                                    <li><strong>占いメニュー表示時:</strong> 左端に「🌤️ 天気メニュー」、続いて「♈ 牡羊座」〜「♓ 魚座」の12星座選択ボタンが配置されます。</li>
+                                    <li><strong>完全サイレント切替:</strong> クイックリプライを押した際、ユーザーの発言やボットのテキスト返信を一切行わず、リッチメニュー画像だけが静かに即時切り替わります。</li>
+                                    <li><strong>上部バナー連動:</strong> リッチメニューの上部（0〜300px）をタップするだけでも、いつでもクイックリプライが手元にパッと呼び出せます。</li>
+                                </ul>
+                            </div>
+
+                            <div style="margin: 16px 0; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px;">
+                                <h4 style="margin: 0 0 10px 0; color: #166534; font-size: 15px;"><i class="fa-solid fa-chart-column" style="color: #10b981;"></i> 管理画面での利用統計・アナリティクス確認</h4>
+                                <p style="font-size: 13px; line-height: 1.7; color: #334155; margin: 0 0 8px 0;">
+                                    管理画面（<code>richmenu.html</code>）の「<strong>📊 クイックリプライ利用分析</strong>」タブをクリックすると、以下の利用状況をリアルタイムに集計・確認できます：
+                                </p>
+                                <ul style="margin: 0 0 0 20px; font-size: 13px; line-height: 1.8;">
+                                    <li><strong>期間内 総操作数 / 利用受講生数 / 本日の操作数</strong> のサマリカード</li>
+                                    <li><strong>人気機能・地域・星座ランキング</strong>（どの都市の天気がよく見られているか、星占いの人気度）</li>
+                                    <li><strong>直近の操作ログ履歴</strong>（受講生のアイコン、名前、タップした機能、日時）</li>
+                                </ul>
                             </div>
                         </div>
                     </div>

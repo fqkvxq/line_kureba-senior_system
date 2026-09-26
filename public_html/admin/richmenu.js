@@ -5335,4 +5335,143 @@ window.openResetRichmenuModal = openResetRichmenuModal;
 window.closeResetRichmenuModal = closeResetRichmenuModal;
 window.executeResetRichmenus = executeResetRichmenus;
 
+// ==============================================================================
+// 📊 クイックリプライ＆リッチメニュー利用分析・統計機能
+// ==============================================================================
+function initMenuAnalytics() {
+    const tabEditorBtn = document.getElementById('tabEditorBtn');
+    const tabHistoryBtn = document.getElementById('tabHistoryBtn');
+    const tabAnalyticsBtn = document.getElementById('tabAnalyticsBtn');
+    const editorView = document.getElementById('editorView');
+    const historyView = document.getElementById('historyView');
+    const analyticsView = document.getElementById('analyticsView');
+    const periodSelect = document.getElementById('analyticsPeriodSelect');
+    const btnRefresh = document.getElementById('btnRefreshAnalytics');
+
+    function switchAppView(view) {
+        if (editorView) editorView.style.display = (view === 'editor') ? 'flex' : 'none';
+        if (historyView) historyView.style.display = (view === 'history') ? 'block' : 'none';
+        if (analyticsView) analyticsView.style.display = (view === 'analytics') ? 'block' : 'none';
+
+        if (tabEditorBtn) tabEditorBtn.classList.toggle('active', view === 'editor');
+        if (tabHistoryBtn) tabHistoryBtn.classList.toggle('active', view === 'history');
+        if (tabAnalyticsBtn) tabAnalyticsBtn.classList.toggle('active', view === 'analytics');
+
+        if (view === 'analytics') {
+            loadMenuAnalytics();
+        }
+    }
+
+    if (tabAnalyticsBtn) {
+        tabAnalyticsBtn.addEventListener('click', () => switchAppView('analytics'));
+    }
+    if (tabEditorBtn) {
+        tabEditorBtn.addEventListener('click', () => switchAppView('editor'));
+    }
+    if (tabHistoryBtn) {
+        tabHistoryBtn.addEventListener('click', () => switchAppView('history'));
+    }
+    if (periodSelect) {
+        periodSelect.addEventListener('change', () => loadMenuAnalytics());
+    }
+    if (btnRefresh) {
+        btnRefresh.addEventListener('click', () => loadMenuAnalytics());
+    }
+}
+
+async function loadMenuAnalytics() {
+    const periodSelect = document.getElementById('analyticsPeriodSelect');
+    const days = periodSelect ? periodSelect.value : 30;
+
+    const statTotal = document.getElementById('statTotalActions');
+    const statUsers = document.getElementById('statUniqueUsers');
+    const statToday = document.getElementById('statTodayActions');
+    const rankingWrap = document.getElementById('analyticsRankingWrap');
+    const logsList = document.getElementById('analyticsLogsList');
+
+    if (rankingWrap) rankingWrap.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> 読み込み中...</div>';
+    if (logsList) logsList.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> ログ取得中...</div>';
+
+    try {
+        const res = await fetch(`../api.php?action=get_menu_analytics&days=${days}&account=${encodeURIComponent(state.activeAccount || 'senior')}`);
+        const data = await res.json();
+
+        if (data.success) {
+            // サマリ
+            if (statTotal) statTotal.textContent = (data.summary.total_actions || 0).toLocaleString() + ' 回';
+            if (statUsers) statUsers.textContent = (data.summary.unique_users || 0).toLocaleString() + ' 名';
+            if (statToday) statToday.textContent = (data.summary.today_actions || 0).toLocaleString() + ' 回';
+
+            // ランキング
+            if (rankingWrap) {
+                if (!data.ranking || data.ranking.length === 0) {
+                    rankingWrap.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 30px;">この期間の操作履歴はまだありません。</div>';
+                } else {
+                    const maxCnt = Math.max(...data.ranking.map(r => parseInt(r.cnt, 10)), 1);
+                    rankingWrap.innerHTML = data.ranking.map((item, idx) => {
+                        const cnt = parseInt(item.cnt, 10);
+                        const pct = Math.round((cnt / maxCnt) * 100);
+                        let icon = '🌤️';
+                        let badgeColor = '#3b82f6';
+                        if (item.action_type === 'zodiac_set' || item.action_type === 'fortune_mode') {
+                            icon = '🔮';
+                            badgeColor = '#8b5cf6';
+                        }
+                        return `
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: #334155;">
+                                    <span><span style="display: inline-block; width: 22px; color: ${idx < 3 ? '#f59e0b' : '#94a3b8'};">#${idx + 1}</span> ${icon} ${escapeHtml(item.detail_label)}</span>
+                                    <span style="color: #0f172a;">${cnt.toLocaleString()} 回</span>
+                                </div>
+                                <div style="background: #f1f5f9; height: 8px; border-radius: 4px; overflow: hidden;">
+                                    <div style="background: ${badgeColor}; height: 100%; width: ${pct}%; border-radius: 4px; transition: width 0.4s ease;"></div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+
+            // 直近ログ
+            if (logsList) {
+                if (!data.recent_logs || data.recent_logs.length === 0) {
+                    logsList.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 30px;">ログ履歴はまだありません。</div>';
+                } else {
+                    logsList.innerHTML = data.recent_logs.map(log => {
+                        const uname = log.c_name || log.user_name || '受講生';
+                        const pic = log.picture_url || '';
+                        const avatarHtml = pic ? `<img src="${escapeHtml(pic)}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">` : `<div style="width: 32px; height: 32px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #64748b;"><i class="fa-solid fa-user"></i></div>`;
+                        let actionBadge = `<span style="padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; background: #e0f2fe; color: #0284c7;">${escapeHtml(log.detail_label)}</span>`;
+                        if (log.action_type === 'zodiac_set' || log.action_type === 'fortune_mode') {
+                            actionBadge = `<span style="padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; background: #f3e8ff; color: #7e22ce;">${escapeHtml(log.detail_label)}</span>`;
+                        }
+
+                        return `
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #f1f5f9; gap: 10px;">
+                                <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                                    ${avatarHtml}
+                                    <div style="min-width: 0;">
+                                        <div style="font-size: 12px; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(uname)}</div>
+                                        <div style="margin-top: 2px;">${actionBadge}</div>
+                                    </div>
+                                </div>
+                                <div style="font-size: 11px; color: #94a3b8; white-space: nowrap;">${escapeHtml(log.created_at)}</div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+        }
+    } catch (e) {
+        console.error('Failed to load menu analytics:', e);
+        if (rankingWrap) rankingWrap.innerHTML = '<div style="color: #ef4444; padding: 20px;">統計データの取得に失敗しました</div>';
+        if (logsList) logsList.innerHTML = '<div style="color: #ef4444; padding: 20px;">ログ取得に失敗しました</div>';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initMenuAnalytics();
+});
+
+
 

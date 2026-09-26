@@ -167,6 +167,66 @@ try {
             echo json_encode($result, JSON_UNESCAPED_UNICODE);
             exit;
 
+        // --- リッチメニュー・クイックリプライ利用分析・統計 ---
+        case 'get_menu_analytics':
+            $days = (int)($_GET['days'] ?? 30);
+            if ($days < 1) $days = 30;
+            $since = date('Y-m-d 00:00:00', strtotime("-{$days} days"));
+
+            try {
+                $db->exec("CREATE TABLE IF NOT EXISTS menu_action_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id TEXT NOT NULL,
+                    user_name TEXT DEFAULT '',
+                    action_type TEXT NOT NULL,
+                    detail_label TEXT NOT NULL,
+                    account_id TEXT NOT NULL,
+                    created_at DATETIME NOT NULL
+                )");
+
+                // 1. 総操作数 & ユニークユーザー数
+                $totalStmt = $db->prepare("SELECT COUNT(*) as total_actions, COUNT(DISTINCT user_id) as unique_users FROM menu_action_logs WHERE created_at >= :since");
+                $totalStmt->execute([':since' => $since]);
+                $summary = $totalStmt->fetch(PDO::FETCH_ASSOC) ?: ['total_actions' => 0, 'unique_users' => 0];
+
+                // 本日の操作数
+                $todaySince = date('Y-m-d 00:00:00');
+                $todayStmt = $db->prepare("SELECT COUNT(*) as cnt FROM menu_action_logs WHERE created_at >= :ts");
+                $todayStmt->execute([':ts' => $todaySince]);
+                $todayCount = (int)($todayStmt->fetch(PDO::FETCH_ASSOC)['cnt'] ?? 0);
+
+                // 2. 機能・地域・星座別集計ランキング
+                $typeStmt = $db->prepare("SELECT detail_label, action_type, COUNT(*) as cnt FROM menu_action_logs WHERE created_at >= :since GROUP BY detail_label, action_type ORDER BY cnt DESC");
+                $typeStmt->execute([':since' => $since]);
+                $ranking = $typeStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+                // 3. 日別推移
+                $dailyStmt = $db->prepare("SELECT DATE(created_at) as log_date, COUNT(*) as cnt FROM menu_action_logs WHERE created_at >= :since GROUP BY DATE(created_at) ORDER BY log_date ASC");
+                $dailyStmt->execute([':since' => $since]);
+                $dailyTrend = $dailyStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+                // 4. 最新利用ログ (直近50件)
+                $logsStmt = $db->prepare("SELECT l.*, c.picture_url, c.user_name as c_name FROM menu_action_logs l LEFT JOIN customer_cars c ON TRIM(l.user_id) = TRIM(c.user_id) ORDER BY l.id DESC LIMIT 50");
+                $logsStmt->execute();
+                $recentLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+                echo json_encode([
+                    'success' => true,
+                    'summary' => [
+                        'total_actions' => (int)$summary['total_actions'],
+                        'unique_users' => (int)$summary['unique_users'],
+                        'today_actions' => $todayCount,
+                        'period_days' => $days
+                    ],
+                    'ranking' => $ranking,
+                    'daily_trend' => $dailyTrend,
+                    'recent_logs' => $recentLogs
+                ], JSON_UNESCAPED_UNICODE);
+            } catch (Throwable $e) {
+                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            }
+            exit;
+
         // --- 0. アカウント一覧取得 & 現在のアクティブアカウント情報 (マルチアカウント対応) ---
         case 'get_accounts':
             $accConfig = getAccountConfig($activeAccountKey);
