@@ -151,13 +151,6 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             handleSwitchFortuneMenuSilent($db, $userId);
             recordMenuActionLog($db, $userId, 'fortune_mode', '星占いメニュー');
             recordCustomerInteraction($db, $userId, 'user_action', '🔮 星占いメニュー表示');
-            // 星座選択クイックリプライを画面下に表示
-            $msg = [
-                'type' => 'text',
-                'text' => "✨ あなたの星座をお選びください ✨\n下のボタンからご自身の星座をタップすると、リッチメニューがあなた専用の星占いに切り替わります😊",
-                'quickReply' => getZodiacSelectionQuickReply()
-            ];
-            sendReplyMessage($replyToken, [$msg], $userId);
             break;
 
         // --- メニュー切替クイックリプライ案内 ---
