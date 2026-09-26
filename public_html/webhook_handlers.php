@@ -4590,7 +4590,7 @@ function generateCityWeatherDetailText(string $cityKey, string $cityName): strin
     $c = $cities[$cityKey] ?? ['name' => $cityName, 'lat' => 35.1184, 'lon' => 138.9184];
     $dispName = !empty($cityName) ? $cityName : $c['name'];
 
-    $url = "https://api.open-meteo.com/v1/forecast?latitude={$c['lat']}&longitude={$c['lon']}&current=weather_code,temperature_2m,wind_speed_10m,wind_direction_10m,precipitation&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo";
+    $url = "https://api.open-meteo.com/v1/forecast?latitude={$c['lat']}&longitude={$c['lon']}&current=weather_code,temperature_2m,wind_speed_10m,wind_direction_10m,precipitation&hourly=weather_code,temperature_2m,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo";
 
     $data = null;
     try {
@@ -4610,6 +4610,7 @@ function generateCityWeatherDetailText(string $cityKey, string $cityName): strin
 
     $cur = $data['current'];
     $daily = $data['daily'];
+    $hourly = $data['hourly'] ?? [];
 
     // 気象コードマッピング
     $codeMap = [
@@ -4659,6 +4660,42 @@ function generateCityWeatherDetailText(string $cityKey, string $cityName): strin
     $msg .= "・最高 / 最低: {$todayMax}℃ / {$todayMin}℃\n";
     $msg .= "・風速・風向: {$windDir}の風 {$windSpeed}m/s\n";
     $msg .= "・降水確率: {$todayProb}%\n\n";
+
+    // この先24時間の天気推移 (1時間毎)
+    if (!empty($hourly['time'])) {
+        $nowTs = time();
+        $curIdx = 0;
+        foreach ($hourly['time'] as $idx => $tStr) {
+            if (strtotime($tStr) >= $nowTs) {
+                $curIdx = $idx;
+                break;
+            }
+        }
+
+        $hItems = [];
+        $limit = min($curIdx + 24, count($hourly['time']));
+        for ($i = $curIdx; $i < $limit; $i++) {
+            $hTime = strtotime($hourly['time'][$i]);
+            $hour = date('H', $hTime);
+            $hCode = (int)($hourly['weather_code'][$i] ?? 1);
+            $hInfo = $codeMap[$hCode] ?? ['label' => '晴れ', 'emoji' => '☀️'];
+            $hTemp = round($hourly['temperature_2m'][$i] ?? 20);
+            $hProb = $hourly['precipitation_probability'][$i] ?? 0;
+            $hItems[] = "{$hour}時 {$hInfo['emoji']}{$hTemp}℃({$hProb}%)";
+        }
+
+        if (!empty($hItems)) {
+            $msg .= "🕒 この先24時間の天気 (1時間毎)\n";
+            for ($i = 0; $i < count($hItems); $i += 2) {
+                if (isset($hItems[$i + 1])) {
+                    $msg .= "・{$hItems[$i]} ｜ {$hItems[$i + 1]}\n";
+                } else {
+                    $msg .= "・{$hItems[$i]}\n";
+                }
+            }
+            $msg .= "\n";
+        }
+    }
 
     // 明日の天気
     if (!empty($daily['time'][1])) {
