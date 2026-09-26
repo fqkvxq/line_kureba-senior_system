@@ -4538,13 +4538,15 @@ function getModeSwitchQuickReply(string $currentMode = ''): array {
             ]
         ];
 
-        // 2〜6番目: 5都市（三島・静岡・浜松・横浜・東京）
+        // 2〜8番目: 7都市（三島・静岡・浜松・横浜・東京・大阪・福岡）
         $cities = [
             ['key' => 'mishima', 'name' => '三島市', 'label' => '🌤️ 三島市'],
             ['key' => 'shizuoka', 'name' => '静岡市', 'label' => '🌤️ 静岡市'],
             ['key' => 'hamamatsu', 'name' => '浜松市', 'label' => '🌤️ 浜松市'],
             ['key' => 'yokohama', 'name' => '横浜市', 'label' => '🌤️ 横浜市'],
-            ['key' => 'tokyo', 'name' => '東京都', 'label' => '🌤️ 東京都']
+            ['key' => 'tokyo', 'name' => '東京都', 'label' => '🌤️ 東京都'],
+            ['key' => 'osaka', 'name' => '大阪市', 'label' => '🌤️ 大阪市'],
+            ['key' => 'fukuoka', 'name' => '福岡市', 'label' => '🌤️ 福岡市']
         ];
         foreach ($cities as $c) {
             $items[] = [

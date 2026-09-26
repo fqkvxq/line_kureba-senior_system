@@ -65,7 +65,9 @@ export const CITIES_CONFIG = {
     shizuoka: { key: 'shizuoka', name: '静岡市', label: '🌤️ 静岡市', lat: 34.9756, lon: 138.3828 },
     hamamatsu: { key: 'hamamatsu', name: '浜松市', label: '🌤️ 浜松市', lat: 34.7108, lon: 137.7261 },
     yokohama: { key: 'yokohama', name: '横浜市', label: '🌤️ 横浜市', lat: 35.4437, lon: 139.6380 },
-    tokyo: { key: 'tokyo', name: '東京都', label: '🌤️ 東京都', lat: 35.6895, lon: 139.6917 }
+    tokyo: { key: 'tokyo', name: '東京都', label: '🌤️ 東京都', lat: 35.6895, lon: 139.6917 },
+    osaka: { key: 'osaka', name: '大阪市', label: '🌤️ 大阪市', lat: 34.6937, lon: 135.5023 },
+    fukuoka: { key: 'fukuoka', name: '福岡市', label: '🌤️ 福岡市', lat: 33.5904, lon: 130.4017 }
 };
 
 export const WEATHER_CODE_MAP = {

@@ -1,12 +1,16 @@
 {
-  "mishima": "richmenu-bc05fec448f3cda08ea35aad94b6c357",
-  "三島市": "richmenu-bc05fec448f3cda08ea35aad94b6c357",
-  "shizuoka": "richmenu-bf78f1fae4686c811112e07a2d0eda52",
-  "静岡市": "richmenu-bf78f1fae4686c811112e07a2d0eda52",
-  "hamamatsu": "richmenu-db35b82fabea12278822c62870a3eb45",
-  "浜松市": "richmenu-db35b82fabea12278822c62870a3eb45",
-  "yokohama": "richmenu-23ac3fe496676db0e23c6c62196366fa",
-  "横浜市": "richmenu-23ac3fe496676db0e23c6c62196366fa",
-  "tokyo": "richmenu-870af5251c823cdd4dfd362df9ad5e19",
-  "東京都": "richmenu-870af5251c823cdd4dfd362df9ad5e19"
+  "mishima": "richmenu-1e9b9a130af3bd554f26e98d90537f61",
+  "三島市": "richmenu-1e9b9a130af3bd554f26e98d90537f61",
+  "shizuoka": "richmenu-02c9ec0f4121cc8dfcd3ab3ef9a14220",
+  "静岡市": "richmenu-02c9ec0f4121cc8dfcd3ab3ef9a14220",
+  "hamamatsu": "richmenu-6f5eb7c12e571a7aca556f72c77dc6d7",
+  "浜松市": "richmenu-6f5eb7c12e571a7aca556f72c77dc6d7",
+  "yokohama": "richmenu-bc2867698c8cd4c509266d139701ddbc",
+  "横浜市": "richmenu-bc2867698c8cd4c509266d139701ddbc",
+  "tokyo": "richmenu-4e0e825427f677faef67e86bf7297d78",
+  "東京都": "richmenu-4e0e825427f677faef67e86bf7297d78",
+  "osaka": "richmenu-0c357953171ab884c5189ee7fa55c1b2",
+  "大阪市": "richmenu-0c357953171ab884c5189ee7fa55c1b2",
+  "fukuoka": "richmenu-20542644d4622588f12dc9dc60c92ced",
+  "福岡市": "richmenu-20542644d4622588f12dc9dc60c92ced"
 }
