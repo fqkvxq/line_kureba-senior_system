@@ -135,24 +135,26 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
             handleSwitchDefaultMenuSilent($db, $userId);
             recordMenuActionLog($db, $userId, 'weather_city', '三島市 (デフォルト)');
             recordCustomerInteraction($db, $userId, 'user_action', '🌤️ 天気メニュー表示 (三島市)');
+            $detailText = generateCityWeatherDetailText('mishima', '三島市');
             $msg = [
                 'type' => 'text',
-                'text' => "🌤️ 天気メニュー",
+                'text' => $detailText,
                 'quickReply' => getModeSwitchQuickReply('weather')
             ];
             sendReplyMessage($replyToken, [$msg], $userId);
             break;
 
-        // --- 都市別天気リッチメニュー切替 ---
+        // --- 都市別天気リッチメニュー切替＆詳細お天気レポート返信 ---
         case 'set_city_weather':
             $cityKey = $params['city'] ?? 'mishima';
             $cityName = urldecode($params['name'] ?? '三島市');
             handleSetCityWeather($db, $userId, $cityKey, $cityName);
             recordMenuActionLog($db, $userId, 'weather_city', $cityName);
             recordCustomerInteraction($db, $userId, 'user_action', "🌤️ {$cityName}の天気を表示");
+            $detailText = generateCityWeatherDetailText($cityKey, $cityName);
             $msg = [
                 'type' => 'text',
-                'text' => "🌤️ {$cityName}",
+                'text' => $detailText,
                 'quickReply' => getModeSwitchQuickReply('weather')
             ];
             sendReplyMessage($replyToken, [$msg], $userId);
@@ -4569,6 +4571,129 @@ function getModeSwitchQuickReply(string $currentMode = ''): array {
     }
 
     return ['items' => $items];
+}
+
+/**
+ * 都市別の詳細天気レポート（天気・気温・風速風向・明日予報・週間予報）を生成
+ */
+function generateCityWeatherDetailText(string $cityKey, string $cityName): string {
+    $cities = [
+        'mishima' => ['name' => '三島市', 'lat' => 35.1184, 'lon' => 138.9184],
+        'shizuoka' => ['name' => '静岡市', 'lat' => 34.9756, 'lon' => 138.3828],
+        'hamamatsu' => ['name' => '浜松市', 'lat' => 34.7108, 'lon' => 137.7261],
+        'yokohama' => ['name' => '横浜市', 'lat' => 35.4437, 'lon' => 139.6380],
+        'tokyo' => ['name' => '東京都', 'lat' => 35.6895, 'lon' => 139.6917],
+        'osaka' => ['name' => '大阪市', 'lat' => 34.6937, 'lon' => 135.5023],
+        'fukuoka' => ['name' => '福岡市', 'lat' => 33.5904, 'lon' => 130.4017]
+    ];
+
+    $c = $cities[$cityKey] ?? ['name' => $cityName, 'lat' => 35.1184, 'lon' => 138.9184];
+    $dispName = !empty($cityName) ? $cityName : $c['name'];
+
+    $url = "https://api.open-meteo.com/v1/forecast?latitude={$c['lat']}&longitude={$c['lon']}&current=weather_code,temperature_2m,wind_speed_10m,wind_direction_10m,precipitation&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo";
+
+    $data = null;
+    try {
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+        $res = curl_exec($ch);
+        curl_close($ch);
+        if ($res) {
+            $data = json_decode($res, true);
+        }
+    } catch (Throwable $e) {}
+
+    if (!$data || empty($data['current'])) {
+        return "🌤️ 【{$dispName}】のお天気\n現在のお天気情報を取得中です。リッチメニューから最新の予報をご確認ください😊";
+    }
+
+    $cur = $data['current'];
+    $daily = $data['daily'];
+
+    // 気象コードマッピング
+    $codeMap = [
+        0 => ['label' => '快晴', 'emoji' => '☀️'],
+        1 => ['label' => '晴れ', 'emoji' => '☀️'],
+        2 => ['label' => '一部曇り', 'emoji' => '🌤️'],
+        3 => ['label' => '曇り', 'emoji' => '☁️'],
+        45 => ['label' => '霧', 'emoji' => '🌫️'],
+        48 => ['label' => '霧', 'emoji' => '🌫️'],
+        51 => ['label' => '小雨', 'emoji' => '🌧️'],
+        53 => ['label' => '小雨', 'emoji' => '🌧️'],
+        55 => ['label' => '小雨', 'emoji' => '🌧️'],
+        61 => ['label' => '雨', 'emoji' => '🌧️'],
+        63 => ['label' => '雨', 'emoji' => '🌧️'],
+        65 => ['label' => '大雨', 'emoji' => '🌧️'],
+        71 => ['label' => '雪', 'emoji' => '❄️'],
+        73 => ['label' => '雪', 'emoji' => '❄️'],
+        75 => ['label' => '大雪', 'emoji' => '❄️'],
+        80 => ['label' => 'にわか雨', 'emoji' => '🌧️'],
+        81 => ['label' => 'にわか雨', 'emoji' => '🌧️'],
+        82 => ['label' => '激しい雨', 'emoji' => '🌧️'],
+        95 => ['label' => '雷雨', 'emoji' => '⛈️'],
+        96 => ['label' => '雷雨', 'emoji' => '⛈️'],
+        99 => ['label' => '雷雨', 'emoji' => '⛈️']
+    ];
+
+    $curCode = (int)($cur['weather_code'] ?? 1);
+    $curInfo = $codeMap[$curCode] ?? ['label' => '曇り', 'emoji' => '☁️'];
+
+    // 風向
+    $directions = ['北', '北北東', '北東', '東北東', '東', '東南東', '南東', '南南東', '南', '南南西', '南西', '西南西', '西', '西北西', '北西', '北北西'];
+    $deg = (float)($cur['wind_direction_10m'] ?? 0);
+    $windDir = $directions[(int)round($deg / 22.5) % 16] ?? '北';
+    $windSpeed = round((float)($cur['wind_speed_10m'] ?? 0), 1);
+    $curTemp = round((float)($cur['temperature_2m'] ?? 20), 1);
+
+    $todayMax = isset($daily['temperature_2m_max'][0]) ? round($daily['temperature_2m_max'][0]) : '--';
+    $todayMin = isset($daily['temperature_2m_min'][0]) ? round($daily['temperature_2m_min'][0]) : '--';
+    $todayProb = isset($daily['precipitation_probability_max'][0]) ? $daily['precipitation_probability_max'][0] : 0;
+
+    $weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+
+    $msg = "🌤️ 【{$dispName}】のお天気詳細\n\n";
+    $msg .= "📍 現在の実況・今日\n";
+    $msg .= "・天気: {$curInfo['emoji']} {$curInfo['label']}\n";
+    $msg .= "・現在の気温: {$curTemp}℃\n";
+    $msg .= "・最高 / 最低: {$todayMax}℃ / {$todayMin}℃\n";
+    $msg .= "・風速・風向: {$windDir}の風 {$windSpeed}m/s\n";
+    $msg .= "・降水確率: {$todayProb}%\n\n";
+
+    // 明日の天気
+    if (!empty($daily['time'][1])) {
+        $tomDate = strtotime($daily['time'][1]);
+        $tomM = date('n', $tomDate);
+        $tomD = date('j', $tomDate);
+        $tomWk = $weekdays[date('w', $tomDate)];
+        $tomCode = (int)($daily['weather_code'][1] ?? 1);
+        $tomInfo = $codeMap[$tomCode] ?? ['label' => '晴れ', 'emoji' => '☀️'];
+        $tomMax = round($daily['temperature_2m_max'][1] ?? 25);
+        $tomMin = round($daily['temperature_2m_min'][1] ?? 18);
+        $tomProb = $daily['precipitation_probability_max'][1] ?? 0;
+
+        $msg .= "📅 明日の天気 ({$tomM}/{$tomD} {$tomWk})\n";
+        $msg .= "・{$tomInfo['emoji']} {$tomInfo['label']} (最高 {$tomMax}℃ / 最低 {$tomMin}℃) 降水 {$tomProb}%\n\n";
+    }
+
+    // 週間天気
+    $msg .= "🗓️ この先1週間の天気予報\n";
+    $count = count($daily['time'] ?? []);
+    for ($i = 2; $i < min($count, 7); $i++) {
+        $dTime = strtotime($daily['time'][$i]);
+        $m = date('n', $dTime);
+        $d = date('j', $dTime);
+        $wk = $weekdays[date('w', $dTime)];
+        $wCode = (int)($daily['weather_code'][$i] ?? 1);
+        $info = $codeMap[$wCode] ?? ['label' => '晴れ', 'emoji' => '☀️'];
+        $max = round($daily['temperature_2m_max'][$i] ?? 25);
+        $min = round($daily['temperature_2m_min'][$i] ?? 18);
+
+        $msg .= "・{$m}/{$d}({$wk}): {$info['emoji']} {$info['label']} ({$max}℃/{$min}℃)\n";
+    }
+
+    $msg .= "\n🚗 安全運転とお出かけの参考にどうぞ😊";
+    return $msg;
 }
 
 /**
