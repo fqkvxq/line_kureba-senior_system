@@ -4672,7 +4672,7 @@ function generateCityWeatherDetailText(string $cityKey, string $cityName): strin
             }
         }
 
-        $hItems = [];
+        $hLines = [];
         $limit = min($curIdx + 24, count($hourly['time']));
         for ($i = $curIdx; $i < $limit; $i++) {
             $hTime = strtotime($hourly['time'][$i]);
@@ -4681,19 +4681,12 @@ function generateCityWeatherDetailText(string $cityKey, string $cityName): strin
             $hInfo = $codeMap[$hCode] ?? ['label' => '晴れ', 'emoji' => '☀️'];
             $hTemp = round($hourly['temperature_2m'][$i] ?? 20);
             $hProb = $hourly['precipitation_probability'][$i] ?? 0;
-            $hItems[] = "{$hour}時 {$hInfo['emoji']}{$hTemp}℃({$hProb}%)";
+            $hLines[] = "・{$hour}時: {$hInfo['emoji']} {$hInfo['label']} {$hTemp}℃ (降水 {$hProb}%)";
         }
 
-        if (!empty($hItems)) {
+        if (!empty($hLines)) {
             $msg .= "🕒 この先24時間の天気 (1時間毎)\n";
-            for ($i = 0; $i < count($hItems); $i += 2) {
-                if (isset($hItems[$i + 1])) {
-                    $msg .= "・{$hItems[$i]} ｜ {$hItems[$i + 1]}\n";
-                } else {
-                    $msg .= "・{$hItems[$i]}\n";
-                }
-            }
-            $msg .= "\n";
+            $msg .= implode("\n", $hLines) . "\n\n";
         }
     }
 
