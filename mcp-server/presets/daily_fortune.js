@@ -24,8 +24,20 @@ if (fs.existsSync(fontPath)) {
     GlobalFonts.registerFromPath(fontPath, 'LINESeedJP-Bold');
 }
 
-// 元の公式リッチメニューの正しいタップ領域
+// 元の公式リッチメニューの正しいタップ領域 + 上部帯タップでモード切替
 export const ORIGINAL_AREAS = [
+    {
+        bounds: {
+            x: 0,
+            y: 0,
+            width: 2500,
+            height: 300
+        },
+        action: {
+            type: "postback",
+            data: "action=ask_mode_switch"
+        }
+    },
     {
         bounds: {
             x: 25,
