@@ -31,7 +31,7 @@ export const ORIGINAL_AREAS = [
         },
         action: {
             type: "postback",
-            data: "action=ask_mode_switch"
+            data: "action=ask_mode_switch&mode=weather"
         }
     },
     {

@@ -157,11 +157,31 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
         case 'ask_mode_switch':
         case 'menu_switch':
         case 'change_menu':
-            $msg = [
-                'type' => 'text',
-                'text' => "📱 メニュー切り替え\n下のボタンから表示したいメニューをお選びください😊",
-                'quickReply' => getModeSwitchQuickReply()
-            ];
+            $mode = $params['mode'] ?? '';
+            if (empty($mode)) {
+                try {
+                    $stmt = $db->prepare("SELECT custom_menu_text FROM customer_cars WHERE TRIM(user_id) = :uid LIMIT 1");
+                    $stmt->execute([':uid' => $userId]);
+                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if ($row && str_contains($row['custom_menu_text'] ?? '', 'fortune')) {
+                        $mode = 'fortune';
+                    }
+                } catch (Throwable $e) {}
+            }
+
+            if ($mode === 'fortune') {
+                $msg = [
+                    'type' => 'text',
+                    'text' => "🔮 星座占いメニュー\n下のボタンからあなたの星座を選択するか、天気メニューに切り替えられます😊",
+                    'quickReply' => getModeSwitchQuickReply('fortune')
+                ];
+            } else {
+                $msg = [
+                    'type' => 'text',
+                    'text' => "📱 メニュー切り替え\n下のボタンから表示したいメニューをお選びください😊",
+                    'quickReply' => getModeSwitchQuickReply('weather')
+                ];
+            }
             sendReplyMessage($replyToken, [$msg], $userId);
             break;
 
@@ -4447,6 +4467,7 @@ function getModeSwitchQuickReply(string $currentMode = ''): array {
     $items = [];
 
     if ($currentMode === 'fortune') {
+        // 1番目（左端）: 天気メニューに戻る
         $items[] = [
             'type' => 'action',
             'action' => [
@@ -4455,14 +4476,32 @@ function getModeSwitchQuickReply(string $currentMode = ''): array {
                 'data' => 'action=switch_default_mode'
             ]
         ];
-        $items[] = [
-            'type' => 'action',
-            'action' => [
-                'type' => 'postback',
-                'label' => '♈ 星座を変更する',
-                'data' => 'action=ask_zodiac_selection'
-            ]
+
+        // 2〜13番目: 12星座ボタン（全12星座）
+        $zodiacs = [
+            ['key' => 'aries', 'label' => '♈ 牡羊座', 'name' => '牡羊座'],
+            ['key' => 'taurus', 'label' => '♉ 牡牛座', 'name' => '牡牛座'],
+            ['key' => 'gemini', 'label' => '♊ 双子座', 'name' => '双子座'],
+            ['key' => 'cancer', 'label' => '♋ 蟹座', 'name' => '蟹座'],
+            ['key' => 'leo', 'label' => '♌ 獅子座', 'name' => '獅子座'],
+            ['key' => 'virgo', 'label' => '♍ 乙女座', 'name' => '乙女座'],
+            ['key' => 'libra', 'label' => '♎ 天秤座', 'name' => '天秤座'],
+            ['key' => 'scorpio', 'label' => '♏ 蠍座', 'name' => '蠍座'],
+            ['key' => 'sagittarius', 'label' => '♐ 射手座', 'name' => '射手座'],
+            ['key' => 'capricorn', 'label' => '♑ 山羊座', 'name' => '山羊座'],
+            ['key' => 'aquarius', 'label' => '♒ 水瓶座', 'name' => '水瓶座'],
+            ['key' => 'pisces', 'label' => '♓ 魚座', 'name' => '魚座']
         ];
+        foreach ($zodiacs as $z) {
+            $items[] = [
+                'type' => 'action',
+                'action' => [
+                    'type' => 'postback',
+                    'label' => $z['label'],
+                    'data' => 'action=set_zodiac&zodiac=' . $z['key'] . '&name=' . urlencode($z['name'])
+                ]
+            ];
+        }
     } else {
         // 1番目（左端）: 占いメニュー
         $items[] = [
@@ -4619,7 +4658,13 @@ function handleSwitchFortuneMenuSilent(PDO $db, string $userId) {
     $accountKey = getActiveAccountKey();
     $nowJst = date('Y-m-d H:i:s');
 
-    // 1. ユーザーの星座設定を確認
+    // 1. DBのモードをfortuneに更新
+    try {
+        $db->prepare("UPDATE customer_cars SET custom_menu_text = 'fortune', updated_at = :now WHERE TRIM(user_id) = :uid")
+            ->execute([':now' => $nowJst, ':uid' => $userId]);
+    } catch (Throwable $e) {}
+
+    // 2. ユーザーの星座設定を確認
     $userZodiac = null;
     try {
         $stmt = $db->prepare("SELECT zodiac FROM user_zodiacs WHERE user_id = :u");
@@ -4628,7 +4673,7 @@ function handleSwitchFortuneMenuSilent(PDO $db, string $userId) {
         $userZodiac = $row['zodiac'] ?? null;
     } catch (Throwable $e) {}
 
-    // 2. mapping から該当星座（または全体）のメニューIDを取得
+    // 3. mapping から該当星座（または全体）のメニューIDを取得
     $mappingFile = __DIR__ . '/data/zodiac_richmenus.json';
     $targetMenuId = null;
     if (file_exists($mappingFile)) {
@@ -4636,7 +4681,7 @@ function handleSwitchFortuneMenuSilent(PDO $db, string $userId) {
         $targetMenuId = $mapping[$userZodiac] ?? ($mapping['all'] ?? null);
     }
     if (empty($targetMenuId)) {
-        $targetMenuId = 'richmenu-3c08fccffa3ef92c7542d572d83203d8';
+        $targetMenuId = 'richmenu-bb82898e7a6b55c38e4d8aeaa261fce2';
     }
 
     lineLinkUserRichMenu($userId, $targetMenuId, $accountKey);

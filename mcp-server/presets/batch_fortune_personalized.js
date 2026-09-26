@@ -106,6 +106,11 @@ export async function runPersonalizedFortuneBatch() {
                 await linkUserRichmenu(u.user_id, targetMenuId);
             }
         }
+
+        // マッピングをJSON保存
+        const zodiacMapPath = path.join(__dirname, '..', '..', 'public_html', 'data', 'zodiac_richmenus.json');
+        fs.writeFileSync(zodiacMapPath, JSON.stringify(createdMenuMap, null, 2), 'utf8');
+        console.log('Saved zodiac richmenus map to:', zodiacMapPath);
     } catch (e) {
         console.error('Error linking personalized user menus:', e);
     }
