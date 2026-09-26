@@ -4480,7 +4480,17 @@ function getModeSwitchQuickReply(string $currentMode = ''): array {
             ]
         ];
     } else {
-        // 天気メニューのときは 5都市（三島・静岡・浜松・横浜・東京）＋星座メニュー切替
+        // 1番目（左端）: 占いメニュー
+        $items[] = [
+            'type' => 'action',
+            'action' => [
+                'type' => 'postback',
+                'label' => '🔮 占いメニュー',
+                'data' => 'action=switch_fortune_mode'
+            ]
+        ];
+
+        // 2〜6番目: 5都市（三島・静岡・浜松・横浜・東京）
         $cities = [
             ['key' => 'mishima', 'name' => '三島市', 'label' => '🌤️ 三島市'],
             ['key' => 'shizuoka', 'name' => '静岡市', 'label' => '🌤️ 静岡市'],
@@ -4498,14 +4508,6 @@ function getModeSwitchQuickReply(string $currentMode = ''): array {
                 ]
             ];
         }
-        $items[] = [
-            'type' => 'action',
-            'action' => [
-                'type' => 'postback',
-                'label' => '🔮 星座メニューに切り替える',
-                'data' => 'action=switch_fortune_mode'
-            ]
-        ];
     }
 
     return ['items' => $items];
