@@ -31,6 +31,7 @@ function logWeatherBatch(string $msg) {
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/quote_engine.php';
+require_once __DIR__ . '/webhook_handlers.php';
 
 // 今時間の名言を取得（10文字以内）
 $quoteInfo = getHourlyQuote();
@@ -538,7 +539,99 @@ if (!empty($citySummaries)) {
     logWeatherBatch("🌤️ city_weather_summary.json を最新のお天気サマリ・絵文字で更新完了！");
 }
 
-// 5. 以前の古い都市リッチメニューのクリーンアップ（LINE上限対策）
+// 5. 個別都市・占いを選択しているユーザーの最新メニュー再リンク & クイックリプライ再表示
+try {
+    $stmtUsers = $db->query("
+        SELECT DISTINCT TRIM(user_id) AS user_id, custom_menu_text, custom_line_menu_id 
+        FROM customer_cars 
+        WHERE user_id IS NOT NULL AND TRIM(user_id) LIKE 'U%'
+    ");
+    $users = $stmtUsers ? $stmtUsers->fetchAll(PDO::FETCH_ASSOC) : [];
+    
+    // chat_messages からも直近アクティブなユーザーを取得して結合
+    $stmtChatUsers = $db->query("
+        SELECT DISTINCT TRIM(user_id) AS user_id 
+        FROM chat_messages 
+        WHERE user_id IS NOT NULL AND TRIM(user_id) LIKE 'U%'
+        ORDER BY id DESC LIMIT 50
+    ");
+    $chatUsers = $stmtChatUsers ? $stmtChatUsers->fetchAll(PDO::FETCH_ASSOC) : [];
+    
+    $userMap = [];
+    foreach ($users as $u) {
+        $uid = $u['user_id'];
+        $userMap[$uid] = $u;
+    }
+    foreach ($chatUsers as $cu) {
+        $uid = $cu['user_id'];
+        if (!isset($userMap[$uid])) {
+            $userMap[$uid] = [
+                'user_id' => $uid,
+                'custom_menu_text' => null,
+                'custom_line_menu_id' => null
+            ];
+        }
+    }
+
+    $relinkCount = 0;
+    $qrRestoredCount = 0;
+    $nowJst = date('Y-m-d H:i:s');
+
+    foreach ($userMap as $uid => $uData) {
+        $customText = $uData['custom_menu_text'] ?? '';
+        $userMode = 'weather';
+        $userCityKey = 'mishima';
+        $userCityName = '三島市';
+
+        // A. 個別都市リッチメニューの再リンク
+        if (!empty($customText) && str_starts_with($customText, 'weather_')) {
+            $cityKey = str_replace('weather_', '', $customText);
+            if (isset($newMapping[$cityKey])) {
+                $newMid = $newMapping[$cityKey];
+                $linkRes = lineLinkUserRichMenu($uid, $newMid, $targetAccount);
+                if ($linkRes['success']) {
+                    $relinkCount++;
+                    try {
+                        $upStmt = $db->prepare("UPDATE customer_cars SET custom_line_menu_id = :mid, updated_at = :now WHERE TRIM(user_id) = :uid");
+                        $upStmt->execute([':mid' => $newMid, ':now' => $nowJst, ':uid' => $uid]);
+                    } catch (Throwable $e) {}
+                }
+                $userCityKey = $cityKey;
+                $userCityName = $cities[$cityKey]['name'] ?? $cityKey;
+            }
+        } elseif ($customText === 'fortune_mode') {
+            $userMode = 'fortune';
+        }
+
+        // B. クイックリプライの再表示（消音/サイレントPushでユーザーの手元に復帰）
+        if (function_exists('getModeSwitchQuickReply')) {
+            $qr = getModeSwitchQuickReply($userMode);
+            if (!empty($qr)) {
+                $statusText = ($userMode === 'fortune')
+                    ? "🔮 星占いを更新しました😊\n（下のボタンから星座の切替や天気メニューへ戻れます）"
+                    : "🌤️ {$hourStr}の{$userCityName}のお天気を更新しました😊\n（下のボタンから都市の切替や占いができます）";
+
+                $msg = [
+                    'type' => 'text',
+                    'text' => $statusText,
+                    'quickReply' => $qr
+                ];
+
+                // notificationDisabled = true（消音プッシュ）で通知音を鳴らさずにクイックリプライを付与
+                $pushRes = sendLinePushMessage($uid, [$msg], $targetAccount, true);
+                if (!empty($pushRes['success'])) {
+                    $qrRestoredCount++;
+                }
+            }
+        }
+    }
+
+    logWeatherBatch("🔄 個別リッチメニュー再リンク: {$relinkCount}件, 📲 クイックリプライ再表示送信: {$qrRestoredCount}件");
+} catch (Throwable $e) {
+    logWeatherBatch("ユーザー個別メニュー・クイックリプライ処理エラー: " . $e->getMessage());
+}
+
+// 6. 以前の古い都市リッチメニューのクリーンアップ（LINE上限対策）
 foreach ($oldMapping as $k => $oldId) {
     if (!empty($oldId) && !in_array($oldId, $newMapping)) {
         lineDeleteRichMenu($oldId, $targetAccount);

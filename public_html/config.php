@@ -1353,7 +1353,7 @@ function isNoticeMenu(?PDO $db, string $aliasOrMenuId): bool {
 /**
  * 特定のユーザーへ個別プッシュ送信 (Push Message API)
  */
-function sendLinePushMessage(string $userId, array $messages, ?string $accountKey = null): array {
+function sendLinePushMessage(string $userId, array $messages, ?string $accountKey = null, bool $notificationDisabled = false): array {
     $token = getLineAccessToken($accountKey);
     if (empty($userId) || empty($token) || $token === 'YOUR_CHANNEL_ACCESS_TOKEN_HERE') {
         return ['success' => false, 'error' => 'Token or userId missing'];
@@ -1373,7 +1373,8 @@ function sendLinePushMessage(string $userId, array $messages, ?string $accountKe
     $url = 'https://api.line.me/v2/bot/message/push';
     $payload = [
         'to' => $userId,
-        'messages' => $messages
+        'messages' => $messages,
+        'notificationDisabled' => $notificationDisabled
     ];
 
     $ch = curl_init($url);
