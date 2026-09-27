@@ -160,6 +160,24 @@ try {
     $action = $_GET['action'] ?? ($_POST['action'] ?? 'list');
 
     switch ($action) {
+        case 'git_pull':
+        case 'deploy_sync':
+            $repoRoot = realpath(__DIR__ . '/..');
+            $output = [];
+            $code = 0;
+            if ($repoRoot && is_dir($repoRoot . '/.git')) {
+                exec("cd " . escapeshellarg($repoRoot) . " && git pull origin main 2>&1", $output, $code);
+            } else {
+                $output[] = "Git repository not found at " . ($repoRoot ?: 'null');
+                $code = 1;
+            }
+            echo json_encode([
+                'success' => ($code === 0),
+                'code' => $code,
+                'output' => implode("\n", $output)
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+
         case 'save_user_zodiac':
         case 'get_user_zodiac':
         case 'list_user_zodiacs':

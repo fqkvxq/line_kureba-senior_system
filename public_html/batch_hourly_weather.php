@@ -29,6 +29,15 @@ function logWeatherBatch(string $msg) {
     @file_put_contents($logFile, $line, FILE_APPEND | LOCK_EX);
 }
 
+// 自動 git pull によるコード最新化（エックスサーバー同期）
+$repoRoot = realpath(__DIR__ . '/..');
+if ($repoRoot && is_dir($repoRoot . '/.git')) {
+    @exec("cd " . escapeshellarg($repoRoot) . " && git pull origin main 2>&1", $gitOut);
+    if (!empty($gitOut)) {
+        logWeatherBatch("Git同期: " . implode(" ", array_slice($gitOut, -2)));
+    }
+}
+
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/quote_engine.php';
 require_once __DIR__ . '/webhook_handlers.php';
