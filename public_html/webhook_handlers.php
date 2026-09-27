@@ -178,28 +178,44 @@ function handlePostback(PDO $db, string $replyToken, string $dataStr, string $us
         case 'ask_mode_switch':
         case 'menu_switch':
         case 'change_menu':
+            $cityKey = $params['city'] ?? '';
+            $cityName = !empty($params['name']) ? urldecode($params['name']) : '';
             $mode = $params['mode'] ?? '';
-            if (empty($mode)) {
+
+            if (empty($mode) || empty($cityKey)) {
                 try {
                     $stmt = $db->prepare("SELECT custom_menu_text FROM customer_cars WHERE TRIM(user_id) = :uid LIMIT 1");
                     $stmt->execute([':uid' => $userId]);
                     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-                    if ($row && str_contains($row['custom_menu_text'] ?? '', 'fortune')) {
+                    $cText = $row['custom_menu_text'] ?? '';
+                    if (str_contains($cText, 'fortune')) {
                         $mode = 'fortune';
+                    } elseif (str_starts_with($cText, 'weather_') && empty($cityKey)) {
+                        $cityKey = str_replace('weather_', '', $cText);
                     }
                 } catch (Throwable $e) {}
+            }
+
+            if (empty($cityKey)) {
+                $cityKey = 'mishima';
+                $cityName = '三島市';
             }
 
             if ($mode === 'fortune') {
                 $msg = [
                     'type' => 'text',
-                    'text' => "🔮 占いメニュー",
+                    'text' => "🔮 【星占いメニュー】\n下のボタンからご自身の星座をタップすると、本日の運勢・ラッキーアイテムが表示されます✨\n「🌤️ 天気メニュー」を押すと天気予報に戻ります。",
                     'quickReply' => getModeSwitchQuickReply('fortune')
                 ];
             } else {
+                $detailText = function_exists('generateCityWeatherDetailText') 
+                    ? generateCityWeatherDetailText($cityKey, $cityName) 
+                    : "🌤️ 【{$cityName}】の最新お天気情報を表示しました。";
+                $detailText .= "\n\n👇 下のボタンから他都市の天気切替や【🔮 占いメニュー】をお楽しみいただけます😊";
+
                 $msg = [
                     'type' => 'text',
-                    'text' => "🌤️ 天気メニュー",
+                    'text' => $detailText,
                     'quickReply' => getModeSwitchQuickReply('weather')
                 ];
             }

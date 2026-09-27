@@ -450,14 +450,14 @@ foreach ($cities as $cityKey => $cityInfo) {
     imagejpeg($dstImg, $tmpJpg, 92);
     imagedestroy($dstImg);
 
-    // D. LINE リッチメニュー作成
+    // D. LINE リッチメニュー作成（上部300pxの帯タップでクイックリプライ＆都市切替・占いメニュー表示）
     $areas = [
         [
             'bounds' => ['x' => 0, 'y' => 0, 'width' => 2500, 'height' => 300],
             'action' => [
-                'type' => 'uri',
-                'label' => "{$cityName}の天気詳細",
-                'uri' => $weathernewsUrl
+                'type' => 'postback',
+                'label' => "{$cityName}の天気・メニュー切替",
+                'data' => "action=ask_mode_switch&city={$cityKey}&name=" . urlencode($cityName)
             ]
         ]
     ];
