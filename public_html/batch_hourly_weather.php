@@ -612,7 +612,9 @@ try {
             $userMode = 'fortune';
         }
 
-        // B. クイックリプライの再表示（消音/サイレントPushでユーザーの手元に復帰）
+        // B. 一斉Pushメッセージ送信はオフ（静かにリッチメニュー画像のみ更新する仕様）
+        // ※ 毎時間の自動更新時にユーザーへメッセージが届かないよう一斉送信処理を停止
+        /*
         if (function_exists('getModeSwitchQuickReply')) {
             $qr = getModeSwitchQuickReply($userMode);
             if (!empty($qr)) {
@@ -633,9 +635,10 @@ try {
                 }
             }
         }
+        */
     }
 
-    logWeatherBatch("🔄 個別リッチメニュー再リンク: {$relinkCount}件, 📲 クイックリプライ再表示送信: {$qrRestoredCount}件");
+    logWeatherBatch("🔄 個別リッチメニュー再リンク: {$relinkCount}件（一斉メッセージ送信: オフ）");
 } catch (Throwable $e) {
     logWeatherBatch("ユーザー個別メニュー・クイックリプライ処理エラー: " . $e->getMessage());
 }

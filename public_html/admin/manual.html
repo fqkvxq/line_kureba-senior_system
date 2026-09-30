@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="manual.css?v=20260924_mcp_integration_v26">
+    <link rel="stylesheet" href="manual.css?v=20261001_silent_weather_v39">
 </head>
 <body>
     <!-- ログインモーダル (メール認証専用・パスワード不要) -->
@@ -2116,11 +2116,12 @@
                                     </table>
                                 </div>
 
-                                <p style="margin-top: 10px;">
+                                 <p style="margin-top: 10px;">
                                 <strong>💡 下部メニューバー（chatBarText）：10文字以内の今時間のことば【新機能】:</strong><br>
                                 ・メニューを開閉する最下部のバー文字列（最大14文字）に、外部名言APIおよび厳選マスター（「継続は力なり」「思い立ったが吉日」「一期一会」「初心忘るべからず」など）から、毎時間異なる名言を自動セット。<br>
                                 <strong>💡 1時間毎の自動更新バッチ（Xサーバー Cron）:</strong><br>
                                 ・毎時0分のCron実行（<code>batch_hourly_weather.php</code>）により、最新天気と新しい名言バーが自動生成され、全体デフォルトメニューとして即座に切り替わります。<br>
+                                <strong>※ 一斉プッシュメッセージ送信はオフに設定されており、ユーザーへのメッセージ通知なしで静かにメニューが最新化されます。</strong><br>
                                 <strong>💡 自動クリーンアップ:</strong><br>
                                 ・前回の古いデフォルトメニューは自動でDELETE削除されるため、LINEのメニュー上限に達することなく永久運用可能です。</p>
 
@@ -2162,7 +2163,7 @@
                                 <ul style="margin: 0 0 0 20px; font-size: 13px; line-height: 1.8;">
                                     <li><strong>天気メニュー表示時:</strong> 左端に「🔮 占いメニュー」、続いて「🌤️ 三島市」「🌤️ 静岡市」「🌤️ 浜松市」「🌤️ 横浜市」「🌤️ 東京都」「🌤️ 大阪市」「🌤️ 福岡市」のボタンが配置されます。</li>
                                     <li><strong>占いメニュー表示時:</strong> 左端に「🌤️ 天気メニュー」、続いて「♈ 牡羊座」〜「♓ 魚座」の12星座選択ボタンが配置されます。</li>
-                                    <li><strong>完全サイレント切替:</strong> クイックリプライを押した際、ユーザーの発言やボットのテキスト返信を一切行わず、リッチメニュー画像だけが静かに即時切り替わります。</li>
+                                    <li><strong>完全サイレント更新・切替:</strong> 毎時間の自動天気更新時やクイックリプライ選択時、ユーザーへの一斉メッセージ送信やテキスト通知は行わず、リッチメニュー画像だけが静かに即時切り替わります。</li>
                                     <li><strong>上部バナー連動:</strong> リッチメニューの上部（0〜300px）をタップするだけでも、いつでもクイックリプライが手元にパッと呼び出せます。</li>
                                 </ul>
                             </div>
@@ -2190,6 +2191,6 @@
         </div>
     </div>
 
-    <script src="manual.js?v=20260924_weather_stable_v38"></script>
+    <script src="manual.js?v=20261001_silent_weather_v39"></script>
 </body>
 </html>
